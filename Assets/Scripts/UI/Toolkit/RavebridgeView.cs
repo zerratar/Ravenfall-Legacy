@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -13,9 +14,11 @@ namespace Shinobytes.UI
     /// shows in full when the event opens and when play starts, then folds into a slim strip (the time and Play or
     /// Leave) once the character walks off or the mouse has been away from it a few seconds, so it never sits over the
     /// game (playtest 13); a click on the strip opens it again. The hero's keys show bottom centre, over the skill bar,
-    /// for a while after play starts and while the keyboard button is on. Play opens the "Who plays?" window, in the
-    /// quest window's look: the streamer's own characters in the stream (where each is, with Play) and the Ravebridge
-    /// character (Play, Export, a new one, Import), and the step that makes one, with Back. Esc closes the window.
+    /// for a while after play starts and while the keyboard button is on. The "Who plays?" window opens with the event
+    /// (the user, 2026-11-03: one window instead of a banner and then the window): at the top, for chat, how it opened
+    /// and how to join; under it a card for each character the streamer can play, with its portrait (their own
+    /// characters in the stream, and the Ravebridge character with Export, a new one and Import), and the step that
+    /// makes one, with Back. Play opens it again later. Esc closes it.
     /// </summary>
     public class RavebridgeView : MonoBehaviour
     {
@@ -44,8 +47,12 @@ namespace Shinobytes.UI
 
         private VisualElement window;
         private Label windowTitle;
+        private VisualElement viewers;
+        private Label viewersLine, viewersJoin;
         private VisualElement content;
         private Label hint;
+        // the cards' portraits, rendered each time the window is drawn and let go when it is drawn again
+        private readonly System.Collections.Generic.List<Texture2D> portraits = new System.Collections.Generic.List<Texture2D>();
         private bool creating;
         private TextField creatorName;
 
@@ -79,11 +86,11 @@ namespace Shinobytes.UI
 
         private void Changed()
         {
-            // Ravebridge just opened: who plays is asked first, nobody is sent along unasked; but after the opening
-            // announcement (RavebridgeManager.BannerSeconds), which the window covered when both came at once
+            // Ravebridge just opened: who plays is asked at once, in the window that also tells chat how to join (no
+            // banner first); not when the streamer is being played anyway or is away (HeroStart, Ask false)
             var rb = RavebridgeManager.Instance;
             var active = rb && rb.Active;
-            if (active && !wasActive && !RavebridgePlay.Playing && !WindowOpen) askAt = Time.unscaledTime + RavebridgeManager.BannerSeconds;
+            if (active && !wasActive && !RavebridgePlay.Playing && !WindowOpen && rb.Ask) askAt = Time.unscaledTime + 0.2f;
             if (!active) askAt = 0f;
             wasActive = active;
             Redraw();
@@ -169,26 +176,48 @@ namespace Shinobytes.UI
             collapsed = false;
             hideAt = Time.unscaledTime + HideAfter + 3f;
 
-            // the "Who plays?" window, in the quest window's look
+            // the "Who plays?" window: the opening for chat at the top, the streamer's cards under it
             window = new VisualElement { name = "ravebridge-window" };
             window.AddToClassList("rf-squest");
             window.AddToClassList("rf-rb-window");
             var header = new VisualElement();
-            header.AddToClassList("rf-squest__header");
+            header.AddToClassList("rf-rbw__header");
+            var castle = new Label("\uf6d9") { pickingMode = PickingMode.Ignore };
+            castle.AddToClassList("rf-icon");
+            castle.AddToClassList("rf-rbw__castle");
             windowTitle = new Label();
-            windowTitle.AddToClassList("rf-squest__title");
-            var close = new Button(CloseWindow) { text = "" };
+            windowTitle.AddToClassList("rf-rbw__title");
+            windowTitle.AddToClassList("rf-font-eb");
+            var close = new Button(CloseWindow) { text = "\uf00d" };
             close.AddToClassList("rf-icon");
-            close.AddToClassList("rf-squest__close");
+            close.AddToClassList("rf-rbw__close");
+            header.Add(castle);
             header.Add(windowTitle);
             header.Add(close);
+            viewers = new VisualElement();
+            viewers.AddToClassList("rf-rbw__viewers");
+            viewersLine = new Label { enableRichText = true };
+            viewersLine.AddToClassList("rf-rbw__viewers-line");
+            viewersJoin = new Label { enableRichText = true };
+            viewersJoin.AddToClassList("rf-rbw__viewers-join");
+            viewersJoin.AddToClassList("rf-font-b");
+            viewers.Add(viewersLine);
+            viewers.Add(viewersJoin);
             content = new VisualElement();
             content.AddToClassList("rf-rb-window__content");
+            var foot = new VisualElement();
+            foot.AddToClassList("rf-rbw__foot");
+            var footIcon = new Label("\uf05a") { pickingMode = PickingMode.Ignore };
+            footIcon.AddToClassList("rf-icon");
+            footIcon.AddToClassList("rf-rbw__foot-icon");
             hint = new Label();
-            hint.AddToClassList("rf-squest__hint");
+            hint.AddToClassList("rf-rbw__hint");
+            foot.Add(footIcon);
+            foot.Add(hint);
             window.Add(header);
+            window.Add(viewers);
             window.Add(content);
-            window.Add(hint);
+            window.Add(foot);
             window.style.display = DisplayStyle.None;
             layer.Add(window);
 
@@ -292,20 +321,41 @@ namespace Shinobytes.UI
         {
             if (window != null) window.style.display = DisplayStyle.None;
             creating = false;
+            ReleasePortraits();
+        }
+
+        private void ReleasePortraits()
+        {
+            foreach (var t in portraits) if (t) Destroy(t);
+            portraits.Clear();
         }
 
         private void DrawWindow()
         {
             if (!bound) return;
             content.Clear();
-            if (creating) { DrawCreator(); return; }
-
-            windowTitle.text = Localization.UI_RAVEBRIDGE_WHO;
-            hint.text = Localization.UI_RAVEBRIDGE_WHO_HINT;
+            ReleasePortraits();
             var rb = RavebridgeManager.Instance;
             var game = GameManager.Instance;
 
-            content.Add(Text(Localization.UI_RAVEBRIDGE_YOURS, "rf-squest__section"));
+            // for chat: how it opened and how to join (the command lit up), and who is there already
+            windowTitle.text = Localization.UI_RAVEBRIDGE_OPEN;
+            var opening = rb ? rb.OpeningLine : null;
+            var says = !string.IsNullOrEmpty(opening) && opening.Contains("{command}");
+            viewersLine.text = string.IsNullOrEmpty(opening) ? string.Empty : NotificationScreenView.WithCommand(opening, "!ravebridge");
+            viewersLine.style.display = string.IsNullOrEmpty(opening) ? DisplayStyle.None : DisplayStyle.Flex;
+            var join = says ? string.Empty : NotificationScreenView.WithCommand(Localization.UI_RAVEBRIDGE_JOIN, "!ravebridge");
+            if (rb && rb.PlayerCount > 0) join = (join.Length > 0 ? join + "   " : string.Empty) + string.Format(CultureInfo.InvariantCulture, Localization.UI_RAVEBRIDGE_THERE_NOW, rb.PlayerCount);
+            viewersJoin.text = join;
+            viewersJoin.style.display = join.Length > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+
+            if (creating) { DrawCreator(); return; }
+            hint.text = Localization.UI_RAVEBRIDGE_WHO_HINT;
+            content.Add(Text(Localization.UI_RAVEBRIDGE_WHO, "rf-rbw__section"));
+            var cards = new VisualElement();
+            cards.AddToClassList("rf-rbw__cards");
+            content.Add(cards);
+
             var any = false;
             if (game && game.Players != null)
             {
@@ -314,39 +364,105 @@ namespace Shinobytes.UI
                     if (!player || player.IsBot || !RavebridgeManager.IsStreamers(player)) continue;
                     any = true;
                     var p = player;
-                    var there = rb && rb.Contains(p);
-                    var where = there ? Localization.UI_RAVEBRIDGE_ON_ISLAND : string.Format(CultureInfo.InvariantCulture, Localization.UI_RAVEBRIDGE_AT, p.Island ? p.Island.Identifier : Localization.UI_RAVEBRIDGE_AT_SEA);
+                    var where = rb && rb.Contains(p) ? Localization.UI_RAVEBRIDGE_ON_ISLAND : string.Format(CultureInfo.InvariantCulture, Localization.UI_RAVEBRIDGE_AT, p.Island ? p.Island.Identifier : Localization.UI_RAVEBRIDGE_AT_SEA);
                     var buttons = new VisualElement();
-                    buttons.AddToClassList("rf-squest-chips");
-                    buttons.Add(Chip(Localization.UI_RAVEBRIDGE_PLAY, true, () => { CloseWindow(); RavebridgePlay.Begin(p); Redraw(); }));
-                    content.Add(Card(p.Name, string.Format(CultureInfo.InvariantCulture, Localization.UI_RAVEBRIDGE_CHARACTER_LINE, p.Stats.CombatLevel, p.GetTask(), where), buttons, there));
+                    buttons.Add(CardButton(Localization.UI_RAVEBRIDGE_PLAY_HERO, true, () => { CloseWindow(); RavebridgePlay.Begin(p); Redraw(); }));
+                    cards.Add(PlayCard(Portrait(p), false, p.Name, Localization.UI_RAVEBRIDGE_YOUR_CHARACTER,
+                        string.Format(CultureInfo.InvariantCulture, Localization.UI_RAVEBRIDGE_CARD_LEVEL, p.Stats.CombatLevel),
+                        string.Format(CultureInfo.InvariantCulture, Localization.UI_RAVEBRIDGE_CARD_DOING, p.GetTask(), where), buttons));
                 }
             }
-            if (!any) content.Add(Text(Localization.UI_RAVEBRIDGE_NO_OWN, "rf-squest__empty"));
 
-            content.Add(Text(Localization.UI_RAVEBRIDGE_LOCAL_SECTION, "rf-squest__section"));
             var data = RavebridgeCharacter.Current;
             var row = new VisualElement();
-            row.AddToClassList("rf-squest-chips");
             if (data != null)
             {
                 var level = new Skills(data.Skills).CombatLevel;
-                row.Add(Chip(Localization.UI_RAVEBRIDGE_PLAY, true, () => { CloseWindow(); var p = RavebridgeCharacter.Spawn(); if (p) RavebridgePlay.Begin(p); Redraw(); }));
-                row.Add(Chip(Localization.UI_RAVEBRIDGE_EXPORT, false, () =>
+                row.Add(CardButton(Localization.UI_RAVEBRIDGE_PLAY_HERO, true, () => { CloseWindow(); var p = RavebridgeCharacter.Spawn(); if (p) RavebridgePlay.Begin(p); Redraw(); }));
+                var small = new VisualElement();
+                small.AddToClassList("rf-rbw-card__small");
+                small.Add(CardButton(Localization.UI_RAVEBRIDGE_NEW_CHARACTER_AGAIN, false, () => { creating = true; DrawWindow(); }));
+                small.Add(CardButton(Localization.UI_RAVEBRIDGE_EXPORT, false, () =>
                 {
                     var path = RavebridgeCharacter.Export();
                     ShowNotice(path != null ? string.Format(CultureInfo.InvariantCulture, Localization.UI_RAVEBRIDGE_EXPORTED, System.IO.Path.GetFileName(path)) : null);
                 }));
-                row.Add(Chip(Localization.UI_RAVEBRIDGE_NEW_CHARACTER_AGAIN, false, () => { creating = true; DrawWindow(); }));
-                row.Add(Chip(Localization.UI_RAVEBRIDGE_IMPORT, false, Import));
-                content.Add(Card(data.Name, string.Format(CultureInfo.InvariantCulture, Localization.UI_RAVEBRIDGE_LOCAL_LINE, level, data.Quest?.Points ?? 0, RavebridgeQuests.QuestCount), row, RavebridgeCharacter.Spawned));
+                small.Add(CardButton(Localization.UI_RAVEBRIDGE_IMPORT, false, Import));
+                row.Add(small);
+                var spawned = RavebridgeCharacter.Spawned && game ? game.Players.GetAllPlayers().FirstOrDefault(x => x && x.IsLocal) : null;
+                cards.Add(PlayCard(spawned ? Portrait(spawned) : null, false, data.Name, Localization.UI_RAVEBRIDGE_LOCAL_SECTION,
+                    string.Format(CultureInfo.InvariantCulture, Localization.UI_RAVEBRIDGE_CARD_LEVEL, level),
+                    string.Format(CultureInfo.InvariantCulture, Localization.UI_RAVEBRIDGE_CARD_QUESTS, data.Quest?.Points ?? 0, RavebridgeQuests.QuestCount), row));
             }
             else
             {
-                row.Add(Chip(Localization.UI_RAVEBRIDGE_CREATE_ONE, true, () => { creating = true; DrawWindow(); }));
-                row.Add(Chip(Localization.UI_RAVEBRIDGE_IMPORT, false, Import));
-                content.Add(Card(Localization.UI_RAVEBRIDGE_NEW_CHARACTER, Localization.UI_RAVEBRIDGE_LOCAL_ABOUT, row, false));
+                row.Add(CardButton(Localization.UI_RAVEBRIDGE_CREATE_ONE, true, () => { creating = true; DrawWindow(); }));
+                row.Add(CardButton(Localization.UI_RAVEBRIDGE_IMPORT, false, Import));
+                cards.Add(PlayCard(null, true, Localization.UI_RAVEBRIDGE_LOCAL_SECTION, null, Localization.UI_RAVEBRIDGE_LOCAL_SHORT, null, row));
             }
+            if (!any) cards.Insert(0, PlayCard(null, false, Localization.UI_RAVEBRIDGE_YOUR_CHARACTER, null, Localization.UI_RAVEBRIDGE_NO_OWN, null, new VisualElement()));
+        }
+
+        private Texture2D Portrait(PlayerController p)
+        {
+            var face = NpcPortrait.Of(p);
+            if (face) portraits.Add(face);
+            return face;
+        }
+
+        /// <summary>
+        /// A character to play: the portrait (or a silhouette, with a plus for one still to make), the name, what it is,
+        /// two short lines and its buttons.
+        /// </summary>
+        private static VisualElement PlayCard(Texture2D portrait, bool toMake, string name, string kind, string line1, string line2, VisualElement buttons)
+        {
+            var card = new VisualElement();
+            card.AddToClassList("rf-rbw-card");
+            var picture = new VisualElement { pickingMode = PickingMode.Ignore };
+            picture.AddToClassList("rf-rbw-card__portrait");
+            if (portrait) picture.style.backgroundImage = new StyleBackground(portrait);
+            else
+            {
+                var shape = new Label("\uf007") { pickingMode = PickingMode.Ignore };
+                shape.AddToClassList("rf-icon");
+                shape.AddToClassList("rf-rbw-card__silhouette");
+                picture.Add(shape);
+                if (toMake)
+                {
+                    var plus = new Label("\uf067") { pickingMode = PickingMode.Ignore };
+                    plus.AddToClassList("rf-icon");
+                    plus.AddToClassList("rf-rbw-card__plus");
+                    picture.Add(plus);
+                }
+            }
+            card.Add(picture);
+            var body = new VisualElement();
+            body.AddToClassList("rf-rbw-card__body");
+            var title = Text(name, "rf-rbw-card__name");
+            title.AddToClassList("rf-font-eb");
+            body.Add(title);
+            if (!string.IsNullOrEmpty(kind)) body.Add(Text(kind, "rf-rbw-card__kind"));
+            var rule = new VisualElement { pickingMode = PickingMode.Ignore };
+            rule.AddToClassList("rf-rbw-card__rule");
+            body.Add(rule);
+            if (!string.IsNullOrEmpty(line1)) body.Add(Text(line1, "rf-rbw-card__line"));
+            if (!string.IsNullOrEmpty(line2)) body.Add(Text(line2, "rf-rbw-card__line"));
+            var spacer = new VisualElement { pickingMode = PickingMode.Ignore };
+            spacer.style.flexGrow = 1;
+            body.Add(spacer);
+            buttons.AddToClassList("rf-rbw-card__buttons");
+            body.Add(buttons);
+            card.Add(body);
+            return card;
+        }
+
+        private static Button CardButton(string label, bool primary, System.Action clicked)
+        {
+            var button = new Button(clicked) { text = label };
+            button.AddToClassList("rf-rbw-btn");
+            button.AddToClassList("rf-font-b");
+            button.EnableInClassList("rf-rbw-btn--primary", primary);
+            return button;
         }
 
         private void Import()
@@ -355,24 +471,10 @@ namespace Shinobytes.UI
             DrawWindow();
         }
 
-        private static VisualElement Card(string title, string line, VisualElement buttons, bool active)
-        {
-            var card = new VisualElement();
-            card.AddToClassList("rf-squest-card");
-            card.EnableInClassList("rf-squest-card--active", active);
-            var body = new VisualElement();
-            body.AddToClassList("rf-squest-card__body");
-            body.Add(Text(title, "rf-squest-card__title"));
-            body.Add(Text(line, "rf-squest-card__meta"));
-            body.Add(buttons);
-            card.Add(body);
-            return card;
-        }
-
         /// <summary>A name for the new character; its look is rolled, and New look rolls again while it is played.</summary>
         private void DrawCreator()
         {
-            windowTitle.text = Localization.UI_RAVEBRIDGE_NEW_CHARACTER;
+            content.Add(Text(Localization.UI_RAVEBRIDGE_NEW_CHARACTER, "rf-rbw__section"));
             hint.text = Localization.UI_RAVEBRIDGE_LOCAL_ABOUT;
             if (RavebridgeCharacter.Current != null) content.Add(Text(string.Format(CultureInfo.InvariantCulture, Localization.UI_RAVEBRIDGE_REPLACES, RavebridgeCharacter.Current.Name), "rf-squest__error"));
             creatorName = new TextField(Localization.UI_RAVEBRIDGE_NAME) { maxLength = 20 };

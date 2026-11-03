@@ -27,7 +27,7 @@ public static class HeroStart
         if (storm && !HeroController.Active && InputActivity.IdleSeconds > AwayAfter)
         {
             if (rb.Active) return Result.Started;
-            var opened = rb.Begin(true, reason == null || reason == Localization.MSG_HERO_STORM ? Localization.MSG_HERO_STORM_AWAY : reason, true);
+            var opened = rb.Begin(true, reason == null || reason == Localization.MSG_HERO_STORM ? Localization.MSG_HERO_STORM_AWAY : reason, true, false);
             return opened == RavebridgeManager.StartResult.Started || opened == RavebridgeManager.StartResult.AlreadyActive ? Result.Started : Result.Closed;
         }
         if (HeroController.Active)
@@ -38,7 +38,7 @@ public static class HeroStart
 
         if (!rb.Active)
         {
-            var started = rb.Begin(storm, reason, true);
+            var started = rb.Begin(storm, reason, true, false);
             if (started != RavebridgeManager.StartResult.Started && started != RavebridgeManager.StartResult.AlreadyActive) return Result.Closed;
         }
 

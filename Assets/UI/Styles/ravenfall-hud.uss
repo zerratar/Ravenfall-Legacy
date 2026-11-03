@@ -2068,7 +2068,7 @@
    from the middle, half the bar (6 slots of 72px, the 18px gap, padding and border: 476px) and 14px either side. */
 .rf-hero-orb {
     position: absolute;
-    bottom: 34px;
+    bottom: 24px;
     width: 150px;
     height: 150px;
     left: 50%;
@@ -2080,6 +2080,40 @@
 
 .rf-hero-orb--mana {
     margin-left: 252px;
+}
+
+/* The plate behind the skill bar and under both orbs, so the three read as one piece (the user's mockup): from the
+   middle out to the orbs' centres (half the bar 238px, the 14px gap, half an orb 75px). */
+.rf-hero-dock {
+    position: absolute;
+    left: 50%;
+    width: 654px;
+    margin-left: -327px;
+    bottom: 18px;
+    height: 102px;
+    background-color: rgba(20, 18, 15, 0.94);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: rgb(214, 170, 40);
+    border-right-color: rgb(214, 170, 40);
+    border-top-color: rgb(214, 170, 40);
+    border-bottom-color: rgb(214, 170, 40);
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+    border-bottom-left-radius: 14px;
+    border-bottom-right-radius: 14px;
+}
+
+/* The gilded socket ring round each orb (HeroUI/orb-socket): its opening is 77% of it, so 188px round a 150px orb. */
+.rf-hero-orb__socket {
+    position: absolute;
+    left: -19px;
+    top: -19px;
+    width: 188px;
+    height: 188px;
+    -unity-background-scale-mode: scale-to-fit;
 }
 
 .rf-hero-orb__sphere {
@@ -2105,7 +2139,9 @@
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
 }
 
+/* The orbs in their gilded sockets need no words under them: the numbers are in the orbs. */
 .rf-hero-orb__label {
+    display: none;
     position: absolute;
     left: 0;
     right: 0;
@@ -2206,11 +2242,11 @@
     padding-right: var(--rf-space-3);
     padding-top: var(--rf-space-3);
     padding-bottom: var(--rf-space-3);
-    background-color: rgba(20, 18, 15, 0.9);
-    border-left-width: 1px;
-    border-right-width: 1px;
-    border-top-width: 1px;
-    border-bottom-width: 1px;
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
     border-left-color: var(--rf-accent);
     border-right-color: var(--rf-accent);
     border-top-color: var(--rf-accent);
@@ -4363,12 +4399,12 @@
 .rf-rbp-key {
     flex-direction: row;
     align-items: center;
-    margin: 0 6px 6px 0;
-    padding: 4px 10px 4px 4px;
-    background-color: var(--rf-bg);
-    border-width: 2px;
-    border-color: var(--rf-border-strong);
-    border-radius: 6px;
+    margin: 0 4px 6px 4px;
+    padding: 4px 12px 4px 4px;
+    background-color: rgb(20, 18, 15);
+    border-width: 1px;
+    border-color: rgba(214, 170, 40, 0.85);
+    border-radius: 8px;
 }
 
 .rf-rbp-key__key {
@@ -4377,18 +4413,18 @@
     padding: 0 7px;
     margin-right: 8px;
     font-size: 14px;
-    color: var(--rf-text);
+    color: rgb(245, 236, 214);
     -unity-text-align: middle-center;
-    background-color: var(--rf-surface-raised);
-    border-width: 2px;
-    border-color: var(--rf-border-strong);
+    background-color: rgb(34, 30, 24);
+    border-width: 1px;
+    border-color: rgb(214, 170, 40);
     border-radius: 5px;
     -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
 }
 
 .rf-rbp-key__text {
     font-size: 14px;
-    color: var(--rf-text-dim);
+    color: rgb(235, 225, 200);
     -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
 }
 
@@ -4459,11 +4495,261 @@
 
 /* the "Who plays?" window: the quest window's look, narrower, a little lower */
 .rf-rb-window {
-    /* solid, so the island behind does not show through the cards */
-    background-color: var(--rf-surface);
-    top: 16%;
-    width: 600px;
-    margin-left: -300px;
+    /* solid, so the island behind does not show through the cards; two portrait cards wide (the user's mockup) */
+    background-color: rgb(20, 18, 15);
+    top: 11%;
+    width: 780px;
+    margin-left: -390px;
+    padding-left: 22px;
+    padding-right: 22px;
+    padding-top: 16px;
+    padding-bottom: 16px;
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: rgb(214, 170, 40);
+    border-right-color: rgb(214, 170, 40);
+    border-top-color: rgb(214, 170, 40);
+    border-bottom-color: rgb(214, 170, 40);
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+    border-bottom-left-radius: 14px;
+    border-bottom-right-radius: 14px;
+}
+
+/* ---- The "Who plays?" window (RavebridgeView), 2026-11-03: the opening for chat on top, portrait cards under it --- */
+.rf-rbw__header {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.rf-rb-window .rf-rbw__castle {
+    font-size: 30px;
+    color: rgb(236, 190, 52);
+    margin-right: 12px;
+}
+
+.rf-rb-window .rf-rbw__title {
+    flex-grow: 1;
+    font-size: 30px;
+    color: rgb(245, 236, 214);
+}
+
+.rf-rb-window .rf-rbw__close {
+    width: 34px;
+    height: 34px;
+    font-size: 18px;
+    color: rgb(200, 190, 170);
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+}
+
+.rf-rb-window .rf-rbw__close:hover {
+    color: rgb(255, 214, 90);
+}
+
+.rf-rbw__viewers {
+    margin-bottom: 14px;
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 10px;
+    padding-bottom: 12px;
+    background-color: rgb(32, 28, 22);
+    border-left-width: 3px;
+    border-left-color: rgb(236, 190, 52);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.rf-rb-window .rf-rbw__viewers-line {
+    font-size: 17px;
+    color: rgb(235, 225, 200);
+    white-space: normal;
+}
+
+.rf-rb-window .rf-rbw__viewers-join {
+    margin-top: 6px;
+    font-size: 19px;
+    color: rgb(245, 236, 214);
+    white-space: normal;
+}
+
+.rf-rb-window .rf-rbw__section {
+    font-size: 18px;
+    color: rgb(236, 190, 52);
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+    margin-bottom: 8px;
+}
+
+.rf-rbw__cards {
+    flex-direction: row;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.rf-rbw-card {
+    width: 340px;
+    margin-left: 7px;
+    margin-right: 7px;
+    margin-bottom: 8px;
+    background-color: rgb(28, 25, 20);
+    overflow: hidden;
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: rgba(214, 170, 40, 0.55);
+    border-right-color: rgba(214, 170, 40, 0.55);
+    border-top-color: rgba(214, 170, 40, 0.55);
+    border-bottom-color: rgba(214, 170, 40, 0.55);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
+.rf-rbw-card:hover {
+    border-left-color: rgb(236, 190, 52);
+    border-right-color: rgb(236, 190, 52);
+    border-top-color: rgb(236, 190, 52);
+    border-bottom-color: rgb(236, 190, 52);
+}
+
+.rf-rbw-card__portrait {
+    height: 190px;
+    align-items: center;
+    justify-content: center;
+    background-color: rgb(46, 36, 20);
+    -unity-background-scale-mode: scale-and-crop;
+}
+
+.rf-rb-window .rf-rbw-card__silhouette {
+    font-size: 120px;
+    color: rgb(18, 15, 11);
+}
+
+.rf-rb-window .rf-rbw-card__plus {
+    position: absolute;
+    font-size: 52px;
+    color: rgb(236, 190, 52);
+}
+
+.rf-rbw-card__body {
+    flex-grow: 1;
+    align-items: center;
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 12px;
+    padding-bottom: 16px;
+}
+
+.rf-rb-window .rf-rbw-card__name {
+    font-size: 24px;
+    color: rgb(245, 236, 214);
+}
+
+.rf-rb-window .rf-rbw-card__kind {
+    margin-top: 2px;
+    font-size: 16px;
+    color: rgb(236, 190, 52);
+}
+
+.rf-rbw-card__rule {
+    align-self: stretch;
+    height: 1px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    background-color: rgba(214, 170, 40, 0.35);
+}
+
+.rf-rb-window .rf-rbw-card__line {
+    font-size: 15px;
+    color: rgb(225, 214, 190);
+    white-space: normal;
+    -unity-text-align: middle-center;
+}
+
+.rf-rbw-card__buttons {
+    align-self: stretch;
+    margin-top: 12px;
+}
+
+.rf-rb-window .rf-rbw-btn {
+    height: 40px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 6px;
+    font-size: 17px;
+    color: rgb(236, 190, 52);
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgb(214, 170, 40);
+    border-right-color: rgb(214, 170, 40);
+    border-top-color: rgb(214, 170, 40);
+    border-bottom-color: rgb(214, 170, 40);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.rf-rb-window .rf-rbw-btn:hover {
+    background-color: rgba(214, 170, 40, 0.15);
+}
+
+.rf-rb-window .rf-rbw-btn--primary {
+    color: rgb(20, 18, 15);
+    background-color: rgb(236, 190, 52);
+}
+
+.rf-rb-window .rf-rbw-btn--primary:hover {
+    background-color: rgb(255, 214, 90);
+}
+
+.rf-rbw-card__small {
+    flex-direction: row;
+}
+
+.rf-rb-window .rf-rbw-card__small .rf-rbw-btn {
+    flex-grow: 1;
+    flex-basis: 0;
+    height: 32px;
+    font-size: 14px;
+    margin-left: 3px;
+    margin-right: 3px;
+}
+
+.rf-rbw__foot {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top-width: 1px;
+    border-top-color: rgba(214, 170, 40, 0.3);
+}
+
+.rf-rb-window .rf-rbw__foot-icon {
+    font-size: 16px;
+    color: rgb(236, 190, 52);
+    margin-right: 8px;
+}
+
+.rf-rb-window .rf-rbw__hint {
+    font-size: 14px;
+    color: rgb(200, 190, 170);
+    white-space: normal;
+    flex-shrink: 1;
 }
 
 .rf-rb-window__content {

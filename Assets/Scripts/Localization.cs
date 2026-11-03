@@ -773,6 +773,14 @@ public static class Localization
     public static string UI_HERO_PARTY = "On Ravebridge ({0})";
     public static string UI_HERO_PARTY_MORE = "On Ravebridge ({0}, {1} more)";
     public static string UI_RAVEBRIDGE_WHO = "Who plays?";
+    public static string UI_RAVEBRIDGE_OPEN = "Ravebridge is open!";
+    public static string UI_RAVEBRIDGE_THERE_NOW = "{0} on the island";
+    public static string UI_RAVEBRIDGE_YOUR_CHARACTER = "Your character";
+    public static string UI_RAVEBRIDGE_PLAY_HERO = "Play as the hero";
+    public static string UI_RAVEBRIDGE_CARD_LEVEL = "Combat level {0}";
+    public static string UI_RAVEBRIDGE_CARD_DOING = "Training {0}, {1}";
+    public static string UI_RAVEBRIDGE_CARD_QUESTS = "Quest points {0}/{1}";
+    public static string UI_RAVEBRIDGE_LOCAL_SHORT = "Levels up only on Ravebridge, saved on this computer";
     public static string UI_RAVEBRIDGE_WHO_HINT = "Pick a character to play on Ravebridge, as the hero. Leave Ravebridge takes them back where they were.";
     public static string UI_RAVEBRIDGE_YOURS = "Your characters";
     public static string UI_RAVEBRIDGE_ON_ISLAND = "on Ravebridge";

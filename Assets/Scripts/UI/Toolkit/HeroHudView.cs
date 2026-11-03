@@ -108,6 +108,11 @@ namespace Shinobytes.UI
             ReleaseOrbs();
             health = MakeOrb(new Color(0.9f, 0.02f, 0.02f), new Color(0.18f, 0.0f, 0.005f), new Color(1f, 0.22f, 0.1f));
             mana = MakeOrb(new Color(0.06f, 0.25f, 1f), new Color(0.0f, 0.02f, 0.2f), new Color(0.3f, 0.65f, 1f));
+            // a dark plate with a gold edge behind the skill bar and under both orbs: the three read as one piece, as in
+            // an action RPG (the user's mockup, 2026-11-03)
+            var dock = new VisualElement { pickingMode = PickingMode.Ignore };
+            dock.AddToClassList("rf-hero-dock");
+            root.Add(dock);
             root.Add(OrbElement("rf-hero-orb--health", health, Localization.UI_HERO_HEALTH, out healthText));
             root.Add(OrbElement("rf-hero-orb--mana", mana, Localization.UI_HERO_MANA, out manaText));
 
@@ -296,7 +301,13 @@ namespace Shinobytes.UI
             text.AddToClassList("rf-hero-orb__text");
             var name = new Label(label) { pickingMode = PickingMode.Ignore };
             name.AddToClassList("rf-hero-orb__label");
+            // the orb sits in a gilded socket ring (the minimap frame's style), the number on top
+            var socket = new VisualElement { pickingMode = PickingMode.Ignore };
+            socket.AddToClassList("rf-hero-orb__socket");
+            var ring = Resources.Load<Texture2D>("HeroUI/orb-socket");
+            if (ring) socket.style.backgroundImage = new StyleBackground(ring);
             box.Add(orb.Sphere);
+            box.Add(socket);
             box.Add(text);
             box.Add(name);
             return box;

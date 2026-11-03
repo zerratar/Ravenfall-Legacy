@@ -113,7 +113,12 @@ public class RavebridgeManager : MonoBehaviour, IEvent
     /// The streamer (or a moderator) starts it; a forced start comes from a world event and waits out the events'
     /// cooldown, unless now (the debug panel's button).
     /// </summary>
-    public StartResult Begin(bool forced, string reason = null, bool now = false)
+    /// <param name="ask">
+    /// The "Who plays?" window opens at once and carries the opening for chat too (how to join), so no banner (the
+    /// user, 2026-11-03: one window, not a banner and then the window). False where the streamer is played anyway or
+    /// is away (HeroStart): the banner says it, a window would only flash or sit over the stream.
+    /// </param>
+    public StartResult Begin(bool forced, string reason = null, bool now = false, bool ask = true)
     {
         if (Active) return StartResult.AlreadyActive;
         if (!Island) return StartResult.NoIsland;
@@ -136,15 +141,17 @@ public class RavebridgeManager : MonoBehaviour, IEvent
 
         var line = forced ? (string.IsNullOrEmpty(reason) ? Localization.MSG_RAVEBRIDGE_FORCED : reason) : Localization.MSG_RAVEBRIDGE_STARTED;
         game.RavenBot?.Announce(line);
-        var banner = FindAnyObjectByType<Shinobytes.UI.NotificationScreenView>(FindObjectsInactive.Include);
+        // the chat line without the bot's routing tags (%[category:...]%%[tags:...]%), for the window or the banner
+        var readable = MessageUtilities.TryExtractTags(MessageUtilities.TryExtractCategory(line, out _), out _);
+        OpeningLine = readable.Replace("!ravebridge", "{command}");
+        Ask = ask;
+        var banner = ask ? null : FindAnyObjectByType<Shinobytes.UI.NotificationScreenView>(FindObjectsInactive.Include);
         if (banner)
         {
-            // the chat line without the bot's routing tags (%[category:...]%%[tags:...]%)
-            var readable = MessageUtilities.TryExtractTags(MessageUtilities.TryExtractCategory(line, out _), out _);
             // the join line only when the announcement does not already say the command
             var said = readable.Contains("!ravebridge");
             var join = said ? null : Shinobytes.UI.NotificationScreenView.WithCommand(Localization.UI_RAVEBRIDGE_JOIN, "!ravebridge");
-            if (said) readable = Shinobytes.UI.NotificationScreenView.WithCommand(readable.Replace("!ravebridge", "{command}"), "!ravebridge");
+            if (said) readable = Shinobytes.UI.NotificationScreenView.WithCommand(OpeningLine, "!ravebridge");
             banner.Show(Localization.UI_RAVEBRIDGE_TITLE, readable, join);
             StartCoroutine(HideLater(banner, BannerSeconds));
         }
@@ -153,8 +160,14 @@ public class RavebridgeManager : MonoBehaviour, IEvent
         return StartResult.Started;
     }
 
-    /// <summary>How long the opening announcement shows; the "Who plays?" window waits for it (RavebridgeView).</summary>
+    /// <summary>How long the opening banner shows (only when Begin was not to ask who plays).</summary>
     public const float BannerSeconds = 8f;
+
+    /// <summary>How it opened, for the "Who plays?" window: the announcement with {command} where !ravebridge goes.</summary>
+    public string OpeningLine { get; private set; }
+
+    /// <summary>The "Who plays?" window opens with the event (Begin's ask).</summary>
+    public bool Ask { get; private set; }
 
     private static System.Collections.IEnumerator HideLater(Shinobytes.UI.NotificationScreenView banner, float seconds)
     {
