@@ -2304,6 +2304,18 @@ public class GameManager : MonoBehaviour, IGameManager
             }
         }
 
+        // the Mangrove regatta: bots join (given boats if they have none; the lock and the cooldown skipped), and the
+        // sign-up can be cut short
+        if (spawnedBots > 0 && (!Regatta.Running || Regatta.SigningUp) && GUI.Button(GetButtonRect(buttonIndex++), "Bots Join Regatta"))
+        {
+            Shinobytes.Debug.Log("Bots Join Regatta: " + Regatta.BotsJoin(Players.GetAllBots()));
+        }
+
+        if (Regatta.SigningUp && GUI.Button(GetButtonRect(buttonIndex++), "Start Regatta Now"))
+        {
+            Regatta.StartNow();
+        }
+
         if (dungeonManager.Active)
         {
             if (GUI.Button(GetButtonRect(buttonIndex++), "Advance to next room"))

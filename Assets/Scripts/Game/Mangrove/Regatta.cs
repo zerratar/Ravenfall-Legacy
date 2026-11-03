@@ -218,17 +218,18 @@ public sealed class Regatta : MonoBehaviour
 
     // ---- !regatta ----------------------------------------------------------------------------------
 
-    public static JoinResult Join(PlayerController player)
+    /// <param name="force">The debug menu's: the island's lock and the cooldown are skipped.</param>
+    public static JoinResult Join(PlayerController player, bool force = false)
     {
         var island = Mangrove();
-        if (!island || island.Locked) return JoinResult.NotOpen;
+        if (!island || (island.Locked && !force)) return JoinResult.NotOpen;
         if (current && current.phase != Phase.Signup) return JoinResult.Underway;
         if (current && current.racers.Any(r => r.Player == player)) return JoinResult.Already;
         if (!player.ferryHandler.HasOwnBoat) return JoinResult.NoBoat;
         if (Busy(player)) return JoinResult.Busy;
         if (!current)
         {
-            if (Time.time < nextAllowed) return JoinResult.Cooldown;
+            if (Time.time < nextAllowed && !force) return JoinResult.Cooldown;
             Open(island);
         }
         if (current.racers.Count >= MostRacers) return JoinResult.Full;
@@ -244,6 +245,33 @@ public sealed class Regatta : MonoBehaviour
         current.forced = true;
         current.signupEnds = Time.time;
         return true;
+    }
+
+    public static bool SigningUp => current && current.phase == Phase.Signup;
+
+    /// <summary>
+    /// The debug menu's "Bots Join Regatta": bots join (up to <see cref="MostRacers"/>), the island's lock and the
+    /// cooldown skipped. A bot without a boat is given one, the tiers in turn, so the race has a mix of hulls.
+    /// </summary>
+    public static string BotsJoin(IReadOnlyList<PlayerController> bots)
+    {
+        var boats = GameManager.Instance.Items.GetItems().Where(BoatItems.Is)
+            .GroupBy(BoatItems.TierOf).OrderBy(g => g.Key).Select(g => g.First()).ToList();
+        var results = new Dictionary<JoinResult, int>();
+        var n = 0;
+        foreach (var bot in bots)
+        {
+            if (current && current.racers.Count >= MostRacers) break;
+            if (!bot) continue;
+            if (!bot.ferryHandler.HasOwnBoat && boats.Count > 0)
+            {
+                var stack = bot.Inventory.AddToBackpack(boats[n++ % boats.Count], 1);
+                if (stack != null) bot.Inventory.Equip(stack.InstanceId);
+            }
+            var result = Join(bot, true);
+            results[result] = results.TryGetValue(result, out var c) ? c + 1 : 1;
+        }
+        return string.Join(", ", results.Select(r => r.Key + " " + r.Value));
     }
 
     public static bool Leave(PlayerController player)
