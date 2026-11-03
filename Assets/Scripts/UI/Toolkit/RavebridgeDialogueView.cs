@@ -17,7 +17,9 @@ namespace Shinobytes.UI
         private const float CharsPerSecond = 55f;
 
         // every line the same distance apart: left to the font, wrapped lines sat closer than others (playtest 17)
-        private const string LineHeight = "<line-height=1.45em>";
+        // a percentage, never a decimal: the text parser reads "1.45em" with the computer's number format, and on a
+        // Swedish one (decimal comma) it came out smaller than no tag at all, the lines drawn over each other
+        private const string LineHeight = "<line-height=140%>";
 
         private VisualElement box;
         private VisualElement portrait;

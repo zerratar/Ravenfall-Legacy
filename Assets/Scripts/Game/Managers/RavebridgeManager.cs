@@ -226,14 +226,14 @@ public class RavebridgeManager : MonoBehaviour, IEvent
         if (player.IsLocal)
         {
             if (Hero == player) Hero = null;
-            if (RavebridgePlay.Playing == player) RavebridgePlay.Stop();
+            if (RavebridgePlay.Playing == player) RavebridgePlay.Stop(false);
             RavebridgeCharacter.Despawn();
             Changed?.Invoke();
             return;
         }
 
         if (Hero == player) Hero = null;
-        if (RavebridgePlay.Playing == player) RavebridgePlay.Stop();
+        if (RavebridgePlay.Playing == player) RavebridgePlay.Stop(false);
 
         var before = visit.Before;
         player.taskTarget = null;
@@ -267,7 +267,7 @@ public class RavebridgeManager : MonoBehaviour, IEvent
     public void Forget(PlayerController player)
     {
         if (!player) return;
-        if (RavebridgePlay.Playing == player) RavebridgePlay.Stop();
+        if (RavebridgePlay.Playing == player) RavebridgePlay.Stop(false);
         visits.Remove(player.Id);
         player.InRavebridge = false;
         if (Hero == player) Hero = null;

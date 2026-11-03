@@ -99,7 +99,7 @@ public partial class HeroController : MonoBehaviour
     {
         var game = GameManager.Instance;
         if (!player || !player.Controlled || !game) return false;
-        if (Active) End();
+        if (Active) End(false);
         var hero = player.gameObject.AddComponent<HeroController>();
         hero.Player = player;
         hero.animator = player.GetComponentInChildren<Animator>();
@@ -132,8 +132,11 @@ public partial class HeroController : MonoBehaviour
         return true;
     }
 
-    /// <summary>Back to playing by hand.</summary>
-    public static void End()
+    /// <summary>
+    /// Out of hero mode. On Ravebridge that is leaving it (RavebridgePlay.Stop): the streamer is there as the hero or
+    /// not at all; <paramref name="leaveRavebridge"/> false only ends hero mode (a new hero, or the leaving itself).
+    /// </summary>
+    public static void End(bool leaveRavebridge = true)
     {
         var hero = Active;
         Active = null;
@@ -154,6 +157,7 @@ public partial class HeroController : MonoBehaviour
             if (game && game.Camera) game.Camera.StopHeroView();
         }
         Changed?.Invoke();
+        if (leaveRavebridge && hero && hero.Player && RavebridgePlay.Playing == hero.Player) RavebridgePlay.Stop();
     }
 
     /// <summary>The style's level: ranged, magic or healing, or for melee the average of attack, strength and defense.</summary>

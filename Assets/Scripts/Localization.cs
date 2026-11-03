@@ -773,7 +773,7 @@ public static class Localization
     public static string UI_HERO_PARTY = "On Ravebridge ({0})";
     public static string UI_HERO_PARTY_MORE = "On Ravebridge ({0}, {1} more)";
     public static string UI_RAVEBRIDGE_WHO = "Who plays?";
-    public static string UI_RAVEBRIDGE_WHO_HINT = "Pick a character to play by hand on Ravebridge. A character you stop playing stays on the island and trains by itself until it is sent home or Ravebridge closes.";
+    public static string UI_RAVEBRIDGE_WHO_HINT = "Pick a character to play on Ravebridge, as the hero. Leave Ravebridge takes them back where they were.";
     public static string UI_RAVEBRIDGE_YOURS = "Your characters";
     public static string UI_RAVEBRIDGE_ON_ISLAND = "on Ravebridge";
     public static string UI_RAVEBRIDGE_AT = "at {0}";
@@ -801,6 +801,7 @@ public static class Localization
     public static string UI_RAVEBRIDGE_NOBODY = "Nobody played by hand";
     public static string UI_RAVEBRIDGE_PLAY_WHO = "Play a character";
     public static string UI_HERO_ENTER_BIG = "Enter hero mode";
+    public static string UI_RAVEBRIDGE_LEAVE = "Leave Ravebridge";
     public static string UI_RAVEBRIDGE_STOP_PLAYING = "Stop playing";
     public static string UI_RAVEBRIDGE_END_EVENT = "End Ravebridge";
     public static string UI_RAVEBRIDGE_KEYS_TIP = "Show the keys";

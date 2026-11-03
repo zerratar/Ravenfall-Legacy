@@ -5,15 +5,16 @@ using UnityEngine.UIElements;
 namespace Shinobytes.UI
 {
     /// <summary>
-    /// Ravebridge on screen (docs/ravebridge-design.md): while the event runs, a panel in the top left corner with who is
-    /// played, how long the event has been open and who is there, and the streamer's big buttons: Play (who plays), or
-    /// while playing Enter (or Leave) hero mode and Stop playing, and End Ravebridge; Stay for a forced event that would
-    /// close by itself and New look for the Ravebridge character. It shows in full when the event opens and when play
-    /// starts, then folds into a slim strip (the time and a Hero mode or Play button) once the character walks off or
-    /// the mouse has been away from it a few seconds, so it never sits over the game (the user's ask, playtest 13); a
-    /// click on the strip opens it again. Under it the keys for playing by hand or hero mode, for a while after play
-    /// starts and while the keyboard button is on. Play opens the "Who plays?" window, in the quest window's look: the
-    /// streamer's own characters in the stream (where each is, with Play and Send home or Bring along) and the Ravebridge
+    /// Ravebridge on screen (docs/ravebridge-design.md): while the event runs, a panel in the bottom left corner (the
+    /// players list has the top left; the hero's orbs sit by the skill bar) with who is played, how long the event
+    /// has been open and who is there, and the streamer's big buttons: Play (who plays) or, while playing, Leave
+    /// Ravebridge, and End Ravebridge; Stay for a forced event that would close by itself and New look for the
+    /// Ravebridge character. The streamer is in Ravebridge as the hero or not there at all (the user, 2026-11-03). It
+    /// shows in full when the event opens and when play starts, then folds into a slim strip (the time and Play or
+    /// Leave) once the character walks off or the mouse has been away from it a few seconds, so it never sits over the
+    /// game (playtest 13); a click on the strip opens it again. The hero's keys show bottom centre, over the skill bar,
+    /// for a while after play starts and while the keyboard button is on. Play opens the "Who plays?" window, in the
+    /// quest window's look: the streamer's own characters in the stream (where each is, with Play) and the Ravebridge
     /// character (Play, Export, a new one, Import), and the step that makes one, with Back. Esc closes the window.
     /// </summary>
     public class RavebridgeView : MonoBehaviour
@@ -22,7 +23,7 @@ namespace Shinobytes.UI
         private VisualElement panel;
         private VisualElement body;
         private Label title, info, playingLabel, meta;
-        private Button stripAction, primary, stop, end, stay, look, help, chevron;
+        private Button stripAction, primary, end, stay, look, help, chevron;
         private VisualElement extras;
         private VisualElement keys;
         private bool collapsed;
@@ -136,7 +137,6 @@ namespace Shinobytes.UI
             meta = new Label { pickingMode = PickingMode.Ignore };
             meta.AddToClassList("rf-rbp__meta");
             primary = Big(string.Empty, "\uf71d", "rf-rbp__big--primary", PrimaryPressed);
-            stop = Big(Localization.UI_RAVEBRIDGE_STOP_PLAYING, "\uf04d", "rf-rbp__big--plain", () => { RavebridgePlay.Stop(); Redraw(); });
             end = Big(Localization.UI_RAVEBRIDGE_END_EVENT, "\uf52b", "rf-rbp__big--danger", () => { CloseWindow(); var rb = RavebridgeManager.Instance; if (rb) rb.End(); });
             extras = new VisualElement();
             extras.AddToClassList("rf-rbp__extras");
@@ -151,7 +151,6 @@ namespace Shinobytes.UI
             body.Add(playingLabel);
             body.Add(meta);
             body.Add(primary);
-            body.Add(stop);
             body.Add(end);
             body.Add(extras);
 
@@ -165,8 +164,8 @@ namespace Shinobytes.UI
             keysShown = null;
 
             wrap.Add(panel);
-            wrap.Add(keys);
             layer.Add(wrap);
+            layer.Add(keys);
             collapsed = false;
             hideAt = Time.unscaledTime + HideAfter + 3f;
 
@@ -205,13 +204,11 @@ namespace Shinobytes.UI
             Redraw();
         }
 
-        /// <summary>The big button: Play while nobody is played, else into hero mode or out of it.</summary>
+        /// <summary>The big button: Play while nobody is played, else Leave Ravebridge.</summary>
         private void PrimaryPressed()
         {
-            var playing = RavebridgePlay.Playing;
-            if (!playing) { PlayPressed(); return; }
-            if (HeroController.Active) LeaveHeroMode();
-            else HeroController.Begin(playing);
+            if (!RavebridgePlay.Playing) { PlayPressed(); return; }
+            LeaveRavebridge();
             Redraw();
         }
 
@@ -272,10 +269,10 @@ namespace Shinobytes.UI
 
         private bool WindowOpen => window != null && window.style.display == DisplayStyle.Flex;
 
-        /// <summary>Play: who plays (the window), or Stop while playing.</summary>
+        /// <summary>Play: who plays (the window), or Leave while playing.</summary>
         private void PlayPressed()
         {
-            if (RavebridgePlay.Playing) { RavebridgePlay.Stop(); Redraw(); return; }
+            if (RavebridgePlay.Playing) { LeaveRavebridge(); Redraw(); return; }
             if (WindowOpen) { CloseWindow(); return; }
             OpenWindow();
         }
@@ -322,8 +319,6 @@ namespace Shinobytes.UI
                     var buttons = new VisualElement();
                     buttons.AddToClassList("rf-squest-chips");
                     buttons.Add(Chip(Localization.UI_RAVEBRIDGE_PLAY, true, () => { CloseWindow(); RavebridgePlay.Begin(p); Redraw(); }));
-                    if (there) buttons.Add(Chip(Localization.UI_RAVEBRIDGE_SEND_HOME, false, () => { rb.Leave(p); DrawWindow(); }));
-                    else buttons.Add(Chip(Localization.UI_RAVEBRIDGE_BRING, false, () => { rb.Join(p); DrawWindow(); }));
                     content.Add(Card(p.Name, string.Format(CultureInfo.InvariantCulture, Localization.UI_RAVEBRIDGE_CHARACTER_LINE, p.Stats.CombatLevel, p.GetTask(), where), buttons, there));
                 }
             }
@@ -438,12 +433,12 @@ namespace Shinobytes.UI
         }
 
         /// <summary>
-        /// Leaves hero mode (Esc used to; it opens the game menu now, the user found it ended play by surprise). During
-        /// a wave run it asks first: leaving gives no rewards, so the first press warns and a second within
-        /// <see cref="WaveRun.LeaveAskSeconds"/> leaves; between waves it is a retreat that keeps the chest and the
-        /// record, mid wave the run is abandoned.
+        /// Leaves Ravebridge (Esc used to leave hero mode; it opens the game menu now, the user found it ended play by
+        /// surprise). During a wave run it asks first: leaving gives no rewards, so the first press warns and a second
+        /// within <see cref="WaveRun.LeaveAskSeconds"/> leaves; between waves it is a retreat that keeps the chest and
+        /// the record, mid wave the run is abandoned.
         /// </summary>
-        private void LeaveHeroMode()
+        private void LeaveRavebridge()
         {
             var run = WaveRun.Current;
             if (run && !run.Finished && !run.LeaveAsked)
@@ -452,7 +447,7 @@ namespace Shinobytes.UI
                 return;
             }
             if (run && !run.Finished) run.Leave();
-            HeroController.End();
+            RavebridgePlay.Stop();
         }
 
         /// <summary>
@@ -511,7 +506,7 @@ namespace Shinobytes.UI
             var rb = RavebridgeManager.Instance;
             var shown = rb && rb.Active && !(VillageBuildMode.Instance && VillageBuildMode.Instance.IsActive);
             wrap.style.display = shown ? DisplayStyle.Flex : DisplayStyle.None;
-            if (!shown) { CloseWindow(); return; }
+            if (!shown) { CloseWindow(); keys.style.display = DisplayStyle.None; return; }
 
             var playing = RavebridgePlay.Playing;
             var hero = HeroController.Active;
@@ -526,8 +521,8 @@ namespace Shinobytes.UI
             // folded: the time (or a quest's notice) and the one button that matters
             info.text = collapsed && !string.IsNullOrEmpty(notice) ? notice : clock;
             info.style.display = collapsed ? DisplayStyle.Flex : DisplayStyle.None;
-            var action = !playing ? Localization.UI_RAVEBRIDGE_PLAY : hero ? Localization.UI_HERO_EXIT : Localization.UI_HERO_ENTER;
-            var glyph = !playing ? "\uf04b" : hero ? "\uf2f5" : "\uf71d";
+            var action = !playing ? Localization.UI_RAVEBRIDGE_PLAY : Localization.UI_RAVEBRIDGE_LEAVE;
+            var glyph = !playing ? "\uf04b" : "\uf2f5";
             SetBig(stripAction, action, glyph);
             stripAction.style.display = collapsed ? DisplayStyle.Flex : DisplayStyle.None;
 
@@ -538,17 +533,16 @@ namespace Shinobytes.UI
             if (!string.IsNullOrEmpty(notice)) line += "\n" + notice;
             meta.text = line;
 
-            SetBig(primary, !playing ? Localization.UI_RAVEBRIDGE_PLAY_WHO : hero ? Localization.UI_HERO_EXIT : Localization.UI_HERO_ENTER_BIG, glyph);
-            stop.style.display = playing ? DisplayStyle.Flex : DisplayStyle.None;
+            SetBig(primary, !playing ? Localization.UI_RAVEBRIDGE_PLAY_WHO : Localization.UI_RAVEBRIDGE_LEAVE, glyph);
             stay.style.display = left >= 0f ? DisplayStyle.Flex : DisplayStyle.None;
-            look.style.display = playing && playing.IsLocal && !hero ? DisplayStyle.Flex : DisplayStyle.None;
-            extras.style.display = left >= 0f || (playing && playing.IsLocal && !hero) ? DisplayStyle.Flex : DisplayStyle.None;
+            look.style.display = playing && playing.IsLocal ? DisplayStyle.Flex : DisplayStyle.None;
+            extras.style.display = left >= 0f || (playing && playing.IsLocal) ? DisplayStyle.Flex : DisplayStyle.None;
 
             // the keys while playing: for a while after it starts, or while the keyboard button is on
             var showKeys = playing && (keysPinned || keysUntil > 0f);
             help.style.display = playing ? DisplayStyle.Flex : DisplayStyle.None;
             help.EnableInClassList("rf-rbp__icon-button--on", showKeys);
-            DrawKeys(showKeys ? (hero ? Localization.UI_HERO_KEYS : Localization.UI_RAVEBRIDGE_KEYS) : null);
+            DrawKeys(showKeys ? Localization.UI_HERO_KEYS : null);
             keys.style.display = showKeys ? DisplayStyle.Flex : DisplayStyle.None;
         }
 

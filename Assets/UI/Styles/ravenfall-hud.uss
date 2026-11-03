@@ -2064,19 +2064,22 @@
 
 /* the orbs (after the user's reference): a 150 px glass sphere (the Hero Orb shader's render texture, see-through
    where it is empty), the number in the middle, the label under it */
+/* The orbs flank the skill bar (the user, 2026-11-03: at the screen's edges both could not be watched at once):
+   from the middle, half the bar (6 slots of 72px, the 18px gap, padding and border: 476px) and 14px either side. */
 .rf-hero-orb {
     position: absolute;
-    bottom: 58px;
+    bottom: 34px;
     width: 150px;
     height: 150px;
+    left: 50%;
 }
 
 .rf-hero-orb--health {
-    left: 22px;
+    margin-left: -402px;
 }
 
 .rf-hero-orb--mana {
-    right: 22px;
+    margin-left: 252px;
 }
 
 .rf-hero-orb__sphere {
@@ -4125,12 +4128,15 @@
    playing; End Ravebridge). It folds into a slim strip (rf-rbp--collapsed) once the character walks off, so it never
    sits over the game. Under it the key chips for a while after play starts. */
 
+/* Low in the left corner, above the bot's status chip (the players list has the top left, the user, 2026-11-03). */
 .rf-rbp-wrap {
     position: absolute;
-    top: 14px;
+    bottom: 64px;
     left: 14px;
     align-items: flex-start;
 }
+
+
 
 .rf-rbp {
     width: 360px;
@@ -4343,11 +4349,15 @@
 }
 
 /* the keys: a row of chips under the panel */
+/* The hero's keys, bottom centre over the skill bar and the orbs beside it. */
 .rf-rbp-keys {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 212px;
     flex-direction: row;
     flex-wrap: wrap;
-    max-width: 1000px;
-    margin-top: 8px;
+    justify-content: center;
 }
 
 .rf-rbp-key {

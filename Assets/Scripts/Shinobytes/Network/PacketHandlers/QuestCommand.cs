@@ -427,6 +427,12 @@ public static class QuestChat
             client.SendReply(gm, Localization.MSG_RAVEBRIDGE_CLOSED, RavebridgeManager.Unlocked ? Localization.MSG_RAVEBRIDGE_HOW_UNLOCKED : Localization.MSG_RAVEBRIDGE_LOCKED);
             return;
         }
+        // the streamer's own character goes as the hero, played: never left on the island unplayed
+        if (RavebridgeManager.IsStreamers(player))
+        {
+            client.SendReply(gm, RavebridgePlay.Begin(player) ? Localization.MSG_RAVEBRIDGE_JOINED : Localization.MSG_RAVEBRIDGE_BUSY);
+            return;
+        }
         switch (rb.Join(player))
         {
             case RavebridgeManager.JoinResult.Joined: client.SendReply(gm, Localization.MSG_RAVEBRIDGE_JOINED); break;

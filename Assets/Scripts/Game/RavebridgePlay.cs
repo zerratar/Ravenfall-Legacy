@@ -1,10 +1,12 @@
 using UnityEngine;
 
 /// <summary>
-/// The streamer plays a character by hand on Ravebridge (phase 6c of docs/ravebridge-design.md): their own character
-/// in the stream (saved to the server as always) or their Ravebridge character (6d). Begin takes the character to the
-/// island if it is not there, follows it with the camera and hands it to ManualPlayerController; Stop gives it back
-/// to automatic play: the Ravebridge bar's Stop, the character leaving or the event ending (Esc opens the game menu).
+/// The streamer plays a character on Ravebridge (phase 6c of docs/ravebridge-design.md): their own character in the
+/// stream (saved to the server as always) or their Ravebridge character (6d). The streamer is in Ravebridge, as the
+/// hero, or not there at all (the user, 2026-11-03: no playing by hand outside hero mode, no character of theirs left
+/// on the island unplayed). Begin takes the character to the island, follows it with the camera and makes it the
+/// hero; Stop leaves Ravebridge: hero mode ends and the character goes back where it was (the Ravebridge character is
+/// put away). Leaving hero mode by any way (the panel, !hero end) is leaving.
 /// </summary>
 public static class RavebridgePlay
 {
@@ -39,15 +41,22 @@ public static class RavebridgePlay
         game.Camera.FollowControlled(player);
         player.EnableControl();
         Playing = player;
+        // always as the hero: the wave runs and the bounties are there to start, or not, and the island to roam
+        if (!HeroController.Active || HeroController.Active.Player != player) HeroController.Begin(player);
         Changed?.Invoke();
         return true;
     }
 
-    public static void Stop()
+    /// <summary>
+    /// Out of Ravebridge: hero mode ends, the character is given back to automatic play and, with
+    /// <paramref name="leave"/>, goes back where it was (RavebridgeManager.Leave, which puts its task back too). The
+    /// event leaving or forgetting the character stops without leaving again.
+    /// </summary>
+    public static void Stop(bool leave = true)
     {
-        if (HeroController.Active) HeroController.End();
         var player = Playing;
         Playing = null;
+        if (HeroController.Active) HeroController.End(false);
         if (player)
         {
             player.RevokeControl();
@@ -59,6 +68,8 @@ public static class RavebridgePlay
         }
         var game = GameManager.Instance;
         if (game && game.Camera) game.Camera.StopFollowingControlled();
+        var rb = RavebridgeManager.Instance;
+        if (leave && player && rb && rb.Contains(player)) rb.Leave(player);
         Changed?.Invoke();
     }
 }
