@@ -133,6 +133,12 @@ public sealed class Regatta : MonoBehaviour
         /// <summary>The character's humanoid rig, for the hands on the rail and the rope (null when it has none).</summary>
         public Animator Rig;
         public float ArmLength;
+        /// <summary>
+        /// Where the captain's hands hold the wheel, in the boat's own space, read off the steering animation once the
+        /// race is under way: the hang-on grips the wheel there (the ships' wheels are part of their hull mesh).
+        /// </summary>
+        public Vector3 WheelLeft, WheelRight;
+        public bool WheelKnown;
         /// <summary>The things on the water it already tried (or failed) to steer round, this lap (JudgedLap).</summary>
         public readonly HashSet<Thing> Judged = new HashSet<Thing>();
         public int JudgedLap;
@@ -510,6 +516,7 @@ public sealed class Regatta : MonoBehaviour
         var now = Time.time;
         foreach (var r in racers)
         {
+            if (!r.WheelKnown && r.Showing == Gag.None && r.Racing && now - startedAt > 1.5f) ReadWheel(r);
             var want = Gag.None;
             if (r.Racing && r.Player.ferryHandler.OwnBoat == r.Boat)
             {
@@ -521,6 +528,21 @@ public sealed class Regatta : MonoBehaviour
             if (want != r.Showing) ShowGag(r, want);
             if (r.Showing != Gag.None) PoseGag(r, now);
         }
+    }
+
+    /// <summary>A ship's captain at the helm: where their hands are is where the wheel is.</summary>
+    private static void ReadWheel(Racer r)
+    {
+        var boat = r.Boat;
+        if (!boat || r.Player.ferryHandler.OwnBoat != boat) return;
+        r.WheelKnown = true;
+        if (boat.Tier == BoatItems.Tier.Rowboat || boat.Tier == BoatItems.Tier.FishingBoat) return;
+        var rig = r.Player.GetComponentsInChildren<Animator>().FirstOrDefault(a => a.isHuman && a.isActiveAndEnabled);
+        var left = rig ? rig.GetBoneTransform(HumanBodyBones.LeftHand) : null;
+        var right = rig ? rig.GetBoneTransform(HumanBodyBones.RightHand) : null;
+        if (!left || !right) return;
+        r.WheelLeft = boat.transform.InverseTransformPoint(left.position);
+        r.WheelRight = boat.transform.InverseTransformPoint(right.position);
     }
 
     /// <summary>Into a gag (the swim animation, a rope for the tow) or out of it, back at the helm as the ferry puts them.</summary>
@@ -670,9 +692,18 @@ public sealed class Regatta : MonoBehaviour
                 // hands on the wheel (the ships, sloop and up) or the stern rail (the small boats, steered by oar), the
                 // rest blown out behind, legs up in the wind, flapping like a flag; on the ships it flies over the deck
                 // (out past a galleon's stern the castle hid them)
+                // the wheel where the captain's hands held it (ReadWheel), else just in front of where they stand
                 var wheel = boat.Tier != BoatItems.Tier.Rowboat && boat.Tier != BoatItems.Tier.FishingBoat;
-                var grip = wheel ? boat.Seat.position + forward * 0.55f + Vector3.up * 1.15f : bt.position - bt.forward * (length * 0.5f - 0.4f);
+                var leftGrip = wheel && r.WheelKnown && r.WheelLeft != Vector3.zero ? bt.TransformPoint(r.WheelLeft) : Vector3.zero;
+                var rightGrip = leftGrip != Vector3.zero ? bt.TransformPoint(r.WheelRight) : Vector3.zero;
+                var grip = leftGrip != Vector3.zero ? (leftGrip + rightGrip) * 0.5f
+                    : wheel ? boat.Seat.position + forward * 0.3f + Vector3.up * 1.15f : bt.position - bt.forward * (length * 0.5f - 0.4f);
                 if (!wheel) grip.y = boat.Seat.position.y + 1f;
+                if (leftGrip == Vector3.zero)
+                {
+                    leftGrip = grip - right * 0.22f;
+                    rightGrip = grip + right * 0.22f;
+                }
                 var flap = Quaternion.AngleAxis(Mathf.Sin(now * 17f) * 20f, forward)
                     * Quaternion.AngleAxis(14f + Mathf.Sin(now * 11f + 1f) * 12f, right);
                 var head = flap * forward;
@@ -681,8 +712,8 @@ public sealed class Regatta : MonoBehaviour
                 t.SetPositionAndRotation(grip - head * (ShoulderHeight * scale + r.ArmLength * 0.97f), flap * Quaternion.LookRotation(Vector3.down, forward));
                 if (r.Rig)
                 {
-                    Reach(r.Rig, HumanBodyBones.LeftUpperArm, HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand, grip - right * 0.22f);
-                    Reach(r.Rig, HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand, grip + right * 0.22f);
+                    Reach(r.Rig, HumanBodyBones.LeftUpperArm, HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand, leftGrip);
+                    Reach(r.Rig, HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand, rightGrip);
                 }
                 break;
             }
