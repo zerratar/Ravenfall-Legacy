@@ -33,6 +33,11 @@ public class RavebridgeManager : MonoBehaviour, IEvent
     private IslandController island;
     private float nextUprisingRoll;
     private string pendingForcedReason;
+    private readonly List<GameObject> scenery = new List<GameObject>();
+    private readonly List<EnemyController> respawning = new List<EnemyController>();
+    private bool sceneryHidden;
+    private float unusedSince = -1f;
+    private float nextPresenceCheck;
 
     public static RavebridgeManager Instance { get; private set; }
 
@@ -131,6 +136,7 @@ public class RavebridgeManager : MonoBehaviour, IEvent
             return StartResult.Busy;
         }
 
+        ShowIsland();
         Active = true;
         Forced = forced;
         ForcedReason = reason;
@@ -308,6 +314,7 @@ public class RavebridgeManager : MonoBehaviour, IEvent
 
         RavebridgeCharacter.Tick();
         RavebridgeQuests.Tick();
+        UpdatePresence();
 
         if (!Active)
         {
@@ -331,6 +338,98 @@ public class RavebridgeManager : MonoBehaviour, IEvent
                 if (IsStreamers(player) && Contains(player)) { Hero = player; break; }
             }
         }
+    }
+
+    // ---- There only while used ------------------------------------------------------------------------
+
+    /// <summary>How long nobody uses Ravebridge before its contents hide.</summary>
+    private const float HideAfter = 3f;
+
+    /// <summary>Whether the island's contents are hidden (nobody uses Ravebridge).</summary>
+    public bool IslandHidden => sceneryHidden;
+
+    /// <summary>
+    /// The island's contents come back: the event opens, or someone is on the island anyway (a character restored
+    /// there after a crash). Switching them on takes a moment (about a quarter of a second in the editor).
+    /// </summary>
+    public void ShowIsland()
+    {
+        if (!sceneryHidden) return;
+        sceneryHidden = false;
+        foreach (var part in scenery) if (part) part.SetActive(true);
+        scenery.Clear();
+        // switching off stopped their respawn timers
+        foreach (var enemy in respawning) if (enemy && enemy.Stats.IsDead) enemy.Respawn(1f);
+        respawning.Clear();
+    }
+
+    /// <summary>
+    /// The island's contents hide while nobody uses Ravebridge (the user, 2026-11-03): a third of the world's
+    /// renderers, its enemies, animals, NPCs and resource fields, measured at 1.5 to 3 ms of the main thread a frame in
+    /// the editor though nobody was near. The island itself stays (its sphere, its navmesh, the world's terrain tiles
+    /// parented under it, which reach past Ravebridge), and so does what is slow to switch back on and cheap to keep
+    /// (see Keep). Everything switched off that draws or registers itself (resource fields, the NPC list) lets go and
+    /// comes back when switched on.
+    /// </summary>
+    private void HideIsland()
+    {
+        if (sceneryHidden || !Island) return;
+        scenery.Clear();
+        CollectScenery(Island.transform, 0);
+        // the dead still on their feet wait for a respawn timer (a coroutine), which switching off stops
+        respawning.Clear();
+        foreach (var part in scenery)
+            foreach (var enemy in part.GetComponentsInChildren<EnemyController>(false))
+                if (enemy.Stats != null && enemy.Stats.IsDead) respawning.Add(enemy);
+        foreach (var part in scenery) part.SetActive(false);
+        sceneryHidden = true;
+    }
+
+    /// <summary>
+    /// What stays on while the island hides: the ground (terrains), its grass, the roads and the river. They cost next to
+    /// nothing far away, and switching them on is slow: the roads rebuild their meshes and the grass grows again, which
+    /// froze the game for seconds when the event opened.
+    /// </summary>
+    private static bool Keep(Component c) => c is Terrain || c is GrassField || c is WorldRoad || c is RiverWater;
+
+    private static readonly List<Component> componentsBuffer = new List<Component>();
+
+    /// <summary>The parts to switch off: whole groups, or inside a group that holds something kept, its other parts.</summary>
+    private void CollectScenery(Transform parent, int depth)
+    {
+        foreach (Transform child in parent)
+        {
+            if (!child.gameObject.activeSelf) continue;
+            componentsBuffer.Clear();
+            child.GetComponents(componentsBuffer);
+            if (componentsBuffer.Exists(Keep)) continue;
+            componentsBuffer.Clear();
+            child.GetComponentsInChildren(true, componentsBuffer);
+            if (!componentsBuffer.Exists(Keep)) scenery.Add(child.gameObject);
+            else if (depth < 4) CollectScenery(child, depth + 1);
+        }
+    }
+
+    private void UpdatePresence()
+    {
+        if (Time.time < nextPresenceCheck || !game.IsLoaded || !Island) return;
+        nextPresenceCheck = Time.time + 0.5f;
+        var used = Active;
+        if (!used)
+        {
+            foreach (var player in game.Players.GetAllPlayers())
+            {
+                if (player && (player.Island == Island || Contains(player))) { used = true; break; }
+            }
+        }
+        if (used)
+        {
+            unusedSince = -1f;
+            ShowIsland();
+            return;
+        }
+        if (unusedSince < 0f) unusedSince = Time.time;
+        else if (Time.time - unusedSince >= HideAfter) HideIsland();
     }
 
     /// <summary>The goblins of Ravebridge rise, now and then, in any stream with players: a forced event.</summary>
