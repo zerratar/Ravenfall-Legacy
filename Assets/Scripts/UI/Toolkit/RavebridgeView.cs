@@ -58,6 +58,15 @@ namespace Shinobytes.UI
 
         private bool bound;
         private float nextSecond;
+
+        // the window goes by itself after a minute nobody touched it (the streamer may be away), the line under its
+        // title draining meanwhile as the observer's does; the mouse over it, or making a character, holds it
+        private const float WindowSeconds = 60f;
+        private float windowLeft;
+        private bool windowHovered;
+        private VisualElement windowTimerFill;
+        // the streamer's characters the cards were drawn for: one joining or leaving the stream draws them again
+        private string cardsFor;
         private string notice;
         private float noticeUntil;
 
@@ -218,7 +227,15 @@ namespace Shinobytes.UI
             hint.AddToClassList("rf-rbw__hint");
             foot.Add(footIcon);
             foot.Add(hint);
+            var timer = new VisualElement { pickingMode = PickingMode.Ignore };
+            timer.AddToClassList("rf-rbw__timer");
+            windowTimerFill = new VisualElement { pickingMode = PickingMode.Ignore };
+            windowTimerFill.AddToClassList("rf-rbw__timer-fill");
+            timer.Add(windowTimerFill);
+            window.RegisterCallback<PointerEnterEvent>(_ => windowHovered = true);
+            window.RegisterCallback<PointerLeaveEvent>(_ => windowHovered = false);
             window.Add(header);
+            window.Add(timer);
             window.Add(viewers);
             window.Add(content);
             window.Add(foot);
@@ -314,6 +331,7 @@ namespace Shinobytes.UI
         {
             askAt = 0f;
             creating = false;
+            windowLeft = WindowSeconds;
             window.style.display = DisplayStyle.Flex;
             // the opening announcement gives way: it sat over the window for its last seconds
             var banner = FindAnyObjectByType<NotificationScreenView>();
@@ -353,6 +371,7 @@ namespace Shinobytes.UI
             viewersJoin.text = join;
             viewersJoin.style.display = join.Length > 0 ? DisplayStyle.Flex : DisplayStyle.None;
 
+            cardsFor = StreamersCharacters();
             if (creating) { DrawCreator(); return; }
             hint.text = Localization.UI_RAVEBRIDGE_WHO_HINT;
             content.Add(Text(Localization.UI_RAVEBRIDGE_WHO, "rf-rbw__section"));
@@ -405,6 +424,21 @@ namespace Shinobytes.UI
                 cards.Add(PlayCard(null, true, Localization.UI_RAVEBRIDGE_LOCAL_SECTION, null, Localization.UI_RAVEBRIDGE_LOCAL_SHORT, null, row));
             }
             if (!any) cards.Insert(0, PlayCard(null, false, Localization.UI_RAVEBRIDGE_YOUR_CHARACTER, null, Localization.UI_RAVEBRIDGE_NO_OWN, null, new VisualElement()));
+        }
+
+        /// <summary>Who of the streamer's is in the stream and where, to notice a !join or a !leave.</summary>
+        private static string StreamersCharacters()
+        {
+            var game = GameManager.Instance;
+            var rb = RavebridgeManager.Instance;
+            if (!game || game.Players == null) return string.Empty;
+            var key = new System.Text.StringBuilder();
+            foreach (var player in game.Players.GetAllPlayers())
+            {
+                if (!player || player.IsBot || !RavebridgeManager.IsStreamers(player)) continue;
+                key.Append(player.Id).Append(rb && rb.Contains(player) ? "+" : "-").Append(';');
+            }
+            return key.ToString();
         }
 
         private Texture2D Portrait(PlayerController p)
@@ -527,11 +561,19 @@ namespace Shinobytes.UI
             }
             // Esc closes the window (it no longer leaves hero mode or stops playing: the game menu opens)
             if (Input.GetKeyDown(KeyCode.Escape) && !Keybinds.IsTyping && WindowOpen) { EscapeKey.Claim(); CloseWindow(); }
+            if (WindowOpen)
+            {
+                if (!windowHovered && !creating) windowLeft -= Time.unscaledDeltaTime;
+                windowTimerFill.style.width = Length.Percent(Mathf.Clamp01(windowLeft / WindowSeconds) * 100f);
+                if (windowLeft <= 0f) CloseWindow();
+            }
             if (Time.unscaledTime >= nextSecond)
             {
                 nextSecond = Time.unscaledTime + 1f;
                 // someone is being played already (picked here, by chat or by hero mode): "Who plays?" has been answered
                 if (WindowOpen && !creating && RavebridgePlay.Playing) CloseWindow();
+                // one of the streamer's characters joined or left the stream (!join, !leave): the cards again
+                if (WindowOpen && !creating && StreamersCharacters() != cardsFor) DrawWindow();
                 Redraw();
             }
             Watch();

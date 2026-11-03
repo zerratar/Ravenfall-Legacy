@@ -4697,6 +4697,28 @@
     color: rgb(255, 214, 90);
 }
 
+/* the line under the title that drains until the window goes by itself (as the observer's does) */
+.rf-rbw__timer {
+    height: 3px;
+    margin-top: -4px;
+    margin-bottom: 12px;
+    background-color: rgba(214, 170, 40, 0.18);
+    border-top-left-radius: 2px;
+    border-top-right-radius: 2px;
+    border-bottom-left-radius: 2px;
+    border-bottom-right-radius: 2px;
+}
+
+.rf-rbw__timer-fill {
+    height: 100%;
+    width: 100%;
+    background-color: rgb(236, 190, 52);
+    border-top-left-radius: 2px;
+    border-top-right-radius: 2px;
+    border-bottom-left-radius: 2px;
+    border-bottom-right-radius: 2px;
+}
+
 .rf-rbw__viewers {
     margin-bottom: 14px;
     padding-left: 16px;
