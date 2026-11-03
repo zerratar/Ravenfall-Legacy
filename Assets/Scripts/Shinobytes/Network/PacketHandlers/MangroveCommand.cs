@@ -119,6 +119,14 @@ public class MangroveCommand : ChatBotCommandHandler<string>
             case "kraken":
                 await Meddle(player, global::Regatta.Meddling.Kraken, null, gm, client);
                 return;
+            case "swim":
+            case "tow":
+                Prank(player, global::Regatta.Gag.Swim, target, gm, client);
+                return;
+            case "propeller":
+            case "prop":
+                Prank(player, global::Regatta.Gag.Propeller, target, gm, client);
+                return;
         }
 
         if (sub == "start" && (player.IsBroadcaster || player.IsModerator || player.IsGameAdmin || player.IsGameModerator))
@@ -220,6 +228,26 @@ public class MangroveCommand : ChatBotCommandHandler<string>
         }
         global::Regatta.Paid(player.Id, price, aimed);
         client.SendReply(gm, kind == global::Regatta.Meddling.Keg ? Localization.MSG_REGATTA_KEG_PAID : Localization.MSG_REGATTA_WIND_PAID, name, price);
+    }
+
+    /// <summary>
+    /// !regatta swim / propeller [name]: free, it only looks daft. No chat reply when it works (the feed on the stream
+    /// says it, and replies would eat the bot's message budget), only when it does not.
+    /// </summary>
+    private static void Prank(PlayerController player, global::Regatta.Gag gag, string target, GameMessage gm, GameClient client)
+    {
+        var result = global::Regatta.Prank(player, gag, target, out var name, out var wait);
+        switch (result)
+        {
+            case global::Regatta.GagResult.Done: break;
+            case global::Regatta.GagResult.NoRace: client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_NO_RACE); break;
+            case global::Regatta.GagResult.Racing: client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_RACING); break;
+            case global::Regatta.GagResult.NoTarget: client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_NO_TARGET, name); break;
+            case global::Regatta.GagResult.Finished: client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_FINISHED, name); break;
+            case global::Regatta.GagResult.Busy: client.SendReply(gm, Localization.MSG_REGATTA_GAG_BUSY, name, wait); break;
+            case global::Regatta.GagResult.Wait: client.SendReply(gm, Localization.MSG_REGATTA_GAG_WAIT, wait); break;
+            default: client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_NOBODY); break;
+        }
     }
 
     private static void Refuse(global::Regatta.MeddleResult result, string name, int wait, GameMessage gm, GameClient client)

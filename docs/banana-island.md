@@ -66,6 +66,10 @@ offers. The island was built around monkeys and bananas, and neither existed in 
   race (when the race camera lets go) they go back (the user, 2026-11-03): to the spot on the island they were on,
   or, if they were out sailing their own boat, aboard it where it was, sailing on. Not those who dropped out, who
   were on the island or sailing to it anyway, or who went elsewhere since. The public ferry's passengers cannot race.
+- Gags, only to look at (the user, 2026-11-03): a racer goes overboard and swims ahead towing the boat on a rope, or
+  becomes the propeller at the stern; while a strong tailwind blows they hang on to the stern rail by their hands, the
+  body flapping out behind like a flag. A bottle gives the first two now and then (12%); viewers send them free with
+  !regatta swim / propeller [name], once in 30 s each, a racer once in 20 s. The race itself does not change.
 - The race camera swings up to look down on a shot when a boat's sails would fill the middle of it (one passing the
   lens, or the camera close behind another), and back down once the view is clear.
 - Racers signed up or still racing are left out of raids' and dungeons' auto-join, which would put the boat away and

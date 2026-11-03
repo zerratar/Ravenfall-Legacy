@@ -78,6 +78,13 @@ public sealed class Regatta : MonoBehaviour
     public static float RaceSpeed(float own) => 30f + (Mathf.Max(12f, own) - 12f) * 0.25f;
     public enum Hit { Cannon, Keg, Peel, Reef, Wreck, Kraken }
     public enum Meddling { Keg, Wind, Kraken }
+    /// <summary>
+    /// The silly things a racer does on the way (the user, 2026-11-03), only to look at: overboard towing the boat on a
+    /// rope, spinning at the stern as its propeller, or flapping out behind the wheel, holding on for dear life, while
+    /// a tailwind blows. The boat sails on as before; nothing in the race changes.
+    /// </summary>
+    public enum Gag { None, Swim, Propeller, HangOn }
+    public enum GagResult { Done, NoRace, Racing, NoTarget, Finished, Nobody, Busy, Wait }
     public enum MeddleResult { Done, NoRace, Racing, Raced, NoTarget, Finished, Protected, Nobody, KrakenUsed, NoKegs, NoWinds, WindRest }
 
     private sealed class Racer
@@ -119,6 +126,13 @@ public sealed class Regatta : MonoBehaviour
         public IslandController HomeTo;
         /// <summary>For the results (RegattaResult): hits taken, bottles picked up, the worst place it fell to.</summary>
         public int Hits, Pickups, WorstPlace;
+        /// <summary>A gag given until GagUntil (a bottle or a viewer), the one shown now, and the next one's earliest.</summary>
+        public Gag Gag, Showing;
+        public float GagUntil, GagRestUntil, NextSplash;
+        public LineRenderer Rope;
+        /// <summary>The character's humanoid rig, for the hands on the rail and the rope (null when it has none).</summary>
+        public Animator Rig;
+        public float ArmLength;
         /// <summary>The things on the water it already tried (or failed) to steer round, this lap (JudgedLap).</summary>
         public readonly HashSet<Thing> Judged = new HashSet<Thing>();
         public int JudgedLap;
@@ -211,6 +225,13 @@ public sealed class Regatta : MonoBehaviour
     private readonly Dictionary<Guid, int> aimedBy = new Dictionary<Guid, int>();
     /// <summary>Every viewer's meddle this race, for the results' saboteurs.</summary>
     private readonly List<(string Viewer, Meddling Kind, string Target)> meddles = new List<(string, Meddling, string)>();
+
+    /// <summary>A gag lasts this long; a racer gets the next no sooner than GagRest; a bottle gives one now and then.</summary>
+    private const float GagSeconds = 8f, GagRest = 12f, GagChance = 0.12f;
+    /// <summary>A viewer's gags are free (they change nothing), once in this many seconds.</summary>
+    private const float ViewerGagEvery = 30f;
+    private static readonly Dictionary<Guid, float> gagFreeAt = new Dictionary<Guid, float>();
+    private static Material ropeMaterial;
 
     /// <summary>A race is over and placed: the results panel shows it (MangroveView).</summary>
     public static event Action<RegattaResult> Results;
@@ -423,6 +444,246 @@ public sealed class Regatta : MonoBehaviour
         if (!current) return;
         if (aimed) current.aimedBy[viewer] = (current.aimedBy.TryGetValue(viewer, out var n) ? n : 0) + 1;
         current.pot += coins / 2;
+    }
+
+    // ---- Gags --------------------------------------------------------------------------------------
+
+    /// <summary>
+    /// !regatta swim / propeller: a viewer sends a racer (named, or one picked) overboard to tow, or makes them the
+    /// propeller. Free, once in ViewerGagEvery seconds: it only looks daft, the race goes on as it was.
+    /// </summary>
+    public static GagResult Prank(PlayerController viewer, Gag gag, string targetName, out string target, out int wait)
+    {
+        target = null;
+        wait = 0;
+        if (!current || current.phase != Phase.Racing) return GagResult.NoRace;
+        if (current.racers.Any(r => r.Player == viewer)) return GagResult.Racing;
+        var now = Time.time;
+        if (viewer && gagFreeAt.TryGetValue(viewer.Id, out var free) && now < free)
+        {
+            wait = Mathf.CeilToInt(free - now);
+            return GagResult.Wait;
+        }
+        Racer racer;
+        if (!string.IsNullOrWhiteSpace(targetName))
+        {
+            var name = targetName.Trim().TrimStart('@');
+            racer = current.racers.FirstOrDefault(r => r.Player && string.Equals(r.Player.Name, name, StringComparison.OrdinalIgnoreCase));
+            target = racer != null ? racer.Name : name;
+            if (racer == null || racer.Out || !racer.Boat) return GagResult.NoTarget;
+            if (racer.Time >= 0f) return GagResult.Finished;
+            if (now < racer.GagRestUntil)
+            {
+                wait = Mathf.CeilToInt(racer.GagRestUntil - now);
+                return GagResult.Busy;
+            }
+        }
+        else
+        {
+            var open = current.racers.Where(r => r.Racing && now >= r.GagRestUntil).ToList();
+            if (open.Count == 0) return GagResult.Nobody;
+            racer = open[UnityEngine.Random.Range(0, open.Count)];
+        }
+        target = racer.Name;
+        if (viewer) gagFreeAt[viewer.Id] = now + ViewerGagEvery;
+        current.StartGag(racer, gag, viewer ? viewer.Name : null);
+        return GagResult.Done;
+    }
+
+    private void StartGag(Racer r, Gag gag, string by)
+    {
+        var now = Time.time;
+        r.Gag = gag;
+        r.GagUntil = now + GagSeconds;
+        r.GagRestUntil = now + GagSeconds + GagRest;
+        var line = gag == Gag.Swim
+            ? (string.IsNullOrEmpty(by) ? Localization.UI_REGATTA_GAG_SWIM : Localization.UI_REGATTA_GAG_SWIM_BY)
+            : (string.IsNullOrEmpty(by) ? Localization.UI_REGATTA_GAG_PROPELLER : Localization.UI_REGATTA_GAG_PROPELLER_BY);
+        MangroveFeed.Say(string.Format(CultureInfo.InvariantCulture, line, r.Name, by), "");
+        if (r.Boat) GameSounds.Play(SoundKind.WaterSplash, r.Boat.SeaPosition, 0.8f);
+    }
+
+    /// <summary>The gags each frame, after the boats have moved: what each racer should look like now, and the pose for it.</summary>
+    private void LateUpdate()
+    {
+        if (phase != Phase.Racing) return;
+        var now = Time.time;
+        foreach (var r in racers)
+        {
+            var want = Gag.None;
+            if (r.Racing && r.Player.ferryHandler.OwnBoat == r.Boat)
+            {
+                if (r.Gag != Gag.None && now < r.GagUntil) want = r.Gag;
+                // a strong tailwind (a bottle's or a viewer's): hanging on behind the wheel
+                else if (now < r.BoostUntil && r.Boost > 1.2f && !r.Boat.Spinning) want = Gag.HangOn;
+            }
+            if (r.Gag != Gag.None && now >= r.GagUntil) r.Gag = Gag.None;
+            if (want != r.Showing) ShowGag(r, want);
+            if (r.Showing != Gag.None) PoseGag(r, now);
+        }
+    }
+
+    /// <summary>Into a gag (the swim animation, a rope for the tow) or out of it, back at the helm as the ferry puts them.</summary>
+    private void ShowGag(Racer r, Gag gag)
+    {
+        if (r.Showing == gag) return;
+        var p = r.Player;
+        if (r.Rope && gag != Gag.Swim)
+        {
+            Destroy(r.Rope.gameObject);
+            r.Rope = null;
+        }
+        r.Showing = gag;
+        if (!p) return;
+        var animations = p.Animations;
+        if (gag == Gag.None)
+        {
+            animations.ClearOnsenAnimations();
+            if (r.Boat && p.ferryHandler.OwnBoat == r.Boat)
+            {
+                p.transform.SetParent(r.Boat.Seat);
+                p.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+                if (r.Boat.Tier == BoatItems.Tier.Rowboat) animations.Sit();
+                else animations.SetCaptainState(true);
+            }
+            else
+            {
+                // landed (or taken off the boat) meanwhile: just stood up straight again
+                p.transform.rotation = Quaternion.Euler(0f, p.transform.eulerAngles.y, 0f);
+            }
+            return;
+        }
+        animations.SetCaptainState(false);
+        animations.ClearOnsenAnimations();
+        animations.Swim();
+        r.Rig = p.GetComponentsInChildren<Animator>().FirstOrDefault(a => a.isHuman && a.isActiveAndEnabled);
+        r.ArmLength = 0.6f;
+        if (r.Rig)
+        {
+            var upper = r.Rig.GetBoneTransform(HumanBodyBones.RightUpperArm);
+            var lower = r.Rig.GetBoneTransform(HumanBodyBones.RightLowerArm);
+            var hand = r.Rig.GetBoneTransform(HumanBodyBones.RightHand);
+            if (upper && lower && hand) r.ArmLength = (lower.position - upper.position).magnitude + (hand.position - lower.position).magnitude;
+        }
+        if (gag == Gag.Swim && !r.Rope) r.Rope = MakeRope();
+        if (gag != Gag.HangOn && r.Boat) Effect(RegattaProps.Get()?.Splash, r.Boat.SeaPosition, 3f);
+    }
+
+    private LineRenderer MakeRope()
+    {
+        if (!ropeMaterial) ropeMaterial = new Material(Shader.Find("Sprites/Default"));
+        var go = new GameObject("Tow rope");
+        go.transform.SetParent(transform, false);
+        var line = go.AddComponent<LineRenderer>();
+        line.sharedMaterial = ropeMaterial;
+        line.positionCount = 14;
+        line.widthMultiplier = 0.09f;
+        line.startColor = line.endColor = new Color32(170, 128, 72, 255);
+        line.numCapVertices = 2;
+        line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        return line;
+    }
+
+    /// <summary>
+    /// Where the racer is and how they lie for their gag, each frame (the boat moves under them): out ahead swimming
+    /// with the rope to the bow; at the stern spinning round the boat's long axis like a propeller blade; or behind the
+    /// helm, flat out and flapping, hands on the wheel.
+    /// </summary>
+    private void PoseGag(Racer r, float now)
+    {
+        var p = r.Player;
+        var boat = r.Boat;
+        var t = p.transform;
+        var bt = boat.transform;
+        var forward = Flat(bt.forward).normalized;
+        var right = Vector3.Cross(Vector3.up, forward);
+        var length = boat.Length;
+        if (t.parent != bt && t.parent != boat.Seat) t.SetParent(boat.Seat, true);
+
+        switch (r.Showing)
+        {
+            case Gag.Swim:
+            {
+                // out in front, in to the shoulders and leaning into it (the swim animation treads water upright), a
+                // little bob and wiggle as they kick; the boat comes along behind on the rope from their shoulder
+                var swimmer = boat.SeaPosition + forward * (length * 0.5f + 6f + Mathf.Sin(now * 1.7f) * 0.6f) + right * Mathf.Sin(now * 2.3f) * 0.8f;
+                swimmer.y = SeaChart.Sea - 1.05f + Mathf.Sin(now * 7f) * 0.08f;
+                var heading = Quaternion.LookRotation(forward) * Quaternion.Euler(0f, Mathf.Sin(now * 5f) * 8f, 0f);
+                t.SetPositionAndRotation(swimmer, heading * Quaternion.Euler(38f + Mathf.Sin(now * 6f) * 6f, 0f, 0f));
+                // the rope in their right hand (it moves with the stroke), or at the shoulder without a rig
+                var rightHand = r.Rig ? r.Rig.GetBoneTransform(HumanBodyBones.RightHand) : null;
+                var hand = rightHand ? rightHand.position : t.position + t.up * 1.3f - t.forward * 0.15f;
+                var bow = bt.position + bt.forward * (length * 0.48f) + Vector3.up * Mathf.Max(1f, length * 0.06f);
+                if (r.Rope)
+                {
+                    var n = r.Rope.positionCount;
+                    for (var i = 0; i < n; ++i)
+                    {
+                        var u = i / (float)(n - 1);
+                        var at = Vector3.Lerp(hand, bow, u);
+                        at.y -= Mathf.Sin(u * Mathf.PI) * 0.6f;
+                        at.y = Mathf.Max(at.y, SeaChart.Sea + 0.05f);
+                        r.Rope.SetPosition(i, at);
+                    }
+                }
+                if (now >= r.NextSplash)
+                {
+                    r.NextSplash = now + 0.9f;
+                    Effect(RegattaProps.Get()?.Splash, swimmer, 1.5f, 0.35f);
+                }
+                break;
+            }
+            case Gag.Propeller:
+            {
+                // the hub just aft of the stern, above the water; the body a blade through it, head and feet whirling
+                // round the boat's long axis, faster the faster the boat goes
+                var hub = bt.position - bt.forward * (length * 0.5f + 0.5f) + Vector3.up * 1.3f;
+                var spin = now * (600f + boat.Speed * boat.Pace * 12f);
+                var radial = Quaternion.AngleAxis(spin, forward) * Vector3.up;
+                t.SetPositionAndRotation(hub - radial * 0.9f, Quaternion.LookRotation(-forward, radial));
+                if (now >= r.NextSplash)
+                {
+                    r.NextSplash = now + 0.6f;
+                    Effect(RegattaProps.Get()?.Splash, hub - Vector3.up * 1.2f, 1f, 0.3f);
+                }
+                break;
+            }
+            case Gag.HangOn:
+            {
+                // hands on the stern rail, the rest blown out behind the boat, legs up in the wind, flapping like a flag
+                var grip = bt.position - bt.forward * (length * 0.5f - 0.4f);
+                grip.y = boat.Seat.position.y + 1f;
+                var flap = Quaternion.AngleAxis(Mathf.Sin(now * 17f) * 20f, forward)
+                    * Quaternion.AngleAxis(14f + Mathf.Sin(now * 11f + 1f) * 12f, right);
+                var head = flap * forward;
+                // the shoulders an arm's length from the rail, so the hands reach it: straight arms, body flapping behind
+                var scale = t.lossyScale.y;
+                t.SetPositionAndRotation(grip - head * (ShoulderHeight * scale + r.ArmLength * 0.97f), flap * Quaternion.LookRotation(Vector3.down, forward));
+                if (r.Rig)
+                {
+                    Reach(r.Rig, HumanBodyBones.LeftUpperArm, HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand, grip - right * 0.22f);
+                    Reach(r.Rig, HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand, grip + right * 0.22f);
+                }
+                break;
+            }
+        }
+    }
+
+    /// <summary>How high the shoulders sit on the characters (the modular characters' rig, from the feet).</summary>
+    private const float ShoulderHeight = 1.38f;
+
+    /// <summary>
+    /// After the animation, one arm straight out to a point: the elbow straightened, then the whole arm turned at the
+    /// shoulder to point at it, so the hand is on it when the shoulder is an arm's length away.
+    /// </summary>
+    private static void Reach(Animator rig, HumanBodyBones upperBone, HumanBodyBones lowerBone, HumanBodyBones handBone, Vector3 target)
+    {
+        var upper = rig.GetBoneTransform(upperBone);
+        var lower = rig.GetBoneTransform(lowerBone);
+        var hand = rig.GetBoneTransform(handBone);
+        if (!upper || !lower || !hand) return;
+        lower.rotation = Quaternion.FromToRotation(hand.position - lower.position, lower.position - upper.position) * lower.rotation;
+        upper.rotation = Quaternion.FromToRotation(hand.position - upper.position, target - upper.position) * upper.rotation;
     }
 
     // ---- The race ----------------------------------------------------------------------------------
@@ -768,6 +1029,9 @@ public sealed class Regatta : MonoBehaviour
         var rank = order.IndexOf(r);
         var share = order.Count > 1 ? rank / (float)(order.Count - 1) : 0f;
         r.Pickups++;
+        // now and then a bottle holds something daft as well: the racer goes overboard to tow, or becomes the propeller
+        if (UnityEngine.Random.value < GagChance && Time.time >= r.GagRestUntil)
+            StartGag(r, UnityEngine.Random.value < 0.5f ? Gag.Swim : Gag.Propeller, null);
         var roll = UnityEngine.Random.value;
         if (share < 0.34f) r.Item = roll < 0.4f ? Item.Shield : roll < 0.85f ? Item.Peel : Item.Tailwind;
         else if (share < 0.67f) r.Item = roll < 0.3f ? Item.Tailwind : roll < 0.6f ? Item.Cannon : roll < 0.8f ? Item.Peel : Item.Shield;
@@ -1128,10 +1392,11 @@ public sealed class Regatta : MonoBehaviour
     private static bool Potato => GameManager.Instance && GameManager.Instance.PotatoMode;
 
     /// <summary>A one-off effect (a splash, a blast); none in potato mode.</summary>
-    private static void Effect(GameObject prefab, Vector3 at, float seconds)
+    private static void Effect(GameObject prefab, Vector3 at, float seconds, float scale = 1f)
     {
         if (!prefab || Potato) return;
         var go = Instantiate(prefab, at, Quaternion.identity);
+        if (scale != 1f) go.transform.localScale *= scale;
         Destroy(go, seconds);
     }
 
@@ -1166,6 +1431,7 @@ public sealed class Regatta : MonoBehaviour
 
     private void Finish()
     {
+        foreach (var r in racers) ShowGag(r, Gag.None);
         // those still sailing when the time after the winner ran out are placed as they lie, without a time
         foreach (var r in Ordered().Where(x => x.Racing).ToList())
         {
