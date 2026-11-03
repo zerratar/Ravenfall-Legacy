@@ -301,6 +301,8 @@ public sealed class TreasureHunt : MonoBehaviour
             Title = string.Format(CultureInfo.InvariantCulture, Localization.UI_TREASURE_BAR, current.finder ? current.finder.Name : "?"),
             Line = string.Format(CultureInfo.InvariantCulture, Localization.UI_TREASURE_BAR_LINE, current.digging.Count, current.diggers.Count),
             Progress = current.work / DigWork,
+            Command = "!dig",
+            CommandHint = Localization.UI_TREASURE_BAR_JOIN,
         };
     }
 }

@@ -67,6 +67,7 @@ public sealed class Regatta : MonoBehaviour
 
     public enum Phase { Signup, Countdown, Racing, Done }
     public enum JoinResult { Joined, Already, NotOpen, NoBoat, Busy, Full, Underway, Cooldown }
+    public enum StartResult { Started, NoSignup, TooFew }
     public enum Item { None, Tailwind, Cannon, Shield, Peel }
 
     /// <summary>
@@ -107,6 +108,17 @@ public sealed class Regatta : MonoBehaviour
         public bool ChainShot;
         public float UseAt;
         public GameObject Aura;
+        /// <summary>
+        /// Where they were when the boat came for them, to go back there after the race (SendHome): on an island, or
+        /// out sailing their own boat (AtSea: where it was, its heading and where it was going, null when wandering).
+        /// </summary>
+        public IslandController Home;
+        public Vector3 HomeAt;
+        public bool AtSea;
+        public float HomeHeading;
+        public IslandController HomeTo;
+        /// <summary>For the results (RegattaResult): hits taken, bottles picked up, the worst place it fell to.</summary>
+        public int Hits, Pickups, WorstPlace;
         /// <summary>The things on the water it already tried (or failed) to steer round, this lap (JudgedLap).</summary>
         public readonly HashSet<Thing> Judged = new HashSet<Thing>();
         public int JudgedLap;
@@ -191,15 +203,22 @@ public sealed class Regatta : MonoBehaviour
     private float goAt;
     private float startedAt;
     private int finished;
-    private bool forced;
     private bool krakenWoken;
     private int viewerKegs;
     private int perLap;
     private float winnerAt = -1f;
     private long pot;
     private readonly Dictionary<Guid, int> aimedBy = new Dictionary<Guid, int>();
+    /// <summary>Every viewer's meddle this race, for the results' saboteurs.</summary>
+    private readonly List<(string Viewer, Meddling Kind, string Target)> meddles = new List<(string, Meddling, string)>();
+
+    /// <summary>A race is over and placed: the results panel shows it (MangroveView).</summary>
+    public static event Action<RegattaResult> Results;
     private bool filmed;
     private float releaseCameraAt = -1f;
+    private float sendHomeAt = -1f;
+    // the boats that lined up (the finished are put away before the results count them)
+    private int startedWith;
     private AudioSource horn;
 
     public static bool Running => current && current.phase != Phase.Done;
@@ -238,32 +257,36 @@ public sealed class Regatta : MonoBehaviour
         return JoinResult.Joined;
     }
 
-    /// <summary>!regatta start (the broadcaster or a moderator): opens it if need be and starts it now, alone if only one has joined.</summary>
-    public static bool StartNow()
+    /// <summary>
+    /// !regatta start (the broadcaster or a moderator): ends the sign-up now. A race takes two boats, never one (the
+    /// user, 2026-11-03); with fewer the sign-up runs on, and is called off at its end if nobody else comes.
+    /// </summary>
+    public static StartResult StartNow()
     {
-        if (!current || current.phase != Phase.Signup) return false;
-        current.forced = true;
+        if (!current || current.phase != Phase.Signup) return StartResult.NoSignup;
+        if (current.racers.Count < 2) return StartResult.TooFew;
         current.signupEnds = Time.time;
-        return true;
+        return StartResult.Started;
     }
 
     public static bool SigningUp => current && current.phase == Phase.Signup;
 
     /// <summary>
-    /// The debug menu's "Bots Join Regatta": bots join (up to <see cref="MostRacers"/>), the island's lock and the
-    /// cooldown skipped. A bot without a boat is given one, the tiers in turn, so the race has a mix of hulls.
+    /// The debug menu's "Everyone Joins Regatta": everyone in the game joins (up to <see cref="MostRacers"/>), the
+    /// island's lock and the cooldown skipped. A bot without a boat is given one, the tiers in turn, so the race has a
+    /// mix of hulls; a real player races only with their own (a boat given here would be an item the server never made).
     /// </summary>
-    public static string BotsJoin(IReadOnlyList<PlayerController> bots)
+    public static string EveryoneJoins(IReadOnlyList<PlayerController> players)
     {
         var boats = GameManager.Instance.Items.GetItems().Where(BoatItems.Is)
             .GroupBy(BoatItems.TierOf).OrderBy(g => g.Key).Select(g => g.First()).ToList();
         var results = new Dictionary<JoinResult, int>();
         var n = 0;
-        foreach (var bot in bots)
+        foreach (var bot in players)
         {
             if (current && current.racers.Count >= MostRacers) break;
             if (!bot) continue;
-            if (!bot.ferryHandler.HasOwnBoat && boats.Count > 0)
+            if (bot.IsBot && !bot.ferryHandler.HasOwnBoat && boats.Count > 0)
             {
                 var stack = bot.Inventory.AddToBackpack(boats[n++ % boats.Count], 1);
                 if (stack != null) bot.Inventory.Equip(stack.InstanceId);
@@ -356,6 +379,7 @@ public sealed class Regatta : MonoBehaviour
         }
         target = racer.Name;
         if (onlyCheck) return MeddleResult.Done;
+        current.meddles.Add((viewer.Name, kind, racer.Name));
 
         switch (kind)
         {
@@ -408,7 +432,7 @@ public sealed class Regatta : MonoBehaviour
             case Phase.Signup:
                 racers.RemoveAll(r => !r.Player || Busy(r.Player));
                 if (Time.time < signupEnds) return;
-                if (racers.Count >= 2 || (forced && racers.Count >= 1)) Begin();
+                if (racers.Count >= 2) Begin();
                 else Cancel();
                 return;
 
@@ -433,6 +457,11 @@ public sealed class Regatta : MonoBehaviour
                     // unless a newer race has the camera by now
                     var filming = camera ? camera.GetComponent<RaceCamera>() : null;
                     if (camera && camera.State == GameCameraType.Race && filming && filming.Race == this) camera.StopRace();
+                }
+                if (sendHomeAt > 0f && Time.time >= sendHomeAt)
+                {
+                    sendHomeAt = -1f;
+                    SendHome();
                 }
                 return;
         }
@@ -489,6 +518,12 @@ public sealed class Regatta : MonoBehaviour
             across += beams[i] + StartGap;
             if (!SeaChart.IsWater(at)) at = start - forward * (i * 45f);
             at.y = SeaChart.Sea;
+            var sailing = r.Player.ferryHandler.OwnBoat;
+            r.AtSea = sailing;
+            r.Home = sailing ? null : r.Player.Island;
+            r.HomeAt = sailing ? sailing.SeaPosition : r.Player.transform.position;
+            r.HomeHeading = sailing ? sailing.transform.eulerAngles.y : 0f;
+            r.HomeTo = sailing ? r.Player.ferryHandler.Destination : null;
             r.Boat = r.Player.ferryHandler.RaceOwnBoat(at, startHeading, marks, island, finishHeading);
             if (!r.Boat) { r.Out = true; continue; }
             r.Boat.Held = true;
@@ -500,6 +535,7 @@ public sealed class Regatta : MonoBehaviour
         PlaceHazards();
 
         var racing = racers.Count(r => !r.Out);
+        startedWith = racing;
         MangroveFeed.Say(string.Format(CultureInfo.InvariantCulture, Localization.UI_REGATTA_LINEUP, racing), "");
         GameManager.Instance.RavenBot?.Announce(Localization.MSG_REGATTA_START, racing);
         var camera = GameManager.Instance.Camera;
@@ -549,9 +585,12 @@ public sealed class Regatta : MonoBehaviour
         var now = Time.time;
         var dt = GameTime.deltaTime;
         var order = Ordered().Where(r => r.Racing).ToList();
+        // the worst place each fell to, once the start's jostle is over: the results' biggest comeback
+        var settled = now - startedAt > 8f;
         for (var rank = 0; rank < order.Count; ++rank)
         {
             var r = order[rank];
+            if (settled) r.WorstPlace = Mathf.Max(r.WorstPlace, rank + 1);
             if (now >= r.NextGust)
             {
                 r.NextGust = now + UnityEngine.Random.Range(5f, 11f);
@@ -560,7 +599,8 @@ public sealed class Regatta : MonoBehaviour
             var own = r.Boat.Speed;
             r.Base = own > 0.01f ? RaceSpeed(own) / own : 1f;
             r.Boat.Pace = r.Base * r.Gust * (now < r.BoostUntil ? r.Boost : 1f) * (now < r.SlowUntil ? r.Slow : 1f);
-            if (r.Mark < marks.Count - 1 && Flat(marks[r.Mark] - r.Boat.SeaPosition).magnitude < MarkReached) r.Mark++;
+            // close by, or past it on its course (a boat that swept by wide is not sent back round it)
+            if (r.Mark < marks.Count - 1 && (Flat(marks[r.Mark] - r.Boat.SeaPosition).magnitude < MarkReached || r.Boat.MarksPassed > r.Mark)) r.Mark++;
             if (r.Item != Item.None && now >= r.UseAt) Use(r, rank, order);
             if (r.Aura && now >= Mathf.Max(r.ShieldUntil, r.BoostUntil)) ClearAura(r);
             Steer(r, now, dt);
@@ -725,6 +765,7 @@ public sealed class Regatta : MonoBehaviour
         var order = Ordered().Where(x => x.Racing).ToList();
         var rank = order.IndexOf(r);
         var share = order.Count > 1 ? rank / (float)(order.Count - 1) : 0f;
+        r.Pickups++;
         var roll = UnityEngine.Random.value;
         if (share < 0.34f) r.Item = roll < 0.4f ? Item.Shield : roll < 0.85f ? Item.Peel : Item.Tailwind;
         else if (share < 0.67f) r.Item = roll < 0.3f ? Item.Tailwind : roll < 0.6f ? Item.Cannon : roll < 0.8f ? Item.Peel : Item.Shield;
@@ -741,6 +782,9 @@ public sealed class Regatta : MonoBehaviour
     {
         var item = r.Item;
         r.Item = Item.None;
+        ActionBoat = r.Boat;
+        ActionTarget = null;
+        ActionAt = Time.unscaledTime;
         switch (item)
         {
             case Item.Tailwind:
@@ -822,6 +866,7 @@ public sealed class Regatta : MonoBehaviour
         Effect(props ? props.CannonShot : null, at, 3f);
         GameSounds.Play(SoundKind.RockImpact, at, 1f);
         var ball = new Ball { From = from, To = to, Start = at, At = Time.time };
+        ActionTarget = to.Boat;
         if (props && props.Cannonball) ball.Go = Instantiate(props.Cannonball, at, Quaternion.identity);
         balls.Add(ball);
     }
@@ -983,6 +1028,11 @@ public sealed class Regatta : MonoBehaviour
 
     // ---- Hits --------------------------------------------------------------------------------------
 
+    /// <summary>The last racer to use what it picked up, when, and a cannonball's target (the race camera cuts to it).</summary>
+    public OwnBoat ActionBoat { get; private set; }
+    public OwnBoat ActionTarget { get; private set; }
+    public float ActionAt { get; private set; } = -1f;
+
     public OwnBoat IncidentBoat { get; private set; }
     public float IncidentAt { get; private set; } = -1f;
     /// <summary>The last incident was the Kraken: the camera shows it whatever else is going on.</summary>
@@ -1005,6 +1055,7 @@ public sealed class Regatta : MonoBehaviour
             return;
         }
         r.SafeUntil = now + HitImmunity;
+        r.Hits++;
         var at = r.Boat.SeaPosition;
         switch (hit)
         {
@@ -1123,6 +1174,7 @@ public sealed class Regatta : MonoBehaviour
         current = null;
         nextAllowed = Time.time + Cooldown;
         releaseCameraAt = filmed ? Time.time + CameraAfter : -1f;
+        sendHomeAt = Time.time + CameraAfter;
         foreach (var r in racers)
         {
             ClearAura(r);
@@ -1137,6 +1189,8 @@ public sealed class Regatta : MonoBehaviour
         var placed = racers.Where(r => (r.Time >= 0f || r.Unfinished) && r.Player).OrderBy(r => r.Place).ToList();
         if (placed.Count > 0)
         {
+            try { Results?.Invoke(Result(placed)); }
+            catch (Exception exc) { Shinobytes.Debug.LogError("The regatta's results could not be shown: " + exc); }
             // the Sailing exp is the game's to give; the coins the server's
             for (var i = 0; i < placed.Count; ++i)
             {
@@ -1144,7 +1198,7 @@ public sealed class Regatta : MonoBehaviour
                 var share = i < ExpShare.Length ? ExpShare[i] : ExpShareOthers;
                 if (sailing != null) sailing.AddExp(GameMath.ExperienceForLevel(sailing.Level + 1) * share);
             }
-            // alone (a forced start) it is a time trial: the best time counts, not a win
+            // alone (the others dropped out before the start) the best time counts, not a win
             RegattaRecords.Add(placed.Select(r => (r.Player.Id, r.Player.Name, r.Unfinished ? -1f : r.Time)).ToList(), racers.Count(r => r.Boat) >= 2);
             RegattaRecords.UpdateBoard(island);
             var winner = placed[0];
@@ -1156,6 +1210,90 @@ public sealed class Regatta : MonoBehaviour
         }
         else MangroveFeed.Say(Localization.UI_REGATTA_NOBODY, "");
         Destroy(gameObject, BuoysStay);
+    }
+
+    /// <summary>The race in numbers for the results panel: the order, the standouts, who meddled, the pot.</summary>
+    private RegattaResult Result(List<Racer> placed)
+    {
+        var result = new RegattaResult { Laps = Laps, Boats = startedWith, Pot = pot };
+        foreach (var r in placed.Concat(racers.Where(x => x.Out && x.Time < 0f && x.Player)))
+        {
+            var boat = r.Player.Inventory.GetEquipmentBySlot(ItemSlot.Boat);
+            result.Places.Add(new RegattaResult.Place
+            {
+                Number = r.Out ? 0 : r.Place,
+                Name = r.Name,
+                Boat = boat != null ? boat.Item.Name : string.Empty,
+                Time = r.Time,
+                Unfinished = r.Unfinished,
+                Out = r.Out,
+            });
+        }
+        if (placed[0].Time >= 0f) result.WinnerTime = placed[0].Time;
+
+        var hits = racers.Where(r => r.Player).OrderByDescending(r => r.Hits).FirstOrDefault();
+        if (hits != null && hits.Hits > 0) result.MostHits = (hits.Name, hits.Hits);
+        var picks = racers.Where(r => r.Player).OrderByDescending(r => r.Pickups).FirstOrDefault();
+        if (picks != null && picks.Pickups > 0) result.MostPickups = (picks.Name, picks.Pickups);
+        var back = placed.Where(r => r.WorstPlace > 0).OrderByDescending(r => r.WorstPlace - r.Place).FirstOrDefault();
+        if (back != null && back.WorstPlace - back.Place >= 2) result.Comeback = (back.Name, back.WorstPlace, back.Place);
+
+        foreach (var m in meddles)
+        {
+            if (m.Kind == Meddling.Kraken) { result.KrakenBy = m.Viewer; continue; }
+            var s = result.Saboteurs.FirstOrDefault(x => x.Name == m.Viewer);
+            if (s == null)
+            {
+                s = new RegattaResult.Saboteur { Name = m.Viewer, OnlyTarget = m.Target };
+                result.Saboteurs.Add(s);
+            }
+            if (m.Kind == Meddling.Keg) s.Kegs++;
+            else s.Winds++;
+            if (s.OnlyTarget != m.Target) s.OnlyTarget = null;
+        }
+        result.Saboteurs.Sort((a, b) => (b.Kegs + b.Winds).CompareTo(a.Kegs + a.Winds));
+        return result;
+    }
+
+    /// <summary>A race time as the results show it: 1:24.6, or 48.2 under a minute.</summary>
+    public static string Clock(float seconds)
+    {
+        if (seconds < 60f) return Seconds(seconds);
+        var minutes = Mathf.FloorToInt(seconds / 60f);
+        return minutes.ToString(CultureInfo.InvariantCulture) + ":" + (seconds - minutes * 60f).ToString("00.0", CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
+    /// The race is over: the racers go back where they were when it began, as the boat came for them wherever they
+    /// were (nobody has to sail to the Mangrove island to race, and nobody is left on its jetty after; the user,
+    /// 2026-11-03). Those who were out sailing their own boat are back aboard it where it was, sailing on; those still
+    /// racing when it ended have the race's boat put away. Not those who dropped out (they went off on their own), who
+    /// were on the island anyway or sailing to it, or who sailed off or were taken elsewhere since. The public ferry's
+    /// passengers cannot race (Busy).
+    /// </summary>
+    private void SendHome()
+    {
+        foreach (var r in racers)
+        {
+            var p = r.Player;
+            if (r.Out || !p) continue;
+            if (r.AtSea ? r.HomeTo == island : !r.Home || r.Home == island) continue;
+            var aboard = r.Boat && p.ferryHandler.OwnBoat == r.Boat;
+            if (!aboard && p.Island != island) continue;
+            if (p.Controlled || p.InRavebridge || p.Stats.IsDead || p.raidHandler.InRaid || p.dungeonHandler.InDungeon
+                || p.duelHandler.InDuel || p.arenaHandler.InArena || p.ferryHandler.IsGuest) continue;
+            if (r.AtSea)
+            {
+                p.ferryHandler.BackToSea(r.HomeAt, r.HomeHeading, r.HomeTo);
+                continue;
+            }
+            p.teleportHandler.Teleport(r.HomeAt);
+            // the teleport keeps the boat's place for a trip back to sea; this one is over
+            OwnBoatLog.Remove(p.Id);
+            if (p.IsBot) p.Bot.LastTeleport = Time.time;
+            p.ClearTarget();
+            if (!string.IsNullOrEmpty(p.CurrentTaskName)) p.SetTask(p.CurrentTaskName, p.taskArgument, true);
+        }
     }
 
     private static async void Pay(Guid[] ids)
@@ -1250,6 +1388,48 @@ public sealed class Regatta : MonoBehaviour
             return true;
         }
         return false;
+    }
+
+    /// <summary>A racing boat's place now, 1 for the leader; past the last when it is not racing.</summary>
+    public int PlaceOf(OwnBoat boat)
+    {
+        var place = 1;
+        foreach (var r in Ordered())
+        {
+            if (!r.Racing) continue;
+            if (r.Boat == boat) return place;
+            place++;
+        }
+        return int.MaxValue;
+    }
+
+    /// <summary>
+    /// What lies on the water ahead of a boat within <paramref name="range"/> metres (bottles, kegs, peels, reefs,
+    /// wreckage) and its next buoy: the race camera's drone takes them all in.
+    /// </summary>
+    public void Upcoming(OwnBoat boat, float range, List<Vector3> into)
+    {
+        into.Clear();
+        if (!boat) return;
+        var at = boat.SeaPosition;
+        var forward = Quaternion.Euler(0f, boat.Heading, 0f) * Vector3.forward;
+        var now = Time.time;
+        foreach (var t in things)
+        {
+            if (!t.Live(now) || t.Until < now) continue;
+            var to = Flat(t.At - at);
+            if (to.sqrMagnitude > range * range || Vector3.Dot(to, forward) < 0f) continue;
+            into.Add(t.At);
+        }
+        var r = racers.FirstOrDefault(x => x.Boat == boat);
+        if (r != null && marks != null && r.Mark < marks.Count && Flat(marks[r.Mark] - at).magnitude < range) into.Add(marks[r.Mark]);
+    }
+
+    /// <summary>Every racer's boat still on the water (the race camera keeps them out of its lens).</summary>
+    public void Boats(List<OwnBoat> into)
+    {
+        into.Clear();
+        foreach (var r in racers) if (r.Boat) into.Add(r.Boat);
     }
 
     public OwnBoat SomeRacer()
@@ -1504,9 +1684,13 @@ public sealed class Regatta : MonoBehaviour
             return new Shinobytes.UI.MangroveView.Status
             {
                 Glyph = "",
-                Title = string.Format(CultureInfo.InvariantCulture, Localization.UI_REGATTA_BAR_SIGNUP, left),
+                Title = Localization.UI_REGATTA_BAR_SIGNUP,
                 Line = string.Format(CultureInfo.InvariantCulture, Localization.UI_REGATTA_BAR_SIGNUP_LINE, current.racers.Count, MostRacers),
-                Progress = 1f - left / SignupSeconds,
+                Progress = current.racers.Count / (float)MostRacers,
+                Timer = left.ToString(CultureInfo.InvariantCulture) + "s",
+                TimerFill = left / SignupSeconds,
+                Command = "!regatta",
+                CommandHint = Localization.UI_REGATTA_BAR_JOIN,
             };
         }
         if (current.phase == Phase.Countdown)
@@ -1553,6 +1737,39 @@ public sealed class Regatta : MonoBehaviour
 /// and then, at a random racer; before the free one is back, or aimed at a racer by name, it costs coins, and the
 /// first time the viewer is told the price and sends the command again to pay.
 /// </summary>
+/// <summary>A finished regatta, for the results panel (MangroveView): the order, the standouts, who meddled, the pot.</summary>
+public sealed class RegattaResult
+{
+    public sealed class Place
+    {
+        /// <summary>1 for the winner; 0 for one who dropped out.</summary>
+        public int Number;
+        public string Name;
+        public string Boat;
+        /// <summary>Seconds, or below 0 when it did not finish.</summary>
+        public float Time = -1f;
+        public bool Unfinished, Out;
+    }
+
+    public sealed class Saboteur
+    {
+        public string Name;
+        public int Kegs, Winds;
+        /// <summary>The one racer all of it went at, or null when it was spread about.</summary>
+        public string OnlyTarget;
+    }
+
+    public int Laps, Boats;
+    public float WinnerTime = -1f;
+    public long Pot;
+    public readonly List<Place> Places = new List<Place>();
+    /// <summary>Unset (no name) when nobody was hit, picked anything up, or came back two places or more.</summary>
+    public (string Name, int Count) MostHits, MostPickups;
+    public (string Name, int From, int To) Comeback;
+    public string KrakenBy;
+    public readonly List<Saboteur> Saboteurs = new List<Saboteur>();
+}
+
 public static class RegattaMeddling
 {
     public const float FreeEvery = 60f;

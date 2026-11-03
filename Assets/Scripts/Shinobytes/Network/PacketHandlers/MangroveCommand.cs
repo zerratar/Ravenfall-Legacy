@@ -124,8 +124,10 @@ public class MangroveCommand : ChatBotCommandHandler<string>
         if (sub == "start" && (player.IsBroadcaster || player.IsModerator || player.IsGameAdmin || player.IsGameModerator))
         {
             // the streamer starts the sign-up now without their own character joining it; with none open, there is
-            // nothing to start, and it opens one as !regatta does
-            if (global::Regatta.StartNow()) return;
+            // nothing to start, and it opens one as !regatta does; one boat is not a race
+            var start = global::Regatta.StartNow();
+            if (start == global::Regatta.StartResult.Started) return;
+            if (start == global::Regatta.StartResult.TooFew) { client.SendReply(gm, Localization.MSG_REGATTA_TOO_FEW); return; }
         }
         var result = global::Regatta.Join(player);
         switch (result)

@@ -6338,13 +6338,531 @@
     flex-shrink: 1;
 }
 
+/* The Mangrove panel (MangroveView) under the village bar while something runs on the island: the title big, a
+   progress line under it, a ring timer on the right; the chat command that joins in a strip of its own below, the
+   command a gold chip in the sentence. Solid, like the other HUD panels. */
 .rf-mbar {
-    min-width: 0;
     align-self: center;
+    width: 560px;
+    margin-top: var(--rf-space-2);
+    background-color: rgb(20, 18, 15);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: rgb(214, 170, 40);
+    border-right-color: rgb(214, 170, 40);
+    border-top-color: rgb(214, 170, 40);
+    border-bottom-color: rgb(214, 170, 40);
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    overflow: hidden;
+}
+
+.rf-mbar__top {
+    flex-direction: row;
+    align-items: center;
+    padding-left: 18px;
+    padding-right: 16px;
+    padding-top: 14px;
+    padding-bottom: 14px;
 }
 
 .rf-mbar .rf-mbar__icon {
-    background-color: rgb(214, 170, 40);
+    width: 44px;
+    margin-right: 14px;
+    font-size: 34px;
+    -unity-text-align: middle-center;
+    color: rgb(236, 190, 52);
+}
+
+.rf-mbar__body {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.rf-mbar .rf-mbar__title {
+    font-size: 30px;
+    color: rgb(245, 236, 214);
+    white-space: normal;
+}
+
+.rf-mbar .rf-mbar__line {
+    font-size: 18px;
+    color: rgb(245, 236, 214);
+    margin-top: 4px;
+}
+
+.rf-mbar__track {
+    height: 8px;
+    margin-top: 10px;
+    margin-right: 12px;
+    background-color: rgba(255, 255, 255, 0.12);
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+    overflow: hidden;
+}
+
+.rf-mbar__fill {
+    height: 100%;
+    width: 0;
+    background-color: rgb(236, 190, 52);
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+
+.rf-mbar__ring {
+    flex-shrink: 0;
+    width: 76px;
+    height: 76px;
+    align-items: center;
+    justify-content: center;
+}
+
+.rf-mbar .rf-mbar__timer {
+    font-size: 22px;
+    -unity-text-align: middle-center;
+    color: rgb(236, 190, 52);
+}
+
+.rf-mbar__cta {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    padding-top: 9px;
+    padding-bottom: 10px;
+    padding-left: 16px;
+    padding-right: 16px;
+    background-color: rgb(30, 27, 22);
+    border-top-width: 2px;
+    border-top-color: rgb(214, 170, 40);
+}
+
+.rf-mbar .rf-mbar__cta-text {
+    font-size: 20px;
+    color: rgb(245, 236, 214);
+}
+
+.rf-mbar .rf-mbar__cmd {
+    font-size: 21px;
+    -unity-text-align: middle-center;
+    color: rgb(20, 18, 15);
+    background-color: rgb(236, 190, 52);
+    margin-left: 8px;
+    margin-right: 8px;
+    padding-left: 12px;
+    padding-right: 12px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+/* The regatta's results (RegattaResultsPanel): in the middle of the screen when a race is over, a podium with the
+   boats' pictures, the rest of the order, the standouts, the saboteurs and the pot; confetti over it. Fades in and out. */
+.rf-mres-wrap {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition-property: opacity, translate;
+    transition-duration: 0.35s, 0.35s;
+    translate: 0 16px;
+}
+
+.rf-mres-wrap--shown {
+    opacity: 1;
+    translate: 0 0;
+}
+
+.rf-mres-confetti {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    overflow: hidden;
+}
+
+.rf-mres-confetti__piece {
+    position: absolute;
+    border-top-left-radius: 2px;
+    border-top-right-radius: 2px;
+    border-bottom-left-radius: 2px;
+    border-bottom-right-radius: 2px;
+}
+
+.rf-mres {
+    width: 780px;
+    padding-left: 22px;
+    padding-right: 22px;
+    padding-top: 18px;
+    padding-bottom: 20px;
+    background-color: rgb(20, 18, 15);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: rgb(214, 170, 40);
+    border-right-color: rgb(214, 170, 40);
+    border-top-color: rgb(214, 170, 40);
+    border-bottom-color: rgb(214, 170, 40);
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+    border-bottom-left-radius: 14px;
+    border-bottom-right-radius: 14px;
+}
+
+.rf-mres__head {
+    flex-direction: row;
+    align-items: center;
+    padding-bottom: 14px;
+    margin-bottom: 16px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgba(214, 170, 40, 0.35);
+}
+
+.rf-mres .rf-mres__trophy {
+    width: 64px;
+    height: 64px;
+    margin-right: 16px;
+    font-size: 30px;
+    color: rgb(236, 190, 52);
+    border-left-width: 3px;
+    border-right-width: 3px;
+    border-top-width: 3px;
+    border-bottom-width: 3px;
+    border-left-color: rgb(214, 170, 40);
+    border-right-color: rgb(214, 170, 40);
+    border-top-color: rgb(214, 170, 40);
+    border-bottom-color: rgb(214, 170, 40);
+    border-top-left-radius: 32px;
+    border-top-right-radius: 32px;
+    border-bottom-left-radius: 32px;
+    border-bottom-right-radius: 32px;
+}
+
+.rf-mres .rf-mres__title {
+    font-size: 38px;
+    color: rgb(245, 236, 214);
+}
+
+.rf-mres .rf-mres__subtitle {
+    font-size: 18px;
+    color: rgb(225, 214, 190);
+}
+
+.rf-mres__podium {
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-end;
+    margin-bottom: 14px;
+}
+
+.rf-mres__step {
+    width: 200px;
+    align-items: center;
+    margin-left: 7px;
+    margin-right: 7px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.rf-mres__step--gold {
+    width: 220px;
+    min-height: 228px;
+    background-color: rgb(74, 58, 18);
+    border-left-color: rgb(236, 190, 52);
+    border-right-color: rgb(236, 190, 52);
+    border-top-color: rgb(236, 190, 52);
+    border-bottom-color: rgb(236, 190, 52);
+}
+
+.rf-mres__step--silver {
+    min-height: 196px;
+    background-color: rgb(52, 54, 58);
+    border-left-color: rgb(176, 180, 188);
+    border-right-color: rgb(176, 180, 188);
+    border-top-color: rgb(176, 180, 188);
+    border-bottom-color: rgb(176, 180, 188);
+}
+
+.rf-mres__step--bronze {
+    min-height: 184px;
+    background-color: rgb(66, 42, 24);
+    border-left-color: rgb(196, 124, 62);
+    border-right-color: rgb(196, 124, 62);
+    border-top-color: rgb(196, 124, 62);
+    border-bottom-color: rgb(196, 124, 62);
+}
+
+.rf-mres .rf-mres__crown {
+    position: absolute;
+    top: -22px;
+    font-size: 26px;
+    color: rgb(255, 210, 70);
+}
+
+.rf-mres .rf-mres__step-place {
+    font-size: 26px;
+    color: rgb(245, 236, 214);
+}
+
+.rf-mres__step--gold .rf-mres__step-place,
+.rf-mres__step--gold .rf-mres__step-name {
+    color: rgb(255, 214, 90);
+}
+
+.rf-mres__step--bronze .rf-mres__step-place,
+.rf-mres__step--bronze .rf-mres__step-name {
+    color: rgb(232, 168, 108);
+}
+
+.rf-mres__boat {
+    width: 96px;
+    height: 76px;
+    margin-top: 2px;
+    margin-bottom: 2px;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.rf-mres__step--gold .rf-mres__boat {
+    width: 112px;
+    height: 92px;
+}
+
+.rf-mres .rf-mres__step-name {
+    font-size: 21px;
+    color: rgb(245, 236, 214);
+}
+
+.rf-mres .rf-mres__step-detail {
+    font-size: 16px;
+    color: rgb(225, 214, 190);
+}
+
+.rf-mres__list {
+    margin-bottom: 14px;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgba(214, 170, 40, 0.3);
+    border-right-color: rgba(214, 170, 40, 0.3);
+    border-top-color: rgba(214, 170, 40, 0.3);
+    border-bottom-color: rgba(214, 170, 40, 0.3);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.rf-mres__row {
+    flex-direction: row;
+    align-items: center;
+    height: 30px;
+    padding-left: 18px;
+    padding-right: 18px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+.rf-mres .rf-mres__place {
+    width: 70px;
+    font-size: 17px;
+    color: rgb(236, 190, 52);
+}
+
+.rf-mres .rf-mres__name {
+    flex-grow: 1;
+    font-size: 17px;
+    color: rgb(245, 236, 214);
+}
+
+.rf-mres .rf-mres__time {
+    font-size: 17px;
+    color: rgb(245, 236, 214);
+}
+
+.rf-mres .rf-mres__time--none {
+    font-size: 16px;
+    color: rgb(160, 150, 130);
+}
+
+.rf-mres__cards {
+    flex-direction: row;
+    margin-bottom: 14px;
+}
+
+.rf-mres__card {
+    flex-grow: 1;
+    flex-basis: 0;
+    flex-direction: row;
+    align-items: center;
+    margin-left: 4px;
+    margin-right: 4px;
+    padding-left: 10px;
+    padding-right: 8px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgba(214, 170, 40, 0.7);
+    border-right-color: rgba(214, 170, 40, 0.7);
+    border-top-color: rgba(214, 170, 40, 0.7);
+    border-bottom-color: rgba(214, 170, 40, 0.7);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.rf-mres .rf-mres__card-icon {
+    width: 36px;
+    margin-right: 8px;
+    font-size: 24px;
+}
+
+.rf-mres .rf-mres__card-icon--hit { color: rgb(236, 80, 64); }
+.rf-mres .rf-mres__card-icon--pick { color: rgb(120, 200, 230); }
+.rf-mres .rf-mres__card-icon--rise { color: rgb(110, 210, 100); }
+.rf-mres .rf-mres__card-icon--kraken { color: rgb(190, 120, 230); }
+
+.rf-mres .rf-mres__card-title {
+    font-size: 14px;
+    color: rgb(225, 214, 190);
+    white-space: normal;
+}
+
+.rf-mres .rf-mres__card-name,
+.rf-mres .rf-mres__card-value {
+    font-size: 17px;
+    color: rgb(245, 236, 214);
+}
+
+.rf-mres__foot {
+    flex-direction: row;
+}
+
+.rf-mres__saboteurs {
+    flex-grow: 1;
+    flex-shrink: 1;
+    margin-left: 4px;
+    margin-right: 4px;
+    padding-left: 14px;
+    padding-right: 14px;
+    padding-top: 8px;
+    padding-bottom: 10px;
+    background-color: rgb(30, 27, 22);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.rf-mres__sab-title {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.rf-mres .rf-mres__sab-icon {
+    font-size: 18px;
+    margin-right: 8px;
+    color: rgb(236, 80, 64);
+}
+
+.rf-mres .rf-mres__sab-heading {
+    font-size: 20px;
+    color: rgb(245, 236, 214);
+}
+
+.rf-mres__sab-list {
+    flex-direction: row;
+}
+
+.rf-mres__sab {
+    flex-grow: 1;
+    flex-basis: 0;
+    padding-right: 10px;
+}
+
+.rf-mres__sab--more {
+    padding-left: 12px;
+    border-left-width: 1px;
+    border-left-color: rgba(214, 170, 40, 0.35);
+}
+
+.rf-mres .rf-mres__sab-name {
+    font-size: 16px;
+    color: rgb(245, 236, 214);
+}
+
+.rf-mres .rf-mres__sab-what {
+    font-size: 14px;
+    color: rgb(225, 214, 190);
+    white-space: normal;
+}
+
+.rf-mres__pot {
+    flex-direction: row;
+    align-items: center;
+    margin-left: 4px;
+    margin-right: 4px;
+    padding-left: 14px;
+    padding-right: 18px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: rgb(214, 170, 40);
+    border-right-color: rgb(214, 170, 40);
+    border-top-color: rgb(214, 170, 40);
+    border-bottom-color: rgb(214, 170, 40);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.rf-mres .rf-mres__pot-icon {
+    font-size: 30px;
+    margin-right: 12px;
+    color: rgb(236, 190, 52);
+}
+
+.rf-mres .rf-mres__pot-title {
+    font-size: 15px;
+    color: rgb(245, 236, 214);
+}
+
+.rf-mres .rf-mres__pot-coins {
+    font-size: 22px;
+    color: rgb(255, 214, 90);
 }
 
 /* The regatta's standings (MangroveView): every racer in order on the right, what it carries, its lap or time. */

@@ -586,6 +586,24 @@ public class FerryHandler : MonoBehaviour
         return ownBoat;
     }
 
+    /// <summary>
+    /// After the regatta, for one who was out sailing when it began: back aboard their own boat where it was, sailing
+    /// on to where it was going, or wandering as it was (<paramref name="to"/> null). The race's boat is put away.
+    /// </summary>
+    public bool BackToSea(Vector3 at, float heading, IslandController to)
+    {
+        EnsureReferences();
+        var item = player.Inventory.GetEquipmentBySlot(ItemSlot.Boat);
+        if (item == null || guestRiding) return false;
+        if (ownBoat) PutAwayOwnBoat(true);
+        if (player.onsenHandler.InOnsen) player.onsenHandler.Exit();
+        destination = to;
+        at.y = SeaChart.Sea;
+        Board(OwnBoat.Launch(player, BoatItems.TierOf(item.Item), at, heading));
+        SetOwnBoatCourse();
+        return true;
+    }
+
     /// <summary>Back aboard out at sea: where the boat was before a restart, or by the ferry if it is not known.</summary>
     private bool LaunchOwnBoatAtSea()
     {

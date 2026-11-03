@@ -58,8 +58,16 @@ offers. The island was built around monkeys and bananas, and neither existed in 
 - A boat race round the island for own boats. `!regatta` joins (an own boat equipped), the broadcaster starts it
   with `!regatta start` (without their own character joining; with no sign-up open it opens one as `!regatta`
   does); it also starts by itself when enough boats have joined.
-- A forced start with one racer is a time trial: the best time goes on the board but not a win, and the server pays
+- A race takes at least two boats, also when the broadcaster starts it (the user, 2026-11-03): `!regatta start`
+  with fewer leaves the sign-up open, and a sign-up that ends with fewer is called off. If racers drop out before
+  the gun and one is left, it is a time trial: the best time goes on the board but not a win, and the server pays
   the lone finisher the back of a race's prize, with no sail (a race takes two finishers).
+- Nobody has to sail to the island to race: the boat comes for them wherever they are, and a few seconds after the
+  race (when the race camera lets go) they go back (the user, 2026-11-03): to the spot on the island they were on,
+  or, if they were out sailing their own boat, aboard it where it was, sailing on. Not those who dropped out, who
+  were on the island or sailing to it anyway, or who went elsewhere since. The public ferry's passengers cannot race.
+- The race camera swings up to look down on a shot when a boat's sails would fill the middle of it (one passing the
+  lens, or the camera close behind another), and back down once the view is clear.
 - Racers signed up or still racing are left out of raids' and dungeons' auto-join, which would put the boat away and
   knock them out.
 - The racers' boats line up off the island, sail round buoys and finish at the jetty. Speed is the boat's own

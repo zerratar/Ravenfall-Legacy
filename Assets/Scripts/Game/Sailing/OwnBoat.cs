@@ -174,19 +174,37 @@ public sealed class OwnBoat : MonoBehaviour
     {
         if (marks == null || marks.Count == 0) return false;
         var way = new List<Vector3> { flat };
+        var kept = new List<int>();
         var from = flat;
         foreach (var mark in marks)
         {
             var leg = SeaChart.Route(from, mark);
             if (leg == null) return false;
             for (var i = 1; i < leg.Count; ++i) way.Add(leg[i]);
+            kept.Add(way.Count - 1);
             from = mark;
         }
         Destination = finishIsland;
         arrivalHeading = finishHeading;
         Follow(way, Course.Sailing);
+        markPoints = kept;
         return true;
     }
+
+    /// <summary>The marks of its course (SailCourse) it has gone past: the regatta counts a buoy rounded by them too.</summary>
+    public int MarksPassed
+    {
+        get
+        {
+            if (markPoints == null || route == null) return 0;
+            var passed = 0;
+            foreach (var i in markPoints) if (i < next) passed++;
+            return passed;
+        }
+    }
+
+    // where SailCourse's marks are in its route
+    private List<int> markPoints;
 
     /// <summary>How far along its course it is: the point it makes for next, of how many (the regatta's places).</summary>
     public int CourseNext => route != null ? next : 0;
@@ -213,6 +231,7 @@ public sealed class OwnBoat : MonoBehaviour
     private void Follow(List<Vector3> way, Course course)
     {
         CourseVersion++;
+        markPoints = null;
         route = way;
         next = 1;
         State = course;
@@ -348,8 +367,11 @@ public sealed class OwnBoat : MonoBehaviour
     private void Steer(float dt)
     {
         if (dt <= 0f) return;
-        // past points close enough to count as reached; the last one must be reached properly
-        while (next < route.Count - 1 && Flat(route[next] - flat).magnitude < Math.Max(8f, length))
+        // past points close enough to count as reached, or gone by: a point it swept past wide (at regatta speeds the
+        // turning circle is wider than the reach) is left behind once it is over the line across the way through it,
+        // or the boat turned right round to touch it and went on (the circles seen in the 2026-11-03 race). The last
+        // one must be reached properly
+        while (next < route.Count - 1 && (Flat(route[next] - flat).magnitude < Math.Max(8f, length) || GonePast(next)))
             next++;
 
         var target = route[next];
@@ -386,6 +408,14 @@ public sealed class OwnBoat : MonoBehaviour
         // close in, steer straight at the mark so the last metres are never missed
         var step = last && distance < speed * dt * 4f ? toTarget.normalized : forward;
         flat += step * Mathf.Min(speed * dt, distance);
+    }
+
+    /// <summary>Over the line through the point square to the way it came in on: past it, wherever it went by.</summary>
+    private bool GonePast(int i)
+    {
+        var from = i > 0 ? route[i - 1] : flat;
+        var leg = Flat(route[i] - from);
+        return leg.sqrMagnitude > 1f && Vector3.Dot(Flat(flat - route[i]), leg) > 0f;
     }
 
     /// <summary>
