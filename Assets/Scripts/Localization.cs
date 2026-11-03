@@ -1830,6 +1830,10 @@ public static class Localization
     public static string UI_KEY_NEXT_PLAYER = "Watch the next player";
     public static string UI_KEY_FREE_CAMERA = "Free camera (hold)";
     public static string UI_KEY_NEXT_ISLAND = "Watch the next island";
+    public static string UI_KEY_RACE_CAMERA = "Back to the race camera (regatta)";
+    public static string UI_REGATTA_CAMERA_BACK = "Return to race camera ({0})";
+    public static string UI_REGATTA_CAMERA_BACK_IN = "Back to the race camera in {0} s";
+    public static string UI_REGATTA_CAMERA_HINT = "Right mouse or WASD: your own angle";
     public static string UI_KEY_CONTROL_PLAYER = "Take control of the watched player";
     public static string UI_KEY_SEARCH = "Find a player";
     public static string UI_KEY_EXP = "Player list: switch what each row shows";

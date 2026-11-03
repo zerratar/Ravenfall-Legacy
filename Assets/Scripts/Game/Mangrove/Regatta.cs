@@ -222,6 +222,8 @@ public sealed class Regatta : MonoBehaviour
     private AudioSource horn;
 
     public static bool Running => current && current.phase != Phase.Done;
+    /// <summary>The race signing up, lining up or sailing, or null.</summary>
+    public static Regatta Current => current;
     public static float CooldownLeft => Mathf.Max(0f, nextAllowed - Time.time);
 
     /// <summary>Signed up, lining up or still racing (not out, not finished): raids' and dungeons' auto-join leave them be.</summary>
@@ -1173,7 +1175,8 @@ public sealed class Regatta : MonoBehaviour
         phase = Phase.Done;
         current = null;
         nextAllowed = Time.time + Cooldown;
-        releaseCameraAt = filmed ? Time.time + CameraAfter : -1f;
+        // filmed from the start or asked for since (the race camera key): the release checks it is this race's
+        releaseCameraAt = Time.time + CameraAfter;
         sendHomeAt = Time.time + CameraAfter;
         foreach (var r in racers)
         {

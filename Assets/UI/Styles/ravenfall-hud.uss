@@ -6466,6 +6466,46 @@
     border-bottom-right-radius: 6px;
 }
 
+/* Under the regatta's standings: a hint while the race camera directs, the button back to it while the streamer has
+   it by hand or watches something else, and its countdown. */
+.rf-mstand__camera-note {
+    margin-top: 8px;
+    margin-left: 12px;
+    margin-right: 12px;
+    font-size: 13px;
+    color: rgb(190, 180, 160);
+    white-space: normal;
+    -unity-text-align: middle-center;
+}
+
+.rf-mstand__camera-note--count {
+    font-size: 15px;
+    color: rgb(236, 190, 52);
+}
+
+.rf-mstand .rf-mstand__camera {
+    margin-top: 8px;
+    margin-left: 12px;
+    margin-right: 12px;
+    margin-bottom: 4px;
+    height: 34px;
+    font-size: 15px;
+    color: rgb(20, 18, 15);
+    background-color: rgb(236, 190, 52);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.rf-mstand .rf-mstand__camera:hover {
+    background-color: rgb(255, 214, 90);
+}
+
 /* The regatta's results (RegattaResultsPanel): in the middle of the screen when a race is over, a podium with the
    boats' pictures, the rest of the order, the standouts, the saboteurs and the pot; confetti over it. Fades in and out. */
 .rf-mres-wrap {

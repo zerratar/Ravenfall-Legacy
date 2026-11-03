@@ -54,6 +54,8 @@ namespace Shinobytes.UI
         private VisualElement standingsRows;
         private readonly List<(Label Place, Label Name, Label Glyphs, Label Detail, VisualElement Row)> standingRows = new List<(Label, Label, Label, Label, VisualElement)>();
         private RegattaResultsPanel results;
+        private Button cameraBack;
+        private Label cameraNote;
         private bool bound;
         private bool feedDirty = true;
         private float nextBar;
@@ -106,6 +108,14 @@ namespace Shinobytes.UI
             standings.Add(head);
             standingsRows = new VisualElement { pickingMode = PickingMode.Ignore };
             standings.Add(standingsRows);
+            // under the standings: the race camera back, from by hand or from whatever is watched, and when it comes back
+            cameraNote = new Label { pickingMode = PickingMode.Ignore };
+            cameraNote.AddToClassList("rf-mstand__camera-note");
+            standings.Add(cameraNote);
+            cameraBack = new Button(() => GameManager.Instance?.Camera?.ReturnToRace());
+            cameraBack.AddToClassList("rf-mstand__camera");
+            cameraBack.AddToClassList("rf-font-b");
+            standings.Add(cameraBack);
             standings.style.display = DisplayStyle.None;
             standingRows.Clear();
             layer.Add(standings);
@@ -243,6 +253,7 @@ namespace Shinobytes.UI
             var display = show ? DisplayStyle.Flex : DisplayStyle.None;
             if (standings.style.display != display) standings.style.display = display;
             if (!show) return;
+            UpdateCameraButton();
 
             while (standingRows.Count < list.Count)
             {
@@ -279,6 +290,28 @@ namespace Shinobytes.UI
                 row.EnableInClassList("rf-mstand__row--lead", s.Place == 1);
                 row.EnableInClassList("rf-mstand__row--done", s.Done);
             }
+        }
+
+        /// <summary>
+        /// The race camera's button and line: a hint while the director has it, the button while the streamer has it by
+        /// hand (with the countdown once they let go) or watches something else.
+        /// </summary>
+        private void UpdateCameraButton()
+        {
+            var camera = GameManager.Instance ? GameManager.Instance.Camera : null;
+            var race = camera ? camera.RaceCamera : null;
+            var away = !race || race.Manual;
+            var button = away ? DisplayStyle.Flex : DisplayStyle.None;
+            if (cameraBack.style.display != button) cameraBack.style.display = button;
+            if (away) cameraBack.text = string.Format(System.Globalization.CultureInfo.InvariantCulture, Localization.UI_REGATTA_CAMERA_BACK, Keybinds.Label(Keybinds.Action.RaceCamera));
+            var back = race ? race.ReturnIn : -1f;
+            var note = back >= 0f
+                ? string.Format(System.Globalization.CultureInfo.InvariantCulture, Localization.UI_REGATTA_CAMERA_BACK_IN, Mathf.CeilToInt(back))
+                : race && !race.Manual ? Localization.UI_REGATTA_CAMERA_HINT : string.Empty;
+            cameraNote.text = note;
+            var noteDisplay = string.IsNullOrEmpty(note) ? DisplayStyle.None : DisplayStyle.Flex;
+            if (cameraNote.style.display != noteDisplay) cameraNote.style.display = noteDisplay;
+            cameraNote.EnableInClassList("rf-mstand__camera-note--count", back >= 0f);
         }
 
         private void UpdateBar()

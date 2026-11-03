@@ -144,6 +144,21 @@ public class GameCamera : MonoBehaviour
             }
 
 
+            // the regatta: the race camera key gives the race camera back (from by hand, or from a player or an island
+            // watched meanwhile); the free camera key takes the race camera by hand without leaving the race
+            var building = VillageBuildMode.Instance && VillageBuildMode.Instance.IsActive;
+            if (Regatta.Running && !building && Keybinds.Pressed(Keybinds.Action.RaceCamera))
+            {
+                if (state == GameCameraType.Race) raceCamera.ReturnToRace();
+                else FollowRace(Regatta.Current, asked: true);
+                return;
+            }
+            if (state == GameCameraType.Race && Keybinds.Held(Keybinds.Action.FreeCamera))
+            {
+                raceCamera.TakeByHand();
+                return;
+            }
+
             if (Keybinds.Held(Keybinds.Action.FreeCamera))
             {
                 EnableFreeCamera();
@@ -563,9 +578,11 @@ public class GameCamera : MonoBehaviour
     /// The regatta's own camera (RaceCamera), when the setting allows and nothing bigger has the camera: a raid, a
     /// dungeon, the arena, a war, a character played by hand or the free camera. False when it did not take over.
     /// </summary>
-    public bool FollowRace(Regatta race)
+    /// <param name="asked">The streamer asked for it (the race camera key or button): the setting and the free camera do not stop it.</param>
+    public bool FollowRace(Regatta race, bool asked = false)
     {
-        if (!race || !SettingsApplier.RaceCamera || forcedFreeCamera || controlled || IsFreeCameraActive) return false;
+        if (!race || forcedFreeCamera || controlled) return false;
+        if (!asked && (!SettingsApplier.RaceCamera || IsFreeCameraActive)) return false;
         if (state == GameCameraType.Raid || state == GameCameraType.Dungeon || state == GameCameraType.Arena) return false;
         if (gameManager.StreamRaid.IsWar || gameManager.Raid.Started || gameManager.Dungeons.Started) return false;
         if (!raceCamera) raceCamera = GetComponent<RaceCamera>();
@@ -583,10 +600,27 @@ public class GameCamera : MonoBehaviour
         return true;
     }
 
+    /// <summary>The race camera while it shows a race (by hand or not), else null: the race's UI asks it.</summary>
+    public RaceCamera RaceCamera => state == GameCameraType.Race ? raceCamera : null;
+
+    /// <summary>The "Return to race camera" button: back to the director, or to the race from whatever is watched.</summary>
+    public void ReturnToRace()
+    {
+        if (state == GameCameraType.Race) raceCamera.ReturnToRace();
+        else if (Regatta.Running) FollowRace(Regatta.Current, asked: true);
+    }
+
     /// <summary>The race is over: back to the islands or the players, as before it.</summary>
     public void StopRace()
     {
         var showing = state == GameCameraType.Race;
+        // taken by hand when it ended: the streamer keeps the camera where they put it, as the free camera
+        if (showing && raceCamera && raceCamera.Manual)
+        {
+            LeaveRace();
+            EnableFreeCamera();
+            return;
+        }
         LeaveRace();
         if (!showing || forcedFreeCamera) return;
         // nobody to watch: the islands then

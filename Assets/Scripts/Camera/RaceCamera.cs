@@ -11,6 +11,10 @@ using UnityEngine;
 /// come in. GameCamera.FollowRace turns it on; the setting (Race camera) or any camera key turns it off.
 /// When a boat's sails would fill the middle of a shot (one passing the lens, the camera close behind another), it
 /// swings up and looks down more steeply, and back down once the view is clear.
+/// The streamer can take it by hand without leaving the race (the user, 2026-11-03): moving or turning it as the free
+/// camera does (right mouse, WASD or the arrows, Q and E, the wheel, or holding the free camera key) and the race's UI
+/// stays; the race camera key, the button under the standings, or a while without touching it (a countdown shows)
+/// gives it back to the director, which flies back to its shot.
 /// </summary>
 [RequireComponent(typeof(Camera))]
 public class RaceCamera : MonoBehaviour
@@ -40,6 +44,10 @@ public class RaceCamera : MonoBehaviour
     /// <summary>The drone looks this far ahead of its boat along the course, from this steep, between these heights.</summary>
     private const float DroneAhead = 110f, DroneAngle = 58f, DroneNearest = 45f, DroneFarthest = 150f;
 
+    /// <summary>By hand: after this long untouched a countdown of ReturnCountdown seconds starts, then the director has it back.</summary>
+    private const float IdleBeforeCountdown = 3f, ReturnCountdown = 10f;
+    private const float HandSpeed = 50f, HandLook = 0.25f, HandWheel = 12f;
+
     private Regatta race;
     private Shot shot;
     private float shotStarted, shotEnds;
@@ -55,6 +63,8 @@ public class RaceCamera : MonoBehaviour
     private float lift, liftUntil, blocked;
     private float droneDistance;
     private float swingUntil;
+    private float idle;
+    private Vector3 lastMouse;
     private Camera lens;
     private readonly List<OwnBoat> boats = new List<OwnBoat>();
     private readonly List<Vector3> ahead = new List<Vector3>();
@@ -64,9 +74,34 @@ public class RaceCamera : MonoBehaviour
 
     public Regatta Race => race;
 
+    /// <summary>Taken by hand: the streamer moves and turns it, the director waits.</summary>
+    public bool Manual { get; private set; }
+
+    /// <summary>Seconds until it goes back to the director by itself, or below 0 while the streamer is still at it.</summary>
+    public float ReturnIn => Manual && idle > IdleBeforeCountdown ? Mathf.Max(0f, IdleBeforeCountdown + ReturnCountdown - idle) : -1f;
+
+    /// <summary>The free camera key: by hand, from where it is now.</summary>
+    public void TakeByHand()
+    {
+        Manual = true;
+        idle = 0f;
+    }
+
+    /// <summary>Back to the director, flying from where the streamer left it to the shot it is on.</summary>
+    public void ReturnToRace()
+    {
+        if (!Manual) return;
+        Manual = false;
+        position = transform.position;
+        look = transform.position + transform.forward * 60f;
+        cut = false;
+        swingUntil = Time.unscaledTime + SwingSeconds;
+    }
+
     public void Follow(Regatta regatta)
     {
         race = regatta;
+        Manual = false;
         buoysShown.Clear();
         lastIncident = regatta ? regatta.IncidentAt : 0f;
         lastAction = regatta ? regatta.ActionAt : 0f;
@@ -87,11 +122,15 @@ public class RaceCamera : MonoBehaviour
         droneDistance = 0f;
     }
 
+    private void OnDisable() => Manual = false;
+
     private void LateUpdate()
     {
         if (!race) return;
+        // the director goes on choosing its shots while the streamer has it, so it comes back to the race as it is
         Direct(Time.unscaledTime);
         var dt = Time.unscaledDeltaTime;
+        if (ByHand(dt)) return;
         if (!Frame(dt, out var wantPosition, out var wantLook, out var focus)) return;
 
         // judged on the shot as framed, not as lifted: from up there nothing is in the way, and it would drop again
@@ -259,6 +298,52 @@ public class RaceCamera : MonoBehaviour
         if (roll < 0.5f) Cut(Shot.Chase, leader, Random.Range(MinShot, MaxShot));
         else if (roll < 0.8f) Cut(Shot.Drone, Random.value < 0.75f ? leader : race.SomeRacer() ?? leader, Random.Range(MinShot, MaxShot));
         else Cut(Shot.Chase, race.SomeRacer() ?? leader, Random.Range(MinShot, MaxShot));
+    }
+
+    // ---- By hand -----------------------------------------------------------------------------------
+
+    /// <summary>
+    /// The streamer's own angle: any of the free camera's moves takes it, and it moves as the free camera does. True
+    /// while it is by hand (the director's framing is skipped).
+    /// </summary>
+    private bool ByHand(float dt)
+    {
+        var mouse = Input.mousePosition;
+        var turned = mouse - lastMouse;
+        lastMouse = mouse;
+        if (Keybinds.IsTyping) return Manual;
+
+        var overUi = UIUtility.IsPointerOverAnyUI();
+        var turning = Input.GetMouseButton(1) && (Manual || !overUi) && turned.sqrMagnitude > 0.25f;
+        var sideways = Input.GetAxisRaw("Horizontal");
+        var forward = Input.GetAxisRaw("Vertical");
+        var rise = (Input.GetKey(KeyCode.E) ? 1f : 0f) - (Input.GetKey(KeyCode.Q) ? 1f : 0f);
+        var wheel = overUi ? 0f : Input.mouseScrollDelta.y;
+        var touched = turning || sideways != 0f || forward != 0f || rise != 0f || wheel != 0f;
+
+        if (touched && !Manual) TakeByHand();
+        if (!Manual) return false;
+        idle = touched ? 0f : idle + dt;
+        if (idle >= IdleBeforeCountdown + ReturnCountdown)
+        {
+            ReturnToRace();
+            return false;
+        }
+
+        var t = transform;
+        if (turning)
+        {
+            var look = HandLook * CameraSettings.LookSensitivity;
+            var pitch = CameraSettings.InvertLook ? turned.y : -turned.y;
+            var euler = t.eulerAngles;
+            t.eulerAngles = new Vector3(euler.x + pitch * look, euler.y + turned.x * look, 0f);
+        }
+        var shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+        var speed = CameraSettings.FreeCameraSpeed.GetValueOrDefault(HandSpeed) * (shift ? 5f : 1f);
+        var move = (t.forward * forward + t.right * sideways + t.up * rise) * (speed * dt) + t.forward * (wheel * HandWheel);
+        t.position = AboveGround(t.position + move);
+        TiltShift.FocusPoint = t.position + t.forward * 60f;
+        return true;
     }
 
     // ---- Where the camera goes ---------------------------------------------------------------------
