@@ -9,6 +9,7 @@ namespace Shinobytes.UI
     /// The round minimap in hero mode's top right corner (docs/mockups/hero-mode-hud.jpg): an orthographic camera straight
     /// above the hero draws the ground into a small texture a few times a second, north up, and the hero (an arrow), the
     /// viewers on the island (green) and the enemies (red) are dots laid over it, so they move smoothly between pictures.
+    /// A click on it walks the hero there (the user, 2026-11-03), a pin marking the place until they arrive.
     /// </summary>
     public sealed class HeroMinimap
     {
@@ -23,6 +24,8 @@ namespace Shinobytes.UI
         private readonly VisualElement map;
         private readonly VisualElement dots;
         private readonly VisualElement arrow;
+        private readonly VisualElement pin;
+        private Vector3 centre;
         private readonly List<VisualElement> pool = new List<VisualElement>();
         private readonly List<EnemyController> enemies = new List<EnemyController>();
         private Camera cam;
@@ -33,11 +36,16 @@ namespace Shinobytes.UI
         {
             Root = new VisualElement { pickingMode = PickingMode.Ignore };
             Root.AddToClassList("rf-hero-minimap");
-            map = new VisualElement { pickingMode = PickingMode.Ignore };
+            map = new VisualElement();
             map.AddToClassList("rf-hero-minimap__map");
+            map.RegisterCallback<PointerDownEvent>(Clicked);
+            pin = new VisualElement { pickingMode = PickingMode.Ignore };
+            pin.AddToClassList("rf-hero-bigmap__pin");
+            pin.style.display = DisplayStyle.None;
             dots = new VisualElement { pickingMode = PickingMode.Ignore };
             dots.AddToClassList("rf-hero-minimap__dots");
             map.Add(dots);
+            map.Add(pin);
             arrow = new Label("") { pickingMode = PickingMode.Ignore }; // location-arrow
             arrow.AddToClassList("rf-icon");
             arrow.AddToClassList("rf-hero-minimap__hero");
@@ -54,7 +62,7 @@ namespace Shinobytes.UI
         {
             if (!hero) return;
             EnsureCamera();
-            var centre = hero.transform.position;
+            centre = hero.transform.position;
 
             if (Time.unscaledTime >= nextRender)
             {
@@ -99,8 +107,31 @@ namespace Shinobytes.UI
             }
             for (var i = used; i < pool.Count; i++) pool[i].style.display = DisplayStyle.None;
 
+            // where a click sent the hero, held on the rim while it is further than the map shows
+            var target = HeroController.Active ? HeroController.Active.MapTarget : null;
+            pin.style.display = target.HasValue ? DisplayStyle.Flex : DisplayStyle.None;
+            if (target.HasValue)
+            {
+                var v = new Vector2(target.Value.x - centre.x, target.Value.z - centre.z) / Radius;
+                if (v.sqrMagnitude > 0.92f * 0.92f) v = v.normalized * 0.92f;
+                pin.style.left = Length.Percent(50f + v.x * 50f);
+                pin.style.top = Length.Percent(50f - v.y * 50f);
+            }
+
             // the hero in the middle, turned the way they face (the glyph points up and to the right)
             arrow.style.rotate = new Rotate(hero.transform.eulerAngles.y - 45f);
+        }
+
+        /// <summary>A click inside the round map walks the hero to that place.</summary>
+        private void Clicked(PointerDownEvent e)
+        {
+            if (e.button != 0) return;
+            var size = map.contentRect.size;
+            if (size.x <= 0f || size.y <= 0f) return;
+            var v = new Vector2(e.localPosition.x / size.x - 0.5f, 0.5f - e.localPosition.y / size.y) * 2f;
+            if (v.sqrMagnitude > 1f) return;
+            HeroController.Active?.WalkToMap(new Vector3(centre.x + v.x * Radius, centre.y, centre.z + v.y * Radius));
+            e.StopPropagation();
         }
 
         /// <summary>A dot at a place relative to the hero, held on the rim when it is past the edge.</summary>

@@ -57,6 +57,18 @@ public class IslandController : MonoBehaviour
     /// </summary>
     public int NavMeshArea;
 
+    /// <summary>The middle of the island's sphere and its radius, in the world (the hero's big map shows that much).</summary>
+    public Vector3 Centre
+    {
+        get
+        {
+            if (!sphereCollider) sphereCollider = GetComponent<SphereCollider>();
+            return sphereCollider ? transform.TransformPoint(sphereCollider.center) : transform.position;
+        }
+    }
+
+    public float Radius => radius > 0f ? radius : (sphereCollider ? sphereCollider.radius : 0f);
+
     public bool InsideIsland(Vector3 position)
     {
         if (!sphereCollider) sphereCollider = GetComponent<SphereCollider>();

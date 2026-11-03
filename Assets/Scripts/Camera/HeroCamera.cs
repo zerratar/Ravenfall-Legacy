@@ -148,7 +148,13 @@ public class HeroCamera : MonoBehaviour
     private readonly Dictionary<Transform, float> groupSizes = new Dictionary<Transform, float>();
     private readonly List<Renderer> renderersBuffer = new List<Renderer>();
     private readonly List<Renderer> restore = new List<Renderer>();
+    private readonly Dictionary<Transform, Renderer[]> buildings = new Dictionary<Transform, Renderer[]>();
     private float nextSight;
+
+    /// <summary>A building is the hit piece's parents while they stay smaller than this (a castle, not the island).</summary>
+    private const float BuildingSize = 150f;
+    /// <summary>Indoors: what is above the head out to this far up is a roof; its building's parts above the head go.</summary>
+    private const float RoofAbove = 30f, AboveHead = 2.2f;
 
     /// <summary>
     /// Three thin rays from the camera to the hero's head, chest and feet: what they hit (and the rest of its small
@@ -169,6 +175,7 @@ public class HeroCamera : MonoBehaviour
             var count = Physics.SphereCastNonAlloc(ray, RayRadius, sightHits, distance, ~0, QueryTriggerInteraction.Ignore);
             for (var i = 0; i < count; i++) Hide(sightHits[i].collider, ray, distance, target.position.y);
         }
+        HideRoofOver();
 
         restore.Clear();
         foreach (var h in hidden) if (Time.unscaledTime > h.Value.Until) restore.Add(h.Key);
@@ -206,6 +213,38 @@ public class HeroCamera : MonoBehaviour
                 continue;
             }
             hidden[r] = (r.shadowCastingMode, Time.unscaledTime + KeepHidden);
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
+        }
+    }
+
+    /// <summary>
+    /// Indoors (something solid straight above the hero's head): everything of that building above the head goes,
+    /// the whole roof, the towers' tops, the floors above, not only the piece in the line of sight (the user, 2026-11-03:
+    /// half a castle roof stayed over the hall). The walls stay, they start below the head.
+    /// </summary>
+    private void HideRoofOver()
+    {
+        var feet = target.position;
+        if (!Physics.Raycast(feet + Vector3.up * 1.8f, Vector3.up, out var above, RoofAbove, ~0, QueryTriggerInteraction.Ignore)) return;
+        if (!above.collider || above.collider is TerrainCollider) return;
+        var building = above.collider.attachedRigidbody ? above.collider.attachedRigidbody.transform : above.collider.transform;
+        for (var up = 0; up < 8; up++)
+        {
+            var parent = building.parent;
+            if (!parent || parent.GetComponent<IslandController>() || parent.GetComponent<Chunk>() || SizeOf(parent) > BuildingSize) break;
+            building = parent;
+        }
+        if (!buildings.TryGetValue(building, out var parts))
+        {
+            parts = building.GetComponentsInChildren<Renderer>(false);
+            buildings[building] = parts;
+        }
+        var until = Time.unscaledTime + KeepHidden;
+        foreach (var r in parts)
+        {
+            if (!r || r is ParticleSystemRenderer || r.bounds.min.y < feet.y + AboveHead) continue;
+            if (hidden.TryGetValue(r, out var was)) { hidden[r] = (was.Mode, until); continue; }
+            hidden[r] = (r.shadowCastingMode, until);
             r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
         }
     }

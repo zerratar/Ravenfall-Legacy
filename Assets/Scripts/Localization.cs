@@ -811,11 +811,12 @@ public static class Localization
     public static string UI_HERO_ENTER_BIG = "Enter hero mode";
     public static string UI_RAVEBRIDGE_LEAVE = "Leave Ravebridge";
     public static string UI_RAVEBRIDGE_STOP_PLAYING = "Stop playing";
-    public static string UI_RAVEBRIDGE_END_EVENT = "End Ravebridge";
+    public static string UI_RAVEBRIDGE_END_EVENT = "End Ravebridge for everyone";
     public static string UI_RAVEBRIDGE_KEYS_TIP = "Show the keys";
     /// <summary>Key chips under the Ravebridge panel: key=what it does, split by |; the keys stay as they are.</summary>
     public static string UI_RAVEBRIDGE_KEYS = "WASD=walk|Click=walk, gather, fight|Right mouse=turn camera|E=talk|V=camera";
-    public static string UI_HERO_KEYS = "WASD=walk|Click=attack|1-4=skills|Space=dodge|Q=potion|Tab=style|V=camera|C=character|I=inventory|E=talk";
+    public static string UI_HERO_KEYS = "WASD=walk|Click=attack|1-4=skills|Space=dodge|Q=potion|Tab=style|V=camera|C=character|I=inventory|M=map|E=talk";
+    public static string UI_HERO_MAP_HINT = "Click to walk there. Scroll to zoom, drag to look around. M or Esc closes.";
     public static string UI_RAVEBRIDGE_START = "Open Ravebridge";
     public static string UI_RAVEBRIDGE_START_HINT = "The Ravebridge event: viewers join with !ravebridge, and you can play by hand.";
     public static string UI_RAVEBRIDGE_BUSY = "Another event is running.";

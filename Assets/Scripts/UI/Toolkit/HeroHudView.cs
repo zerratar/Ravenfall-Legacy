@@ -33,6 +33,7 @@ namespace Shinobytes.UI
         private VisualElement party;
         private Label partyTitle;
         private HeroMinimap minimap;
+        private HeroBigMap bigMap;
         private readonly List<PartyRow> partyRows = new List<PartyRow>();
         private float nextParty;
         private HeroInventoryWindow inventory;
@@ -82,6 +83,7 @@ namespace Shinobytes.UI
             HeroController.Changed += Changed;
             HeroController.Refused += Flash;
             HeroController.InventoryPressed += ToggleInventory;
+            HeroController.MapPressed += ToggleMap;
         }
 
         private void OnDisable()
@@ -89,8 +91,10 @@ namespace Shinobytes.UI
             HeroController.Changed -= Changed;
             HeroController.Refused -= Flash;
             HeroController.InventoryPressed -= ToggleInventory;
+            HeroController.MapPressed -= ToggleMap;
             SetHeroMode(false);
             minimap?.Dispose();
+            bigMap?.Dispose();
             bound = false;
         }
 
@@ -196,6 +200,10 @@ namespace Shinobytes.UI
             minimap?.Dispose();
             minimap = new HeroMinimap();
             root.Add(minimap.Root);
+            // the big map (M), over the middle of the screen
+            bigMap?.Dispose();
+            bigMap = new HeroBigMap();
+            root.Add(bigMap.Root);
 
             bounties = new VisualElement { pickingMode = PickingMode.Ignore };
             bounties.AddToClassList("rf-hero-bounties");
@@ -485,6 +493,12 @@ namespace Shinobytes.UI
             }
         }
 
+        private void ToggleMap()
+        {
+            var hero = HeroController.Active;
+            if (bigMap != null && hero) bigMap.Toggle(hero.Player);
+        }
+
         private void ToggleInventory()
         {
             var hero = HeroController.Active;
@@ -503,8 +517,10 @@ namespace Shinobytes.UI
             if (bound && root.panel == null) bound = false;
             if (!bound) TryBind();
             var hero = HeroController.Active;
+            if (bound && (!hero || !hero.Player) && bigMap != null && bigMap.IsOpen) bigMap.Close();
             if (!bound || !hero || !hero.Player) return;
             inventory?.Update(hero.Player);
+            bigMap?.Update(hero.Player);
             loot?.Update();
             minimap?.Update(hero.Player);
             if (Time.unscaledTime >= nextBuffs)

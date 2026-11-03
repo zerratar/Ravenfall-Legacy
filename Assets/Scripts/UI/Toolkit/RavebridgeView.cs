@@ -641,7 +641,8 @@ namespace Shinobytes.UI
             extras.style.display = left >= 0f || (playing && playing.IsLocal) ? DisplayStyle.Flex : DisplayStyle.None;
 
             // the keys while playing: for a while after it starts, or while the keyboard button is on
-            var showKeys = playing && (keysPinned || keysUntil > 0f);
+            // not under a conversation: the dialogue box sits where the keys do
+            var showKeys = playing && (keysPinned || keysUntil > 0f) && !RavebridgeDialogueView.IsOpen;
             help.style.display = playing ? DisplayStyle.Flex : DisplayStyle.None;
             help.EnableInClassList("rf-rbp__icon-button--on", showKeys);
             DrawKeys(showKeys ? Localization.UI_HERO_KEYS : null);

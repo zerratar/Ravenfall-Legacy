@@ -44,6 +44,13 @@ namespace Shinobytes.UI
         /// <summary>A talk is on: it takes the keys (hero mode's skills wait).</summary>
         public static bool IsOpen { get; private set; }
 
+        /// <summary>
+        /// While a talk is open and a moment after it closes, a click is the box's (an answer, Goodbye), not the world's:
+        /// the click that closed it reached the hero as a walk once the box was gone (the user, 2026-11-03).
+        /// </summary>
+        public static bool HoldsClicks => IsOpen || Time.unscaledTime - closedAt < 0.3f;
+        private static float closedAt = -10f;
+
         private void OnEnable()
         {
             bound = false;
@@ -271,6 +278,7 @@ namespace Shinobytes.UI
         {
             if (box != null) box.style.display = DisplayStyle.None;
             IsOpen = false;
+            closedAt = Time.unscaledTime;
             if (npc) npc.Hushed = false;
             talker = null;
             npc = null;

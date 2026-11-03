@@ -383,6 +383,8 @@ public partial class HeroController : MonoBehaviour
 
         Mana = Mathf.Min(MaxMana, Mana + ManaPerSecond * (1f + RavebridgeGear.Stat(Player, "mana") / 100f) * WaveRun.BoonMana * Time.deltaTime);
         Regenerate();
+        // the map's pin goes once the hero is there, or has been turned to something else
+        if (MapTarget.HasValue && (Flat(MapTarget.Value - Player.Position).sqrMagnitude < 2.5f * 2.5f || steering || Attacking)) MapTarget = null;
         if (heroCamera && heroCamera.Aim(out var point)) aim = point;
         if (Time.time < spinUntil) Spin();
         else if (spinUntil > 0f) StopSpin();
@@ -400,6 +402,7 @@ public partial class HeroController : MonoBehaviour
             if (Input.GetKeyDown(KeyCode.V) && heroCamera) heroCamera.Toggle();
             if (Input.GetKeyDown(KeyCode.C)) ToggleDetails();
             if (Input.GetKeyDown(KeyCode.I)) InventoryPressed?.Invoke();
+            if (Input.GetKeyDown(KeyCode.M)) MapPressed?.Invoke();
             if (Input.GetKeyDown(KeyCode.Tab)) NextStyle(Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift) ? -1 : 1);
             if (Input.GetKeyDown(KeyCode.Space)) dodgeQueuedUntil = Time.time + DodgeBuffer;
             // a roll pressed early in a swing waits for the moment the swing may be cut
@@ -469,6 +472,41 @@ public partial class HeroController : MonoBehaviour
 
     /// <summary>I: the inventory window (HeroHudView opens it).</summary>
     public static event Action InventoryPressed;
+    /// <summary>M: the big map (HeroHudView).</summary>
+    public static event Action MapPressed;
+
+    /// <summary>Where a click on the minimap or the big map sends the hero, shown there as a pin until they arrive.</summary>
+    public Vector3? MapTarget { get; private set; }
+
+    /// <summary>
+    /// A click on the minimap or the big map: the hero walks to the ground nearest that place it can stand on (the
+    /// map only knows where across the island, so the height is found first). False when there is none near.
+    /// </summary>
+    public bool WalkToMap(Vector3 point)
+    {
+        point.y = GroundHeight(point);
+        var areas = NavMeshHelper.AreaMaskAt(point);
+        if (!NavMesh.SamplePosition(point, out var hit, 25f, areas) && !NavMesh.SamplePosition(point, out hit, 25f, NavMesh.AllAreas)) return false;
+        if (steering) StopSteering();
+        WalkTo(hit.position);
+        MapTarget = hit.position;
+        return true;
+    }
+
+    /// <summary>The ground's height at a place: what a ray straight down hits first, or the terrain's.</summary>
+    private float GroundHeight(Vector3 point)
+    {
+        if (Physics.Raycast(new Vector3(point.x, point.y + 500f, point.z), Vector3.down, out var ray, 1000f, ~0, QueryTriggerInteraction.Ignore)) return ray.point.y;
+        foreach (var terrain in Terrain.activeTerrains)
+        {
+            if (!terrain) continue;
+            var origin = terrain.transform.position;
+            var size = terrain.terrainData.size;
+            if (point.x >= origin.x && point.z >= origin.z && point.x <= origin.x + size.x && point.z <= origin.z + size.z)
+                return terrain.SampleHeight(point) + origin.y;
+        }
+        return Player.Position.y;
+    }
 
     /// <summary>C: the hero's details, opened with the equipment showing (its own button still folds it away).
     /// Pressed again, closed.</summary>
@@ -525,6 +563,7 @@ public partial class HeroController : MonoBehaviour
 
     private void WalkTo(Vector3 point)
     {
+        MapTarget = null;
         if (!TryGround(point, out var ground)) return;
         StopGathering();
         autoTarget = null;
@@ -577,7 +616,7 @@ public partial class HeroController : MonoBehaviour
         if (bar && bar.gameObject.activeSelf != show) bar.gameObject.SetActive(show);
     }
 
-    private static bool OverHud() => UIUtility.IsPointerOverAnyUI();
+    private static bool OverHud() => UIUtility.IsPointerOverAnyUI() || Shinobytes.UI.RavebridgeDialogueView.HoldsClicks;
 
     // ---- Attacking ----------------------------------------------------------------------------------------
 

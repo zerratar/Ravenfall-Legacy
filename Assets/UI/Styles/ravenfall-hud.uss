@@ -2373,6 +2373,148 @@
     -unity-background-scale-mode: scale-to-fit;
 }
 
+/* The big map (HeroBigMap, M): the island from above over the middle of the screen, the hero and the people on it, a
+   pin where a click sent the hero. */
+.rf-hero-bigmap {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+}
+
+.rf-hero-bigmap__panel {
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    background-color: rgb(20, 18, 15);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: rgb(214, 170, 40);
+    border-right-color: rgb(214, 170, 40);
+    border-top-color: rgb(214, 170, 40);
+    border-bottom-color: rgb(214, 170, 40);
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+    border-bottom-left-radius: 14px;
+    border-bottom-right-radius: 14px;
+}
+
+.rf-hero-bigmap__head {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.rf-hero-bigmap .rf-hero-bigmap__icon {
+    font-size: 24px;
+    color: rgb(236, 190, 52);
+    margin-right: 10px;
+}
+
+.rf-hero-bigmap .rf-hero-bigmap__title {
+    flex-grow: 1;
+    font-size: 26px;
+    color: rgb(245, 236, 214);
+}
+
+.rf-hero-bigmap .rf-hero-bigmap__close {
+    width: 36px;
+    height: 36px;
+    margin-left: 6px;
+    font-size: 18px;
+    color: rgb(200, 190, 170);
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+}
+
+.rf-hero-bigmap .rf-hero-bigmap__close:hover {
+    color: rgb(255, 214, 90);
+}
+
+.rf-hero-bigmap__map {
+    width: 680px;
+    height: 680px;
+    overflow: hidden;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgba(214, 170, 40, 0.5);
+    border-right-color: rgba(214, 170, 40, 0.5);
+    border-top-color: rgba(214, 170, 40, 0.5);
+    border-bottom-color: rgba(214, 170, 40, 0.5);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.rf-hero-bigmap__dots {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.rf-hero-bigmap__dot {
+    width: 14px;
+    height: 14px;
+    margin-left: -7px;
+    margin-top: -7px;
+}
+
+.rf-hero-bigmap .rf-hero-bigmap__hero {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    margin-left: -20px;
+    margin-top: -20px;
+    font-size: 32px;
+    -unity-text-align: middle-center;
+    color: rgb(255, 214, 90);
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: rgb(20, 18, 15);
+}
+
+/* Where a click on either map sent the hero: a gold ring with a dark middle. */
+.rf-hero-bigmap__pin {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    margin-left: -10px;
+    margin-top: -10px;
+    background-color: rgba(20, 18, 15, 0.8);
+    border-left-width: 3px;
+    border-right-width: 3px;
+    border-top-width: 3px;
+    border-bottom-width: 3px;
+    border-left-color: rgb(255, 214, 90);
+    border-right-color: rgb(255, 214, 90);
+    border-top-color: rgb(255, 214, 90);
+    border-bottom-color: rgb(255, 214, 90);
+    border-top-left-radius: 7px;
+    border-top-right-radius: 7px;
+    border-bottom-left-radius: 7px;
+    border-bottom-right-radius: 7px;
+}
+
+.rf-hero-bigmap .rf-hero-bigmap__hint {
+    margin-top: 8px;
+    font-size: 15px;
+    color: rgb(225, 214, 190);
+    -unity-text-align: middle-center;
+}
+
 .rf-hero-slot--gap {
     margin-left: 18px;
 }
@@ -4176,7 +4318,8 @@
 
 
 .rf-rbp {
-    width: 360px;
+    /* wide enough for "End Ravebridge for everyone" on one line (the user, 2026-11-03) */
+    width: 460px;
     padding: 14px 16px 16px 16px;
     background-color: var(--rf-bg);
     border-width: 2px;
@@ -7283,7 +7426,8 @@
 .rf-talk {
     position: absolute;
     left: 50%;
-    bottom: 150px;
+    /* above the hero's orbs, their gems the highest (226px), with room to spare */
+    bottom: 244px;
     width: 980px;
     margin-left: -490px;
     flex-direction: row;
