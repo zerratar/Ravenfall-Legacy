@@ -611,11 +611,14 @@ public class FerryHandler : MonoBehaviour
         var item = player.Inventory.GetEquipmentBySlot(ItemSlot.Boat);
         if (item == null) return false;
         Vector3 at; float heading;
+        var anchored = false;
         if (OwnBoatLog.TryGet(player.Id, out var saved))
         {
             at = new Vector3(saved.X, SeaChart.Sea, saved.Z);
             heading = saved.Heading;
-            if (!destination && !string.IsNullOrEmpty(saved.Destination)) destination = gameManager.Islands.Find(saved.Destination);
+            anchored = saved.Anchored;
+            // an anchored boat still names the island it sailed for before (OwnBoat.Anchor keeps it): it stays put
+            if (!destination && !anchored && !string.IsNullOrEmpty(saved.Destination)) destination = gameManager.Islands.Find(saved.Destination);
         }
         else
         {
@@ -624,7 +627,17 @@ public class FerryHandler : MonoBehaviour
         }
         if (ownBoat) PutAwayOwnBoat(false);
         Board(OwnBoat.Launch(player, BoatItems.TierOf(item.Item), at, heading));
-        SetOwnBoatCourse();
+        if (anchored && !destination)
+        {
+            // back from a raid or dungeon (or a restart) while fishing at anchor: drop anchor again so the line goes
+            // back in (SeaFishing.IsFishing), rather than wandering off
+            ownBoat.Anchor();
+            seaFishTimer = 1f;
+        }
+        else
+        {
+            SetOwnBoatCourse();
+        }
         return true;
     }
 

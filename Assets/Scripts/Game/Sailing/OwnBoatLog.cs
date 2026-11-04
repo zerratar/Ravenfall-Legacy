@@ -17,6 +17,8 @@ public static class OwnBoatLog
         public float X, Z, Heading;
         /// <summary>The island it sails for; null while wandering.</summary>
         public string Destination;
+        /// <summary>Lying at anchor (its owner fishing over the side): put back at anchor, not sailing on.</summary>
+        public bool Anchored;
         public DateTime Saved;
     }
 
@@ -57,7 +59,7 @@ public static class OwnBoatLog
     {
         if (!boat) return;
         var p = boat.SeaPosition;
-        All()[characterId] = new Entry { X = p.x, Z = p.z, Heading = boat.Heading, Destination = boat.Destination, Saved = DateTime.UtcNow };
+        All()[characterId] = new Entry { X = p.x, Z = p.z, Heading = boat.Heading, Destination = boat.Destination, Anchored = boat.State == OwnBoat.Course.Anchored, Saved = DateTime.UtcNow };
         dirty = true;
         Flush(false);
     }
