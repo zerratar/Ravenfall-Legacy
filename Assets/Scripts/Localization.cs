@@ -2246,6 +2246,20 @@ public static class Localization
     public static string UI_CONN_SERVER_LOST_NOTE = "Keep the game running. It reconnects on its own and nothing is lost, but restarting now could lose progress.";
     public static string UI_CONN_OUTDATED = "This version of Ravenfall is out of date";
     public static string UI_CONN_OUTDATED_NOTE = "Restart the game to update it.";
+    public static string UI_UPDATE_CARD_TITLE = "Ravenfall v{0} is out";
+    public static string UI_UPDATE_CARD_READY_TITLE = "Ravenfall v{0} is ready";
+    public static string UI_UPDATE_CARD_STARTING = "Starting the download...";
+    public static string UI_UPDATE_CARD_DOWNLOADING = "Downloading while you stream: {0}% ({1} of {2} MB)";
+    public static string UI_UPDATE_CARD_MINUTES = "about {0} min left";
+    public static string UI_UPDATE_CARD_SECONDS = "{0} s left";
+    public static string UI_UPDATE_CARD_READY = "Downloaded. Update now restarts the game straight into the new version.";
+    public static string UI_UPDATE_CARD_RESTART = "Update now restarts the game and downloads the new version.";
+    public static string UI_UPDATE_CARD_FAILED = "The download did not finish. Try again, or Update now downloads it on restart.";
+    public static string UI_UPDATE_CARD_BUTTON = "Update now";
+    public static string UI_UPDATE_CARD_RETRY = "Try again";
+    public static string UI_UPDATE_CARD_HIDE = "Hide until the download is done";
+    public static string UI_SETTINGS_EARLY_UPDATE = "Download updates in the background";
+    public static string UI_SETTINGS_EARLY_UPDATE_HINT = "When a new version is out, the game downloads it while you stream, so updating only needs a quick restart.";
 
     // Getting the game ready after signing in
     public static string UI_LOADING_TITLE = "Getting your game ready";

@@ -170,6 +170,21 @@ public class GameUpdater : MonoBehaviour
             }
 
             updateResult = UpdateResult.CheckingForUpdate;
+
+            // a download the game started in the background (BackgroundUpdate) carries on here, its progress on
+            // this screen, instead of a second one fighting it over the same file
+            var early = BackgroundUpdate.TakeOver();
+            if (early.Download != null && !skipUpdate)
+            {
+                Shinobytes.Debug.Log("Finishing the update download started in the background.");
+                gameUpdater = early.Handler;
+                if (await early.Download)
+                {
+                    updateResult = UpdateResult.Success;
+                    return;
+                }
+            }
+
             Shinobytes.Debug.Log("Checking for updates: " + CheckUpdateUri);
             gameUpdater = new GameUpdateHandler(CheckUpdateUri);
 
@@ -567,8 +582,15 @@ public class GameUpdateHandler
             return UpdateResult.UpToDate;
         }
 
+        // downloaded in the background already (BackgroundUpdate): straight to the patcher
+        if (IsDownloaded(latestUpdate))
+        {
+            Shinobytes.Debug.Log("Update " + latestUpdate.Version + " was downloaded already.");
+            return UpdateResult.Success;
+        }
+
         Shinobytes.Debug.Log("Downloading update " + latestUpdate.DownloadUrl + "..."); ;
-        if (await DownloadUpdateAsync(latestUpdate.DownloadUrl, OnDownloadProgressChanged))
+        if (await DownloadAsync(latestUpdate))
         {
             Shinobytes.Debug.Log("Update downloaded successfully."); ;
             return UpdateResult.Success;
@@ -584,6 +606,60 @@ public class GameUpdateHandler
         {
             return lastDownloadProgress;
         }
+    }
+
+    private const string ReadyFile = "update/ready.json";
+
+    /// <summary>
+    /// Downloads the update's file into update/ and notes it as complete (update/ready.json: version, file and size),
+    /// so a restart can go straight to the patcher (BackgroundUpdate, the update screen).
+    /// </summary>
+    public async Task<bool> DownloadAsync(UpdateData update)
+    {
+        if (update == null || string.IsNullOrEmpty(update.DownloadUrl)) return false;
+        try { if (File.Exists(ReadyFile)) File.Delete(ReadyFile); } catch { }
+        if (!await DownloadUpdateAsync(update.DownloadUrl, OnDownloadProgressChanged)) return false;
+        try
+        {
+            var path = UpdateFilePath(update);
+            var ready = new ReadyUpdate { Version = update.Version, File = update.DownloadUrl.Split('/').LastOrDefault(), Bytes = new System.IO.FileInfo(path).Length };
+            File.WriteAllText(ReadyFile, JsonConvert.SerializeObject(ready));
+        }
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogWarning("Could not note the update as downloaded: " + exc.Message);
+        }
+        return true;
+    }
+
+    /// <summary>The update's file is in update/ whole: the version and size noted when its download finished.</summary>
+    public bool IsDownloaded(UpdateData update)
+    {
+        try
+        {
+            if (update == null || !File.Exists(ReadyFile)) return false;
+            var ready = JsonConvert.DeserializeObject<ReadyUpdate>(File.ReadAllText(ReadyFile));
+            if (ready == null || ready.Version != update.Version) return false;
+            var path = UpdateFilePath(update);
+            if (!File.Exists(path) || new System.IO.FileInfo(path).Length != ready.Bytes) return false;
+            // the update screen waits for a progress before it starts the patcher
+            OnDownloadProgressChanged(new DownloadProgress(ready.Bytes, ready.Bytes, 0));
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static string UpdateFilePath(UpdateData update) =>
+        Shinobytes.IO.Path.GetFilePath("update/" + update.DownloadUrl.Split('/').LastOrDefault());
+
+    private class ReadyUpdate
+    {
+        public string Version { get; set; }
+        public string File { get; set; }
+        public long Bytes { get; set; }
     }
 
     private void OnDownloadProgressChanged(DownloadProgress progress)

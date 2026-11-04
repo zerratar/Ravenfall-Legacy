@@ -2969,9 +2969,11 @@ public class GameManager : MonoBehaviour, IGameManager
 
     internal void OnUpdateAvailable(string newVersion)
     {
-        goUpdateAvailable.SetActive(true);
-        lblUpdateAvailable.text = "New update available! <color=green>v" + newVersion;
+        // the card in the bottom left corner says so now (UpdateDownloadView), with the download's progress and
+        // Update now; the old line at the top stays off
+        if (goUpdateAvailable) goUpdateAvailable.SetActive(false);
         NewUpdateAvailable = true;
+        BackgroundUpdate.Announced(newVersion);
     }
     internal void AnnounceAutoDungeonJoin(List<PlayerController> players)
     {

@@ -24,6 +24,7 @@ public class PlayerSettings
     public bool? RegattaCamera;
     /// <summary>Hero mode's hits and the Kraken's roar shake the camera.</summary>
     public bool? ScreenShake;
+    public bool? DownloadUpdatesEarly;
 
 
     public float? DayNightTime;
@@ -425,6 +426,7 @@ public class PlayerSettings
             Serialize(sw, "canObserveEmptyIslands", obj.CanObserveEmptyIslands);
             Serialize(sw, "regattaCamera", obj.RegattaCamera);
             Serialize(sw, "screenShake", obj.ScreenShake);
+            Serialize(sw, "downloadUpdatesEarly", obj.DownloadUpdatesEarly);
             Serialize(sw, "announceNoExpGain", obj.AnnounceNoExpGain);
 
             // Serialize all nullable float properties

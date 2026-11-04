@@ -46,6 +46,8 @@ namespace Shinobytes.UI
         {
             // the players-to-restore pill and window share this document, next to these warnings
             if (!GetComponent<PlayerRestoreView>()) gameObject.AddComponent<PlayerRestoreView>();
+            // a new version's download and Update now, at the top of the same stack
+            if (!GetComponent<UpdateDownloadView>()) gameObject.AddComponent<UpdateDownloadView>();
             // and the stream quest's bar and window at the top center
             if (!GetComponent<StreamQuestView>()) gameObject.AddComponent<StreamQuestView>();
             // the Ravebridge bar under it while the event runs
@@ -119,7 +121,8 @@ namespace Shinobytes.UI
                 return Server.Fine;
             }
 
-            if (!nest.SessionStarted && nest.BadClientVersion)
+            // the update card above says it already, with the download and Update now (UpdateDownloadView)
+            if (!nest.SessionStarted && nest.BadClientVersion && !gm.NewUpdateAvailable)
             {
                 return Server.OutOfDate;
             }

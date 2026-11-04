@@ -641,6 +641,8 @@ namespace Shinobytes.UI
                 }, numeric: true);
             portRow.SetEnabled(SettingsApplier.LocalBot);
             ReloadRow(c);
+            Switch(c, Localization.UI_SETTINGS_EARLY_UPDATE, Localization.UI_SETTINGS_EARLY_UPDATE_HINT, SettingsApplier.DownloadUpdatesEarly,
+                SettingsApplier.Defaults.DownloadUpdatesEarly, SettingsApplier.SetDownloadUpdatesEarly);
 
             void BotSwitch(VisualElement parent, string key, string title, string hint, Action<bool> also = null)
             {

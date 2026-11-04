@@ -112,6 +112,7 @@ public static class SettingsApplier
         public const bool ObserveEmptyIslands = true;
         public const bool RaceCamera = true;
         public const bool ScreenShake = true;
+        public const bool DownloadUpdatesEarly = true;
         public const int AfkKick = 0;
         public const bool AnnounceNoExp = false;
         public const int NoExpMinutes = 1;           // index into NoExpMinuteOptions, 5 minutes
@@ -1045,6 +1046,14 @@ public static class SettingsApplier
         && !(GameManager.Instance && GameManager.Instance.PotatoMode);
     public static bool ScreenShakeSetting => PlayerSettings.Instance.ScreenShake.GetValueOrDefault(Defaults.ScreenShake);
     public static void SetScreenShake(bool value) => PlayerSettings.Instance.ScreenShake = value;
+
+    /// <summary>A new version is downloaded while the stream goes on, so updating needs only a quick restart.</summary>
+    public static bool DownloadUpdatesEarly => PlayerSettings.Instance.DownloadUpdatesEarly.GetValueOrDefault(Defaults.DownloadUpdatesEarly);
+    public static void SetDownloadUpdatesEarly(bool value)
+    {
+        PlayerSettings.Instance.DownloadUpdatesEarly = value;
+        if (value) BackgroundUpdate.SettingTurnedOn();
+    }
 
     // ---- Players --------------------------------------------------------------------------------
 
