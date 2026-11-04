@@ -134,6 +134,7 @@ namespace Shinobytes.UI
             handle.RegisterCallback<PointerDownEvent>(w.OnPointerDown);
             handle.RegisterCallback<PointerMoveEvent>(w.OnPointerMove);
             handle.RegisterCallback<PointerUpEvent>(w.OnPointerUp);
+            if (handle != window) window.RegisterCallback<PointerDownEvent>(w.OnWindowPointerDown);
 
             window.RegisterCallback<PointerEnterEvent>(w.OnPointerEnterWindow);
             window.RegisterCallback<PointerLeaveEvent>(w.OnPointerLeaveWindow);
@@ -161,6 +162,7 @@ namespace Shinobytes.UI
             handle.UnregisterCallback<PointerDownEvent>(OnPointerDown);
             handle.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
             handle.UnregisterCallback<PointerUpEvent>(OnPointerUp);
+            window.UnregisterCallback<PointerDownEvent>(OnWindowPointerDown);
             window.UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             window.UnregisterCallback<PointerEnterEvent>(OnPointerEnterWindow);
             window.UnregisterCallback<PointerLeaveEvent>(OnPointerLeaveWindow);
@@ -489,6 +491,31 @@ namespace Shinobytes.UI
                 return;
             }
 
+            BeginDrag(evt);
+        }
+
+        /// <summary>
+        /// A press on the window's own frame level with or above the handle: the padding and border over the title bar,
+        /// and beside it. Only the title bar itself moved the window, so grabbing a window by its top edge did nothing.
+        /// </summary>
+        private void OnWindowPointerDown(PointerDownEvent evt)
+        {
+            if (evt.button != 0 || evt.target != window || dragging)
+            {
+                return;
+            }
+
+            var handleBottom = handle.worldBound.yMax;
+            if (float.IsNaN(handleBottom) || evt.position.y > handleBottom)
+            {
+                return;
+            }
+
+            BeginDrag(evt);
+        }
+
+        private void BeginDrag(PointerDownEvent evt)
+        {
             dragging = true;
             pointerStart = evt.position;
             windowStart = new Vector2(window.resolvedStyle.left, window.resolvedStyle.top);
