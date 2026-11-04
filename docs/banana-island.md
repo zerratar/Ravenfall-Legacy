@@ -44,6 +44,11 @@ offers. The island was built around monkeys and bananas, and neither existed in 
 - **Golden Banana**: a treasure-only trophy; fed to the monkeys it fills the pile.
 - **Bananarang**: a treasure-only bow, the banana is held like a bow. A joke, with real stats.
 - **Monkey** pet: a treasure-only pet (temporary gorilla model).
+- **Mango** (added 2026-11-04 for a chatter, the_juicy_mango): gathered only on the Mangrove island (Gathering 15).
+  **Mango Smoothie** (Cooking 40: mango, milk, sugar), **Mango Salsa** (Cooking 110: mango, tomato, onion,
+  coriander) and **Mango Tart** (Cooking 200: mango, flour, butter, sugar, eggs; can burn).
+- **Suuuuper Juicy Mango**: a rare find while gathering there (1%, at most one per 30 minutes), eaten as is for a big
+  heal and speed. "There is only one mango this juicy, and it knows it."
 
 ### 4. Pirate treasure
 
