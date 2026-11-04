@@ -2615,6 +2615,9 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     }
 
     /// <summary>One step of the clicked target's task: into range, then the action. False once it is done or gone.</summary>
+    /// <summary>How far from a target the end of a path that cannot reach it may be for the target to be worked anyway.</summary>
+    private const float PartialPathReach = 5f;
+
     public bool DoManualTask()
     {
         if (Chunk == null || taskTarget == null) return false;
@@ -2629,6 +2632,17 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         {
             if (reason == TaskExecutionStatus.OutOfRange)
             {
+                // as near as the path gets: rocks packed close together leave some with no walkable spot within their
+                // reach, and the character stood at the path's end for ever, doing nothing (the user, 2026-11-04: a click
+                // on one of Ravebridge's tin rocks). From there, a few metres off, it works the target all the same.
+                if (taskTarget is not IAttackable && Movement.PathStatus == NavMeshPathStatus.PathPartial && !Movement.IsMoving
+                    && Vector3.Distance(Position, GetTaskTargetPosition(taskTarget)) <= PartialPathReach)
+                {
+                    Chunk.ExecuteTask(this, taskTarget);
+                    LastExecutedTaskTime = GameTime.time;
+                    return true;
+                }
+
                 if (!SetDestination(GetTaskTargetPosition(taskTarget)) && Movement.PathStatus == NavMeshPathStatus.PathInvalid)
                 {
                     taskTarget = null;
