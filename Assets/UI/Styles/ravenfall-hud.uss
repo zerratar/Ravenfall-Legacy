@@ -5665,8 +5665,9 @@
 .rf-squest--window .rf-qstory__line {
     margin-top: var(--rf-space-2);
     margin-bottom: var(--rf-space-3);
-    font-size: 19px;
-    -unity-font-style: italic;
+    font-size: 23px;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+    -unity-font-style: normal;
     color: var(--rf-text);
     white-space: normal;
 }
@@ -7985,4 +7986,298 @@
 
 .rf-intro .rf-intro__button--primary:hover {
     background-color: rgb(255, 214, 90);
+}
+
+/* ---- A story choice as cards (docs/mockups/quest-ui) ---------------------------------------------------------
+   The options were small chips with all their words in one line; on stream nobody could read them (the user,
+   2026-11-04). Everything here is the bold or extra bold cut, nothing under 16px. */
+.rf-squest--window .rf-qobjective__sub {
+    margin-top: var(--rf-space-1);
+    font-size: 20px;
+    color: rgb(214, 204, 180);
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+}
+
+.rf-qchoices {
+    flex-direction: row;
+    margin-top: var(--rf-space-3);
+    margin-bottom: var(--rf-space-3);
+}
+
+.rf-qchoice {
+    flex-grow: 1;
+    flex-basis: 0;
+    flex-shrink: 1;
+    min-width: 0;
+    align-items: center;
+    margin-right: var(--rf-space-3);
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-4);
+    padding-top: var(--rf-space-4);
+    padding-bottom: var(--rf-space-4);
+    background-color: var(--rf-surface-raised);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: var(--rf-border-strong);
+    border-right-color: var(--rf-border-strong);
+    border-top-color: var(--rf-border-strong);
+    border-bottom-color: var(--rf-border-strong);
+    border-top-left-radius: var(--rf-radius-lg);
+    border-top-right-radius: var(--rf-radius-lg);
+    border-bottom-left-radius: var(--rf-radius-lg);
+    border-bottom-right-radius: var(--rf-radius-lg);
+}
+
+.rf-qchoice:last-child {
+    margin-right: 0;
+}
+
+.rf-qchoice--leading {
+    background-color: rgb(58, 45, 26);
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+.rf-squest--window .rf-qchoice__num {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    width: 32px;
+    height: 32px;
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+    background-color: var(--rf-chip);
+    font-size: 19px;
+    color: var(--rf-text);
+    -unity-text-align: middle-center;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+}
+
+.rf-squest--window .rf-qchoice__lead {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+    background-color: var(--rf-accent);
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    border-bottom-left-radius: 3px;
+    border-bottom-right-radius: 3px;
+    font-size: 16px;
+    color: var(--rf-text-on-accent);
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+}
+
+.rf-squest--window .rf-qchoice__icon {
+    width: 56px;
+    height: 56px;
+    border-top-left-radius: 28px;
+    border-top-right-radius: 28px;
+    border-bottom-left-radius: 28px;
+    border-bottom-right-radius: 28px;
+    background-color: var(--rf-accent);
+    font-size: 26px;
+    color: var(--rf-text-on-accent);
+    -unity-text-align: middle-center;
+}
+
+.rf-squest--window .rf-qchoice__icon--strength {
+    background-color: rgb(226, 98, 74);
+}
+
+.rf-squest--window .rf-qchoice__icon--craft {
+    background-color: rgb(120, 170, 235);
+}
+
+.rf-squest--window .rf-qchoice__icon--nature {
+    background-color: rgb(110, 200, 120);
+}
+
+.rf-squest--window .rf-qchoice__name {
+    margin-top: var(--rf-space-2);
+    font-size: 30px;
+    color: var(--rf-text);
+    -unity-text-align: middle-center;
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+}
+
+.rf-qchoice__bonus {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: center;
+    margin-top: var(--rf-space-1);
+}
+
+.rf-squest--window .rf-qchoice__bonus-value {
+    font-size: 46px;
+    color: var(--rf-accent-bright);
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+}
+
+.rf-squest--window .rf-qchoice__bonus-unit {
+    margin-left: 4px;
+    margin-bottom: 8px;
+    font-size: 23px;
+    color: var(--rf-text);
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+}
+
+.rf-squest--window .rf-qchoice__what {
+    margin-top: var(--rf-space-1);
+    font-size: 20px;
+    color: rgb(224, 214, 190);
+    white-space: normal;
+    -unity-text-align: middle-center;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+}
+
+.rf-qchoice__skills {
+    flex-direction: row;
+    justify-content: center;
+    margin-top: auto;
+    padding-top: var(--rf-space-3);
+}
+
+.rf-squest--window .rf-qchoice__skill {
+    width: 34px;
+    height: 34px;
+    margin-left: 2px;
+    margin-right: 2px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    background-color: var(--rf-chip);
+    font-size: 16px;
+    color: var(--rf-text);
+    -unity-text-align: middle-center;
+}
+
+.rf-qchoice__vote {
+    flex-direction: row;
+    justify-content: space-between;
+    align-self: stretch;
+    margin-top: var(--rf-space-3);
+}
+
+.rf-squest--window .rf-qchoice__votes,
+.rf-squest--window .rf-qchoice__share {
+    font-size: 21px;
+    color: var(--rf-text);
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+}
+
+.rf-squest--window .rf-qchoice__share {
+    color: rgb(214, 204, 180);
+}
+
+.rf-qchoice__track {
+    align-self: stretch;
+    margin-top: var(--rf-space-1);
+}
+
+.rf-squest--window .rf-qchoice__pick {
+    align-self: stretch;
+    height: 52px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: var(--rf-space-3);
+    font-size: 21px;
+    -unity-text-align: middle-center;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+}
+
+.rf-squest--window .rf-qchoice__letchat {
+    height: 46px;
+    font-size: 20px;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+}
+
+.rf-qvotes {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: var(--rf-space-3);
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-4);
+    padding-top: var(--rf-space-3);
+    padding-bottom: var(--rf-space-3);
+    background-color: var(--rf-gold-bg);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-accent-dim);
+    border-right-color: var(--rf-accent-dim);
+    border-top-color: var(--rf-accent-dim);
+    border-bottom-color: var(--rf-accent-dim);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.rf-squest--window .rf-qvotes__icon {
+    font-size: 24px;
+    color: var(--rf-accent);
+    margin-right: var(--rf-space-3);
+}
+
+.rf-squest--window .rf-qvotes__text {
+    flex-grow: 1;
+    flex-shrink: 1;
+    font-size: 21px;
+    color: var(--rf-text);
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+}
+
+.rf-qvotes__track {
+    width: 140px;
+    margin-left: var(--rf-space-3);
+    margin-right: var(--rf-space-3);
+}
+
+.rf-squest--window .rf-qvotes__time {
+    font-size: 30px;
+    color: var(--rf-accent-bright);
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+}
+
+/* Unity squeezes a column's children to fit; the card's lines then ran into each other. They keep their size, and
+   the card grows instead. */
+.rf-qchoice > * {
+    flex-shrink: 0;
+}
+
+.rf-squest--window .rf-qchoice .rf-qobjective__task,
+.rf-squest--window .rf-qstory .rf-qobjective__task {
+    font-size: 24px;
+}
+
+.rf-squest--window .rf-qstory .rf-qstory__npc {
+    font-size: 20px;
+}
+
+/* a choice step: a smaller picture, the cards need the room */
+.rf-qstory__picture.rf-qstory__picture--small {
+    width: 150px;
+    height: 130px;
+}
+
+/* Wrapped lines in a centred column: measured at the card's width, or Unity sizes them as one long line and the
+   wrapped ones spill over what comes below. */
+.rf-squest--window .rf-qchoice__name,
+.rf-squest--window .rf-qchoice__what {
+    align-self: stretch;
 }

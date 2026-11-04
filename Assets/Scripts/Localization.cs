@@ -868,8 +868,17 @@ public static class Localization
     public static string UI_STORY_ONE_AT_A_TIME = "Finish the story under way first.";
     public static string UI_STORY_DONE = "Finished";
     public static string UI_STORY_TALK = "Talk to {0}";
-    public static string UI_STORY_LET_CHAT_VOTE = "Let chat vote";
+    public static string UI_STORY_LET_CHAT_VOTE = "Let chat vote (1 minute)";
     public static string UI_STORY_VOTING = "Chat is voting: {0} s left";
+    public static string UI_STORY_VOTE_TITLE = "Chat is choosing";
+    public static string UI_STORY_VOTE_SUB = "The most votes wins when the time runs out. You can still choose yourself.";
+    public static string UI_STORY_VOTE_HOW = "Vote in chat with !quest vote 1 to {0}. {1} so far.";
+    public static string UI_STORY_VOTES = "{0} votes";
+    public static string UI_STORY_VOTE_ONE = "1 vote";
+    public static string UI_STORY_LEADING = "Leading";
+    public static string UI_STORY_CHOOSE = "Choose {0}";
+    public static string UI_STORY_CHOOSE_NOW = "Choose now";
+    public static string UI_STORY_CHOICE_EXP = "exp";
     public static string UI_STORY_ABANDON = "Give up";
     public static string UI_STORY_FOUND_BY = "Found by: {0}";
     public static string UI_STORY_TASK_TALK = "Talk to {0} (the quest window, or click it in the world)";
@@ -886,6 +895,7 @@ public static class Localization
     public static string UI_STORY_RUNESTONE_5 = "Three rune fragments broke off long ago and lie somewhere in the mines. Whoever mines may find them.";
     public static string UI_STORY_RUNESTONE_6 = "The fragments fit, and something below stirs. Conquer two dungeons to calm the deep.";
     public static string UI_STORY_RUNESTONE_7 = "The runestone glows and asks which blessing your village should keep for good: 1) Strength (+5% combat exp) 2) Craft (+5% crafting, cooking and brewing exp) 3) Nature (+5% woodcutting, mining, fishing, farming and gathering exp)";
+    public static string UI_STORY_RUNESTONE_7_SHORT = "The runestone glows and asks which blessing your village should keep for good.";
     public static string UI_STORY_RUNESTONE_8 = "It is ready. Speak the word and it will wake.";
     public static string UI_STORY_RUNESTONE_END = "The runestone wakes with a roar of light. Its blessing settles over the village, and deep in the cave a path you have never seen opens...";
     public static string UI_STORY_RUNESTONE_THING = "a rune fragment";
@@ -896,6 +906,12 @@ public static class Localization
     public static string UI_STORY_RUNESTONE_CHOICE_1_HINT = "+5% combat exp";
     public static string UI_STORY_RUNESTONE_CHOICE_2_HINT = "+5% crafting, cooking and brewing exp";
     public static string UI_STORY_RUNESTONE_CHOICE_3_HINT = "+5% woodcutting, mining, fishing, farming and gathering exp";
+    public static string UI_STORY_RUNESTONE_CHOICE_1_BONUS = "+5%";
+    public static string UI_STORY_RUNESTONE_CHOICE_1_WHAT = "in every combat skill";
+    public static string UI_STORY_RUNESTONE_CHOICE_2_BONUS = "+5%";
+    public static string UI_STORY_RUNESTONE_CHOICE_2_WHAT = "in crafting, cooking and brewing, and clan enchanting";
+    public static string UI_STORY_RUNESTONE_CHOICE_3_BONUS = "+5%";
+    public static string UI_STORY_RUNESTONE_CHOICE_3_WHAT = "in woodcutting, mining, fishing, farming and gathering";
     public static string UI_STORY_RUNESTONE_SIGN_ACTIVE = "The runestone stirs... ({0}/{1})";
     public static string UI_STORY_RUNESTONE_SIGN_DONE = "The runestone is awake.";
     public static string UI_IRONHILL_SMITH_LINES = "Hammer, anvil, repeat.|Shh. The old red sleeps up there. We keep the forge quiet on Sundays.|Never ask a dwarf about the dragon's breakfast.|Who keeps leaving sheep on my anvil?|Ironhill iron. Best in the world. Second best is also Ironhill iron.";
@@ -920,6 +936,7 @@ public static class Localization
     public static string UI_STORY_BANANAS_4 = "Monkeys like fish too, it turns out. Bring raw sprat.";
     public static string UI_STORY_BANANAS_5 = "Pirates keep stealing the monkeys' bananas. Win two raids to scare them off.";
     public static string UI_STORY_BANANAS_6 = "The chief wants a name. What will you call him? 1) Bonzo 2) Sir Bananas 3) Kevin";
+    public static string UI_STORY_BANANAS_6_SHORT = "The chief wants a name. What will you call him?";
     public static string UI_STORY_BANANAS_7 = "The chief looks at the pile of bananas and nods slowly.";
     public static string UI_STORY_BANANAS_END = "SUFFICIENT BANANAS! The sign changes, the monkeys cheer, and the chief gives you his finest statue of himself.";
     public static string UI_STORY_BANANAS_THING = "a wild banana";

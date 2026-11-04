@@ -108,25 +108,40 @@ namespace Shinobytes.UI
 
             var body = new VisualElement();
             body.AddToClassList("rf-qstory__body");
-            body.Add(QuestArt.Picture(QuestArt.StoryPicture(s.Key), "\uf70e", "rf-qstory__picture"));
+            var picture = QuestArt.Picture(QuestArt.StoryPicture(s.Key), "\uf70e", "rf-qstory__picture");
+            picture.EnableInClassList("rf-qstory__picture--small", s.Kind == "choice");
+            body.Add(picture);
             var right = new VisualElement();
             right.AddToClassList("rf-qstory__right");
             right.Add(Text(StoryLog.Npc(s.Key), "rf-qstory__npc"));
-            right.Add(Text(StoryLog.Line(s.Key, s.Step), "rf-qstory__line"));
+            right.Add(Text(StoryLog.PanelLine(s.Key, s.Step), "rf-qstory__line"));
 
             var objective = new VisualElement();
             objective.AddToClassList("rf-qobjective");
             objective.Add(Text(Localization.UI_QUESTWIN_OBJECTIVE.ToUpperInvariant(), "rf-qlabel"));
             var counted = s.Kind != "talk" && s.Kind != "choice" && s.Amount > 0;
+            var choosing = s.Kind == "choice";
+            var voting = choosing && StoryLog.VoteStory == s.Key;
             var taskRow = new VisualElement();
             taskRow.AddToClassList("rf-qobjective__row");
-            taskRow.Add(Text(StoryLog.Task(s, false), "rf-qobjective__task"));
+            taskRow.Add(Text(voting ? Localization.UI_STORY_VOTE_TITLE : StoryLog.Task(s, false), "rf-qobjective__task"));
             if (counted) taskRow.Add(Text(StoryLog.Number(s.Progress) + " / " + StoryLog.Number(s.Amount), "rf-qobjective__count"));
             objective.Add(taskRow);
             if (counted) objective.Add(Track((float)s.Progress / s.Amount));
 
-            var actions = Actions(s);
-            if (actions.childCount > 0) objective.Add(actions);
+            if (choosing)
+            {
+                // while chat votes, what decides it; before that the task line says it all
+                if (voting) objective.Add(Text(Localization.UI_STORY_VOTE_SUB, "rf-qobjective__sub"));
+                // the time left above the cards: below them it was under the fold at the window's usual size
+                if (voting) objective.Add(VoteStrip(s));
+                objective.Add(Choices(s, voting));
+            }
+            else
+            {
+                var actions = Actions(s);
+                if (actions.childCount > 0) objective.Add(actions);
+            }
 
             var foot = new VisualElement();
             foot.AddToClassList("rf-qobjective__foot");
@@ -138,16 +153,168 @@ namespace Shinobytes.UI
                 helpers.AddToClassList("rf-qobjective__helpers");
                 foot.Add(helpers);
             }
+            if (choosing && !voting && !StoryLog.Voting)
+            {
+                var game = GameManager.Instance;
+                var letChat = Button(Localization.UI_STORY_LET_CHAT_VOTE, false, () => { if (game) StoryLog.StartVote(game, s); });
+                letChat.AddToClassList("rf-qchoice__letchat");
+                foot.Add(letChat);
+            }
             foot.Add(new VisualElement { style = { flexGrow = 1 } });
             var giveUp = Button(Localization.UI_STORY_ABANDON, false, () => Run(g => StoryLog.AbandonAsync(g, s.Key)));
             giveUp.AddToClassList("rf-qghost");
             foot.Add(giveUp);
             objective.Add(foot);
 
+            // a choice's cards need the card's whole width, not the column beside the picture
+            if (choosing)
+            {
+                body.Add(right);
+                card.Add(body);
+                card.Add(objective);
+                return card;
+            }
+
             right.Add(objective);
             body.Add(right);
             card.Add(body);
             return card;
+        }
+
+        /// <summary>How a story's options look as cards: an icon and colour each, and the skills a blessing helps.</summary>
+        private sealed class OptionLook
+        {
+            public string Glyph;
+            public string Variant;
+            public string[] Skills;
+        }
+
+        private static readonly System.Collections.Generic.Dictionary<string, OptionLook[]> Looks = new System.Collections.Generic.Dictionary<string, OptionLook[]>
+        {
+            ["runestone"] = new[]
+            {
+                new OptionLook { Glyph = "\uf71d", Variant = "strength", Skills = new[] { "\uf6de", "\uf3ed", "\uf6b2", "\uf004", "\uf6dd", "\uf6e8", "\uf469", "\uf54c" } },
+                new OptionLook { Glyph = "\uf6e3", Variant = "craft", Skills = new[] { "\uf6e3", "\uf2e7", "\uf0c3", "\uf890" } },
+                new OptionLook { Glyph = "\uf06c", Variant = "nature", Skills = new[] { "\uf1bb", "\uf6fc", "\uf578", "\ue2cd", "\uf4d8" } },
+            },
+        };
+
+        /// <summary>
+        /// A choice step's options side by side, as cards (docs/mockups/quest-ui): the name, what it gives in big
+        /// letters, and the streamer's button; while chat votes, each card's votes and the one in the lead. The options
+        /// were small chips with everything in one line, which nobody on stream could read (the user, 2026-11-04).
+        /// </summary>
+        private VisualElement Choices(VillageStoryInfo s, bool voting)
+        {
+            var row = new VisualElement();
+            row.AddToClassList("rf-qchoices");
+            Looks.TryGetValue(s.Key, out var looks);
+            // the one in the lead, the first of a tie (as the vote counts it); none before the first vote
+            var total = 0;
+            var best = 0;
+            var bestVotes = 0;
+            for (var i = 1; i <= s.Options; ++i)
+            {
+                var v = StoryLog.VotesFor(i);
+                total += v;
+                if (v > bestVotes) { bestVotes = v; best = i; }
+            }
+
+            for (var i = 1; i <= s.Options; ++i)
+            {
+                var option = i;
+                var look = looks != null && i <= looks.Length ? looks[i - 1] : null;
+                var card = new VisualElement();
+                card.AddToClassList("rf-qchoice");
+                card.EnableInClassList("rf-qchoice--leading", voting && i == best);
+
+                card.Add(Text(i.ToString(CultureInfo.InvariantCulture), "rf-qchoice__num"));
+                if (voting && i == best) card.Add(Text(Localization.UI_STORY_LEADING.ToUpperInvariant(), "rf-qchoice__lead"));
+
+                var icon = Text(look != null ? look.Glyph : i.ToString(CultureInfo.InvariantCulture), "rf-qchoice__icon");
+                if (look != null)
+                {
+                    icon.AddToClassList("rf-icon");
+                    icon.AddToClassList("rf-qchoice__icon--" + look.Variant);
+                }
+                card.Add(icon);
+
+                var name = StoryLog.Option(s.Key, i);
+                card.Add(Text(name, "rf-qchoice__name"));
+
+                var bonus = StoryLog.OptionPart(s.Key, i, "BONUS");
+                if (!string.IsNullOrEmpty(bonus))
+                {
+                    var bonusRow = new VisualElement();
+                    bonusRow.AddToClassList("rf-qchoice__bonus");
+                    bonusRow.Add(Text(bonus, "rf-qchoice__bonus-value"));
+                    bonusRow.Add(Text(Localization.UI_STORY_CHOICE_EXP, "rf-qchoice__bonus-unit"));
+                    card.Add(bonusRow);
+                }
+
+                var what = StoryLog.OptionPart(s.Key, i, "WHAT");
+                if (!string.IsNullOrEmpty(what)) card.Add(Text(what, "rf-qchoice__what"));
+
+                if (look?.Skills != null)
+                {
+                    var skills = new VisualElement();
+                    skills.AddToClassList("rf-qchoice__skills");
+                    foreach (var glyph in look.Skills)
+                    {
+                        var skill = Text(glyph, "rf-qchoice__skill");
+                        skill.AddToClassList("rf-icon");
+                        skills.Add(skill);
+                    }
+                    card.Add(skills);
+                }
+                else
+                {
+                    card.Add(new VisualElement { style = { flexGrow = 1 } });
+                }
+
+                if (voting)
+                {
+                    var votes = StoryLog.VotesFor(i);
+                    var share = total > 0 ? (float)votes / total : 0f;
+                    var voteRow = new VisualElement();
+                    voteRow.AddToClassList("rf-qchoice__vote");
+                    voteRow.Add(Text(votes == 1 ? Localization.UI_STORY_VOTE_ONE : string.Format(CultureInfo.InvariantCulture, Localization.UI_STORY_VOTES, votes), "rf-qchoice__votes"));
+                    voteRow.Add(Text(Mathf.RoundToInt(share * 100f).ToString(CultureInfo.InvariantCulture) + "%", "rf-qchoice__share"));
+                    card.Add(voteRow);
+                    var track = Track(share);
+                    track.AddToClassList("rf-qchoice__track");
+                    card.Add(track);
+                }
+
+                var pick = Button(voting ? Localization.UI_STORY_CHOOSE_NOW : string.Format(CultureInfo.InvariantCulture, Localization.UI_STORY_CHOOSE, name), !voting,
+                    () => Run(g => StoryLog.ChooseAsync(g, s.Key, option)));
+                pick.AddToClassList("rf-qchoice__pick");
+                card.Add(pick);
+                row.Add(card);
+            }
+            return row;
+        }
+
+        /// <summary>While chat votes: how to vote, how many have, and the time left.</summary>
+        private static VisualElement VoteStrip(VillageStoryInfo s)
+        {
+            var strip = new VisualElement();
+            strip.AddToClassList("rf-qvotes");
+            var icon = Text("\uf0a1", "rf-qvotes__icon");
+            icon.AddToClassList("rf-icon");
+            strip.Add(icon);
+            var total = 0;
+            for (var i = 1; i <= s.Options; ++i) total += StoryLog.VotesFor(i);
+            var text = Text(string.Format(CultureInfo.InvariantCulture, Localization.UI_STORY_VOTE_HOW, s.Options,
+                total == 1 ? Localization.UI_STORY_VOTE_ONE : string.Format(CultureInfo.InvariantCulture, Localization.UI_STORY_VOTES, total)), "rf-qvotes__text");
+            strip.Add(text);
+            var left = Mathf.Max(0f, StoryLog.VoteEnds - Time.unscaledTime);
+            var track = Track(left / StoryLog.VoteSeconds);
+            track.AddToClassList("rf-qvotes__track");
+            strip.Add(track);
+            var seconds = Mathf.CeilToInt(left);
+            strip.Add(Text((seconds / 60).ToString(CultureInfo.InvariantCulture) + ":" + (seconds % 60).ToString("00", CultureInfo.InvariantCulture), "rf-qvotes__time"));
+            return strip;
         }
 
         /// <summary>One dot per step: done ones ticked, the current one lit, joined by a line.</summary>
@@ -226,32 +393,10 @@ namespace Shinobytes.UI
             var row = new VisualElement();
             row.AddToClassList("rf-squest-chips");
             row.AddToClassList("rf-story__actions");
-            var game = GameManager.Instance;
 
             if (s.Kind == "talk")
             {
                 row.Add(Button(string.Format(CultureInfo.InvariantCulture, Localization.UI_STORY_TALK, StoryLog.Npc(s.Key)), true, () => Run(g => StoryLog.TalkAsync(g, s.Key))));
-            }
-            else if (s.Kind == "choice")
-            {
-                var voting = StoryLog.VoteStory == s.Key;
-                for (var i = 1; i <= s.Options; ++i)
-                {
-                    var option = i;
-                    // the votes after a colon: the hint already ends in brackets
-                    var text = StoryLog.OptionWithHint(s.Key, i) + (voting ? ": " + StoryLog.VotesFor(i) : string.Empty);
-                    row.Add(Button(text, true, () => Run(g => StoryLog.ChooseAsync(g, s.Key, option))));
-                }
-
-                if (voting)
-                {
-                    var left = Mathf.Max(0, Mathf.CeilToInt(StoryLog.VoteEnds - Time.unscaledTime));
-                    row.Add(Text(string.Format(CultureInfo.InvariantCulture, Localization.UI_STORY_VOTING, left), "rf-squest-form__note"));
-                }
-                else if (!StoryLog.Voting)
-                {
-                    row.Add(Button(Localization.UI_STORY_LET_CHAT_VOTE, false, () => { if (game) StoryLog.StartVote(game, s); }));
-                }
             }
             return row;
         }

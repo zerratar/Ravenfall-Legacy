@@ -386,6 +386,15 @@ public static class StoryLog
     public static string Npc(string key) => Lookup("UI_STORY_" + key + "_NPC", key);
     public static string Hook(string key) => Lookup("UI_STORY_" + key + "_HOOK", string.Empty);
     public static string Line(string key, int step) => Lookup("UI_STORY_" + key + "_" + (step + 1), string.Empty);
+
+    /// <summary>
+    /// The line for the quest window, where a choice step's options are cards of their own: the chat line lists them
+    /// ("...: 1) Strength (+5% combat exp) 2) ..."), the window would only repeat them in a run of small text.
+    /// </summary>
+    public static string PanelLine(string key, int step) => Lookup("UI_STORY_" + key + "_" + (step + 1) + "_SHORT", Line(key, step));
+
+    /// <summary>A part of a choice for its card: BONUS ("+5%") or WHAT ("in every combat skill"); null when it has none.</summary>
+    public static string OptionPart(string key, int option, string part) => Lookup("UI_STORY_" + key + "_CHOICE_" + option + "_" + part, null);
     public static string Ending(string key) => Lookup("UI_STORY_" + key + "_END", string.Empty);
     public static string Thing(string key) => Lookup("UI_STORY_" + key + "_THING", string.Empty);
     public static string Option(string key, int option) => Lookup("UI_STORY_" + key + "_CHOICE_" + option, option.ToString(CultureInfo.InvariantCulture));
