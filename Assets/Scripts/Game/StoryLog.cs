@@ -158,7 +158,7 @@ public static class StoryLog
         VoteEnds = Time.unscaledTime + VoteSeconds;
         votes.Clear();
         var options = new List<string>();
-        for (var i = 1; i <= story.Options; ++i) options.Add(i + ") " + Option(story.Key, i));
+        for (var i = 1; i <= story.Options; ++i) options.Add(i + ") " + OptionWithHint(story.Key, i));
         game.RavenBot.Announce(Localization.MSG_STORY_VOTE, Npc(story.Key), (int)VoteSeconds, story.Options, string.Join(", ", options));
         Changed?.Invoke();
     }
@@ -187,7 +187,7 @@ public static class StoryLog
         StopVote();
         if (story == null) return;
 
-        game.RavenBot.Announce(Localization.MSG_STORY_VOTE_RESULT, Option(key, best), Math.Max(0, bestVotes));
+        game.RavenBot.Announce(Localization.MSG_STORY_VOTE_RESULT, OptionWithHint(key, best), Math.Max(0, bestVotes));
         await ChooseAsync(game, key, best);
     }
 
@@ -389,6 +389,16 @@ public static class StoryLog
     public static string Ending(string key) => Lookup("UI_STORY_" + key + "_END", string.Empty);
     public static string Thing(string key) => Lookup("UI_STORY_" + key + "_THING", string.Empty);
     public static string Option(string key, int option) => Lookup("UI_STORY_" + key + "_CHOICE_" + option, option.ToString(CultureInfo.InvariantCulture));
+
+    /// <summary>
+    /// A choice with what it does when it does something ("Strength (+5% combat exp)"): chat voted on the runestone's
+    /// blessings by their names alone, not knowing what any of them gave.
+    /// </summary>
+    public static string OptionWithHint(string key, int option)
+    {
+        var hint = Lookup("UI_STORY_" + key + "_CHOICE_" + option + "_HINT", null);
+        return string.IsNullOrEmpty(hint) ? Option(key, option) : Option(key, option) + " (" + hint + ")";
+    }
     public static string UnlockName(string key) => Lookup("UI_UNLOCK_" + key, key);
 
     /// <summary>What the current step asks, with its progress where it counts ("(3/4)") unless withCount is false.</summary>

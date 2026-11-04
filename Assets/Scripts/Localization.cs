@@ -885,7 +885,7 @@ public static class Localization
     public static string UI_STORY_RUNESTONE_4 = "Now fire to forge them. Bring coal.";
     public static string UI_STORY_RUNESTONE_5 = "Three rune fragments broke off long ago and lie somewhere in the mines. Whoever mines may find them.";
     public static string UI_STORY_RUNESTONE_6 = "The fragments fit, and something below stirs. Conquer two dungeons to calm the deep.";
-    public static string UI_STORY_RUNESTONE_7 = "The runestone glows and asks what blessing your village wants: 1) Strength 2) Craft 3) Nature";
+    public static string UI_STORY_RUNESTONE_7 = "The runestone glows and asks which blessing your village should keep for good: 1) Strength (+5% combat exp) 2) Craft (+5% crafting, cooking and brewing exp) 3) Nature (+5% woodcutting, mining, fishing, farming and gathering exp)";
     public static string UI_STORY_RUNESTONE_8 = "It is ready. Speak the word and it will wake.";
     public static string UI_STORY_RUNESTONE_END = "The runestone wakes with a roar of light. Its blessing settles over the village, and deep in the cave a path you have never seen opens...";
     public static string UI_STORY_RUNESTONE_THING = "a rune fragment";
@@ -893,6 +893,9 @@ public static class Localization
     public static string UI_STORY_RUNESTONE_CHOICE_1 = "Strength";
     public static string UI_STORY_RUNESTONE_CHOICE_2 = "Craft";
     public static string UI_STORY_RUNESTONE_CHOICE_3 = "Nature";
+    public static string UI_STORY_RUNESTONE_CHOICE_1_HINT = "+5% combat exp";
+    public static string UI_STORY_RUNESTONE_CHOICE_2_HINT = "+5% crafting, cooking and brewing exp";
+    public static string UI_STORY_RUNESTONE_CHOICE_3_HINT = "+5% woodcutting, mining, fishing, farming and gathering exp";
     public static string UI_STORY_RUNESTONE_SIGN_ACTIVE = "The runestone stirs... ({0}/{1})";
     public static string UI_STORY_RUNESTONE_SIGN_DONE = "The runestone is awake.";
     public static string UI_IRONHILL_SMITH_LINES = "Hammer, anvil, repeat.|Shh. The old red sleeps up there. We keep the forge quiet on Sundays.|Never ask a dwarf about the dragon's breakfast.|Who keeps leaving sheep on my anvil?|Ironhill iron. Best in the world. Second best is also Ironhill iron.";

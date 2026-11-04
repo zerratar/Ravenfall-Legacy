@@ -238,7 +238,8 @@ namespace Shinobytes.UI
                 for (var i = 1; i <= s.Options; ++i)
                 {
                     var option = i;
-                    var text = StoryLog.Option(s.Key, i) + (voting ? " (" + StoryLog.VotesFor(i) + ")" : string.Empty);
+                    // the votes after a colon: the hint already ends in brackets
+                    var text = StoryLog.OptionWithHint(s.Key, i) + (voting ? ": " + StoryLog.VotesFor(i) : string.Empty);
                     row.Add(Button(text, true, () => Run(g => StoryLog.ChooseAsync(g, s.Key, option))));
                 }
 
