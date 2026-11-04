@@ -30,6 +30,8 @@ public class RavenBotConnection : IDisposable
 
     /// <summary>Chat commands already handled, by identifier and chat message id, so one sent twice runs once.</summary>
     private readonly Dictionary<string, DateTime> handledCommands = new Dictionary<string, DateTime>();
+    /// <summary>The game's main thread: a connection that closes on its own reader or writer thread is told there.</summary>
+    private readonly System.Threading.SynchronizationContext mainThread;
     private DateTime nextHandledCommandsCleanup;
 
     /// <summary>Time per frame for bot commands. It was one command a frame, so a busy chat built a long queue.</summary>
@@ -62,6 +64,7 @@ public class RavenBotConnection : IDisposable
         this.ravenNest = ravenNest;
         this.game = game;
         this.ravenbot = ravenbot;
+        this.mainThread = System.Threading.SynchronizationContext.Current;
         this.localBotServerEnabled = !(PlayerSettings.Instance.LocalBotServerDisabled ?? false);
 
         if (localBotServerEnabled)
@@ -211,6 +214,11 @@ public class RavenBotConnection : IDisposable
             return;
         }
 
+        if (!remote.HasPinged)
+        {
+            return;
+        }
+
         var now = DateTime.UtcNow;
         if (now - remote.LastReceivedUtc > RemoteSilenceLimit && now - remote.ConnectedUtc > RemoteSilenceLimit)
         {
@@ -237,8 +245,16 @@ public class RavenBotConnection : IDisposable
 
     private void SendOrphanedReplies(GameClient client)
     {
+        // a closed connection would hand every reply straight back to this queue
+        if (client == null || client.IsDisposed)
+        {
+            return;
+        }
+
+        // only the replies waiting now: one that comes back while sending waits for the next connection
         var now = DateTime.UtcNow;
-        while (orphanedReplies.TryDequeue(out var item))
+        var waiting = orphanedReplies.Count;
+        while (waiting-- > 0 && orphanedReplies.TryDequeue(out var item))
         {
             if (now - item.Created < TimeSpan.FromMinutes(2))
             {
@@ -324,6 +340,11 @@ public class RavenBotConnection : IDisposable
             // one bad line no longer closes the connection
             logger.WriteError("Could not read a message from the bot: " + exc.Message);
             return;
+        }
+
+        if (msg != null && "ping".Equals(msg.Identifier, StringComparison.OrdinalIgnoreCase))
+        {
+            gameClient.HasPinged = true;
         }
 
         var cmd = new BotMessage(gameClient, msg);
@@ -630,6 +651,14 @@ public class RavenBotConnection : IDisposable
 
     public void OnClientDisconnected(GameClient gameClient)
     {
+        // a connection's reader or writer thread closes it when the socket breaks; reconnecting and the bot state
+        // belong on the main thread (Unity calls there throw, and the state is not made for two threads)
+        if (mainThread != null && System.Threading.SynchronizationContext.Current != mainThread)
+        {
+            mainThread.Post(_ => OnClientDisconnected(gameClient), null);
+            return;
+        }
+
         bool wasLocal;
         lock (connectedClients)
         {

@@ -38,6 +38,15 @@ public class GameClient : IDisposable
     /// <summary>When this connection was opened.</summary>
     public DateTime ConnectedUtc => created;
 
+    /// <summary>
+    /// The bot has pinged on this connection. Only then does a silence mean it is dead: a bot too old to ping
+    /// (the live one before its v0.9.6 deploy) would otherwise be dropped every 30 seconds while chat is quiet.
+    /// </summary>
+    public bool HasPinged { get; internal set; }
+
+    /// <summary>Closed: nothing more is written on this connection.</summary>
+    public bool IsDisposed => disposed;
+
     public GameClient(RavenBotConnection server, TcpClient client, Action<string> onDataSent = null)
     {
         created = DateTime.UtcNow;
@@ -75,6 +84,16 @@ public class GameClient : IDisposable
             BeginWrite();
 
             await Task.Delay(500);
+
+            // closed in the meantime (the bot hung up, or a newer connection replaced this one): this connection
+            // never came up, so try again instead of announcing it. Announcing it sent its replies round in a
+            // circle on the main thread (written to a closed connection, queued for the next, written again),
+            // which froze the game (2026-11-03).
+            if (disposed)
+            {
+                onConnectFailed?.Invoke();
+                return;
+            }
 
             if (onConnect != null)
             {
