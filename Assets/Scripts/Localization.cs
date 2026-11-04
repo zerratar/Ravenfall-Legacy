@@ -927,6 +927,7 @@ public static class Localization
     public static string UI_STORY_RUNESTONE_CHOICE_3_WHAT = "in woodcutting, mining, fishing, farming and gathering";
     public static string UI_STORY_RUNESTONE_SIGN_ACTIVE = "The runestone stirs... ({0}/{1})";
     public static string UI_STORY_RUNESTONE_SIGN_DONE = "The runestone is awake.";
+    public static string UI_STORY_RUNESTONE_SIGN_TALK = "The runestone wants a word. Click it.";
     public static string UI_IRONHILL_SMITH_LINES = "Hammer, anvil, repeat.|Shh. The old red sleeps up there. We keep the forge quiet on Sundays.|Never ask a dwarf about the dragon's breakfast.|Who keeps leaving sheep on my anvil?|Ironhill iron. Best in the world. Second best is also Ironhill iron.";
     public static string UI_IRONHILL_SMITH_BEGIN = "That stone in the cave has hummed for a hundred winters. Somebody ought to wake it, chief.|The runestone, up past the gate. Click me if you want the story.";
     public static string UI_IRONHILL_SMITH_STEP_1 = "Go on, lay a hand on the stone. It doesn't bite. Much.";

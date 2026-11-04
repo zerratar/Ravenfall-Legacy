@@ -264,7 +264,10 @@ public static class StoryLog
             var story = Story("runestone");
             if (runestoneText)
             {
-                runestoneText.text = story == null || story.State == NotBegun || story.State == GivenUp ? runestoneOriginal
+                // a story step that wants a word with it (the road west's last one): the sign says to click it, the
+                // streamer went to the stone and waited (the user, 2026-11-04)
+                runestoneText.text = RunestoneMark() == IslandNpc.Mark.Ready ? Localization.UI_STORY_RUNESTONE_SIGN_TALK
+                    : story == null || story.State == NotBegun || story.State == GivenUp ? runestoneOriginal
                     : story.State == Done ? Localization.UI_STORY_RUNESTONE_SIGN_DONE
                     : string.Format(CultureInfo.InvariantCulture, Localization.UI_STORY_RUNESTONE_SIGN_ACTIVE, story.Step, story.Steps);
             }

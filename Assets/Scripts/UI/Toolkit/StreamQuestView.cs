@@ -600,10 +600,22 @@ namespace Shinobytes.UI
                 if (along > 0f && along <= 250f && off < 0.9f && (nearest < 0 || along <= hits[nearest].distance + 1f)) return Clicked.Smith;
             }
 
+            // the runestone has no collider of its own (only a wide trigger, off to one side): as the forge-master, a click
+            // whose ray passes close by the stone counts unless something nearer is in the way. Before, the click had to
+            // land on rock within 5 m of it, and a streamer clicking the stone itself for the road west's last word got
+            // nothing (the user, 2026-11-04)
+            if (!runestone) runestone = GameObject.Find("Ironhill Island/" + RunestoneName)?.transform;
+            if (runestone)
+            {
+                var stone = runestone.position + Vector3.up * 1.5f;
+                var runeAlong = Vector3.Dot(stone - ray.origin, ray.direction);
+                var runeOff = Vector3.Cross(ray.direction, stone - ray.origin).magnitude;
+                if (runeAlong > 0f && runeAlong <= 250f && runeOff < 2.5f && (nearest < 0 || runeAlong <= hits[nearest].distance + 1.5f)) return Clicked.Runestone;
+            }
+
             if (nearest < 0) return Clicked.Nothing;
 
-            // the runestone has only a trigger round it: a click on the stone (the cave's rock) near it counts
-            if (!runestone) runestone = GameObject.Find("Ironhill Island/" + RunestoneName)?.transform;
+            // a click on the cave's rock near it counts too
             if (runestone && Vector3.Distance(hits[nearest].point, runestone.position) < 5f) return Clicked.Runestone;
 
             for (var t = hits[nearest].collider.transform; t; t = t.parent)

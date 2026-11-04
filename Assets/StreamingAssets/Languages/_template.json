@@ -2769,6 +2769,7 @@
     "UI_STORY_RUNESTONE_NPC": "The runestone",
     "UI_STORY_RUNESTONE_SIGN_ACTIVE": "The runestone stirs... ({0}/{1})",
     "UI_STORY_RUNESTONE_SIGN_DONE": "The runestone is awake.",
+    "UI_STORY_RUNESTONE_SIGN_TALK": "The runestone wants a word. Click it.",
     "UI_STORY_RUNESTONE_THING": "a rune fragment",
     "UI_STORY_STEP": "Step {0} of {1}",
     "UI_STORY_TAB": "Village",
