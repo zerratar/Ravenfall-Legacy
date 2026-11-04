@@ -42,6 +42,16 @@ public partial class WaveRun : MonoBehaviour
     private const float HunterChance = 0.25f;
     private const float HunterRange = 25f;
     private const float ViewerBlowShare = 0.6f;
+    // Helpers are soft capped against the hero (the user, 2026-11-04: a 1,000 health healer kept a 186 health hero up
+    // through anything). In the hero's own terms, so any gap in levels works out the same: a helper's blow counts in
+    // full up to twice the hero's hit and a tenth beyond; all healing on the hero together restores up to a share of
+    // its health a second (a regular enemy's blow is 1 to 1.7% a second), and a fifth of anything beyond. Healers
+    // matter, strong viewers hit hard, and a swarmed hero can still fall.
+    private const float HelperHitCap = 2f;
+    private const float OverHitCap = 0.1f;
+    private const float HeroHealPerSecond = 0.04f;
+    private const float HeroHealStore = 2f;     // seconds of it that can wait unused
+    private const float OverHealBudget = 0.2f;
     public const float LeaveAskSeconds = 3f;
     private const int MaxAlive = 12;
     private const float SpawnInterval = 0.7f;
@@ -160,6 +170,7 @@ public partial class WaveRun : MonoBehaviour
     private int revives;
     private float leaveAskedUntil;
     private float heroHit; // the hero's best average hit; only ever goes up during a run
+    private float healBudget, healBudgetAt;
     private float hit;     // what sizes the enemies (Make): the hero's hit and the fighting viewers' share
 
     /// <summary>Starts a run for the hero (in hero mode on Ravebridge). Goal 0 is endless; finished hears the end; daily
@@ -605,7 +616,8 @@ public partial class WaveRun : MonoBehaviour
                 sum += p.TrainingRanged ? GameMath.CalculateRangedDamage(p, template)
                     : p.TrainingMagic ? GameMath.CalculateMagicDamage(p, template)
                     : GameMath.CalculateMeleeDamage(p, template);
-            total += sum / Samples;
+            // as it will land (HelperDamage): what goes past the cap does not make the waves tougher either
+            total += heroHit > 0f ? SoftCap(sum / Samples, heroHit * HelperHitCap) : sum / Samples;
         }
         return total;
     }
@@ -620,6 +632,29 @@ public partial class WaveRun : MonoBehaviour
         var share = kind.Blow * ViewerBlowShare * (1f + Wave * 0.03f) * UnityEngine.Random.Range(0.7f, 1.2f) * Steep * Fierce(enemy);
         return Mathf.Max(1, Mathf.RoundToInt(viewer.Stats.Health.MaxLevel * share));
     }
+
+    /// <summary>A helper's blow on a wave enemy, soft capped at twice the hero's hit (EnemyController.TakeDamage).</summary>
+    public int HelperDamage(PlayerController attacker, EnemyController enemy, int damage)
+    {
+        if (State == Phase.Over || !attacker || attacker == Hero || !enemy || !alive.ContainsKey(enemy) || heroHit <= 0f) return damage;
+        return Mathf.Max(1, Mathf.RoundToInt(SoftCap(damage, heroHit * HelperHitCap)));
+    }
+
+    /// <summary>A helper's heal on the hero, out of the healing the hero may get a second (PlayerCombat.HealTarget).</summary>
+    public int HealOnHero(PlayerController healer, int heal)
+    {
+        if (State == Phase.Over || !Hero || !healer || healer == Hero || heal <= 0) return heal;
+        var perSecond = Hero.Stats.Health.MaxLevel * HeroHealPerSecond;
+        var now = Time.time;
+        if (healBudgetAt <= 0f) { healBudget = perSecond * HeroHealStore; healBudgetAt = now; }
+        healBudget = Mathf.Min(perSecond * HeroHealStore, healBudget + (now - healBudgetAt) * perSecond);
+        healBudgetAt = now;
+        var within = Mathf.Min(heal, healBudget);
+        healBudget -= within;
+        return Mathf.Max(1, Mathf.RoundToInt(within + (heal - within) * OverHealBudget));
+    }
+
+    private static float SoftCap(float value, float cap) => value <= cap ? value : cap + (value - cap) * OverHitCap;
 
     /// <summary>The viewers on Ravebridge besides the hero.</summary>
     private IEnumerable<PlayerController> Others()

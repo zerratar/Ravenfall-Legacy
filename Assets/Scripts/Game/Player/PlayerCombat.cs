@@ -171,6 +171,9 @@ public class PlayerCombat
 
             var maxHeal = GameMath.MaxHit(owner.Stats.Healing.MaxLevel, owner.EquipmentStats.BaseMagicPower);
             var heal = CalculateDamage(target);
+            // on the hero in a wave run: out of what the hero may be healed a second, whoever heals (WaveRun)
+            var run = WaveRun.Current;
+            if (run && !run.Finished && target is PlayerController onHero && onHero == run.Hero) heal = run.HealOnHero(owner, heal);
             if (!target.Heal(heal))
                 return true;
 

@@ -817,6 +817,9 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
             return false;
         }
 
+        // a helper's blow on a wave enemy counts against the hero's hit (WaveRun, soft capped)
+        var run = WaveRun.Current;
+        if (run && !run.Finished) damage = run.HelperDamage(player, this, damage);
 
         try
         {
