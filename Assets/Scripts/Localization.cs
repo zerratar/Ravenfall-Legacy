@@ -43,6 +43,7 @@ public static class Localization
     public static string MSG_QUEST_NO_SEASON = Meta("quest", "fail") + "There is no seasonal quest today. They come with Halloween and Christmas.";
     public static string MSG_QUEST_CHAINS = Meta("quest", "info") + "Quest chains: {chains}. Begin one with !quest begin cat.";
     public static string MSG_QUEST_CHAIN_STEP = Meta("quest", "info") + "{chain}, step {step} of {steps}: {story} Now: {task}.";
+    public static string MSG_QUEST_CHAIN_STEP_MORE = Meta("quest", "info") + "{chain}, step {step} of {steps}: {story} Now: {task}. Offers and other quests: !quest list.";
     public static string MSG_QUEST_CHAIN_BEGUN = Meta("quest", "accept") + "{chain} begins! {story} Now: {task}.";
     public static string MSG_QUEST_STEP_DONE = Meta("quest", "progress") + "Step done! {chain}, step {step} of {steps}: {story} Now: {task}.";
     public static string MSG_QUEST_CHAIN_COMPLETE = Meta("quest", "complete") + "{chain} finished! {ending} You got {reward} and the title {title} (wear it with !title).";
@@ -190,6 +191,7 @@ public static class Localization
     public static string UI_TAVERN_QUEST_REPLY = "{0}, you have all the work you can carry. Finish some first!";
     public static string UI_TAVERN_QUEST_GIVER_LINES = "Looking for work? Ask me with !quest.|Three tasks a day, and one big one a week.|Finish one every day and the rewards grow.|The barkeep's cat is missing again. Ask about it with !quest chains.|Old Finn won't stop talking about some giant fish.|Somewhere a dragon is waiting. Start with the wolves.";
     public static string UI_QUEST_ACTIVE_ENTRY = "{0}. {1} ({2}/{3})";
+    public static string UI_QUEST_ACTIVE_CHAIN_ENTRY = "{0} (step {1} of {2})";
     public static string UI_QUEST_OFFER_ENTRY = "{0}. {1} ({2} coins)";
     public static string UI_QUEST_WEEKLY_OFFER = "{0} ({1} coins)";
     public static string UI_QUEST_WEEKLY_ACTIVE = "{0} ({1}/{2})";

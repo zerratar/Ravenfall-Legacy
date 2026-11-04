@@ -171,8 +171,14 @@ public static class QuestChat
                     await AchievementsAsync(game, player, gm, client);
                     return;
 
+                case "list":
+                case "all":
+                case "offers":
+                    await List(game, player, gm, client, full: true);
+                    return;
+
                 default:
-                    await List(game, player, gm, client);
+                    await List(game, player, gm, client, full: false);
                     return;
             }
         }
@@ -528,8 +534,12 @@ public static class QuestChat
         }
     }
 
-    /// <summary>The quests taken, today's offers and the weekly quest, in one message; then the seasonal quest and the chain.</summary>
-    private static async System.Threading.Tasks.Task List(GameManager game, PlayerController player, GameMessage gm, GameClient client)
+    /// <summary>
+    /// The quests taken, today's offers and the weekly quest, in one message; then the seasonal quest and the chain.
+    /// A plain !quest on a chain is the chain's step alone: it is what a player says it for, and the whole list came
+    /// with it as three more replies, its first saying "Your quests: none" (the user, 2026-11-04). !quest list has it all.
+    /// </summary>
+    private static async System.Threading.Tasks.Task List(GameManager game, PlayerController player, GameMessage gm, GameClient client, bool full)
     {
         var list = await game.RavenNest.Quests.GetAsync(player.Id);
         if (list == null)
@@ -538,7 +548,16 @@ public static class QuestChat
             return;
         }
 
+        if (!full && list.Chain != null)
+        {
+            client.SendReply(gm, Localization.MSG_QUEST_CHAIN_STEP_MORE, ChainName(list.Chain.Key), list.Chain.Step + 1, list.Chain.Steps, Story(list.Chain.Key, list.Chain.Step), Task(list.Chain));
+            Say(game, player, Story(list.Chain.Key, list.Chain.Step));
+            return;
+        }
+
         var active = new List<string>();
+        if (list.Chain != null)
+            active.Add(string.Format(CultureInfo.InvariantCulture, Localization.UI_QUEST_ACTIVE_CHAIN_ENTRY, ChainName(list.Chain.Key), list.Chain.Step + 1, list.Chain.Steps));
         for (var i = 0; i < (list.Active?.Length ?? 0); ++i)
         {
             var q = list.Active[i];
