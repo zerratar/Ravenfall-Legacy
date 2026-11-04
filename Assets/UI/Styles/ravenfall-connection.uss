@@ -423,3 +423,26 @@
     color: rgb(255, 255, 255);
     background-color: var(--rf-success);
 }
+
+
+/* The stream was first on a new version, or an Early Bird: gold, a crown or a cup, for a minute and a half. */
+.rf-update--honour {
+    background-color: rgb(36, 28, 14);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: rgb(255, 214, 90);
+    border-right-color: rgb(255, 214, 90);
+    border-top-color: rgb(255, 214, 90);
+    border-bottom-color: rgb(255, 214, 90);
+}
+
+.rf-update--honour .rf-conn-server__icon {
+    color: rgb(20, 18, 15);
+    background-color: rgb(255, 214, 90);
+}
+
+.rf-update--honour .rf-update__title {
+    color: rgb(255, 224, 130);
+}

@@ -2258,11 +2258,24 @@ public static class Localization
     public static string UI_UPDATE_CARD_BUTTON = "Update now";
     public static string UI_UPDATE_CARD_RETRY = "Try again";
     public static string UI_UPDATE_CARD_HIDE = "Hide until the download is done";
+    public static string UI_UPDATE_HONOUR_FIRST = "The first stream on v{0}!";
+    public static string UI_UPDATE_HONOUR_EARLY = "Early Bird on v{0}!";
+    public static string UI_UPDATE_HONOUR_FIRST_NOTE = "No stream in the world got there sooner: {0} min after it came out. The record is yours for good.";
+    public static string UI_UPDATE_HONOUR_FIRST_EARLY_NOTE = "No stream in the world got there sooner: {0} min after it came out, an Early Bird too. The record is yours for good.";
+    public static string UI_UPDATE_HONOUR_EARLY_NOTE = "On the new version {0} min after it came out.";
+    public static string UI_UPDATE_HONOUR_TITLE = "New title: {0}.";
+    public static string UI_UPDATE_HONOUR_TITLES = "New titles: {0}.";
+    public static string UI_TITLE_TRAILBLAZER_1 = "the Trailblazer";
+    public static string UI_TITLE_TRAILBLAZER_2 = "the Pathfinder";
+    public static string UI_TITLE_TRAILBLAZER_3 = "the Vanguard";
+    public static string UI_TITLE_EARLYBIRD_1 = "the Early Bird";
+    public static string UI_TITLE_EARLYBIRD_2 = "the Dawn Patrol";
+    public static string UI_TITLE_EARLYBIRD_3 = "the Ever Ready";
     public static string UI_SETTINGS_EARLY_UPDATE = "Download updates in the background";
     public static string UI_SETTINGS_EARLY_UPDATE_HINT = "When a new version is out, the game downloads it while you stream, so updating only needs a quick restart.";
     public static string UI_SETTINGS_SECTION_UPDATES = "UPDATES";
     public static string UI_SETTINGS_AUTO_UPDATE = "Install updates automatically";
-    public static string UI_SETTINGS_AUTO_UPDATE_HINT = "Once a new version is downloaded, the game restarts into it by itself: when no raid, dungeon or event is running, after a minute's warning in chat.";
+    public static string UI_SETTINGS_AUTO_UPDATE_HINT = "Once a new version is downloaded, the game restarts into it by itself: when no raid, dungeon or event is running, after a minute's warning in chat. Streams on a new version within ten minutes of it coming out are Early Birds.";
     public static string UI_UPDATE_CARD_AUTO = "Restarting to update in {0} s.";
     public static string UI_UPDATE_CARD_AUTO_WAIT = "Installs by itself once the raid, dungeon or event is over.";
     public static string UI_UPDATE_CARD_NOT_NOW = "Not now";
@@ -2571,6 +2584,9 @@ public static class Localization
     public static string MSG_UPDATE_REQUIRED = Meta("system", "update") + "Attention! An essential update to Ravenfall, v{version}, is available. This update contains critical changes. To avoid any game disruption, game will attempt to automatically restart to apply the update.";
     public static string MSG_UPDATE_AVAILABLE = Meta("system", "update") + "Good news! Ravenfall v{version} is out now! For optimal gameplay and new features, restart your game to update. Enjoy!";
     public static string MSG_UPDATE_AUTO_RESTART = Meta("system", "update") + "Ravenfall restarts in a minute to update to v{version}. Your characters come back after the restart.";
+    public static string MSG_UPDATE_FIRST = Meta("system", "update") + "This stream is the first in the world on Ravenfall v{version}, {minutes} min after it came out! The record is kept for good.";
+    public static string MSG_UPDATE_EARLY = Meta("system", "update") + "Early Bird! This stream was on Ravenfall v{version} {minutes} min after it came out.";
+    public static string MSG_UPDATE_NEW_TITLES = Meta("system", "update") + "New title for the streamer's characters: {titles}. Wear it with !title.";
 
     // StreamRaidManager (on screen)
     public static string UI_STREAMRAID_WAR_DECLARED = "<b>{0}</b> has declared war with an army of <b>{1}</b>!";

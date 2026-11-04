@@ -19,6 +19,7 @@ namespace Shinobytes.UI
         private bool bound;
         private float nextRefresh;
         private bool hidden;
+        private RavenNest.Models.UpdateHonour honourHidden;
         private BackgroundUpdate.Phase hiddenAt;
 
         private void OnEnable()
@@ -74,7 +75,12 @@ namespace Shinobytes.UI
             title.AddToClassList("rf-conn-server__title");
             title.AddToClassList("rf-update__title");
             head.Add(title);
-            var close = new Button(() => { hidden = true; hiddenAt = BackgroundUpdate.State; Refresh(); }) { text = "", tooltip = Localization.UI_UPDATE_CARD_HIDE };
+            var close = new Button(() =>
+            {
+                if (BackgroundUpdate.Honour != null) honourHidden = BackgroundUpdate.Honour;
+                else { hidden = true; hiddenAt = BackgroundUpdate.State; }
+                Refresh();
+            }) { text = "", tooltip = Localization.UI_UPDATE_CARD_HIDE };
             close.AddToClassList("rf-icon");
             close.AddToClassList("rf-update__close");
             head.Add(close);
@@ -116,6 +122,15 @@ namespace Shinobytes.UI
 
         private void Refresh()
         {
+            // the stream was first on the new version, or an Early Bird: the card celebrates for a while
+            var honour = BackgroundUpdate.Honour;
+            card.EnableInClassList("rf-update--honour", honour != null);
+            if (honour != null)
+            {
+                ShowHonour(honour);
+                return;
+            }
+
             var gm = GameManager.Instance;
             var version = BackgroundUpdate.Version;
             var state = BackgroundUpdate.State;
@@ -153,6 +168,26 @@ namespace Shinobytes.UI
             update.style.display = DisplayStyle.Flex;
             retry.style.display = state == BackgroundUpdate.Phase.Failed ? DisplayStyle.Flex : DisplayStyle.None;
             notNow.style.display = ready && (counting || BackgroundUpdate.AutoUpdateWaiting) ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
+        private void ShowHonour(RavenNest.Models.UpdateHonour h)
+        {
+            card.style.display = honourHidden == h ? DisplayStyle.None : DisplayStyle.Flex;
+            card.EnableInClassList("rf-update--ready", false);
+            icon.text = h.First ? "\uf521" : "\uf0f4"; // a crown for the first, a morning cup for an Early Bird
+            title.text = string.Format(CultureInfo.InvariantCulture, h.First ? Localization.UI_UPDATE_HONOUR_FIRST : Localization.UI_UPDATE_HONOUR_EARLY, h.Version);
+            var line = h.First
+                ? (h.Early ? Localization.UI_UPDATE_HONOUR_FIRST_EARLY_NOTE : Localization.UI_UPDATE_HONOUR_FIRST_NOTE)
+                : Localization.UI_UPDATE_HONOUR_EARLY_NOTE;
+            line = string.Format(CultureInfo.InvariantCulture, line, h.Minutes);
+            var titles = h.NewTitles ?? System.Array.Empty<string>();
+            if (titles.Length > 0)
+                line += " " + string.Format(CultureInfo.InvariantCulture, titles.Length > 1 ? Localization.UI_UPDATE_HONOUR_TITLES : Localization.UI_UPDATE_HONOUR_TITLE, string.Join(", ", System.Linq.Enumerable.Select(titles, QuestChat.TitleText)));
+            note.text = line;
+            bar.style.display = DisplayStyle.None;
+            update.style.display = DisplayStyle.None;
+            retry.style.display = DisplayStyle.None;
+            notNow.style.display = DisplayStyle.None;
         }
 
         private static string DownloadLine(DownloadProgress p)

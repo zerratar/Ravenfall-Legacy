@@ -108,6 +108,22 @@ public static class BackgroundUpdate
         return RavebridgeReveal.Playing || WaveRun.Current != null || Regatta.Running || PirateRaid.Running;
     }
 
+    /// <summary>
+    /// The stream was first on the newest version, or an Early Bird (UpdateHonourEventHandler): the card celebrates it
+    /// for a while. Null once that is over.
+    /// </summary>
+    public static RavenNest.Models.UpdateHonour Honour => honour != null && Time.unscaledTime < honourUntil ? honour : null;
+
+    private static RavenNest.Models.UpdateHonour honour;
+    private static float honourUntil;
+    private const float HonourSeconds = 90f;
+
+    public static void Honoured(RavenNest.Models.UpdateHonour data)
+    {
+        honour = data;
+        honourUntil = Time.unscaledTime + HonourSeconds;
+    }
+
     /// <summary>A failed download, tried again from the card.</summary>
     public static void Retry()
     {

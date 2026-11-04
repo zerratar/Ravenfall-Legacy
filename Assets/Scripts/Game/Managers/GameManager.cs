@@ -508,6 +508,7 @@ public class GameManager : MonoBehaviour, IGameManager
         RegisterGameEventHandler<VillageStoryProgressEventHandler>((GameEventType)54);
         RegisterGameEventHandler<VillageStoryCompletedEventHandler>((GameEventType)55);
         RegisterGameEventHandler<RavebridgeForcedEventHandler>((GameEventType)56);
+        RegisterGameEventHandler<UpdateHonourEventHandler>((GameEventType)57);
         RegisterGameEventHandler<ItemRemoveByCategoryHandler>(GameEventType.ItemRemoveByCategory);
 
         RegisterGameEventHandler<ItemUnequipEventHandler>(GameEventType.ItemUnEquip);
