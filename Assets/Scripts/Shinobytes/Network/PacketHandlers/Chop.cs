@@ -45,6 +45,8 @@ public class Chop : ChatBotCommandHandler<string>
         if (playerSkill < levelRequirement)
         {
             client.SendReply(gm, Localization.MSG_CHOP_LEVEL_REQUIREMENT, levelRequirement, result.Item.Name);
+            // the task stays as it was: it was set for the item all the same, training toward what could not drop
+            return;
         }
 
         player.SetTask(taskType, result.Item.Name);

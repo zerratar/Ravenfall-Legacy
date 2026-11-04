@@ -48,6 +48,8 @@ public class Fish : ChatBotCommandHandler<string>
         if (playerSkill < levelRequirement)
         {
             client.SendReply(gm, Localization.MSG_FISH_LEVEL_REQUIREMENT, levelRequirement, result.Item.Name);
+            // the task stays as it was: it was set for the item all the same, training toward what could not drop
+            return;
         }
 
         if (!atSea && SeaFishing.SeaOnly.Contains(result.Item.Name))
