@@ -23,6 +23,20 @@ public static class BackgroundUpdate
     /// <summary>How far the download is, or null before it reports.</summary>
     public static DownloadProgress Progress => handler?.GetDownloadProgress();
 
+    /// <summary>
+    /// With "Install updates automatically" on (off by default), when the countdown to the restart runs out (unscaled
+    /// time), or a negative number while none runs: it starts once the download is ready and nothing is under way.
+    /// </summary>
+    public static float AutoUpdateAt { get; private set; } = -1f;
+
+    /// <summary>The automatic restart waits for a raid, a dungeon, Ravebridge, the regatta or the pirates to finish.</summary>
+    public static bool AutoUpdateWaiting { get; private set; }
+
+    /// <summary>The warning chat gets before the automatic restart.</summary>
+    public const float AutoUpdateWarning = 60f;
+
+    private static string autoCancelledFor;
+
     /// <summary>Lets the editor try it (downloads into the project folder's update/); off otherwise in the editor.</summary>
     public static bool AllowInEditor;
 
@@ -42,6 +56,56 @@ public static class BackgroundUpdate
     public static void SettingTurnedOn()
     {
         if (!string.IsNullOrEmpty(Version) && (State == Phase.None || State == Phase.Failed)) Begin();
+    }
+
+    /// <summary>
+    /// The automatic restart, checked by the card a few times a second: once the download is ready and nothing is
+    /// under way, chat is told and a minute later the game restarts into the update.
+    /// </summary>
+    public static void Tick()
+    {
+        var auto = State == Phase.Ready && SettingsApplier.InstallUpdatesAutomatically && autoCancelledFor != Version;
+        if (!auto)
+        {
+            AutoUpdateAt = -1f;
+            AutoUpdateWaiting = false;
+            return;
+        }
+
+        if (AutoUpdateAt < 0f)
+        {
+            AutoUpdateWaiting = Busy();
+            if (AutoUpdateWaiting) return;
+            AutoUpdateAt = Time.unscaledTime + AutoUpdateWarning;
+            var gm = GameManager.Instance;
+            if (gm && gm.RavenBot != null) gm.RavenBot.Announce(Localization.MSG_UPDATE_AUTO_RESTART, Version);
+            return;
+        }
+
+        if (Time.unscaledTime >= AutoUpdateAt)
+        {
+            AutoUpdateAt = -1f;
+            autoCancelledFor = Version; // once: should the restart not happen, it is not tried again
+            UpdateNow();
+        }
+    }
+
+    /// <summary>Not now: no automatic restart for this version (Update now still works).</summary>
+    public static void CancelAuto()
+    {
+        autoCancelledFor = Version;
+        AutoUpdateAt = -1f;
+    }
+
+    /// <summary>Something chat is in the middle of, which a restart would cut short.</summary>
+    private static bool Busy()
+    {
+        var gm = GameManager.Instance;
+        if (!gm) return true;
+        if (gm.Raid && gm.Raid.IsEventActive) return true;
+        if (gm.Dungeons && gm.Dungeons.Active) return true;
+        if (RavebridgeManager.Instance && RavebridgeManager.Instance.Active) return true;
+        return RavebridgeReveal.Playing || WaveRun.Current != null || Regatta.Running || PirateRaid.Running;
     }
 
     /// <summary>A failed download, tried again from the card.</summary>

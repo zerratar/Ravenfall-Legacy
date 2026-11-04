@@ -370,6 +370,19 @@ namespace Shinobytes.UI
             Switch(c, Localization.UI_SETTINGS_JOIN_CODE, Localization.UI_SETTINGS_JOIN_CODE_HINT, SettingsApplier.RequireJoinCode, SettingsApplier.Defaults.RequireJoinCode, SettingsApplier.SetRequireJoinCode);
             Switch(c, Localization.UI_SETTINGS_PHYSICS, WithKey(Localization.UI_SETTINGS_PHYSICS_HINT, Keybinds.Action.Physics), SettingsApplier.Physics, SettingsApplier.Defaults.Physics, SettingsApplier.SetPhysics);
 
+            // new versions: downloaded while the stream goes on (on), and installed by themselves (off)
+            Section(c, Localization.UI_SETTINGS_SECTION_UPDATES);
+            VisualElement autoRow = null;
+            Switch(c, Localization.UI_SETTINGS_EARLY_UPDATE, Localization.UI_SETTINGS_EARLY_UPDATE_HINT, SettingsApplier.DownloadUpdatesEarly,
+                SettingsApplier.Defaults.DownloadUpdatesEarly, v =>
+                {
+                    SettingsApplier.SetDownloadUpdatesEarly(v);
+                    autoRow.SetEnabled(v);
+                });
+            autoRow = Switch(c, Localization.UI_SETTINGS_AUTO_UPDATE, Localization.UI_SETTINGS_AUTO_UPDATE_HINT, SettingsApplier.InstallUpdatesAutomatically,
+                SettingsApplier.Defaults.InstallUpdatesAutomatically, SettingsApplier.SetInstallUpdatesAutomatically);
+            autoRow.SetEnabled(SettingsApplier.DownloadUpdatesEarly);
+
             Section(c, Localization.UI_SETTINGS_SECTION_OVERLAYS);
             VisualElement textRow = null, jsonRow = null;
             Switch(c, Localization.UI_SETTINGS_LABELS, Localization.UI_SETTINGS_LABELS_HINT, SettingsApplier.StreamLabels, SettingsApplier.Defaults.StreamLabels, v =>
@@ -641,8 +654,6 @@ namespace Shinobytes.UI
                 }, numeric: true);
             portRow.SetEnabled(SettingsApplier.LocalBot);
             ReloadRow(c);
-            Switch(c, Localization.UI_SETTINGS_EARLY_UPDATE, Localization.UI_SETTINGS_EARLY_UPDATE_HINT, SettingsApplier.DownloadUpdatesEarly,
-                SettingsApplier.Defaults.DownloadUpdatesEarly, SettingsApplier.SetDownloadUpdatesEarly);
 
             void BotSwitch(VisualElement parent, string key, string title, string hint, Action<bool> also = null)
             {

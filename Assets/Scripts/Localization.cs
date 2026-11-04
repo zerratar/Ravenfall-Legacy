@@ -2260,6 +2260,12 @@ public static class Localization
     public static string UI_UPDATE_CARD_HIDE = "Hide until the download is done";
     public static string UI_SETTINGS_EARLY_UPDATE = "Download updates in the background";
     public static string UI_SETTINGS_EARLY_UPDATE_HINT = "When a new version is out, the game downloads it while you stream, so updating only needs a quick restart.";
+    public static string UI_SETTINGS_SECTION_UPDATES = "UPDATES";
+    public static string UI_SETTINGS_AUTO_UPDATE = "Install updates automatically";
+    public static string UI_SETTINGS_AUTO_UPDATE_HINT = "Once a new version is downloaded, the game restarts into it by itself: when no raid, dungeon or event is running, after a minute's warning in chat.";
+    public static string UI_UPDATE_CARD_AUTO = "Restarting to update in {0} s.";
+    public static string UI_UPDATE_CARD_AUTO_WAIT = "Installs by itself once the raid, dungeon or event is over.";
+    public static string UI_UPDATE_CARD_NOT_NOW = "Not now";
 
     // Getting the game ready after signing in
     public static string UI_LOADING_TITLE = "Getting your game ready";
@@ -2564,6 +2570,7 @@ public static class Localization
     // GameUpdatedEventHandler
     public static string MSG_UPDATE_REQUIRED = Meta("system", "update") + "Attention! An essential update to Ravenfall, v{version}, is available. This update contains critical changes. To avoid any game disruption, game will attempt to automatically restart to apply the update.";
     public static string MSG_UPDATE_AVAILABLE = Meta("system", "update") + "Good news! Ravenfall v{version} is out now! For optimal gameplay and new features, restart your game to update. Enjoy!";
+    public static string MSG_UPDATE_AUTO_RESTART = Meta("system", "update") + "Ravenfall restarts in a minute to update to v{version}. Your characters come back after the restart.";
 
     // StreamRaidManager (on screen)
     public static string UI_STREAMRAID_WAR_DECLARED = "<b>{0}</b> has declared war with an army of <b>{1}</b>!";

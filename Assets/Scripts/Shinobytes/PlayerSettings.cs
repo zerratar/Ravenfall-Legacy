@@ -25,6 +25,7 @@ public class PlayerSettings
     /// <summary>Hero mode's hits and the Kraken's roar shake the camera.</summary>
     public bool? ScreenShake;
     public bool? DownloadUpdatesEarly;
+    public bool? InstallUpdatesAutomatically;
 
 
     public float? DayNightTime;
@@ -427,6 +428,7 @@ public class PlayerSettings
             Serialize(sw, "regattaCamera", obj.RegattaCamera);
             Serialize(sw, "screenShake", obj.ScreenShake);
             Serialize(sw, "downloadUpdatesEarly", obj.DownloadUpdatesEarly);
+            Serialize(sw, "installUpdatesAutomatically", obj.InstallUpdatesAutomatically);
             Serialize(sw, "announceNoExpGain", obj.AnnounceNoExpGain);
 
             // Serialize all nullable float properties

@@ -113,6 +113,7 @@ public static class SettingsApplier
         public const bool RaceCamera = true;
         public const bool ScreenShake = true;
         public const bool DownloadUpdatesEarly = true;
+        public const bool InstallUpdatesAutomatically = false;
         public const int AfkKick = 0;
         public const bool AnnounceNoExp = false;
         public const int NoExpMinutes = 1;           // index into NoExpMinuteOptions, 5 minutes
@@ -1054,6 +1055,10 @@ public static class SettingsApplier
         PlayerSettings.Instance.DownloadUpdatesEarly = value;
         if (value) BackgroundUpdate.SettingTurnedOn();
     }
+
+    /// <summary>A downloaded update installs itself: a minute's warning in chat, then the restart (off by default).</summary>
+    public static bool InstallUpdatesAutomatically => PlayerSettings.Instance.InstallUpdatesAutomatically.GetValueOrDefault(Defaults.InstallUpdatesAutomatically);
+    public static void SetInstallUpdatesAutomatically(bool value) => PlayerSettings.Instance.InstallUpdatesAutomatically = value;
 
     // ---- Players --------------------------------------------------------------------------------
 

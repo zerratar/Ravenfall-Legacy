@@ -15,7 +15,7 @@ namespace Shinobytes.UI
     {
         private VisualElement card, bar, fill;
         private Label icon, title, note;
-        private Button update, retry;
+        private Button update, retry, notNow;
         private bool bound;
         private float nextRefresh;
         private bool hidden;
@@ -41,6 +41,7 @@ namespace Shinobytes.UI
             if (bound && card.panel == null) bound = false;
             if (!bound) TryBind();
             if (!bound || Time.unscaledTime < nextRefresh) return;
+            BackgroundUpdate.Tick();
             nextRefresh = Time.unscaledTime + 0.25f;
             Refresh();
         }
@@ -99,8 +100,12 @@ namespace Shinobytes.UI
             retry = new Button(BackgroundUpdate.Retry) { text = Localization.UI_UPDATE_CARD_RETRY };
             retry.AddToClassList("rf-button");
             retry.AddToClassList("rf-update__button");
+            notNow = new Button(BackgroundUpdate.CancelAuto) { text = Localization.UI_UPDATE_CARD_NOT_NOW };
+            notNow.AddToClassList("rf-button");
+            notNow.AddToClassList("rf-update__button");
             actions.Add(update);
             actions.Add(retry);
+            actions.Add(notNow);
             body.Add(actions);
 
             // at the top of the stack: the warnings below it stay where they were
@@ -114,8 +119,10 @@ namespace Shinobytes.UI
             var gm = GameManager.Instance;
             var version = BackgroundUpdate.Version;
             var state = BackgroundUpdate.State;
-            // tucked away until the download is done
+            // tucked away until the download is done; never while the automatic restart counts down
             if (hidden && state != hiddenAt && state == BackgroundUpdate.Phase.Ready) hidden = false;
+            var counting = BackgroundUpdate.AutoUpdateAt >= 0f;
+            if (counting) hidden = false;
             var show = gm && gm.NewUpdateAvailable && !string.IsNullOrEmpty(version) && !hidden;
             card.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
             if (!show) return;
@@ -134,6 +141,9 @@ namespace Shinobytes.UI
                 var share = progress != null && progress.FileSize > 0 ? Mathf.Clamp01((float)progress.BytesDownloaded / progress.FileSize) : 0f;
                 fill.style.width = Length.Percent(share * 100f);
             }
+            else if (ready && counting)
+                note.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_UPDATE_CARD_AUTO, Mathf.CeilToInt(BackgroundUpdate.AutoUpdateAt - Time.unscaledTime));
+            else if (ready && BackgroundUpdate.AutoUpdateWaiting) note.text = Localization.UI_UPDATE_CARD_AUTO_WAIT;
             else if (ready) note.text = Localization.UI_UPDATE_CARD_READY;
             else if (state == BackgroundUpdate.Phase.Failed) note.text = Localization.UI_UPDATE_CARD_FAILED;
             else note.text = Localization.UI_UPDATE_CARD_RESTART;
@@ -142,6 +152,7 @@ namespace Shinobytes.UI
             // Update now is there throughout: with the download unfinished it restarts and finishes it on the update screen
             update.style.display = DisplayStyle.Flex;
             retry.style.display = state == BackgroundUpdate.Phase.Failed ? DisplayStyle.Flex : DisplayStyle.None;
+            notNow.style.display = ready && (counting || BackgroundUpdate.AutoUpdateWaiting) ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         private static string DownloadLine(DownloadProgress p)
