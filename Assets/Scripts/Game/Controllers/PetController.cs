@@ -245,7 +245,8 @@ public class PetController : MonoBehaviour
             }
         }
 
-        var playerIsMoving = player.Movement.IsMoving;
+        // the pet's own walking (Follow), not its player's: it sets off a moment later and stops when it gets there
+        var playerIsMoving = petSpeed > MovingSpeed;
         if (CanSleep)
         {
             if (playerIsMoving)
@@ -273,12 +274,99 @@ public class PetController : MonoBehaviour
             }
         }
 
-        if (_transform.localPosition.x != offsetPosition.x)
-            _transform.localPosition = offsetPosition;
 
         UpdateAnimator(playerIsMoving);
     }
 
+
+    // ---- Following -------------------------------------------------------------------------------------------
+    // The pet was glued to its spot beside the player, turning and moving as one with it, which looked odd whenever the
+    // player turned round (the user, 2026-11-04). It keeps a place of its own in the world now: it walks after its spot
+    // with a little slack, runs to catch up when it falls behind, faces where it goes and looks at its player when it
+    // stops, and sniffs about now and then while the player stands still. Glued as before on a ferry or a boat and in
+    // the onsen, and snapped back after any jump (a teleport, a dungeon, another island).
+
+    private const float FollowSlack = 0.5f;      // metres off its spot before it walks after it
+    private const float CatchUpBeyond = 2f;      // further than this, it runs to catch up
+    private const float CatchUpFactor = 1.7f;
+    private const float WalkSpeed = 2.2f;        // its pace with the player standing still (going to its spot, sniffing about)
+    private const float Acceleration = 12f;
+    private const float SnapDistance = 12f;
+    private const float TurnDegrees = 420f;      // a second
+    private const float MovingSpeed = 0.3f;      // walking for the animator and for waking up
+    private const float GroundEvery = 0.25f;
+    private const int GroundLayers = 25556799;   // what the navmesh is baked from: the ground people walk on
+
+    private Vector3 worldPosition, lastPlayerPosition, wanderOffset;
+    private Quaternion worldRotation;
+    private bool following;
+    private float petSpeed, playerSpeed, groundOffset, nextGround, nextWander, playerStillSince;
+
+    private void LateUpdate()
+    {
+        if (GameCache.IsAwaitingGameRestore || !player || !_transform) return;
+
+        var playerTransform = player.transform;
+        var dt = Mathf.Max(GameTime.deltaTime, 0.0001f);
+        var playerPosition = playerTransform.position;
+        var moved = playerPosition - lastPlayerPosition;
+        moved.y = 0f;
+        lastPlayerPosition = playerPosition;
+        playerSpeed = Mathf.Lerp(playerSpeed, moved.magnitude / dt, 8f * dt);
+
+        if (player.ferryHandler.OnFerry || player.ferryHandler.Active || player.onsenHandler.InOnsen)
+        {
+            _transform.localPosition = offsetPosition;
+            _transform.localRotation = Quaternion.identity;
+            following = false;
+            petSpeed = 0f;
+            return;
+        }
+
+        // sniffing about while the player stands still a while, back to its spot when the player moves on
+        if (playerSpeed > MovingSpeed) { playerStillSince = GameTime.time; wanderOffset = Vector3.zero; }
+        else if (!isSleeping && GameTime.time - playerStillSince > 4f && GameTime.time >= nextWander)
+        {
+            nextWander = GameTime.time + UnityEngine.Random.Range(5f, 9f);
+            wanderOffset = UnityEngine.Random.value < 0.35f ? Vector3.zero : new Vector3(UnityEngine.Random.Range(-1.2f, 1.2f), 0f, UnityEngine.Random.Range(-1.2f, 1.2f));
+        }
+
+        var spot = playerTransform.TransformPoint(offsetPosition + wanderOffset);
+        if (GameTime.time >= nextGround)
+        {
+            nextGround = GameTime.time + GroundEvery;
+            groundOffset = Physics.Raycast(spot + Vector3.up * 3f, Vector3.down, out var hit, 8f, GroundLayers, QueryTriggerInteraction.Ignore)
+                ? hit.point.y - playerPosition.y : 0f;
+        }
+        spot.y = playerPosition.y + offsetPosition.y + groundOffset;
+
+        var to = spot - worldPosition;
+        to.y = 0f;
+        var distance = to.magnitude;
+        if (!following || distance > SnapDistance)
+        {
+            worldPosition = spot;
+            worldRotation = playerTransform.rotation;
+            following = true;
+            petSpeed = 0f;
+        }
+        else
+        {
+            var wanted = distance <= FollowSlack ? 0f : Mathf.Max(playerSpeed, WalkSpeed) * (distance > CatchUpBeyond ? CatchUpFactor : 1f);
+            petSpeed = Mathf.MoveTowards(petSpeed, wanted, Acceleration * dt);
+            var step = Mathf.Min(distance, petSpeed * dt);
+            if (distance > 0.001f) worldPosition += to / distance * step;
+            worldPosition.y = Mathf.Lerp(worldPosition.y, spot.y, 10f * dt);
+
+            // where it goes while it walks; its player when it stands
+            var look = petSpeed > MovingSpeed ? to : playerPosition - worldPosition;
+            look.y = 0f;
+            if (look.sqrMagnitude > 0.0001f)
+                worldRotation = Quaternion.RotateTowards(worldRotation, Quaternion.LookRotation(look), TurnDegrees * dt * (petSpeed > MovingSpeed ? 1f : 0.35f));
+        }
+
+        _transform.SetPositionAndRotation(worldPosition, worldRotation);
+    }
 
     private void DisableChristmasEquipment()
     {
