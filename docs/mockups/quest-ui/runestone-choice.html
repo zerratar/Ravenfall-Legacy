@@ -1,0 +1,199 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Runestone choice</title>
+<style>
+@font-face { font-family: Rodin; font-weight: 500; src: url("../../../Assets/Fonts/FOT-NewRodin Pro M.otf"); }
+@font-face { font-family: Rodin; font-weight: 700; src: url("../../../Assets/Fonts/FOT-NewRodin Pro B.otf"); }
+@font-face { font-family: Rodin; font-weight: 800; src: url("../../../Assets/Fonts/FOT-NewRodin Pro EB.otf"); }
+@font-face { font-family: FA; font-weight: 900; src: url("../../../Assets/Fonts/FontAwesome7/Font Awesome 7 Pro-Solid-900.otf"); }
+
+:root {
+  --accent: rgb(232, 163, 61); --accent-bright: rgb(255, 194, 106); --accent-dim: rgb(158, 110, 40);
+  --accent-wash: rgba(232, 163, 61, 0.1); --bg: rgb(20, 18, 15); --surface: rgb(31, 28, 23); --raised: rgb(43, 39, 32);
+  --border: rgb(58, 53, 44); --border-strong: rgb(90, 82, 68); --text: rgb(255, 244, 214); --dim: rgb(167, 158, 138);
+  --faint: rgb(112, 105, 91); --chip: rgba(255, 244, 214, 0.1); --divider: rgba(255, 244, 214, 0.07);
+  --success: rgb(76, 195, 138); --gold-bg: rgb(36, 27, 12);
+  --strength: rgb(226, 98, 74); --craft: rgb(120, 170, 235); --nature: rgb(110, 200, 120);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { width: 2560px; height: 1440px; overflow: hidden; font-family: Rodin; font-weight: 700; color: var(--text);
+  background: url("backdrop-village.jpg") center / cover; }
+.scrim { position: absolute; inset: 0; background: rgba(10, 9, 7, 0.35); }
+.i { font-family: FA; font-weight: 900; font-style: normal; }
+
+.window { position: absolute; left: 600px; top: 36px; width: 1360px; background: rgba(20, 18, 15, 0.97);
+  border: 1px solid var(--border); border-top: 3px solid var(--accent); border-radius: 8px; padding: 24px 32px; display: flex; flex-direction: column; }
+.head { display: flex; align-items: center; margin-bottom: 12px; }
+.head h1 { flex: 1; font-size: 30px; font-weight: 700; }
+.head .x { font-size: 22px; color: var(--dim); }
+.tabs { display: flex; gap: 8px; border-bottom: 2px solid var(--divider); margin-bottom: 18px; }
+.tab { font-size: 23px; padding: 14px 20px; color: var(--dim); font-weight: 700; }
+.tab.on { color: var(--text); border-bottom: 3px solid var(--accent); margin-bottom: -2px; }
+
+.story { border: 2px solid var(--accent-dim); border-radius: 8px; background: linear-gradient(180deg, rgb(64, 44, 18), rgb(38, 29, 16) 46%, rgb(31, 26, 19)); padding: 18px 24px 22px; }
+.story-top { display: flex; align-items: flex-end; }
+.badge { display: inline-block; font-size: 14px; font-weight: 800; letter-spacing: 1px; color: var(--bg); background: var(--accent); padding: 3px 9px; border-radius: 3px; }
+.story h2 { font-size: 34px; font-weight: 800; margin-top: 8px; }
+.steps { margin-left: auto; text-align: right; }
+.steps .lbl { font-size: 20px; font-weight: 800; color: var(--dim); margin-bottom: 10px; }
+.dots { display: flex; gap: 10px; align-items: center; }
+.dot { width: 18px; height: 18px; border-radius: 50%; background: var(--accent); }
+.dot.now { width: 26px; height: 26px; box-shadow: 0 0 0 4px rgba(232, 163, 61, 0.25); }
+.dot.todo { background: none; border: 2px solid var(--faint); }
+
+.story-body { display: flex; gap: 28px; margin-top: 14px; align-items: center; }
+.art { width: 120px; height: 136px; background: url("../../../Assets/World/Quests/Resources/QuestUI/story-runestone.png") center / contain no-repeat;
+  filter: drop-shadow(0 0 22px rgba(80, 230, 220, 0.35)); flex-shrink: 0; }
+.npc { font-size: 21px; color: var(--accent-bright); font-weight: 700; }
+.line { font-size: 26px; line-height: 1.4; text-shadow: 0 1px 2px #000; margin-top: 8px; color: var(--text); max-width: 900px; }
+
+.objective { margin-top: 14px; background: rgba(0, 0, 0, 0.28); border-radius: 8px; padding: 20px 22px 22px; }
+.obj-head { display: flex; align-items: baseline; gap: 16px; }
+.obj-cap { font-size: 18px; font-weight: 800; letter-spacing: 1px; color: var(--dim); font-weight: 700; }
+.obj-title { font-size: 30px; font-weight: 800; margin-top: 6px; }
+.obj-sub { font-size: 21px; color: rgb(214, 204, 180); margin-top: 6px; }
+
+.cards { display: flex; gap: 18px; margin-top: 20px; }
+.card { flex: 1; min-width: 0; position: relative; border-radius: 8px; background: var(--raised); border: 2px solid var(--border-strong); padding: 16px 18px 16px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.card .icon { width: 68px; height: 68px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; color: var(--bg); }
+.card.strength .icon { background: radial-gradient(circle at 35% 30%, rgb(255, 150, 120), var(--strength)); }
+.card.craft .icon { background: radial-gradient(circle at 35% 30%, rgb(190, 220, 255), var(--craft)); }
+.card.nature .icon { background: radial-gradient(circle at 35% 30%, rgb(190, 245, 170), var(--nature)); }
+.card .num { position: absolute; top: 12px; left: 14px; width: 34px; height: 34px; border-radius: 50%; background: var(--chip); font-size: 20px; font-weight: 800; color: var(--text); display: flex; align-items: center; justify-content: center; }
+.card h3 { font-size: 32px; font-weight: 800; margin-top: 8px; }
+.card .bonus { font-size: 52px; font-weight: 800; color: var(--accent-bright); margin-top: 6px; line-height: 1; }
+.card .bonus small { font-size: 24px; color: var(--text); font-weight: 700; margin-left: 4px; }
+.card .what { font-size: 21px; font-weight: 800; color: rgb(224, 214, 190); margin-top: 10px; min-height: 58px; line-height: 1.35; }
+.skills { margin-top: auto; padding-top: 12px; display: flex; flex-wrap: nowrap; justify-content: center; gap: 5px; }
+.skill { width: 36px; height: 36px; border-radius: 6px; background: var(--chip); display: flex; align-items: center; justify-content: center; font-size: 19px; color: var(--text); }
+.pick { margin-top: 18px; width: 100%; height: 56px; border-radius: 4px; font-family: Rodin; font-weight: 800; font-size: 22px; display: flex; align-items: center; justify-content: center;
+  background: var(--accent); color: var(--bg); }
+
+/* voting */
+.vote { width: 100%; margin-top: 16px; }
+.vote-row { display: flex; justify-content: space-between; font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+.vote-row .pct { color: var(--dim); }
+.track { height: 16px; border-radius: 6px; background: rgba(0, 0, 0, 0.5); overflow: hidden; }
+.fill { height: 100%; border-radius: 6px; background: var(--accent); }
+.card.leading { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(232, 163, 61, 0.18), 0 0 28px rgba(232, 163, 61, 0.18); background: linear-gradient(180deg, rgb(58, 45, 26), var(--raised)); }
+.leadchip { position: absolute; top: 12px; right: 12px; font-size: 16px; font-weight: 800; letter-spacing: 1px; color: var(--bg); background: var(--accent); border-radius: 3px; padding: 3px 8px; }
+.pick.ghost { background: none; border: 2px solid var(--border-strong); color: var(--text); height: 50px; font-size: 20px; }
+
+.votebar { display: flex; align-items: center; gap: 16px; margin-top: 18px; background: var(--gold-bg); border: 1px solid var(--accent-dim); border-radius: 6px; padding: 14px 18px; }
+.votebar .i { font-size: 24px; color: var(--accent); }
+.votebar .t { font-size: 23px; font-weight: 800; flex: 1; }
+.votebar code { font-family: Rodin; font-weight: 800; color: var(--accent-bright); }
+.votebar .time { font-size: 32px; font-weight: 800; color: var(--accent-bright); }
+.timetrack { width: 160px; height: 8px; border-radius: 4px; background: rgba(0, 0, 0, 0.5); overflow: hidden; }
+.timetrack div { width: 70%; height: 100%; background: var(--accent); }
+
+.footer-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 18px; }
+.btn { font-size: 21px; font-weight: 800; padding: 12px 22px; border-radius: 4px; border: 2px solid var(--border-strong); color: var(--text); }
+.btn.quiet { border: none; color: var(--dim); }
+.btn .i { margin-right: 10px; color: var(--accent); }
+.label { position: absolute; left: 40px; bottom: 120px; max-width: 520px; line-height: 1.35; background: rgba(20, 18, 15, 0.85); padding: 14px 20px; border-radius: 6px; font-size: 26px; font-weight: 800; color: var(--text); text-shadow: 0 2px 6px #000; }
+.label span { color: var(--accent-bright); }
+</style>
+</head>
+<body>
+<div class="scrim"></div>
+<div class="label" id="label"></div>
+<div class="window">
+  <div class="head"><h1>The runestone</h1><span class="x i">&#xf00d;</span></div>
+  <div class="tabs"><div class="tab">Stream quest</div><div class="tab">Your quests</div><div class="tab on">Village</div></div>
+
+  <div class="story">
+    <div class="story-top">
+      <div><span class="badge">ACTIVE STORY</span><h2>The sleeping runestone</h2></div>
+      <div class="steps"><div class="lbl">Step 7 of 8</div>
+        <div class="dots"><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot now"></i><i class="dot todo"></i></div>
+      </div>
+    </div>
+
+    <div class="story-body">
+      <div class="art"></div>
+      <div style="flex:1">
+        <div class="npc">The runestone</div>
+        <div class="line">The runestone glows and asks which blessing your village should keep for good.</div>
+      </div>
+    </div>
+
+        <div class="objective">
+          <div class="obj-cap">CURRENT OBJECTIVE</div>
+          <div class="obj-title" id="objTitle">Choose a blessing for the village</div>
+          <div class="obj-sub" id="objSub">It lasts for good and helps everyone who plays in this stream. Pick one, or let chat vote.</div>
+
+          <div class="cards">
+            <div class="card strength" id="c1">
+              <span class="num">1</span>
+              <div class="icon i">&#xf71d;</div>
+              <h3>Strength</h3>
+              <div class="bonus">+5%<small>exp</small></div>
+              <div class="what">in every combat skill</div>
+              <div class="skills">
+                <span class="skill i">&#xf6de;</span><span class="skill i">&#xf3ed;</span><span class="skill i">&#xf6b2;</span><span class="skill i">&#xf004;</span>
+                <span class="skill i">&#xf6dd;</span><span class="skill i">&#xf6e8;</span><span class="skill i">&#xf469;</span><span class="skill i">&#xf54c;</span>
+              </div>
+              <div class="slot"></div>
+            </div>
+            <div class="card craft" id="c2">
+              <span class="num">2</span>
+              <div class="icon i">&#xf6e3;</div>
+              <h3>Craft</h3>
+              <div class="bonus">+5%<small>exp</small></div>
+              <div class="what">in crafting, cooking and brewing, and clan enchanting</div>
+              <div class="skills">
+                <span class="skill i">&#xf6e3;</span><span class="skill i">&#xf2e7;</span><span class="skill i">&#xf0c3;</span><span class="skill i">&#xf890;</span>
+              </div>
+              <div class="slot"></div>
+            </div>
+            <div class="card nature" id="c3">
+              <span class="num">3</span>
+              <div class="icon i">&#xf06c;</div>
+              <h3>Nature</h3>
+              <div class="bonus">+5%<small>exp</small></div>
+              <div class="what">in woodcutting, mining, fishing, farming and gathering</div>
+              <div class="skills">
+                <span class="skill i">&#xf1bb;</span><span class="skill i">&#xf6fc;</span><span class="skill i">&#xf578;</span><span class="skill i">&#xe2cd;</span><span class="skill i">&#xf4d8;</span>
+              </div>
+              <div class="slot"></div>
+            </div>
+          </div>
+
+          <div id="bottom"></div>
+        </div>
+  </div>
+</div>
+
+<script>
+const voting = location.hash === '#vote';
+const votes = [5, 2, 9], total = votes.reduce((a, b) => a + b, 0), best = votes.indexOf(Math.max(...votes));
+document.getElementById('label').innerHTML = voting
+  ? 'Mockup: the runestone\'s blessing, <span>chat voting</span>'
+  : 'Mockup: the runestone\'s blessing, <span>the streamer chooses</span>';
+document.querySelectorAll('.card').forEach((card, i) => {
+  const slot = card.querySelector('.slot');
+  if (!voting) {
+    slot.outerHTML = '<div class="pick">Choose ' + card.querySelector('h3').textContent + '</div>';
+    return;
+  }
+  const pct = Math.round(100 * votes[i] / total);
+  slot.outerHTML = '<div class="vote"><div class="vote-row"><span>' + votes[i] + ' votes</span><span class="pct">' + pct + '%</span></div>'
+    + '<div class="track"><div class="fill" style="width:' + pct + '%"></div></div></div>'
+    + '<div class="pick ghost">Choose now</div>';
+  if (i === best) { card.classList.add('leading'); card.insertAdjacentHTML('beforeend', '<span class="leadchip">LEADING</span>'); }
+});
+if (voting) {
+  document.getElementById('objTitle').textContent = 'Chat is choosing a blessing';
+  document.getElementById('objSub').textContent = 'The most votes wins when the time runs out. You can still choose one yourself.';
+  document.getElementById('bottom').innerHTML = '<div class="votebar"><span class="i">&#xf0a1;</span>'
+    + '<span class="t">Vote in chat with <code>!quest vote 1</code>, <code>2</code> or <code>3</code> &middot; 16 votes so far</span>'
+    + '<div class="timetrack"><div></div></div><span class="time">0:42</span></div>';
+} else {
+  document.getElementById('bottom').innerHTML = '<div class="footer-actions"><span class="btn"><span class="i">&#xf086;</span>Let chat vote (1 minute)</span><span class="btn quiet">Give up the story</span></div>';
+}
+</script>
+</body>
+</html>
