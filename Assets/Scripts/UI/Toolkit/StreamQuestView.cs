@@ -150,7 +150,7 @@ namespace Shinobytes.UI
         {
             if (trackerButton == null) return;
             var shown = SettingsApplier.QuestTracker;
-            trackerIcon.text = shown ? "" : "";
+            trackerIcon.text = shown ? "\uf070" : "\uf06e";
             trackerText.text = shown ? Localization.UI_QUESTWIN_TRACKER_HIDE : Localization.UI_QUESTWIN_TRACKER_SHOW;
         }
 

@@ -626,7 +626,9 @@ public static class QuestChat
     {
         var api = game.RavenNest.Quests;
         var list = await api.GetAsync(player.Id);
-        var key = FindChain(list?.Chains, argument);
+        // the list not loading is not the chain being unknown
+        if (list?.Chains == null) { client.SendReply(gm, Localization.MSG_QUEST_FAILED); return; }
+        var key = FindChain(list.Chains, argument);
         if (key == null) { client.SendReply(gm, Localization.MSG_QUEST_CHAIN_UNKNOWN); return; }
 
         var result = await api.BeginChainAsync(player.Id, key);
