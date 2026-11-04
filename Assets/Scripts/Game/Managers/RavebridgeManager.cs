@@ -140,7 +140,9 @@ public class RavebridgeManager : MonoBehaviour, IEvent
         ShowIsland();
         Active = true;
         Forced = forced;
-        ForcedReason = reason;
+        // shown in the Ravebridge window too: without the bot's routing tags, which it printed as they were
+        // (%[category:ravebridge]%%[tags:start]%The goblins...)
+        ForcedReason = string.IsNullOrEmpty(reason) ? reason : MessageUtilities.TryExtractTags(MessageUtilities.TryExtractCategory(reason, out _), out _);
         Attended = !forced;
         StartedAt = Time.time;
         pendingForcedReason = null;
