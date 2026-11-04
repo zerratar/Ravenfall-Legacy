@@ -506,6 +506,9 @@ public class RavebridgeManager : MonoBehaviour, IEvent
         // which puts the hero first (FightingTask).
         var run = WaveRun.Current;
         if (help == Help.None && run && !run.Finished && player.GetTask() == TaskType.Fighting && !player.TrainingHealing) help = Help.Follow;
+        // a healer told to follow heals: after !ravebridge follow and !train healing the character stood still, swinging
+        // at nothing it could hit, and died without healing even itself (the user, 2026-11-04)
+        if (help == Help.Follow && player.TrainingHealing) help = Help.Heal;
         if (help == Help.None) return false;
         var hero = Hero;
         if (!hero || hero == player || hero.Stats.IsDead || player.Stats.IsDead) return false;
@@ -513,11 +516,24 @@ public class RavebridgeManager : MonoBehaviour, IEvent
         visit.NextHelp = Time.time + 0.25f;
 
         var range = player.GetAttackRange();
-        if (help == Help.Heal && hero.Stats.HealthPercent < 0.9f)
+        if (help == Help.Heal)
         {
-            if (Vector3.Distance(player.Position, hero.Position) > range) { player.SetDestination(hero.Position); return true; }
-            if (player.IsReadyForAction) player.Heal(hero);
-            return true;
+            // the healer first when it is worse off than the hero (the hero counts a quarter more in need), then the hero
+            var self = player.Stats.HealthPercent;
+            if (self < 0.9f && self < hero.Stats.HealthPercent - 0.25f)
+            {
+                if (player.IsReadyForAction) player.Heal(player);
+                return true;
+            }
+            if (hero.Stats.HealthPercent < 0.9f)
+            {
+                if (Vector3.Distance(player.Position, hero.Position) > range) { player.SetDestination(hero.Position); return true; }
+                if (player.IsReadyForAction) player.Heal(hero);
+                return true;
+            }
+            // the hero is well: near it, the usual healing (anyone hurt, the healer too, FightingTask)
+            if (Vector3.Distance(player.Position, hero.Position) > 12f) { player.SetDestination(hero.Position); return true; }
+            return false;
         }
 
         var enemy = hero.Target ? hero.Target.GetComponent<EnemyController>() : null;

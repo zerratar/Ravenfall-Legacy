@@ -3055,7 +3055,15 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
         ClearAttackers();
 
-        if (Island && Island.SpawnPositionTransform)
+        // in a wave run on Ravebridge, back up beside the hero: from the island's spawn, hundreds of metres off, the
+        // waves never came near enough to pick the viewer up again and it stood there for the rest of the run (the
+        // user, 2026-11-04). Warped (SetPosition), so the agent is on the navmesh where it stands.
+        var run = InRavebridge ? WaveRun.Current : null;
+        var hero = run && !run.Finished && RavebridgeManager.Instance ? RavebridgeManager.Instance.Hero : null;
+        if (hero && hero != this && !hero.Stats.IsDead
+            && UnityEngine.AI.NavMesh.SamplePosition(hero.Position - hero.transform.forward * 4f, out var beside, 6f, UnityEngine.AI.NavMesh.AllAreas))
+            SetPosition(beside.position);
+        else if (Island && Island.SpawnPositionTransform)
             transform.position = Island.SpawnPosition;
         else
             transform.position = chunkManager.GetStarterChunk().GetPlayerSpawnPoint();

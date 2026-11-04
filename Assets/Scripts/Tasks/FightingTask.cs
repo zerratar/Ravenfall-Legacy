@@ -39,7 +39,8 @@ public class FightingTask : ChunkTask
         if (player.TrainingHealing)
         {
             var plr = target as PlayerController;
-            return plr == null || !plr || plr.Stats.IsDead || plr.TrainingHealing || plr.Stats.HealthPercent >= 0.9;
+            // other healers are left to heal themselves; a healer does heal itself
+            return plr == null || !plr || plr.Stats.IsDead || (plr.TrainingHealing && plr != player) || plr.Stats.HealthPercent >= 0.9;
         }
         else
         {
@@ -75,8 +76,8 @@ public class FightingTask : ChunkTask
                     continue;
                 }
 
-                // healers are not healed by healers (IsCompleted drops them)
-                if (x.TrainingHealing) continue;
+                // other healers are not healed by healers (IsCompleted drops them); the healer itself is
+                if (x.TrainingHealing && x != player) continue;
                 var need = x.Stats.HealthPercent - (x == hero ? 0.25f : 0f);
                 if (need < bestNeed)
                 {
