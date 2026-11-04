@@ -32,6 +32,8 @@ namespace Shinobytes.UI
         private readonly Label title;
         private readonly VisualElement map;
         private readonly VisualElement dots;
+        private readonly VisualElement areaLayer;
+        private readonly List<VisualElement> areaPool = new List<VisualElement>();
         private readonly VisualElement arrow;
         private readonly VisualElement pin;
         private readonly List<VisualElement> pool = new List<VisualElement>();
@@ -86,6 +88,10 @@ namespace Shinobytes.UI
             map.RegisterCallback<WheelEvent>(Wheel);
             dots = new VisualElement { pickingMode = PickingMode.Ignore };
             dots.AddToClassList("rf-hero-bigmap__dots");
+            // the quests' areas, under everything else on the map (QuestAreas)
+            areaLayer = new VisualElement { pickingMode = PickingMode.Ignore };
+            areaLayer.AddToClassList("rf-hero-bigmap__dots");
+            map.Add(areaLayer);
             pin = new VisualElement { pickingMode = PickingMode.Ignore };
             pin.AddToClassList("rf-hero-bigmap__pin");
             arrow = new Label("\uf124") { pickingMode = PickingMode.Ignore }; // location-arrow
@@ -156,6 +162,8 @@ namespace Shinobytes.UI
                 Render();
             }
 
+            PlaceAreas(hero);
+
             var used = 0;
             foreach (var p in GameManager.Instance.Players.GetAllPlayers())
             {
@@ -200,6 +208,31 @@ namespace Shinobytes.UI
         {
             var size = map.contentRect.size;
             return size.x > 0f && size.y > 0f ? new Vector2(local.x / size.x, local.y / size.y) : new Vector2(0.5f, 0.5f);
+        }
+
+        /// <summary>Where the hero's quests can be done: a soft red circle for each area, sized to the view.</summary>
+        private void PlaceAreas(PlayerController hero)
+        {
+            var list = QuestAreas.For(hero);
+            for (var i = 0; i < list.Count; i++)
+            {
+                while (areaPool.Count <= i)
+                {
+                    var e = new VisualElement { pickingMode = PickingMode.Ignore };
+                    e.AddToClassList("rf-hero-map__area");
+                    areaLayer.Add(e);
+                    areaPool.Add(e);
+                }
+                var area = areaPool[i];
+                var at = ToMap(list[i].Centre);
+                var size = list[i].Radius / half * 100f;
+                area.style.display = DisplayStyle.Flex;
+                area.style.left = Length.Percent(at.x * 100f - size / 2f);
+                area.style.top = Length.Percent(at.y * 100f - size / 2f);
+                area.style.width = Length.Percent(size);
+                area.style.height = Length.Percent(size);
+            }
+            for (var i = list.Count; i < areaPool.Count; i++) areaPool[i].style.display = DisplayStyle.None;
         }
 
         private void Place(int index, Vector3 world, string kind)

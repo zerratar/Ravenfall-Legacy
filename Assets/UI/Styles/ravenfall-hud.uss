@@ -8572,3 +8572,22 @@
 .rf-tracker--large .rf-tracker__vote-count {
     font-size: 21px;
 }
+
+/* Where the hero's quests can be done, on the big map and the minimap (QuestAreas): a soft red circle, as online
+   games mark a quest's area. Sized and placed by the maps. */
+.rf-hero-map__area {
+    position: absolute;
+    background-color: rgba(229, 72, 77, 0.22);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: rgba(255, 96, 90, 0.75);
+    border-right-color: rgba(255, 96, 90, 0.75);
+    border-top-color: rgba(255, 96, 90, 0.75);
+    border-bottom-color: rgba(255, 96, 90, 0.75);
+    border-top-left-radius: 50%;
+    border-top-right-radius: 50%;
+    border-bottom-left-radius: 50%;
+    border-bottom-right-radius: 50%;
+}
