@@ -3,7 +3,8 @@
 //
 // Bakes Ravebridge's own navmesh (the NavMeshSurface on WORLD/Islands/Ravebridge, area "Ravebridge", over the
 // island only: its terrains reach far beyond it) into Assets/Scenes/MainWorld/NavMesh-Ravebridge.asset and saves
-// the scene; the Bake button on the surface does the same. Agents on the island keep to its area
+// the scene, with steeper slopes and higher steps than the other islands (see below; the Bake button on the surface
+// would bake it with the world's limits instead). Agents on the island keep to its area
 // (NavMeshHelper.AreaMaskAt), like the mangrove island's (tools/mangrove/navmesh-bake.cs).
 // The second run checks the island: its spawn to every training spot, in the island's area only.
 var islandRoot = UnityEngine.GameObject.Find("============ WORLD/Islands/Ravebridge");
@@ -17,7 +18,32 @@ if (stage == "" || stage == "baking")
     // built in one go on the editor's own thread: the asynchronous build stalled with the editor in the background
     // (the island since the Lumbridge move is 640 m square and takes a few minutes)
     UnityEditor.SessionState.SetString(key, "baking");
-    surface.BuildNavMesh();
+    // The island is walked by hand as the hero: banks and hillsides up to 45 degrees and steps of a metre, where the
+    // world's agent stops at 35 and 0.75 (the user, 2026-11-04: the hero got stuck on simple slopes and in the swamp,
+    // whose pools' rims ran 31 to 41 degrees). The limits belong to the agent type, which every island shares, so they
+    // are set for this bake only and put back: the other islands' navmeshes are baked as before.
+    var nav = new UnityEditor.SerializedObject(UnityEditor.Unsupported.GetSerializedAssetInterfaceSingleton("NavMeshProjectSettings"));
+    var agents = nav.FindProperty("m_Settings");
+    UnityEditor.SerializedProperty agent = null;
+    for (var i = 0; i < agents.arraySize; i++)
+        if (agents.GetArrayElementAtIndex(i).FindPropertyRelative("agentTypeID").intValue == surface.agentTypeID) agent = agents.GetArrayElementAtIndex(i);
+    var slope = agent.FindPropertyRelative("agentSlope");
+    var climb = agent.FindPropertyRelative("agentClimb");
+    var oldSlope = slope.floatValue;
+    var oldClimb = climb.floatValue;
+    slope.floatValue = 45f;
+    climb.floatValue = 1f;
+    nav.ApplyModifiedPropertiesWithoutUndo();
+    try
+    {
+        surface.BuildNavMesh();
+    }
+    finally
+    {
+        slope.floatValue = oldSlope;
+        climb.floatValue = oldClimb;
+        nav.ApplyModifiedPropertiesWithoutUndo();
+    }
     var data = surface.navMeshData;
     data.name = "NavMesh-Ravebridge";
     var old = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.AI.NavMeshData>(path);
