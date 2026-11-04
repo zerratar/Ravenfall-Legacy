@@ -62,12 +62,22 @@ public static class QuestAreas
             var at = RavebridgeQuests.StepOf(state, quest.key);
             if (at <= 0 || quest.steps == null || at >= quest.steps.Count) continue;
             var step = quest.steps[at];
-            if (step.type != "collect" || string.IsNullOrEmpty(step.item)) continue;
-            if (state.Items.TryGetValue(step.item, out var have) && have >= step.amount) continue;
-
             points.Clear();
-            if (!string.IsNullOrEmpty(step.kill)) EnemiesOf(hero.Island, step.kill);
-            else if (!string.IsNullOrEmpty(step.skill) && Enum.TryParse<TaskType>(step.skill, out var task)) ResourcesOf(hero.Island, task);
+            if (step.type == "loot" && step.loot != null)
+            {
+                // a loot step's items: where the enemies are whose loot table drops them (bones: the swamp's skeletons)
+                foreach (var wanted in step.loot)
+                {
+                    if (state.Loot.TryGetValue(wanted.Key, out var got) && got >= wanted.Value) continue;
+                    foreach (var match in DroppersOf(wanted.Key)) EnemiesOf(hero.Island, match);
+                }
+            }
+            else if (step.type == "collect" && !string.IsNullOrEmpty(step.item))
+            {
+                if (state.Items.TryGetValue(step.item, out var have) && have >= step.amount) continue;
+                if (!string.IsNullOrEmpty(step.kill)) EnemiesOf(hero.Island, step.kill);
+                else if (!string.IsNullOrEmpty(step.skill) && Enum.TryParse<TaskType>(step.skill, out var task)) ResourcesOf(hero.Island, task);
+            }
             Cluster();
             if (areas.Count >= MostAreas) break;
         }
@@ -79,6 +89,24 @@ public static class QuestAreas
         foreach (var enemy in UnityEngine.Object.FindObjectsByType<EnemyController>())
         {
             if (enemy && enemy.Island == island && enemy.name.ToLowerInvariant().Contains(kill)) points.Add(enemy.transform.position);
+        }
+    }
+
+    /// <summary>The loot tables' matches (enemy names) that drop an item; not the bosses' (wave bosses only) or the
+    /// catch-all table.</summary>
+    private static IEnumerable<string> DroppersOf(string item)
+    {
+        var tables = RavebridgeLoot.Data?.tables;
+        if (tables == null) yield break;
+        foreach (var t in tables)
+        {
+            if (t?.drops == null || string.IsNullOrEmpty(t.match) || t.match.StartsWith("boss ")) continue;
+            foreach (var d in t.drops)
+            {
+                if (d.item != item) continue;
+                yield return t.match;
+                break;
+            }
         }
     }
 
