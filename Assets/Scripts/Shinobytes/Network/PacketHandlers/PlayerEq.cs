@@ -70,6 +70,12 @@ public class PlayerEq : ChatBotCommandHandler<string>
             targetItem = player.Inventory.GetEquipmentOfType(RavenNest.Models.ItemType.TwoHandedStaff);
         }
 
+        // these were accepted and named in the reply's list, but never looked up: always "none equipped"
+        if (target == "shield") targetItem = player.Inventory.GetEquipmentOfType(RavenNest.Models.ItemType.Shield);
+        if (target == "amulet") targetItem = player.Inventory.GetEquipmentOfType(RavenNest.Models.ItemType.Amulet);
+        if (target == "ring") targetItem = player.Inventory.GetEquipmentOfType(RavenNest.Models.ItemType.Ring);
+        if (target == "pet") targetItem = player.Inventory.GetEquipmentOfType(RavenNest.Models.ItemType.Pet);
+
         if (targetItem == null)
         {
             client.SendReply(gm, Localization.MSG_EQ_NONE_OF_TYPE, target);
