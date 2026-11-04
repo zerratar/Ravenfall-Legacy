@@ -499,14 +499,21 @@ public class RavebridgeManager : MonoBehaviour, IEvent
     /// </summary>
     public bool UpdateHelper(PlayerController player)
     {
-        if (!visits.TryGetValue(player.Id, out var visit) || visit.Help == Help.None) return false;
+        if (!visits.TryGetValue(player.Id, out var visit)) return false;
+        var help = visit.Help;
+        // in a wave run, a viewer training a combat skill helps hold the line: with !train strength the character walked
+        // off to the island's goblins and left the hero alone (the user, 2026-11-04). Healers heal by the usual task,
+        // which puts the hero first (FightingTask).
+        var run = WaveRun.Current;
+        if (help == Help.None && run && !run.Finished && player.GetTask() == TaskType.Fighting && !player.TrainingHealing) help = Help.Follow;
+        if (help == Help.None) return false;
         var hero = Hero;
         if (!hero || hero == player || hero.Stats.IsDead || player.Stats.IsDead) return false;
         if (Time.time < visit.NextHelp) return true;
         visit.NextHelp = Time.time + 0.25f;
 
         var range = player.GetAttackRange();
-        if (visit.Help == Help.Heal && hero.Stats.HealthPercent < 0.9f)
+        if (help == Help.Heal && hero.Stats.HealthPercent < 0.9f)
         {
             if (Vector3.Distance(player.Position, hero.Position) > range) { player.SetDestination(hero.Position); return true; }
             if (player.IsReadyForAction) player.Heal(hero);
@@ -514,7 +521,9 @@ public class RavebridgeManager : MonoBehaviour, IEvent
         }
 
         var enemy = hero.Target ? hero.Target.GetComponent<EnemyController>() : null;
-        if (visit.Help == Help.Follow && enemy && !enemy.Stats.IsDead)
+        // between the hero's own targets in a wave run: the wave's enemy nearest the hero
+        if ((!enemy || enemy.Stats.IsDead) && help == Help.Follow && run && !run.Finished) enemy = NearestWaveEnemy(run, hero.Position);
+        if (help == Help.Follow && enemy && !enemy.Stats.IsDead)
         {
             if (Vector3.Distance(player.Position, enemy.Position) > range) { player.SetDestination(enemy.Position); return true; }
             if (player.IsReadyForAction) player.Attack(enemy);
@@ -524,5 +533,20 @@ public class RavebridgeManager : MonoBehaviour, IEvent
         // nothing to do: stay close
         if (Vector3.Distance(player.Position, hero.Position) > 6f) player.SetDestination(hero.Position);
         return true;
+    }
+
+    /// <summary>The wave's living enemy nearest a point, within the fight around the hero.</summary>
+    private static EnemyController NearestWaveEnemy(WaveRun run, Vector3 near)
+    {
+        const float Within = 30f;
+        EnemyController best = null;
+        var bestDistance = Within * Within;
+        foreach (var e in run.Alive)
+        {
+            if (!e || e.Stats.IsDead || !e.gameObject.activeInHierarchy) continue;
+            var d = (e.Position - near).sqrMagnitude;
+            if (d < bestDistance) { bestDistance = d; best = e; }
+        }
+        return best;
     }
 }

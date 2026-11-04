@@ -136,6 +136,9 @@ public partial class WaveRun : MonoBehaviour
     public string BossName { get; private set; }
     public int Left => toSpawn.Count + alive.Count;
 
+    /// <summary>The wave's enemies on the field (the island's viewers help the hero against them, RavebridgeManager).</summary>
+    public IEnumerable<EnemyController> Alive => alive.Keys;
+
     private readonly Dictionary<EnemyController, Kind> alive = new Dictionary<EnemyController, Kind>();
     private readonly Dictionary<EnemyController, float> lastBlow = new Dictionary<EnemyController, float>();
     private readonly Dictionary<EnemyController, (Vector3 At, float Since)> progress = new Dictionary<EnemyController, (Vector3, float)>();

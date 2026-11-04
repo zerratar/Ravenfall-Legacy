@@ -57,10 +57,14 @@ public class FightingTask : ChunkTask
                 return player;
             }
 
+            // the one most in need by share of health, not by health lost: a 999 health healer scratched for 6 healed
+            // itself before a 186 health hero half down (the user, 2026-11-04). Ravebridge's hero comes first unless
+            // someone else is in real danger; nobody at 90% or more is healed (IsCompleted would drop them at once).
             var players = player.Island.GetPlayers();
             var playerCount = players.Count;
+            var hero = player.InRavebridge && RavebridgeManager.Instance ? RavebridgeManager.Instance.Hero : null;
             PlayerController targetPlayer = null;
-            var healthDif = 0;
+            var bestNeed = 0.9f;
             for (var i = 0; i < playerCount; ++i)
             {
                 var x = players[i];
@@ -71,11 +75,12 @@ public class FightingTask : ChunkTask
                     continue;
                 }
 
-                // plain numbers: an obscured value would take two new keys just to be compared
-                var hd = (int)x.Stats.Health.MaxLevel - (int)x.Stats.Health.CurrentValue;
-                if (hd >= healthDif)
+                // healers are not healed by healers (IsCompleted drops them)
+                if (x.TrainingHealing) continue;
+                var need = x.Stats.HealthPercent - (x == hero ? 0.25f : 0f);
+                if (need < bestNeed)
                 {
-                    healthDif = hd;
+                    bestNeed = need;
                     targetPlayer = x;
                 }
             }
