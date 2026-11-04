@@ -20,7 +20,7 @@ public static class Localization
     public static string MSG_QUEST_ABANDONED = Meta("quest", "abandon") + "You gave up on: {quest}.";
     public static string MSG_QUEST_COMPLETED = Meta("quest", "complete") + "Quest done: {quest}! You got {reward}. Daily streak: {streak}.";
     public static string MSG_QUEST_WEEKLY_COMPLETED = Meta("quest", "complete") + "Weekly quest done: {quest}! You got {reward}.";
-    public static string MSG_QUEST_USAGE = Meta("quest", "info") + "Use !quest to see your quests, !quest accept 1 to take today's first offer (or weekly, or seasonal), !quest chains for the stories, and !quest abandon 1 to give one up.";
+    public static string MSG_QUEST_USAGE = Meta("quest", "info") + "Use !quest to see your quests, !quest accept 1 to take today's first offer (or weekly, or seasonal), !quest chains for the stories, !quest deliver to hand in items for a story step, and !quest abandon 1 to give one up.";
     public static string MSG_QUEST_ABANDON_USAGE = Meta("quest", "info") + "Give up a quest with !quest abandon and its number in !quest.";
     public static string MSG_QUEST_FULL = Meta("quest", "fail") + "You already have three quests. Finish one or give one up with !quest abandon 1.";
     public static string MSG_QUEST_TAKEN = Meta("quest", "fail") + "You have already taken that quest.";
@@ -238,7 +238,7 @@ public static class Localization
     public static string UI_STREAM_QUEST_ORE = "ore";
     public static string UI_STREAM_QUEST_FISH = "fish";
     public static string UI_STREAM_QUEST_WHEAT = "wheat";
-    public static string UI_QUEST_DELIVER = "Bring {0} {1}";
+    public static string UI_QUEST_DELIVER = "Bring {0} {1} with !quest deliver";
     public static string UI_QUEST_VISIT = "Sail to {0} and say !quest there";
     public static string UI_QUEST_ANSWER = "Answer with !quest answer 1 to {0}";
     public static string UI_QUEST_WRONG_DEFAULT = "That is not it.";
