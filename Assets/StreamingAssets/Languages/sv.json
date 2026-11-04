@@ -1000,7 +1000,7 @@
     "UI_QUEST_ANSWER": "Svara med !quest answer 1 till {0}",
     "UI_QUEST_WRONG_DEFAULT": "Det är inte rätt.",
     "UI_QUEST_HALLOWEEN_KILL": "Besegra {0} kusliga fiender",
-    "UI_QUEST_HALLOWEEN_HARVEST": "Skörda {0} pumpor",
+    "UI_QUEST_HALLOWEEN_HARVEST": "Skörda {0} grödor åt pumpalandet (all odling räknas, inga pumpor behövs)",
     "UI_QUEST_CHRISTMAS_WOOD": "Hugg {0} vedträn till julelden",
     "UI_QUEST_CHRISTMAS_COOK": "Laga {0} julmåltider",
     "UI_QUEST_CHAIN_ENTRY": "{0}: {1} ({2})",

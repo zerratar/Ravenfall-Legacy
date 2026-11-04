@@ -243,7 +243,7 @@ public static class Localization
     public static string UI_QUEST_ANSWER = "Answer with !quest answer 1 to {0}";
     public static string UI_QUEST_WRONG_DEFAULT = "That is not it.";
     public static string UI_QUEST_HALLOWEEN_KILL = "Defeat {0} spooky enemies";
-    public static string UI_QUEST_HALLOWEEN_HARVEST = "Harvest {0} pumpkins";
+    public static string UI_QUEST_HALLOWEEN_HARVEST = "Harvest {0} crops for the patch (any farming counts, no pumpkins needed)";
     public static string UI_QUEST_CHRISTMAS_WOOD = "Chop {0} logs for the yule fire";
     public static string UI_QUEST_CHRISTMAS_COOK = "Cook {0} Christmas meals";
     public static string UI_QUEST_CHAIN_ENTRY = "{0}: {1} ({2})";

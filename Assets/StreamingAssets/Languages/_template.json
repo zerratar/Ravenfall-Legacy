@@ -1928,7 +1928,7 @@
     "UI_QUEST_GATHER_ORE": "Mine {0} ore",
     "UI_QUEST_GATHER_WHEAT": "Harvest {0} wheat",
     "UI_QUEST_GATHER_WOOD": "Chop {0} wood",
-    "UI_QUEST_HALLOWEEN_HARVEST": "Harvest {0} pumpkins",
+    "UI_QUEST_HALLOWEEN_HARVEST": "Harvest {0} crops for the patch (any farming counts, no pumpkins needed)",
     "UI_QUEST_HALLOWEEN_KILL": "Defeat {0} spooky enemies",
     "UI_QUEST_HERO_WAVES": "Hold {0} waves on Ravebridge in hero mode",
     "UI_QUEST_KILL": "Defeat {0} enemies",
