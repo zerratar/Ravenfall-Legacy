@@ -114,6 +114,10 @@ public static class SettingsApplier
         public const bool ScreenShake = true;
         public const bool DownloadUpdatesEarly = true;
         public const bool InstallUpdatesAutomatically = false;
+        public const bool QuestTracker = true;
+        public const int QuestTrackerBackground = 1;
+        public const bool QuestTrackerLargeText = true;
+        public const bool QuestTrackerShows = true;
         public const int AfkKick = 0;
         public const bool AnnounceNoExp = false;
         public const int NoExpMinutes = 1;           // index into NoExpMinuteOptions, 5 minutes
@@ -1059,6 +1063,21 @@ public static class SettingsApplier
     /// <summary>A downloaded update installs itself: a minute's warning in chat, then the restart (off by default).</summary>
     public static bool InstallUpdatesAutomatically => PlayerSettings.Instance.InstallUpdatesAutomatically.GetValueOrDefault(Defaults.InstallUpdatesAutomatically);
     public static void SetInstallUpdatesAutomatically(bool value) => PlayerSettings.Instance.InstallUpdatesAutomatically = value;
+
+    /// <summary>The quest tracker on screen (QuestTrackerView): what the stream is doing and what to do next.</summary>
+    public static bool QuestTracker => PlayerSettings.Instance.QuestTracker.GetValueOrDefault(Defaults.QuestTracker);
+    public static void SetQuestTracker(bool value) => PlayerSettings.Instance.QuestTracker = value;
+    /// <summary>0 none, 1 soft, 2 solid.</summary>
+    public static int QuestTrackerBackground => Mathf.Clamp(PlayerSettings.Instance.QuestTrackerBackground.GetValueOrDefault(Defaults.QuestTrackerBackground), 0, 2);
+    public static void SetQuestTrackerBackground(int value) => PlayerSettings.Instance.QuestTrackerBackground = value;
+    public static bool QuestTrackerLargeText => PlayerSettings.Instance.QuestTrackerLargeText.GetValueOrDefault(Defaults.QuestTrackerLargeText);
+    public static void SetQuestTrackerLargeText(bool value) => PlayerSettings.Instance.QuestTrackerLargeText = value;
+    public static bool QuestTrackerStream => PlayerSettings.Instance.QuestTrackerStream.GetValueOrDefault(Defaults.QuestTrackerShows);
+    public static void SetQuestTrackerStream(bool value) => PlayerSettings.Instance.QuestTrackerStream = value;
+    public static bool QuestTrackerStory => PlayerSettings.Instance.QuestTrackerStory.GetValueOrDefault(Defaults.QuestTrackerShows);
+    public static void SetQuestTrackerStory(bool value) => PlayerSettings.Instance.QuestTrackerStory = value;
+    public static bool QuestTrackerGoals => PlayerSettings.Instance.QuestTrackerGoals.GetValueOrDefault(Defaults.QuestTrackerShows);
+    public static void SetQuestTrackerGoals(bool value) => PlayerSettings.Instance.QuestTrackerGoals = value;
 
     // ---- Players --------------------------------------------------------------------------------
 

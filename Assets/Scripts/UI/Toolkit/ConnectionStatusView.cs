@@ -50,6 +50,8 @@ namespace Shinobytes.UI
             if (!GetComponent<UpdateDownloadView>()) gameObject.AddComponent<UpdateDownloadView>();
             // and the stream quest's bar and window at the top center
             if (!GetComponent<StreamQuestView>()) gameObject.AddComponent<StreamQuestView>();
+            // the quest tracker, under the windows in the same layer
+            if (!GetComponent<QuestTrackerView>()) gameObject.AddComponent<QuestTrackerView>();
             // the Ravebridge bar under it while the event runs
             if (!GetComponent<RavebridgeView>()) gameObject.AddComponent<RavebridgeView>();
             if (!GetComponent<RavebridgeDialogueView>()) gameObject.AddComponent<RavebridgeDialogueView>();

@@ -8281,3 +8281,294 @@
 .rf-squest--window .rf-qchoice__what {
     align-self: stretch;
 }
+
+/* ---- The quest tracker (QuestTrackerView, docs/mockups/quest-ui) ---------------------------------------------------
+   Over the world, so every word gets a hard outline and a shadow and reads on grass, sand and sea alike; the bold and
+   extra bold cuts only. Large text is the default, normal is a step down. */
+.rf-tracker {
+    position: absolute;
+    left: 73%;
+    top: 40%;
+    width: 600px;
+    padding-left: var(--rf-space-5);
+    padding-right: var(--rf-space-4);
+    padding-top: var(--rf-space-3);
+    padding-bottom: var(--rf-space-4);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
+.rf-tracker--soft {
+    background-color: rgba(14, 12, 10, 0.5);
+}
+
+.rf-tracker--solid {
+    background-color: rgba(20, 18, 15, 0.94);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-top-width: 3px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-color: var(--rf-accent);
+}
+
+.rf-tracker .unity-label {
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.9);
+    text-shadow: 0 2px 3px rgba(0, 0, 0, 0.9);
+}
+
+.rf-tracker__head {
+    flex-direction: row;
+    align-items: center;
+    padding-bottom: var(--rf-space-2);
+    margin-bottom: var(--rf-space-1);
+    border-bottom-width: 2px;
+    border-bottom-color: rgba(255, 244, 214, 0.18);
+}
+
+.rf-tracker .rf-tracker__grip {
+    font-size: 18px;
+    color: var(--rf-text-dim);
+    margin-right: var(--rf-space-3);
+}
+
+.rf-tracker .rf-tracker__title {
+    flex-grow: 1;
+    font-size: 20px;
+    letter-spacing: 2px;
+    color: var(--rf-accent-bright);
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+}
+
+.rf-tracker__button {
+    width: 34px;
+    height: 34px;
+    margin-left: var(--rf-space-1);
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    font-size: 18px;
+    color: rgb(214, 204, 180);
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    -unity-text-align: middle-center;
+}
+
+.rf-tracker__button:hover {
+    color: var(--rf-text);
+    background-color: rgba(255, 244, 214, 0.1);
+}
+
+.rf-tracker__entry {
+    flex-direction: row;
+    padding-top: var(--rf-space-3);
+    padding-bottom: var(--rf-space-3);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.rf-tracker__entry:hover {
+    background-color: rgba(255, 244, 214, 0.06);
+}
+
+.rf-tracker .rf-tracker__icon {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    margin-right: var(--rf-space-3);
+    border-top-left-radius: 21px;
+    border-top-right-radius: 21px;
+    border-bottom-left-radius: 21px;
+    border-bottom-right-radius: 21px;
+    font-size: 20px;
+    color: var(--rf-text-on-accent);
+    -unity-text-align: middle-center;
+    -unity-text-outline-width: 0;
+    text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+    background-color: var(--rf-accent);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: rgba(0, 0, 0, 0.6);
+    border-right-color: rgba(0, 0, 0, 0.6);
+    border-top-color: rgba(0, 0, 0, 0.6);
+    border-bottom-color: rgba(0, 0, 0, 0.6);
+}
+
+.rf-tracker__entry--story .rf-tracker__icon { background-color: rgb(90, 220, 210); }
+.rf-tracker__entry--goal .rf-tracker__icon { background-color: rgb(150, 200, 255); }
+.rf-tracker__entry--bounty .rf-tracker__icon { background-color: rgb(255, 214, 90); }
+
+.rf-tracker__body {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+}
+
+.rf-tracker .rf-tracker__kind {
+    font-size: 16px;
+    letter-spacing: 1px;
+    color: var(--rf-accent-bright);
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+}
+
+.rf-tracker__entry--story .rf-tracker__kind { color: rgb(90, 220, 210); }
+.rf-tracker__entry--goal .rf-tracker__kind { color: rgb(150, 200, 255); }
+.rf-tracker__entry--bounty .rf-tracker__kind { color: rgb(255, 214, 90); }
+
+.rf-tracker .rf-tracker__task {
+    margin-top: 2px;
+    font-size: 24px;
+    color: var(--rf-text);
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+}
+
+.rf-tracker__bar {
+    height: 12px;
+    margin-top: var(--rf-space-2);
+    background-color: rgba(0, 0, 0, 0.6);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    overflow: hidden;
+}
+
+.rf-tracker__bar-fill {
+    height: 100%;
+    background-color: var(--rf-accent);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.rf-tracker__entry--story .rf-tracker__bar-fill { background-color: rgb(90, 220, 210); }
+.rf-tracker__entry--goal .rf-tracker__bar-fill { background-color: rgb(150, 200, 255); }
+
+.rf-tracker__meta {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-top: var(--rf-space-1);
+}
+
+.rf-tracker__meta-part {
+    flex-direction: row;
+    align-items: center;
+    margin-right: var(--rf-space-4);
+}
+
+.rf-tracker .rf-tracker__meta-icon {
+    font-size: 15px;
+    margin-right: 6px;
+    color: rgb(214, 204, 180);
+}
+
+.rf-tracker .rf-tracker__meta-text {
+    font-size: 19px;
+    color: rgb(214, 204, 180);
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+}
+
+.rf-tracker__vote {
+    flex-direction: row;
+    align-items: center;
+    margin-top: var(--rf-space-1);
+}
+
+.rf-tracker .rf-tracker__vote-num {
+    width: 26px;
+    height: 26px;
+    margin-right: var(--rf-space-2);
+    border-top-left-radius: 13px;
+    border-top-right-radius: 13px;
+    border-bottom-left-radius: 13px;
+    border-bottom-right-radius: 13px;
+    background-color: rgba(0, 0, 0, 0.55);
+    font-size: 15px;
+    color: var(--rf-text);
+    -unity-text-align: middle-center;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+}
+
+.rf-tracker .rf-tracker__vote-name {
+    width: 140px;
+    font-size: 19px;
+    color: var(--rf-text);
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+}
+
+.rf-tracker__vote-track {
+    flex-grow: 1;
+    height: 10px;
+    margin-left: var(--rf-space-2);
+    margin-right: var(--rf-space-2);
+    background-color: rgba(0, 0, 0, 0.6);
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+    overflow: hidden;
+}
+
+.rf-tracker__vote-fill {
+    height: 100%;
+    background-color: rgb(90, 220, 210);
+}
+
+.rf-tracker .rf-tracker__vote-count {
+    width: 36px;
+    font-size: 19px;
+    color: var(--rf-text);
+    -unity-text-align: middle-right;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+}
+
+.rf-tracker__vote--lead .rf-tracker__vote-name,
+.rf-tracker__vote--lead .rf-tracker__vote-count {
+    color: rgb(90, 220, 210);
+}
+
+/* the large text, the default for a stream */
+.rf-tracker--large {
+    width: 660px;
+}
+
+.rf-tracker--large .rf-tracker__task {
+    font-size: 28px;
+}
+
+.rf-tracker--large .rf-tracker__kind {
+    font-size: 18px;
+}
+
+.rf-tracker--large .rf-tracker__meta-text,
+.rf-tracker--large .rf-tracker__vote-name,
+.rf-tracker--large .rf-tracker__vote-count {
+    font-size: 21px;
+}

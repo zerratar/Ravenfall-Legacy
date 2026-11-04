@@ -1301,6 +1301,12 @@ public class GameManager : MonoBehaviour, IGameManager
             menuHandler.Show();
         }
 
+        if (Keybinds.Pressed(Keybinds.Action.QuestTracker))
+        {
+            SettingsApplier.SetQuestTracker(!SettingsApplier.QuestTracker);
+            PlayerSettings.Save();
+        }
+
         if (Keybinds.Pressed(Keybinds.Action.Physics))
         {
             if (GraphicsToggler.SimulationMode == SimulationMode.Script)

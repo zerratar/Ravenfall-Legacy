@@ -26,6 +26,12 @@ public class PlayerSettings
     public bool? ScreenShake;
     public bool? DownloadUpdatesEarly;
     public bool? InstallUpdatesAutomatically;
+    public bool? QuestTracker;
+    public int? QuestTrackerBackground;
+    public bool? QuestTrackerLargeText;
+    public bool? QuestTrackerStream;
+    public bool? QuestTrackerStory;
+    public bool? QuestTrackerGoals;
 
 
     public float? DayNightTime;
@@ -429,6 +435,12 @@ public class PlayerSettings
             Serialize(sw, "screenShake", obj.ScreenShake);
             Serialize(sw, "downloadUpdatesEarly", obj.DownloadUpdatesEarly);
             Serialize(sw, "installUpdatesAutomatically", obj.InstallUpdatesAutomatically);
+            Serialize(sw, "questTracker", obj.QuestTracker);
+            Serialize(sw, "questTrackerBackground", obj.QuestTrackerBackground);
+            Serialize(sw, "questTrackerLargeText", obj.QuestTrackerLargeText);
+            Serialize(sw, "questTrackerStream", obj.QuestTrackerStream);
+            Serialize(sw, "questTrackerStory", obj.QuestTrackerStory);
+            Serialize(sw, "questTrackerGoals", obj.QuestTrackerGoals);
             Serialize(sw, "announceNoExpGain", obj.AnnounceNoExpGain);
 
             // Serialize all nullable float properties

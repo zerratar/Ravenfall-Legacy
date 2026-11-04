@@ -97,6 +97,15 @@ namespace Shinobytes.UI
             Redraw();
         }
 
+        /// <summary>Opens the window on a tab: 0 the stream quest, 1 the streamer's own quests, 2 the village.</summary>
+        public void OpenTab(int index)
+        {
+            if (!bound) return;
+            tab = index;
+            storyPanel.Focus = null;
+            Open();
+        }
+
         /// <summary>Opens the window on one of the streamer's story lines, as its NPC would.</summary>
         public void OpenStory(string key)
         {

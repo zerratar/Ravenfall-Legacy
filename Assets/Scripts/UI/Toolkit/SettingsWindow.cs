@@ -383,6 +383,21 @@ namespace Shinobytes.UI
                 SettingsApplier.Defaults.InstallUpdatesAutomatically, SettingsApplier.SetInstallUpdatesAutomatically);
             autoRow.SetEnabled(SettingsApplier.DownloadUpdatesEarly);
 
+            // the quest tracker on screen (QuestTrackerView)
+            Section(c, Localization.UI_SETTINGS_SECTION_TRACKER);
+            Switch(c, Localization.UI_SETTINGS_TRACKER, WithKey(Localization.UI_SETTINGS_TRACKER_HINT, Keybinds.Action.QuestTracker), SettingsApplier.QuestTracker,
+                SettingsApplier.Defaults.QuestTracker, SettingsApplier.SetQuestTracker);
+            Choice(c, Localization.UI_SETTINGS_TRACKER_BG, Localization.UI_SETTINGS_TRACKER_BG_HINT, Localization.UI_SETTINGS_TRACKER_BG_OPTIONS,
+                SettingsApplier.QuestTrackerBackground, SettingsApplier.Defaults.QuestTrackerBackground, SettingsApplier.SetQuestTrackerBackground);
+            Choice(c, Localization.UI_SETTINGS_TRACKER_SIZE, Localization.UI_SETTINGS_TRACKER_SIZE_HINT, Localization.UI_SETTINGS_TRACKER_SIZE_OPTIONS,
+                SettingsApplier.QuestTrackerLargeText ? 1 : 0, SettingsApplier.Defaults.QuestTrackerLargeText ? 1 : 0, v => SettingsApplier.SetQuestTrackerLargeText(v == 1));
+            Switch(c, Localization.UI_SETTINGS_TRACKER_STREAM, Localization.UI_SETTINGS_TRACKER_STREAM_HINT, SettingsApplier.QuestTrackerStream,
+                SettingsApplier.Defaults.QuestTrackerShows, SettingsApplier.SetQuestTrackerStream);
+            Switch(c, Localization.UI_SETTINGS_TRACKER_STORY, Localization.UI_SETTINGS_TRACKER_STORY_HINT, SettingsApplier.QuestTrackerStory,
+                SettingsApplier.Defaults.QuestTrackerShows, SettingsApplier.SetQuestTrackerStory);
+            Switch(c, Localization.UI_SETTINGS_TRACKER_GOALS, Localization.UI_SETTINGS_TRACKER_GOALS_HINT, SettingsApplier.QuestTrackerGoals,
+                SettingsApplier.Defaults.QuestTrackerShows, SettingsApplier.SetQuestTrackerGoals);
+
             Section(c, Localization.UI_SETTINGS_SECTION_OVERLAYS);
             VisualElement textRow = null, jsonRow = null;
             Switch(c, Localization.UI_SETTINGS_LABELS, Localization.UI_SETTINGS_LABELS_HINT, SettingsApplier.StreamLabels, SettingsApplier.Defaults.StreamLabels, v =>

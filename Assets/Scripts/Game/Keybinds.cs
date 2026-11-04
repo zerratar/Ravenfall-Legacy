@@ -23,7 +23,7 @@ public static class Keybinds
     {
         ToggleHud, PlayerDetails, NextPlayer, FreeCamera, NextIsland, ControlPlayer,
         Search, ExpRate, Logos, UiBigger, UiSmaller, Graphics, Physics, SaveState, Reload,
-        StartRaid, StartDungeon, RaceCamera,
+        StartRaid, StartDungeon, RaceCamera, QuestTracker,
     }
 
     [Flags]
@@ -119,6 +119,8 @@ public static class Keybinds
         new Def { Action = Action.StartDungeon, Default = new Binding(KeyCode.O, Mods.Ctrl), Trigger = Trigger.Up, Name = () => Localization.UI_KEY_DUNGEON, AdminOnly = true },
         // during a regatta: the race camera back, from by hand or from a player or an island watched meanwhile
         new Def { Action = Action.RaceCamera, Default = new Binding(KeyCode.R), Trigger = Trigger.Down, Name = () => Localization.UI_KEY_RACE_CAMERA },
+        // the quest tracker shown or hidden, as its setting
+        new Def { Action = Action.QuestTracker, Default = new Binding(KeyCode.F7), Trigger = Trigger.Up, Name = () => Localization.UI_KEY_TRACKER },
     };
 
     private static readonly Dictionary<Action, Binding> current = new Dictionary<Action, Binding>();
