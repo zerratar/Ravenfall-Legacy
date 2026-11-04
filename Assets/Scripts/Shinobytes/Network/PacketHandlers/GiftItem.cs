@@ -41,10 +41,15 @@ public class GiftItem : ChatBotCommandHandler<string>
 
         if (inputQuery.Contains(" "))
         {
-            var parts = inputQuery.Split(" ");
-            if (parts.Length == 3 && inputQuery.Contains(" coins ", System.StringComparison.OrdinalIgnoreCase) || inputQuery.Contains(" coin ", System.StringComparison.OrdinalIgnoreCase))
+            var parts = inputQuery.Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 3 && (IsCoins(parts[1]) || IsCoins(parts[2])))
             {
-                var amountString = parts.LastOrDefault();
+                // "!gift zerratar 5000 coins" went looking for an item called "5000 coins": both orders give coins now
+                if (IsCoins(parts[2]))
+                {
+                    inputQuery = parts[0] + " coins " + parts[1];
+                }
+
 
                 var resolved = itemResolver.ResolveTradeQuery(inputQuery,
                     parsePrice: false,
@@ -95,6 +100,9 @@ public class GiftItem : ChatBotCommandHandler<string>
 
         await GiftItemAsync(inputQuery, gm, client, player);
     }
+
+    private static bool IsCoins(string word) =>
+        word.Equals("coins", System.StringComparison.OrdinalIgnoreCase) || word.Equals("coin", System.StringComparison.OrdinalIgnoreCase);
 
     private async Task GiftItemSetAsync(string inputQuery, GameMessage gm, GameClient client, PlayerController player)
     {

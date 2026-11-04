@@ -42,9 +42,11 @@ public class EnchantItem : ChatBotCommandHandler<string>
 
         var query = inputQuery;
 
-        // For later
-        var checkForCost = query.Contains("requirement") || query.IndexOf(" req ", System.StringComparison.OrdinalIgnoreCase) >= 0;
-        if (checkForCost) query = query.Replace("requirement", "").Replace(" req ", " ", System.StringComparison.OrdinalIgnoreCase).Replace("  ", " ");
+        // req or requirement anywhere asks what it takes. It was only seen between two words, and with an item you own the
+        // word was taken out and the item enchanted for real
+        var words = query.Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
+        var checkForCost = words.Any(IsReqWord);
+        if (checkForCost) query = string.Join(" ", words.Where(x => !IsReqWord(x)));
 
         var isReplace = query.ToLower().IndexOf("replace") >= 0;
         if (isReplace) query = query.Replace("replace", "");
@@ -85,6 +87,12 @@ public class EnchantItem : ChatBotCommandHandler<string>
             //}
 
             client.SendReply(gm, Localization.MSG_ITEM_NOT_OWNED, queriedItem.Item.Name);
+            return;
+        }
+
+        if (checkForCost)
+        {
+            client.SendReply(gm, Localization.MSG_ENCHANT_COST_NO_REQ, inventoryItem.Name);
             return;
         }
 
@@ -200,4 +208,7 @@ public class EnchantItem : ChatBotCommandHandler<string>
 
         return Localization.MSG_ENCHANT_TIME_MOMENT;
     }
+
+    private static bool IsReqWord(string word) =>
+        word.Equals("req", System.StringComparison.OrdinalIgnoreCase) || word.Equals("requirement", System.StringComparison.OrdinalIgnoreCase) || word.Equals("requirements", System.StringComparison.OrdinalIgnoreCase);
 }

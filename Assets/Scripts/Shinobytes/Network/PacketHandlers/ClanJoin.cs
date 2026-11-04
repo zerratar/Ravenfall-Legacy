@@ -21,7 +21,9 @@
         }
 
         var ownerUserId = Game.RavenNest.UserId;
-        if (!string.IsNullOrEmpty(data))
+        // the bot sends "-" for no name; a name it can't place was the streamer's clan without a word, now it says so
+        data = data?.Trim();
+        if (!string.IsNullOrEmpty(data) && data != "-")
         {
             var otherPlayer = PlayerManager.GetPlayerByName(data);
             if (otherPlayer != null && otherPlayer.clanHandler.InClan && otherPlayer.clanHandler.ClanInfo != null)
@@ -34,6 +36,11 @@
                 if (clan != null)
                 {
                     ownerUserId = clan.OwnerUserId;
+                }
+                else
+                {
+                    client.SendReply(gm, Localization.MSG_CLAN_NOT_FOUND, data);
+                    return;
                 }
             }
         }

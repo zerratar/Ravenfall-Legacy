@@ -20,7 +20,8 @@ public class HighestSkill : ChatBotCommandHandler<string>
             return;
         }
 
-        var skillName = data;
+        // !highest on its own sent nothing and threw here; it is the highest total level
+        var skillName = string.IsNullOrWhiteSpace(data) ? "all" : data.Trim();
         if (skillName.Equals("all", StringComparison.OrdinalIgnoreCase) || skillName.Equals("overall", StringComparison.OrdinalIgnoreCase))
         {
             var highestAll = players.Highest(x => x.Stats.GetLevelList().Sum());
@@ -46,7 +47,11 @@ public class HighestSkill : ChatBotCommandHandler<string>
         }
 
         var s = SkillUtilities.ParseSkill(skillName);
-        if (s == Skill.None) return;
+        if (s == Skill.None)
+        {
+            client.SendReply(gm, Localization.MSG_STATS_SKILL_NOT_FOUND, skillName);
+            return;
+        }
 
         // get the player with highest exp on any skill.
         SkillStat highest = null;

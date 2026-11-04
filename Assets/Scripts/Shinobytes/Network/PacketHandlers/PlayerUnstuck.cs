@@ -13,20 +13,16 @@
         var user = gm.Sender;
         var player = PlayerManager.GetPlayer(user);
 
+        // only the streamer, moderators and game staff aim it at others; anyone else unstucks themselves whatever they add
+        var mayTarget = user.IsBroadcaster || user.IsModerator || (player && (player.IsGameAdmin || player.IsGameModerator));
+        if (!mayTarget)
+        {
+            args = null;
+        }
+
         if (!string.IsNullOrEmpty(args))
         {
-            if (!user.IsBroadcaster && !user.IsModerator)
-            {
-                if (!player)
-                {
-                    return;
-                }
-
-                if (!player.IsGameAdmin && !player.IsGameModerator)
-                {
-                    return;
-                }
-            }
+            args = args.Trim();
 
             if (args.ToLower() == "all" || args.ToLower() == "everyone")
             {
@@ -61,6 +57,18 @@
                 return;
             }
 
+            // a player's name: bots before 0.9.7 sent that player as the sender, so the moderator's !unstuck <player>
+            // checked the player's rights and quietly did nothing
+            var target = PlayerManager.GetPlayerByName(args.TrimStart('@'));
+            if (target)
+            {
+                target.Unstuck(true, 5);
+                client.SendReply(gm, Localization.MSG_UNSTUCK_PLAYER, target.PlayerName);
+                return;
+            }
+
+            client.SendReply(gm, Localization.MSG_UNSTUCK_NOT_FOUND, args);
+            return;
         }
 
         if (!player)

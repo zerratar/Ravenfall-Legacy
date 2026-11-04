@@ -253,6 +253,66 @@ public class ArenaController : MonoBehaviour, IEvent
         return false;
     }
 
+    /// <summary>The streamer or a moderator: no more waiting for the countdown once two have joined. The fight starts as
+    /// soon as everyone is inside, as it does after the countdown.</summary>
+    public bool ForceStart()
+    {
+        if (state != ArenaState.WaitingForStart || joinedPlayers.Count < 2)
+        {
+            return false;
+        }
+
+        arenaStartTimer = 0f;
+        return true;
+    }
+
+    /// <summary>The streamer or a moderator calls it off: everyone walks out, nobody is rewarded.</summary>
+    public bool Cancel()
+    {
+        if (!Activated)
+        {
+            return false;
+        }
+
+        if (gameCamera) gameCamera.DisableFocusCamera();
+        foreach (var player in new List<PlayerController>(joinedPlayers))
+        {
+            if (!player) continue;
+            player.arenaHandler.OnLeave();
+            player.arenaHandler.WalkAwayFromArena();
+        }
+
+        ResetState();
+        return true;
+    }
+
+    /// <summary>The streamer or a moderator takes a player out: before the fight they walk away, during it they count as
+    /// beaten.</summary>
+    public bool Kick(PlayerController player)
+    {
+        if (!player || !joinedPlayers.Contains(player))
+        {
+            return false;
+        }
+
+        if (state == ArenaState.Started)
+        {
+            Died(player);
+            player.arenaHandler.WalkAwayFromArena();
+            return true;
+        }
+
+        joinedPlayers.Remove(player);
+        player.arenaHandler.OnKicked();
+        player.arenaHandler.WalkAwayFromArena();
+        if (joinedPlayers.Count == 0)
+        {
+            ResetState();
+        }
+
+        return true;
+    }
+
     public void Join(PlayerController player)
     {
         if (!CanJoin(player, out var _, out var _))

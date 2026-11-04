@@ -1213,6 +1213,18 @@ public static class Localization
     public static string MSG_ARENA_ALREADY_STARTED = Meta("arena", "fail") + "You cannot join as the arena has already started.";
     public static string MSG_ARENA_JOIN_ERROR = Meta("arena", "fail") + "You cannot join the arena at this time.";
     public static string MSG_ARENA_JOIN = Meta("arena", "info") + "You have joined the arena. Good luck!";
+    public static string MSG_ARENA_LEFT = Meta("arena", "info") + "You have left the arena.";
+    public static string MSG_ARENA_LEAVE_STARTED = Meta("arena", "fail") + "The fight has already started, so you cannot leave the arena now.";
+    public static string MSG_ARENA_NOT_JOINED = Meta("arena", "fail") + "You have not joined the arena.";
+    public static string MSG_ARENA_FORCE_STARTED = Meta("arena", "info") + "The arena fight starts as soon as everyone is inside.";
+    public static string MSG_ARENA_FORCE_START_FAILED = Meta("arena", "fail") + "The arena needs at least two players who have joined before it can start.";
+    public static string MSG_ARENA_CANCELLED = Meta("arena", "info") + "The arena has been called off. Nobody is rewarded this time.";
+    public static string MSG_ARENA_NOT_ACTIVE = Meta("arena", "fail") + "There is no arena going on right now.";
+    public static string MSG_ARENA_PLAYER_NOT_FOUND = Meta("arena", "fail") + "There is no player called {playerName} in this game.";
+    public static string MSG_ARENA_KICKED = Meta("arena", "info") + "{playerName} has been taken out of the arena.";
+    public static string MSG_ARENA_NOT_JOINED_PLAYER = Meta("arena", "fail") + "{playerName} has not joined the arena.";
+    public static string MSG_ARENA_ADDED = Meta("arena", "info") + "{playerName} has been added to the arena.";
+    public static string MSG_ARENA_ADD_FAILED = Meta("arena", "fail") + "{playerName} cannot join the arena right now.";
 
     public static string MSG_BUY_ITEM_NOT_FOUND = Meta("marketplace", "buy", "fail") + "Could not find an item matching the query '{query}'";
     public static string MSG_BUY_ITEM_NOT_FOUND_SUGGEST = Meta("marketplace", "buy", "fail") + "Could not find an item matching the query '{query}', did you mean: {suggestion}?";
@@ -1389,8 +1401,9 @@ public static class Localization
     public static string MSG_VENDOR_ITEM_NOT_FOUND = Meta("vendor", "info", "item", "fail") + "Could not find an item matching the name: {query}";
     public static string MSG_VENDOR_ITEM_NOT_OWNED = Meta("vendor", "info", "item", "fail") + "You do not own a {itemName}.";
     public static string MSG_VENDOR_ITEM_FAILED = Meta("vendor", "info", "item", "fail") + "Error selling {vendorCount}x {itemName} to the vendor. FeelsBadMan";
-    public static string MSG_VENDOR_MISSING_ARGS = Meta("vendor", "info", "fail") + "To use the vendor, you must supply an action and item. You can use: !vendor sell itemName, !vendor buy itemName and !vendor value itemName";
+    public static string MSG_VENDOR_MISSING_ARGS = Meta("vendor", "info", "fail") + "To sell to the vendor, use !vendor itemName, or !vendor 10 itemName for more than one. !value itemName shows what the vendor pays.";
     public static string MSG_VENDOR_MISSING_ACTION = Meta("vendor", "info", "fail") + "Missing required vendor action, if you inteded to sell the item to the vendor, please use !vendor sell {query}";
+    public static string MSG_VENDOR_NO_BUY = Meta("vendor", "info", "fail") + "The vendor only buys items. To buy {query} from other players, use !buy {query} and the price you will pay.";
 
     public static string MSG_MARKET_MISSING_ARGS = Meta("marketplace", "info", "fail") + "To use the marketplace, you must supply an action and item. You can use: !market sell itemName, !market buy itemName and !market value itemName";
     public static string MSG_MARKET_MISSING_ACTION = Meta("marketplace", "info", "fail") + "Missing required market action, if you inteded to put up an item for sale on the market, please use !market sell {query}";
@@ -1430,7 +1443,7 @@ public static class Localization
 
     public static string MSG_ALREADY_IN_CLAN = "You cannot join a clan as you're already in one. Please leave your clan first using '!clan leave'";
     public static string MSG_NOT_IN_CLAN = "You need to join a clan to use this command.";
-    public static string MSG_CLAN_NOT_FOUND = "Could not find a suitable clan using '{clanSearch}'. There must be atleast one player in the game with the target clan.";
+    public static string MSG_CLAN_NOT_FOUND = "There is no clan or player here called {name}. Leave the name out to join the streamer's clan.";
     public static string MSG_CLAN_INFO_UNKNOWN_ERROR = "Unable to get clan info at this time, please try again later.";
     public static string MSG_CLAN_STATS_UNKNOWN_ERROR = "Unable to get clan stats at this time, please try again later.";
 
@@ -2896,6 +2909,7 @@ public static class Localization
     // RaidStop, DungeonStop
     public static string MSG_RAID_FORCE_STOPPED = Meta("raid", "stop") + "Raid has been forcibly stopped.";
     public static string MSG_DUNGEON_FORCE_STOPPED = Meta("dungeon", "stop") + "Dungeon has been forcibly stopped.";
+    public static string MSG_ADMIN_ONLY_SKIP = Meta("system", "fail") + "Only game administrators can skip a room or kill the boss, to get a stuck fight going again.";
 
     // RedeemStreamerToken
     public static string MSG_REDEEM_TOKEN_SUCCESS = Meta("redeem", "info") + "You have successfully redeemed a {itemName} for {amount} {currencyName} and now have {amountLeft} left.";
@@ -2949,6 +2963,8 @@ public static class Localization
     public static string MSG_UNSTUCK_TRAINING_SET = Meta("system", "unstuck") + "{playerCount} players set to train All.";
     public static string MSG_UNSTUCK_TRAINING_NONE = Meta("system", "unstuck", "fail") + "No players eligible for setting training to All.";
     public static string MSG_UNSTUCK_COOLDOWN = Meta("system", "unstuck", "fail") + "Unstuck command can only be used once every 30s per character.";
+    public static string MSG_UNSTUCK_PLAYER = Meta("system", "unstuck") + "{playerName} has been unstuck.";
+    public static string MSG_UNSTUCK_NOT_FOUND = Meta("system", "unstuck", "fail") + "There is no player called {playerName} in this game.";
 
     // KickPlayer
     public static string MSG_KICK_AFK_COUNT = Meta("system", "kick") + "{kickedPlayerCount} players were kicked from the game.";
