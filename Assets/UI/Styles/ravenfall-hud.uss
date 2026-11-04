@@ -8598,3 +8598,34 @@
 .rf-talk__line.unity-label {
     -unity-text-generator: standard;
 }
+
+/* Between waves: the hero stops the run and keeps the chest and the record (WaveRun.CanRetreat). */
+.rf-wave .rf-wave__retreat {
+    align-self: center;
+    margin-top: 8px;
+    padding-left: 18px;
+    padding-right: 18px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    font-size: 19px;
+    color: var(--rf-text);
+    background-color: rgba(20, 18, 15, 0.9);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+}
+
+.rf-wave .rf-wave__retreat:hover {
+    background-color: var(--rf-accent);
+    color: var(--rf-text-on-accent);
+}

@@ -663,6 +663,7 @@ public static class Localization
     public static string UI_WAVE_BANNER_UP = "BACK UP!";
     public static string UI_WAVE_BOON_VOTES = "{0} votes";
     public static string UI_WAVE_RETREAT_SUB = "You keep the chest and the record";
+    public static string UI_WAVE_RETREAT_BUTTON = "Retreat and keep the chest";
     public static string UI_WAVE_LEAVE_SUB = "Mid wave there is no chest and no record";
     public static string UI_WAVE_DOWN_SECONDS = "seconds to get up";
     public static string UI_WAVE_DOWN_CMD = "!hero revive";

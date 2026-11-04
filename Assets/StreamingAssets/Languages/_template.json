@@ -3146,6 +3146,7 @@
     "UI_WAVE_RESULT_TITLE": "New title: {0}",
     "UI_WAVE_RETREAT_ASK": "Press again to retreat",
     "UI_WAVE_RETREAT_SUB": "You keep the chest and the record",
+    "UI_WAVE_RETREAT_BUTTON": "Retreat and keep the chest",
     "UI_WAVE_RUNNING": "The line is being held right now. Go, go!",
     "UI_WAVE_SHORT": "The line broke after {0} of {1} waves. Talk to the captain to try again.",
     "UI_WAVE_SKELETON": "Risen skeleton",

@@ -1399,6 +1399,7 @@
     "UI_WAVE_BANNER_UP": "UPPE IGEN!",
     "UI_WAVE_BOON_VOTES": "{0} röster",
     "UI_WAVE_RETREAT_SUB": "Du behåller kistan och rekordet",
+    "UI_WAVE_RETREAT_BUTTON": "Dra dig tillbaka och behåll kistan",
     "UI_WAVE_LEAVE_SUB": "Mitt i en våg blir det ingen kista och inget rekord",
     "UI_WAVE_DOWN_SECONDS": "sekunder att komma upp",
     "UI_WAVE_DOWN_CMD": "!hero revive",

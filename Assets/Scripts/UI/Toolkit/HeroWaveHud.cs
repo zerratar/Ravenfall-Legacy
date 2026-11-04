@@ -22,6 +22,7 @@ namespace Shinobytes.UI
 
         // ---- The column ----
         private readonly VisualElement column, plate, track, daily;
+        private readonly Button retreat;
         private readonly (VisualElement Chip, Label Icon, Label Name)[] dailyTwists = new (VisualElement, Label, Label)[2];
         private WaveRun.Challenge shownDaily;
         private readonly VisualElement badge, badgeFlash;
@@ -120,6 +121,13 @@ namespace Shinobytes.UI
             from = Box(body, "rf-wave__from");
             fromIcon = Icon(from, "rf-wave__from-icon", "");
             fromText = Text(from, "rf-wave__from-text");
+
+            // between waves the hero may stop and keep what the run won (WaveRun.CanRetreat). It took Esc twice or
+            // leaving Ravebridge altogether, and nobody found it: the run went on until the hero fell (the user, 2026-11-04)
+            retreat = new Button(() => { var r = WaveRun.Current; if (r && r.CanRetreat) r.Leave(); }) { text = Localization.UI_WAVE_RETREAT_BUTTON };
+            retreat.AddToClassList("rf-wave__retreat");
+            retreat.style.display = DisplayStyle.None;
+            column.Add(retreat);
 
             // the track: the clock, the pips, the next boss or the best
             track = Box(column, "rf-wave-track");
@@ -477,6 +485,7 @@ namespace Shinobytes.UI
         {
             var ready = run.State == WaveRun.Phase.Gathering || (run.State == WaveRun.Phase.Breather && run.Cleared <= 0);
             var held = run.State == WaveRun.Phase.Breather && run.Cleared > 0;
+            Show(retreat, held && run.CanRetreat);
             var bossWave = !ready && !held && run.IsBossWave(run.Wave);
             badge.EnableInClassList("rf-wave__badge--ready", ready);
             badge.EnableInClassList("rf-wave__badge--held", held);
