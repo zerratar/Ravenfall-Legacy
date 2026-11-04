@@ -119,6 +119,12 @@ namespace RavenNest.SDK.V2
             mirror.CompareAt = now + Settle;
         }
 
+        /// <summary>
+        /// Items a character gained by the feed (character, item, how many): what gathering finds, so the hero sees it
+        /// come in ("+1 Tin Ore"); there was no sign of it at all (the user, 2026-11-04).
+        /// </summary>
+        public static event Action<Guid, Guid, long> ItemsGained;
+
         /// <summary>An inventory update from the server's feed (an event): into the mirror and the game's inventory.</summary>
         public void OnUpdate(InventoryUpdate update, DateTime now)
         {
@@ -165,6 +171,8 @@ namespace RavenNest.SDK.V2
                     if (before != null) mirror.Sum -= InventoryChecksum.Of(before.Id, before.ItemId, before.Amount);
 
                     var after = ToItem(s);
+                    var gained = after.Amount - (before?.Amount ?? 0);
+                    if (gained > 0 && !update.Full) ItemsGained?.Invoke(update.CharacterId, after.ItemId, gained);
                     if (after.Amount > 0)
                     {
                         mirror.Stacks[s.Id] = after;

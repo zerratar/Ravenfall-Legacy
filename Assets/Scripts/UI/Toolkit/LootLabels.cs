@@ -33,12 +33,14 @@ namespace Shinobytes.UI
             parent.Add(layer);
             RavebridgeLoot.Picked += OnPicked;
             RavebridgeLoot.PickedGear += OnPickedGear;
+            RavenNest.SDK.V2.InventorySync.ItemsGained += OnGained;
         }
 
         public void Remove()
         {
             RavebridgeLoot.Picked -= OnPicked;
             RavebridgeLoot.PickedGear -= OnPickedGear;
+            RavenNest.SDK.V2.InventorySync.ItemsGained -= OnGained;
             layer.RemoveFromHierarchy();
         }
 
@@ -53,6 +55,26 @@ namespace Shinobytes.UI
             popupsInARow = Time.unscaledTime - lastPopup < 0.35f ? popupsInARow + 1 : 0;
             lastPopup = Time.unscaledTime;
             popups.Add(new Popup { Label = label, Player = player, Offset = popupsInARow * 22f });
+        }
+
+        /// <summary>
+        /// What the server gave the hero's character (gathering finds a log, an ore, a herb): rising from the hero as a
+        /// pickup does. It came into the inventory with no sign at all, so streamers could not tell whether mining or
+        /// chopping gave them anything (the user, 2026-11-04).
+        /// </summary>
+        private void OnGained(System.Guid characterId, System.Guid itemId, long amount)
+        {
+            var hero = HeroController.Active;
+            if (!hero || !hero.Player || hero.Player.Id != characterId) return;
+            var item = GameManager.Instance ? GameManager.Instance.Items.Get(itemId) : null;
+            if (item == null) return;
+            var label = Take();
+            label.AddToClassList("rf-loot-popup");
+            label.text = "+" + amount + " " + item.Name;
+            label.style.color = new Color(0.82f, 0.95f, 0.78f);
+            popupsInARow = Time.unscaledTime - lastPopup < 0.35f ? popupsInARow + 1 : 0;
+            lastPopup = Time.unscaledTime;
+            popups.Add(new Popup { Label = label, Player = hero.Player, Offset = popupsInARow * 22f });
         }
 
         private void OnPicked(PlayerController player, RavebridgeLoot.Item item, long amount)
