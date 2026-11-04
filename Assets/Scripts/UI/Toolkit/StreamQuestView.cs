@@ -48,6 +48,8 @@ namespace Shinobytes.UI
         private VisualElement content;
         private StreamerQuestPanel streamerPanel;
         private StoryPanel storyPanel;
+        private Button trackerButton;
+        private Label trackerIcon, trackerText;
         private RavebridgeQuestPanel ravebridgePanel;
         private int tab;
         private VisualElement footer;
@@ -115,6 +117,18 @@ namespace Shinobytes.UI
             Open();
         }
 
+        /// <summary>
+        /// A story's place clicked (its giver, the runestone, the mangrove island): the window opens on that story, and a
+        /// step that wants a word there is talked through at once. Before, a click only opened the window and the
+        /// streamer still had to find its talk button (the user, 2026-11-04).
+        /// </summary>
+        private void Visit(string key)
+        {
+            OpenStory(key);
+            var story = StoryLog.Story(key);
+            if (bound && story != null && story.State == StoryLog.Active && story.Kind == "talk") storyPanel.Talk(key);
+        }
+
         public void Close()
         {
             windowOpen = false;
@@ -130,6 +144,14 @@ namespace Shinobytes.UI
                 storyPanel.Focus = null;
                 Open();
             }
+        }
+
+        private void UpdateTrackerButton()
+        {
+            if (trackerButton == null) return;
+            var shown = SettingsApplier.QuestTracker;
+            trackerIcon.text = shown ? "" : "";
+            trackerText.text = shown ? Localization.UI_QUESTWIN_TRACKER_HIDE : Localization.UI_QUESTWIN_TRACKER_SHOW;
         }
 
         private void TryBind()
@@ -179,7 +201,22 @@ namespace Shinobytes.UI
             var close = new Button(Close) { text = "\uf00d" };
             close.AddToClassList("rf-icon");
             close.AddToClassList("rf-squest__close");
+            // the quest tracker on screen: shown or hidden from here too, not only its key and the settings
+            trackerButton = new Button(() => { SettingsApplier.SetQuestTracker(!SettingsApplier.QuestTracker); PlayerSettings.Save(); UpdateTrackerButton(); })
+            {
+                tooltip = Localization.UI_QUESTWIN_TRACKER_TIP
+            };
+            trackerButton.AddToClassList("rf-squest__tracker");
+            trackerIcon = new Label { pickingMode = PickingMode.Ignore };
+            trackerIcon.AddToClassList("rf-icon");
+            trackerIcon.AddToClassList("rf-squest__tracker-icon");
+            trackerText = new Label { pickingMode = PickingMode.Ignore };
+            trackerText.AddToClassList("rf-squest__tracker-text");
+            trackerButton.Add(trackerIcon);
+            trackerButton.Add(trackerText);
+            UpdateTrackerButton();
             header.Add(windowTitle);
+            header.Add(trackerButton);
             header.Add(close);
             tabs = new VisualElement();
             tabs.AddToClassList("rf-squest-tabs");
@@ -229,6 +266,7 @@ namespace Shinobytes.UI
                 nextSecond = Time.unscaledTime + 1f;
                 UpdateBar();
                 if (windowOpen && StreamQuests.Active != null) UpdateActiveTimes();
+                if (windowOpen) UpdateTrackerButton(); // its key may have changed it
                 if (windowOpen && tab == 2 && StoryLog.Voting) Redraw(); // the vote's countdown
                 if (windowOpen && tab == 3 && Time.unscaledTime >= nextRavebridgeCheck)
                 {
@@ -243,11 +281,15 @@ namespace Shinobytes.UI
                 switch (UnderMouse())
                 {
                     case Clicked.Board: storyPanel.Focus = null; Open(); break;
-                    case Clicked.Runestone: OpenStory(StoryLog.IsDone("runestone") ? "roadwest" : "runestone"); break;
-                    case Clicked.Mangrove: OpenStory("bananas"); break;
-                    case Clicked.Smith: OpenStory(StoryLog.SmithClicked()); break;
+                    case Clicked.Runestone: Visit(StoryLog.IsDone("runestone") ? "roadwest" : "runestone"); break;
+                    case Clicked.Mangrove: Visit("bananas"); break;
+                    case Clicked.Smith: Visit(StoryLog.SmithClicked()); break;
                     case Clicked.Monkey: if (MonkeyTroop.Instance) MonkeyTroop.Instance.MonkeyClicked(clickedMonkey); break;
-                    case Clicked.Chief: if (MonkeyTroop.Instance) MonkeyTroop.Instance.ChiefClicked(); break;
+                    case Clicked.Chief:
+                        if (MonkeyTroop.Instance) MonkeyTroop.Instance.ChiefClicked();
+                        // the chief gives the bananas story: with his mark up a click opens it (it only said the pile before)
+                        if (StoryLog.MarkFor("bananas") != IslandNpc.Mark.None) Visit("bananas");
+                        break;
                     case Clicked.Treasure: TreasureHunt.Clicked(); break;
                 }
             }

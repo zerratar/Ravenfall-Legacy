@@ -1673,6 +1673,52 @@
     background-color: var(--rf-row-hover);
 }
 
+.rf-squest .rf-squest__tracker {
+    flex-direction: row;
+    align-items: center;
+    height: 36px;
+    padding-left: 12px;
+    padding-right: 14px;
+    margin-left: 0;
+    margin-right: var(--rf-space-2);
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-left-radius: 18px;
+    border-top-right-radius: 18px;
+    border-bottom-left-radius: 18px;
+    border-bottom-right-radius: 18px;
+}
+
+.rf-squest .rf-squest__tracker:hover {
+    background-color: var(--rf-row-hover);
+}
+
+.rf-squest .rf-squest__tracker .rf-squest__tracker-icon {
+    font-size: 17px;
+    margin-left: 0;
+    margin-right: 10px;
+    padding-left: 0;
+    padding-right: 0;
+    color: var(--rf-text-dim);
+}
+
+.rf-squest .rf-squest__tracker .rf-squest__tracker-text {
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
+    font-size: 18px;
+    color: var(--rf-text);
+    -unity-font-style: bold;
+}
+
 .rf-squest .rf-squest__section {
     margin-bottom: var(--rf-space-3);
     font-size: 18px;

@@ -981,6 +981,9 @@ public static class Localization
     public static string UI_QUESTWIN_MIN = "{0} min";
     public static string UI_QUESTWIN_START = "Start quest";
     public static string UI_QUESTWIN_STOP = "Stop quest";
+    public static string UI_QUESTWIN_TRACKER_SHOW = "Show tracker";
+    public static string UI_QUESTWIN_TRACKER_HIDE = "Hide tracker";
+    public static string UI_QUESTWIN_TRACKER_TIP = "The quest list on the screen. Its key and the settings show or hide it too.";
     public static string UI_QUESTWIN_LEFT = "{0} left";
     public static string UI_QUESTWIN_HELPING = "{0} helping";
     public static string UI_QUESTWIN_TOP = "Top helpers";

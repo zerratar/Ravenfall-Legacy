@@ -401,6 +401,9 @@ namespace Shinobytes.UI
             return row;
         }
 
+        /// <summary>The talk button's part, for a click on the story's place in the world.</summary>
+        public void Talk(string key) => Run(g => StoryLog.TalkAsync(g, key));
+
         private async void Run(Func<GameManager, System.Threading.Tasks.Task<VillageStoryResult>> action)
         {
             var game = GameManager.Instance;
