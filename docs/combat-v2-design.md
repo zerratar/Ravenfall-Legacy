@@ -1,0 +1,228 @@
+# Combat v2: the overview and the foundation
+
+The next big step for Ravenfall's combat, planned with Zerratar on 2026-11-06. Combat gets elements,
+resistances and weaknesses, a real health pool, skills that players, pets and enemies use on their own,
+gems in sockets, and a 100 floor tower to test it all against. **The new combat is for everywhere:**
+islands, raids, dungeons, the arena, duels, Ravebridge and the tower all use the same rules.
+
+This document is the overview and the foundation everything else stands on. The other parts:
+
+| Document | What it covers |
+|---|---|
+| [combat-skills-design.md](combat-skills-design.md) | Player combat skills: skill trees, points, the active loadout, respec, roles |
+| [battle-pets-design.md](battle-pets-design.md) | The new pet skill everyone gets, battle pets that level, evolve and use skills, and the clan skill that goes with it |
+| [gems-design.md](gems-design.md) | Sockets, enchanted gems, combining, removing (and when it does not destroy the gem) |
+| [tower-design.md](tower-design.md) | The 100 floor tower event: floor quests, floor bosses, retries, a few floors per update |
+
+Decided with Zerratar (2026-11-06):
+- **Roles come from the skill tree,** not from a class you pick. A player can be a healer and a tank at once, a bit of everything, or all in on one thing.
+- **Not everything at once:** skill points are limited, so no player has every skill and upgrade. Changing means a respec.
+- **The pet skill is a normal skill everyone has from the start.** The clan gets a separate skill that complements it.
+- **Removing a gem destroys it,** unless the clan's Enchanting level or the player's own skill tree gives a chance to keep it.
+- **Health becomes a pool.** The Health skill no longer *is* your health; it raises it (for example 10 HP per level).
+- **Aim and power on gear are replaced** by a stat model that can carry elements, resistances and more.
+- **Enemies, and bosses above all, use skills too.**
+
+---
+
+## What combat is today (the baseline)
+
+From a read of the code on 2026-11-06 (game `Assets/Scripts`, server `RavenNest/src`). The full notes
+are in `docs/systems/combat.md`; this is what matters for the redesign.
+
+- **Combat runs in the game client.** `Core/GameMath.cs` decides hits and damage; the server stores items,
+  enchantments, status effects and experience, and only sanity checks levels.
+- **Damage:** one function for all styles. Melee uses Attack for accuracy and Strength for damage; Ranged
+  and Magic use their own level for both; Healing uses the Healing level with the *magic* gear stats.
+  `MaxHit = (int)(((level + 3) * (power * 0.00175 + 0.1) + 1.05) * 0.95)`.
+- **Hit chance:** an attack rating (aim skill, gear aim, a fifth of the damage skill) against a defence
+  rating (Defense level, a share of ArmorPower, a quarter of the defender's damage skill), plus a dice roll.
+  Defense only changes hit chance; armour changes hit chance and narrows the damage spread. **There is no
+  damage reduction.**
+- **Gear stats:** `WeaponAim/Power`, `MagicAim/Power`, `RangedAim/Power` and `ArmorPower` on the item (no
+  item mixes melee with magic or ranged; 24 armour pieces also carry an offence stat). The highest values
+  on the dev copy: weapon power 854, armour 517, item level 1016. All skills go to level 999.
+- **Health is the Health skill level.** Health gains a third of all combat experience and is never trained
+  on its own. Out of combat it regenerates 10% of max per second after 10 seconds.
+- **Attack speed:** players swing every 1.5 s (healing 2 s), enemies mostly every 0.75 s, 1 s or 1.5 s.
+- **Enemies are melee only,** with stats serialized on each enemy in the scenes. They already keep a
+  threat table (damage times 2.5 with a one handed sword) and switch to the highest. They have no abilities,
+  except hero mode's wave enemies (bolt, lunge and slam with telegraphs).
+- **Enchantments:** `NAME:value;NAME:value` on the inventory item. 20 attributes: `AIM`, `POWER`, `ARMOR`
+  (1-20%) and one per skill (1-25%). 20,992 enchanted stacks on the dev copy.
+- **Status effects:** food, potions and scrolls give timed effects. Poison, Bleeding, Burning and the
+  attack attribute effects (HealthSteal and others) are stored but never read.
+- **Hero mode** already has what automatic skills need: a skill shape (unlock level, cooldown, a run
+  function), cooldown gating, area and arc targeting, stuns, telegraphed attacks and hit feel.
+- **There is no combat simulator.** `GameDataSimulation` covers mining drops and levelling only.
+
+Existing bugs to fix as part of the foundation, since they skew today's numbers:
+- POWER, AIM and ARMOR enchantments count twice (`PlayerController.UpdateEquipmentEffect`, L3009 and L3019).
+- Heals pass crit chance into the dodge slot: heals never crit and "miss" as often as they should crit (`GameMath.cs:68`).
+- Hit chance modifiers are backwards: raising hit chance does nothing, lowering it makes hitting easier.
+- `StyleBonus` is always 0; the dungeon boss's halved defence never applies; the raid boss's history leaves out weapon stats.
+- `IncreasedCriticalHitDamage` effects vanish on arrival; poison, bleed and burn effects do nothing.
+
+---
+
+## 1. The character sheet
+
+Every fighter (player, pet, enemy) has the same derived sheet, built from skills, gear, gems,
+enchantments, skill tree passives and status effects:
+
+| Stat | From | What it does |
+|---|---|---|
+| **Max HP** | 10 per Health level, plus gear, gems, passives | The health pool. Health level 10 is 100 HP, level 999 is 9,990 HP before gear. |
+| **Power** (per style) | Strength for melee, Ranged, Magic; weapon power | The size of hits |
+| **Accuracy** (per style) | Attack for melee, Ranged, Magic; weapon accuracy | Chance to hit |
+| **Evasion** | Defense level, some gear | Chance to be missed |
+| **Armor** | Armour pieces, Defense passives | Takes a share off physical damage |
+| **Element damage** | Weapon element, gems, skills | Extra damage of fire, ice, lightning or poison |
+| **Resistances** | Gear, gems, passives | Take a share off each element's damage; can be negative (a weakness) |
+| **Critical chance and damage** | Gear, gems, passives | 5% and 150% to start |
+| **Attack speed / cast speed** | Weapon type, passives, effects | Seconds between basic attacks |
+| **Healing power** | Healing level, healing weapons, passives | The size of heals and shields |
+| **Threat** | Role skills, Defense passives | How much attention enemies pay to you |
+
+Health regeneration stays as it is out of combat. In combat only skills, food and potions heal.
+
+## 2. Elements
+
+Five damage types to begin with, each with its own effect, so picking one is a real choice:
+
+| Element | Effect on hit (chance grows with element damage) | Typical enemies |
+|---|---|---|
+| **Physical** | none; reduced by Armor | everything |
+| **Fire** | **Burn:** damage over 4 s, refreshes | weak: undead, plants, ice creatures; immune: fire elementals, dragons resist |
+| **Ice** (water and frost) | **Chill:** -20% attack speed for 4 s; 5 stacks freeze for 1.5 s | weak: fire creatures; resist: sea creatures |
+| **Lightning** | **Shock:** 30% of the hit jumps to one more enemy nearby; small stun chance | weak: sea creatures, golems; resist: elementals |
+| **Poison** | **Poison:** stacks up to 5, damage over 6 s, ignores Armor | weak: beasts; **immune: undead, golems, elementals** |
+
+Light and dark (holy and shadow) can follow later; undead would be weak to light. Elements also flavour
+the islands and tower floors (see the tower document).
+
+**Resistances** are a percentage per element, capped at 75% for players. Enemies can go below zero
+(a weakness takes extra damage) or to 100% (immune; the hit shows "Immune"). Element damage on gear and
+gems is shown on the character page and in item tooltips.
+
+## 3. The damage formula
+
+Kept recognisable, so today's progress still means the same thing, then extended.
+
+**Step 1: the base hit.** Today's max hit, times ten (health is ten times larger too):
+`MaxHit = 10 * ((level + 3) * (power * 0.00175 + 0.1) + 1.05) * 0.95`, where *level* is the style's damage
+skill and *power* the style's power. A hit rolls between 50% and 100% of it, leaning high (today's bands,
+without the armour narrowing).
+
+**Step 2: hit or miss.** `HitChance = clamp(5%, 95%, 50% + (Accuracy - Evasion) / (2 * max(Accuracy, Evasion, 1)))`,
+where Accuracy = 2 x aim skill + gear accuracy and Evasion = 2 x Defense + gear evasion. Even fights hit half
+the time, a fighter twice as accurate hits 75%, and nothing is ever certain. (The constants are starting
+points for the simulator, see section 8.)
+
+**Step 3: split by element.** A hit is physical, plus element damage from the weapon, gems and the skill used.
+For example a fire staff with a ruby: 60% fire and 40% physical.
+
+**Step 4: reduce.** Physical: `x (1 - Armor / (Armor + 100 + 25 x attacker level))`, so armour matters
+against everyone and never makes you untouchable. Elements: `x (1 - resistance)`.
+
+**Step 5: crit, then effects.** A crit multiplies the hit; then each element rolls its effect (burn, chill,
+shock, poison).
+
+Healing uses the same shape: base heal from the Healing level and healing power, crits, no miss and no
+reduction.
+
+## 4. Threat (aggro)
+
+Roles only mean something if enemies go for the right person. Enemies already keep a threat table, so it
+is extended rather than replaced:
+- Damage dealt adds that much threat. Healing adds half of the amount healed, split over the enemies
+  fighting the one healed.
+- Tank skills multiply threat (for example Defense's "Taunt" forces the target for 4 s and adds a burst
+  of threat).
+- An enemy switches when someone has 10% more threat than its current target (melee) or 30% more (at
+  range), so targets do not flicker.
+- Bosses can break the rules on purpose (a skill that hits whoever is furthest away, for example).
+
+## 5. Status effects, buffs and debuffs
+
+One system for all of them, used by skills, elements, food, potions and enemy attacks:
+- An effect has a type, a value, a duration, stacks, and a source.
+- Damage over time (burn, poison, bleed) ticks once a second.
+- Crowd control (stun, freeze, slow, root) has diminishing returns on bosses (half duration, then immune
+  for 6 s), as hero mode already does.
+- The effects that are stored but never read today (Poison, Bleeding, Burning, HealthSteal and the
+  attack attributes) finally do something, through this system.
+
+## 6. Enemies and bosses
+
+**Definitions instead of numbers in the scenes.** Each kind of enemy gets a definition: level and stats,
+attack style (melee, ranged, magic), element of its attacks, resistances and weaknesses, the skills it
+uses, and loot. An editor script makes the first definitions from the stats serialized in the scenes today,
+so nothing gets weaker or stronger by accident.
+
+**Skills.** Regular enemies get at most one or two simple skills (a spider's poison bite, a goblin
+shaman's heal, a skeleton archer's volley). **Bosses get a kit:** telegraphed attacks taken from hero
+mode's bolt, lunge and slam, plus area attacks, summons, enrage and phases at health thresholds. Raid and
+dungeon bosses use them in their normal fights, not only in hero mode.
+
+**Ranged and magic enemies** stop at range and use their element, instead of every enemy walking up to melee.
+
+## 7. Where it runs, and old clients
+
+Combat keeps running in the game client, where it runs today. The server keeps storing items, gems,
+enchantments, skill trees, pets and experience, and checks what the game reports.
+
+- **One shared combat library.** The formulas (sections 1 to 5) move into a small library both the game and
+  the simulator use (the way `RavenNest.Models.dll` is shared today), so the simulator and the game can
+  never disagree.
+- **Old games keep old combat.** A 0.9.6 game ignores what it does not know. The server keeps the old item
+  columns filled for one version, so older games still show and use the old stats, while new games read
+  the new ones. Items, gems and trees are stored the same for both.
+
+## 8. Balance: a combat simulator before anything ships
+
+Today's balance was never measured. Before the new combat goes out:
+- A command line simulator runs thousands of fights with the shared library: a player of a given level,
+  gear and build against each island's enemies, each raid and dungeon boss scaling, and each tower floor.
+- It reports time to kill, damage taken, deaths and healing needed, per level band.
+- Targets to tune against: an island enemy at your level dies in 4 to 8 swings; you can fight for minutes
+  without dying at the right island; a raid boss takes 3 to 6 minutes for a normal group; a tower floor boss
+  needs the right roles and elements.
+- Characterization tests pin today's formulas (times ten) first, so we know what changed and by how much.
+
+## 9. Moving existing data over
+
+- **Items:** a one time mapping on the server. `WeaponAim/Power`, `MagicAim/Power`, `RangedAim/Power`
+  become Accuracy and Power on that weapon's style; `ArmorPower` becomes Armor. The 24 armour pieces with an
+  offence stat keep it as a small Power or Accuracy bonus. Item stats move into a flexible list (stat, value)
+  so new stats need no new columns.
+- **Enchantments:** `AIM` becomes `ACCURACY`, `POWER` and `ARMOR` stay; the double counting bug is fixed at
+  the same time, so enchanted gear will show *lower* numbers than today. The release notes have to say why.
+  Enchantments keep base stats and skill bonuses; elements and resistances come from gems (see the gems
+  document), so the two do not overlap.
+- **Health and healing items:** HP becomes ten times larger, so food and potion heal amounts become ten
+  times larger as well. Health experience stays as it is (a third of combat experience).
+- **Enemies:** definitions are generated from today's scene stats (section 6).
+- **Characters:** nothing to migrate; skill trees start empty with all points to spend.
+
+## 10. Phases
+
+A proposal, to be decided per release:
+
+1. **Foundation:** the character sheet, health pool, elements, the new formula, threat, the status effect
+   system, enemy definitions, the bug fixes, the data migration, the shared library and the simulator.
+2. **Player combat skills:** skill trees, points, the loadout, respec, automatic use; enemy and boss skills.
+3. **Battle pets:** the new skill for everyone, pets that level, evolve and use skills; the clan skill.
+4. **Gems and sockets:** enchanted gems, combining, removal; clan Enchanting tied in.
+5. **The tower:** floors 1 to 10, then more with every update.
+
+Phases 1 to 3 share the same "skills on a cooldown, used automatically" machinery, so they could be one
+update (the headline being battle pets and the new combat), with gems and the first tower floors in the
+next.
+
+## Open questions
+
+- Should Slayer and Health have their own skill trees (boss hunting; vitality and lifesteal), or only Attack, Strength, Defense, Ranged, Magic and Healing?
+- The fifth loadout slot: at a combat level, a tree node, or a later update?
+- Light and dark elements now, or later with the tower floors that need them?
+- How visible should numbers be on stream (damage numbers, "Immune", effect icons) without cluttering the view?
