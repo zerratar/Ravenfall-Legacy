@@ -122,8 +122,13 @@ points for the simulator, see section 8.)
 **Step 3: split by element.** A hit is physical, plus element damage from the weapon, gems and the skill used.
 For example a fire staff with a ruby: 60% fire and 40% physical.
 
-**Step 4: reduce.** Physical: `x (1 - Armor / (Armor + 100 + 25 x attacker level))`, so armour matters
-against everyone and never makes you untouchable. Elements: `x (1 - resistance)`.
+**Step 4: reduce.** Physical: `x 640 / (640 + Armor)`. Elements: `x (1 - resistance)`.
+
+Why 640 (found with the simulator on 2026-11-07, see section 8): the max hit multiplies by `1 + power / 57.1`,
+and gear carries about 2.8 armour per point of power, so armour in this form answers power: in matching gear a
+blow stays about four times an ungeared one at every level, and fights last about as long at level 50 as at
+999, while better gear still wins. The first idea, armour measured against the attacker's level, let a level
+999 fight end in two swings.
 
 **Step 5: crit, then effects.** A crit multiplies the hit; then each element rolls its effect (burn, chill,
 shock, poison).
@@ -189,6 +194,20 @@ Today's balance was never measured. Before the new combat goes out:
   without dying at the right island; a raid boss takes 3 to 6 minutes for a normal group; a tower floor boss
   needs the right roles and elements.
 - Characterization tests pin today's formulas (times ten) first, so we know what changed and by how much.
+
+**Built 2026-11-07:** `RavenNest.Combat` (the shared library, 40 tests) and `src/tools/RavenNest.CombatSimulator`
+in the RavenNest repo. `parity` compares today's melee with the new rules for a fighter against an equal one in
+the best gear for its level (from the public item list). First results, swings to win:
+
+| Level | 10 | 50 | 100 | 200 | 400 | 500 | 700 | 999 |
+|---|---|---|---|---|---|---|---|---|
+| Today | 3.9 | 5.0 | 5.0 | 8.6 | 4.2 | 8.0 | 11.7 | 13.9 |
+| Today's hit rate | 100% | 100% | 96% | 45% | 65% | 29% | 18% | 12% |
+| New | 4.1 | 7.0 | 8.6 | 9.3 | 7.8 | 7.3 | 7.4 | 7.2 |
+| New hit rate | 93% | 79% | 72% | 68% | 65% | 66% | 65% | 64% |
+
+Today's high level fights only last because armour makes nearly every blow miss; the new rules hit about two
+thirds of the time at every level and keep fights a steady length.
 
 ## 9. Moving existing data over
 
