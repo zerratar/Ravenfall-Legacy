@@ -85,12 +85,22 @@ on the server).*
 
 ## Step 3: privacy
 
+*Built 2026-11-06 (RavenNest 90ab7696) as below, on /clan/page. The flags are stored as "hide" flags, so a
+clan without a settings row shows everything. The clan list shows "Hidden" for playing now.*
+
 `ClanPageSettings` per clan, flags the owner sets under `/clan` (Page tab): show the member list,
 show who is playing now, show join dates, show rank holders, show the clan skills' progress. All on
 by default (decided above). Always shown, because the list is for comparing clans: name, logo,
 owner, level, Enchanting level, member count.
 
 ## Step 4: the clan's own little website
+
+*Built 2026-11-06 (RavenNest 90ab7696). Details that differ from or add to the plan below: news is written on
+/clan/news; the banner has no editor, any picture at least 600 pixels wide is cut to 3:1 from the middle and
+kept at most 1500 wide, and it is a patron feature like the logo and cape; the visitor counter is kept in memory
+per day (a restart can count a visitor twice); posts are limited to 10 a day per clan; only signed in visitors
+outside the clan see Report. The page shows the stats first, then joining, about, Top 8, news, skills, ranks and
+members, with the counter at the bottom.*
 
 - **About**: a short text (plain text with line breaks and links, no HTML), shown at the top.
 - **News posts**: title and text, public or members only, a pinned post; written by the owner and
