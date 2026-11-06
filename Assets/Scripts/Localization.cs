@@ -3047,6 +3047,8 @@ public static class Localization
     // ClanJoin, ClanAccept, ClanDecline, ClanLeave
     public static string MSG_CLAN_JOINED = Meta("clan", "join") + "You have joined {clanName} as a {roleName}!";
     public static string MSG_CLAN_JOIN_FAILED = Meta("clan", "join", "fail") + "You are not able to join that clan at this moment.";
+    public static string MSG_CLAN_JOIN_REQUESTED = Meta("clan", "join") + "{clanName} takes members on request. Your request is sent, and its officers answer it on the website.";
+    public static string MSG_CLAN_INVITE_ONLY = Meta("clan", "join", "fail") + "{clanName} only takes members by invite. Ask one of its officers for one.";
     public static string MSG_CLAN_ACCEPT_FAILED = Meta("clan", "invite", "fail") + "Unable to accept clan invite. Either you don't have any invites or server is bonkers.";
     public static string MSG_CLAN_DECLINED = Meta("clan", "invite") + "You have declined the most recent clan invite.";
     public static string MSG_CLAN_DECLINE_FAILED = Meta("clan", "invite", "fail") + "Unable to decline clan invite. Either you don't have any invites or server is bonkers.";

@@ -62,6 +62,14 @@ read the active sessions once per build, as `ClanService.GetMembers` does.
 
 ## Step 2: join policy and join requests
 
+*Built 2026-11-06 (RavenNest 0fbf3c5d, the game's !clan join replies). As designed below, with these details:
+the dashboard tab is visible to every member and explains what their rank may do; an accepted request gives the
+lowest rank and clears the old cape, as an accepted invite does; requests stay in the table after they are
+answered. Older games answer !clan join on a clan that takes requests with their generic "not able to join" line,
+though the request is filed. A running game is not told when a request is accepted on the website, the same as
+an invite accepted there: the member shows in the clan after rejoining (enchanting works at once, it is checked
+on the server).*
+
 - `Clan.JoinPolicy`: **Open** (default, today's behaviour), **On request**, **Invite only**. Set by
   the owner and ranks with `CanMakePublic` (renamed in the editor to "Can change who may join").
   `IsPublic` and the inverted check go.

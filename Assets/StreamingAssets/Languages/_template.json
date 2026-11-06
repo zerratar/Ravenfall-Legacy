@@ -147,6 +147,8 @@
     "MSG_CLAN_INVITE_SENT": "Invite was successfully sent. {playerName}, you may use the command '!clan accept' if you wish to join the clan {clanName}. Or '!clan decline' to decline.",
     "MSG_CLAN_JOINED": "You have joined {clanName} as a {roleName}!",
     "MSG_CLAN_JOIN_FAILED": "You are not able to join that clan at this moment.",
+    "MSG_CLAN_JOIN_REQUESTED": "{clanName} takes members on request. Your request is sent, and its officers answer it on the website.",
+    "MSG_CLAN_INVITE_ONLY": "{clanName} only takes members by invite. Ask one of its officers for one.",
     "MSG_CLAN_LEAVE_FAILED": "Unable to leave your clan right now, unknown error. Please try again later.",
     "MSG_CLAN_LEFT": "You have departed your clan and are no longer a member of {clanName}.",
     "MSG_CLAN_NOT_FOUND": "There is no clan or player here called {name}. Leave the name out to join the streamer's clan.",

@@ -75,6 +75,8 @@
     "MSG_CLAN_INVITE_SENT": "Inbjudan har skickats. {playerName}, använd kommandot '!clan accept' om du vill gå med i klanen {clanName}. Eller '!clan decline' för att tacka nej.",
     "MSG_CLAN_JOINED": "Du har gått med i {clanName} som {roleName}!",
     "MSG_CLAN_JOIN_FAILED": "Du kan inte gå med i den klanen just nu.",
+    "MSG_CLAN_JOIN_REQUESTED": "{clanName} tar in medlemmar på förfrågan. Din förfrågan är skickad, och klanens officerare svarar på den på webbplatsen.",
+    "MSG_CLAN_INVITE_ONLY": "{clanName} tar bara in medlemmar som bjudits in. Be någon av klanens officerare om en inbjudan.",
     "MSG_CLAN_LEAVE_FAILED": "Det går inte att lämna klanen just nu, okänt fel. Försök igen senare.",
     "MSG_CLAN_LEFT": "Du har lämnat din klan och är inte längre medlem i {clanName}.",
     "MSG_CLAN_NOT_FOUND": "Det finns ingen klan eller spelare här som heter {name}. Utelämna namnet för att gå med i streamerns klan.",

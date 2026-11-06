@@ -65,6 +65,25 @@
             return;
         }
 
+        // clans that take members on request or by invite (RavenNest's join policy, the website's clan pages)
+        if (result.RequestSent)
+        {
+            client.SendReply(gm, Localization.MSG_CLAN_JOIN_REQUESTED, result.ClanName);
+            return;
+        }
+
+        if (result.Failure == RavenNest.Models.JoinClanFailure.InviteOnly)
+        {
+            client.SendReply(gm, Localization.MSG_CLAN_INVITE_ONLY, result.ClanName);
+            return;
+        }
+
+        if (result.Failure == RavenNest.Models.JoinClanFailure.AlreadyInClan)
+        {
+            client.SendReply(gm, Localization.MSG_ALREADY_IN_CLAN);
+            return;
+        }
+
         client.SendReply(gm, Localization.MSG_CLAN_JOIN_FAILED);
     }
 }
