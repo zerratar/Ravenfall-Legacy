@@ -63,7 +63,16 @@ public static class CombatEffects
     /// <summary>A blow landed (CombatRules): its element effects go on the defender, lightning jumps on.</summary>
     public static void OnBlow(IAttackable attacker, IAttackable defender, AttackResult result, CombatSheet defenderSheet)
     {
-        if (!CombatRules.Enabled || result == null || result.Procs == null || result.Procs.Count == 0 || defender == null)
+        if (!CombatRules.Enabled || result == null || defender == null)
+        {
+            return;
+        }
+
+        // thorns hurt the attacker back, life steal heals it
+        if (result.Reflected > 0 && attacker != null && Alive(attacker)) Deal(defender, attacker, result.Reflected);
+        if (result.Healed > 0 && attacker != null && Alive(attacker)) attacker.Heal(result.Healed);
+
+        if (result.Procs == null || result.Procs.Count == 0)
         {
             return;
         }
@@ -125,6 +134,7 @@ public static class CombatEffects
             var damage = dot.Physical * (1 - CombatMath.ArmorReduction(sheet != null ? sheet.Armor : 0))
                 + dot.Fire * CombatMath.ResistanceMultiplier(sheet != null ? sheet.Resistance.Fire : 0, sheet != null && sheet.IsPlayer)
                 + dot.Poison * CombatMath.ResistanceMultiplier(sheet != null ? sheet.Resistance.Poison : 0, sheet != null && sheet.IsPlayer);
+            if (sheet != null) damage *= sheet.DamageTakenMultiplier; // damage reduction
             var amount = Mathf.RoundToInt((float)damage);
             if (amount >= 1) Deal(entry.Source, fighter, amount);
         }

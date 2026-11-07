@@ -103,14 +103,14 @@ public class PlayerStats : ChatBotCommandHandler<string>
         {
             var e = stat.Enchantment;
             var value = (e.ValueType == AttributeValueType.Percent ? ((int)(e.Value * 100)) + "%" : e.Value + "");
-            return stat.Name + ": " + (int)stat + " (+" + value + ")";
+            return Localization.StatName(stat.Name) + ": " + (int)stat + " (+" + value + ")";
         }
 
         // Enchantments will not have a value, only use the description.
         var s = (int)stat;
         if (s > 0)
         {
-            return stat.Name + ": " + (int)stat;
+            return Localization.StatName(stat.Name) + ": " + (int)stat;
         }
 
         if (stat.Name.Contains("%"))

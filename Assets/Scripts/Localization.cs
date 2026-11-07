@@ -1116,8 +1116,8 @@ public static class Localization
 
     public static string MSG_COMMAND_COOLDOWN = Meta("system", "fail") + "You must wait another {cooldown} secs to use that command.";
     public static string MSG_NOT_PLAYING = Meta("system", "fail") + "You are not currently playing. Use !join to start playing!";
-    public static string MSG_EQUIP_STATS = Meta("info", "equipment") + "{armorPower} Armor, {weaponPower} Melee Weapon Power, {weaponAim} Melee Weapon Aim, {magicPower} Magic/Healing Power, {magicAim} Magic Aim, {rangedPower} Ranged Weapon Power, {rangedAim} Ranged Weapon Aim";
-    public static string MSG_EQUIP_STATS_FORMAT = "{armorPower} Armor, {weaponPower} Melee Weapon Power, {weaponAim} Melee Weapon Aim, {magicPower} Magic/Healing Power, {magicAim} Magic Aim, {rangedPower} Ranged Weapon Power, {rangedAim} Ranged Weapon Aim";
+    public static string MSG_EQUIP_STATS = Meta("info", "equipment") + "{armorPower} Armor, {weaponPower} Melee Power, {weaponAim} Melee Accuracy, {magicPower} Magic/Healing Power, {magicAim} Magic Accuracy, {rangedPower} Ranged Power, {rangedAim} Ranged Accuracy";
+    public static string MSG_EQUIP_STATS_FORMAT = "{armorPower} Armor, {weaponPower} Melee Power, {weaponAim} Melee Accuracy, {magicPower} Magic/Healing Power, {magicAim} Magic Accuracy, {rangedPower} Ranged Power, {rangedAim} Ranged Accuracy";
 
     public static string MSG_STATS = Meta("info", "stats") + "Combat level {combatLevel}, {skills} -- TOTAL {total} --";
     public static string MSG_SKILL = Meta("info", "skill") + "{skill}, {currenExp} / {requiredExp} EXP.";
@@ -2077,7 +2077,7 @@ public static class Localization
     public static string UI_DETAILS_SCROLL_RAID = "Raid scrolls";
     public static string UI_DETAILS_SCROLL_DUNGEON = "Dungeon scrolls";
     public static string UI_DETAILS_OWNED = "Owned";
-    public static string UI_DETAILS_AIM = "Aim {0}";
+    public static string UI_DETAILS_AIM = "Accuracy {0}";
     public static string UI_TIP_LEVEL = "Level";
     public static string UI_TIP_BOOSTED = "Boosted to";
     public static string UI_TIP_DRAINED = "Drained to";
@@ -2090,14 +2090,14 @@ public static class Localization
     public static string UI_TIP_ARMOR_POWER = "Armor power";
     public static string UI_TIP_ARMOR_NOTE = "Reduces damage taken from every attack style.";
     public static string UI_TIP_MELEE = "Melee";
-    public static string UI_TIP_WEAPON_POWER = "Weapon power";
-    public static string UI_TIP_WEAPON_AIM = "Weapon aim";
+    public static string UI_TIP_WEAPON_POWER = "Melee power";
+    public static string UI_TIP_WEAPON_AIM = "Melee accuracy";
     public static string UI_TIP_RANGED = "Ranged";
     public static string UI_TIP_RANGED_POWER = "Ranged power";
-    public static string UI_TIP_RANGED_AIM = "Ranged aim";
+    public static string UI_TIP_RANGED_AIM = "Ranged accuracy";
     public static string UI_TIP_MAGIC = "Magic";
     public static string UI_TIP_MAGIC_POWER = "Magic power";
-    public static string UI_TIP_MAGIC_AIM = "Magic aim";
+    public static string UI_TIP_MAGIC_AIM = "Magic accuracy";
     public static string UI_TIP_HEALING_POWER = "Healing power";
     public static string UI_ISLAND_STAT_MONSTERS = "Monsters defeated";
     public static string UI_ISLAND_STAT_PLAYERS_KILLED = "Players killed";
@@ -2531,7 +2531,10 @@ public static class Localization
             case "ARMOUR": return UI_TIP_ARMOR;
             case "POWER": return UI_ENCHANT_POWER;
             case "AIM": return UI_ENCHANT_AIM;
-            default: return SkillName(stat);
+            default:
+                // combat v2's gear stats and magical enchantments (CRIT_CHANCE, THORNS, ...)
+                if (stat != null && RavenNest.Combat.GearStats.TryParseKey(stat, out var gearStat)) return RavenNest.Combat.GearStats.Label(gearStat);
+                return SkillName(stat);
         }
     }
 
@@ -2986,12 +2989,12 @@ public static class Localization
     public static string MSG_EQ_ITEM_STATS_AN = Meta("info", "equipment") + "You have an {itemName} equipped with the following stats: {stats}";
     public static string MSG_EQ_ITEMS_STATS = Meta("info", "equipment") + "You have the following items equipped: {itemList}. These items give the total of {stats}";
     public static string MSG_EQ_STAT_ARMOR = "{armorPower} Armor";
-    public static string MSG_EQ_STAT_WEAPON_POWER = "{weaponPower} Melee Weapon Power";
-    public static string MSG_EQ_STAT_WEAPON_AIM = "{weaponAim} Melee Weapon Aim";
+    public static string MSG_EQ_STAT_WEAPON_POWER = "{weaponPower} Melee Power";
+    public static string MSG_EQ_STAT_WEAPON_AIM = "{weaponAim} Melee Accuracy";
     public static string MSG_EQ_STAT_MAGIC_POWER = "{magicPower} Magic/Healing Power";
-    public static string MSG_EQ_STAT_MAGIC_AIM = "{magicAim} Magic Aim";
-    public static string MSG_EQ_STAT_RANGED_POWER = "{rangedPower} Ranged Weapon Power";
-    public static string MSG_EQ_STAT_RANGED_AIM = "{rangedAim} Ranged Weapon Aim";
+    public static string MSG_EQ_STAT_MAGIC_AIM = "{magicAim} Magic Accuracy";
+    public static string MSG_EQ_STAT_RANGED_POWER = "{rangedPower} Ranged Power";
+    public static string MSG_EQ_STAT_RANGED_AIM = "{rangedAim} Ranged Accuracy";
 
     // Mine, Chop, Fish, Farm, Gather: the word before the last suggestion in a list, "A, B or C" (companion of MSG_LIST_AND)
     public static string MSG_LIST_OR = " or ";
@@ -3151,7 +3154,7 @@ public static class Localization
 
     // Item tooltips: enchantments that raise power or aim of any kind
     public static string UI_ENCHANT_POWER = "Power";
-    public static string UI_ENCHANT_AIM = "Aim";
+    public static string UI_ENCHANT_AIM = "Accuracy";
 
     // Player details preview
     public static string UI_DETAILS_PREVIEW_RESET = "Reset view";

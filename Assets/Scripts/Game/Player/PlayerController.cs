@@ -3004,6 +3004,24 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         UpdateEquipmentEffect(Inventory.Equipped);
     }
 
+    /// <summary>
+    ///     Combat v2's magical enchantments (CRIT_CHANCE:3%, THORNS:8%, ...; the server's GameData.MagicalAttributes)
+    ///     count like the same stats on gear. AIM, POWER and ARMOR stay the enchantment bonus they always were.
+    /// </summary>
+    private static void AddMagicalEnchantments(GameInventoryItem item, RavenNest.Combat.GearStats extras)
+    {
+        if (item.Enchantments == null) return;
+        foreach (var e in item.Enchantments)
+        {
+            if (e?.Name == null || !RavenNest.Combat.GearStats.TryParseKey(e.Name, out var stat)) continue;
+            if (stat <= RavenNest.Combat.GearStat.Armor && stat != RavenNest.Combat.GearStat.HealingPower) continue; // ARMOR is the old enchantment bonus
+            if (!RavenNest.Combat.GearStats.IsShare(stat) && e.ValueType == AttributeValueType.Percent) continue; // a percentage of power is the old kind
+            var value = e.Value;
+            if (e.ValueType == AttributeValueType.Percent && value >= 1) value /= 100d;
+            extras[stat] += value;
+        }
+    }
+
     public void UpdateEquipmentEffect(IReadOnlyList<GameInventoryItem> equipped)
     {
         EquipmentStats.BaseArmorPower = 0;
@@ -3050,6 +3068,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             // combat v2's stats beyond aim, power and armour; a weapon's element goes on its own style
             var gear = e.Item.GetGearStats();
             var gearStyle = e.Item.Category == ItemCategory.Weapon ? gear.WeaponStyle() : null;
+            AddMagicalEnchantments(e, extras);
             if (gearStyle.HasValue)
             {
                 weaponExtras ??= new RavenNest.Combat.GearStats[4];

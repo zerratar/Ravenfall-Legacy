@@ -49,7 +49,7 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
     public void AddHealingThreat(PlayerController healer, double amount)
     {
         if (!CombatRules.Enabled || !healer || Stats.IsDead) return;
-        threat.Add(healer, amount);
+        threat.Add(healer, amount * CombatRules.ThreatBonus(healer));
         if (AttackerNames.Add(healer.Name)) Attackers.Add(healer);
         var next = threat.ChooseTarget(TargetPlayer, RangedStyle, ThreatAlive);
         if (next && next != TargetPlayer) SetTarget(next);
@@ -932,7 +932,7 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
 
                 if (CombatRules.Enabled)
                 {
-                    threat.AddDamage(player, damage, aggroMultiplier);
+                    threat.AddDamage(player, damage, aggroMultiplier * CombatRules.ThreatBonus(player));
                     var next = threat.ChooseTarget(TargetPlayer, RangedStyle, ThreatAlive);
                     if (next && next != TargetPlayer) SetTarget(next);
                 }

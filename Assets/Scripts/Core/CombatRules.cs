@@ -32,6 +32,20 @@ public static class CombatRules
 
     private static readonly ICombatRandom random = new UnityRandom();
 
+    /// <summary>Swing times are divided by this: 1 plus the ATTACK_SPEED gear stat (at most twice as fast), 1 with the old rules.</summary>
+    public static float AttackSpeed(IAttackable fighter)
+    {
+        var eq = Enabled ? fighter?.GetEquipmentStats() : null;
+        return eq == null ? 1f : Mathf.Clamp((float)(1 + eq.Gear(GearStat.AttackSpeed)), 0.2f, (float)CombatMath.MaxAttackSpeed);
+    }
+
+    /// <summary>Threat is multiplied by this: 1 plus the THREAT gear stat, 1 with the old rules.</summary>
+    public static float ThreatBonus(IAttackable fighter)
+    {
+        var eq = Enabled ? fighter?.GetEquipmentStats() : null;
+        return eq == null ? 1f : Mathf.Max(0f, (float)(1 + eq.Gear(GearStat.Threat)));
+    }
+
     /// <summary>Every blow worked out by the new rules, for the status effects (the game's CombatEffects sets it).</summary>
     public static System.Action<IAttackable, IAttackable, AttackResult, CombatSheet> BlowLanded;
 

@@ -142,7 +142,8 @@ public class PlayerCombat
         return true;
     }
 
-    private float GetAttackAnimationTime(AttackType attackType) => GetBaseAttackAnimationTime(attackType) / CombatEffects.AttackSpeedFactor(owner); // chilled: slower
+    // chilled: slower; ATTACK_SPEED gear: faster
+    private float GetAttackAnimationTime(AttackType attackType) => GetBaseAttackAnimationTime(attackType) / CombatEffects.AttackSpeedFactor(owner) / CombatRules.AttackSpeed(owner);
 
     private float GetBaseAttackAnimationTime(AttackType attackType)
     {

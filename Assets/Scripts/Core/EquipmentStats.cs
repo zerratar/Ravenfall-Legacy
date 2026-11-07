@@ -34,6 +34,14 @@ public class EquipmentStats : IComparable
     /// </summary>
     [NonSerialized] public RavenNest.Combat.GearStats[] WeaponExtras;
 
+    /// <summary>A combat v2 gear stat summed over all worn gear and enchantments (the weapons' too).</summary>
+    public double Gear(RavenNest.Combat.GearStat stat)
+    {
+        var total = Extras != null ? Extras[stat] : 0;
+        if (WeaponExtras != null) foreach (var w in WeaponExtras) if (w != null) total += w[stat];
+        return total;
+    }
+
     public int WeaponBonus => WeaponAimBonus + WeaponPowerBonus;
     public int RangedBonus => RangedAimBonus + RangedPowerBonus;
     public int MagicBonus => MagicAimBonus + MagicPowerBonus;
