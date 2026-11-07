@@ -22,6 +22,38 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
     internal readonly HashSet<string> AttackerNames = new HashSet<string>();
     internal readonly List<IAttackable> Attackers = new List<IAttackable>();
     private readonly Dictionary<string, float> attackerAggro = new Dictionary<string, float>();
+
+    /// <summary>
+    ///     Combat v2's threat (docs/combat-v2-design.md, section 4): damage adds threat (a one handed sword 2.5 times),
+    ///     healing someone it fights adds half the heal shared over the enemies fighting them, and it switches only to
+    ///     someone with 10% more threat (30% for ranged and magic enemies), so targets do not flicker.
+    /// </summary>
+    private readonly RavenNest.Combat.ThreatTable<PlayerController> threat = new RavenNest.Combat.ThreatTable<PlayerController>();
+
+    /// <summary>The enemies awake in the scene (lightning jumps between them).</summary>
+    internal static readonly HashSet<EnemyController> Active = new HashSet<EnemyController>();
+
+    private void OnEnable() => Active.Add(this);
+
+    private void OnDisable()
+    {
+        Active.Remove(this);
+        CombatEffects.Clear(this);
+    }
+
+    private bool RangedStyle => Definition && Definition.Definition != null && Definition.Definition.Style != RavenNest.Combat.AttackStyle.Melee;
+
+    private bool ThreatAlive(PlayerController p) => p && !p.Stats.IsDead && !p.isDestroyed && !p.Removed && (Island == p.Island || !IsDungeonEnemy);
+
+    /// <summary>Someone healed a player this enemy fights: half the heal, shared, as threat (CombatRules.Enabled only).</summary>
+    public void AddHealingThreat(PlayerController healer, double amount)
+    {
+        if (!CombatRules.Enabled || !healer || Stats.IsDead) return;
+        threat.Add(healer, amount);
+        if (AttackerNames.Add(healer.Name)) Attackers.Add(healer);
+        var next = threat.ChooseTarget(TargetPlayer, RangedStyle, ThreatAlive);
+        if (next && next != TargetPlayer) SetTarget(next);
+    }
     private static RuntimeAnimatorController humanoidEnemy;
 
     [SerializeField] private bool positionLocked = true;
@@ -599,7 +631,8 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
     {
         if (!targetPlayer) return;
         if (!movement) return;
-        attackTimer -= GameTime.deltaTime;
+        if (CombatEffects.CannotAct(this)) return; // stunned or frozen
+        attackTimer -= GameTime.deltaTime * CombatEffects.AttackSpeedFactor(this); // chilled: slower
         if (attackTimer <= 0f)
         {
             var atHero = HeroController.Active && HeroController.Active.Player == targetPlayer;
@@ -721,6 +754,8 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
     {
         AttackerNames.Clear();
         Attackers.Clear();
+        threat.Clear();
+        CombatEffects.Clear(this);
     }
     public bool Heal(int damage)
     {
@@ -895,7 +930,13 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
 
                 attackerAggro[attackerName] = totalAggro;
 
-                if (highestAttackerAggroValue <= totalAggro || Target == null)
+                if (CombatRules.Enabled)
+                {
+                    threat.AddDamage(player, damage, aggroMultiplier);
+                    var next = threat.ChooseTarget(TargetPlayer, RangedStyle, ThreatAlive);
+                    if (next && next != TargetPlayer) SetTarget(next);
+                }
+                else if (highestAttackerAggroValue <= totalAggro || Target == null)
                 {
                     highestAttackerAggroValue = totalAggro;
                     SetTarget(attacker as PlayerController);
@@ -1065,6 +1106,7 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
         if (AttackerNames.Remove(player.PlayerName))
         {
             Attackers.Remove(player);
+            threat.Remove(player);
 
             if (Attackers.Count == 0 || TargetPlayer == player)
             {

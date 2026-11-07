@@ -286,8 +286,20 @@ Phase 1 (foundation), started 2026-11-07:
   element they do not resist ends fights a third sooner from level 200 up (gladiator 7.1 swings physical, 4.8 with a
   quarter fire), because element damage skips armour entirely. **To decide before enemy gear tuning:** let armour take
   part of element damage too, give enemies a base resistance that grows with level, or keep weapon shares smaller.
-- [ ] Threat and status effects wired into the game's fights (the library has both; the game still uses its own
-  threat table and ignores poison, bleed and burn).
+- [x] Threat and status effects in the game's fights (2026-11-07, with `CombatRules.Enabled`):
+  - `CombatEffects` (Game/Combat) keeps the library's `StatusEffectSet` per fighter. Every blow of the new rules
+    reports its element procs (`CombatRules.BlowLanded`): fire burns, poison stacks, ice chills and five chills
+    freeze, lightning jumps 30% of the hit to the nearest enemy within 6 m and sometimes stuns. Damage over time
+    ticks once a second, reduced by the target's resistance (bleed by armour), credited to whoever caused it, and a
+    kill by it counts as theirs. Chilled fighters attack slower (players and enemies), frozen and stunned ones not at
+    all; bosses take shorter crowd control and then ignore it for 6 s. Checked in play mode: an all-fire sword's
+    burn took an Iceheim viking from 2,250 to 1,707 health with no further hits; three chills put a samurai's attack
+    speed at 0.4.
+  - Enemies keep the library's `ThreatTable`: damage adds threat (a one handed sword still 2.5 times, the tank's
+    weapon), healing someone they fight adds half the heal shared over them, and they switch target only to someone
+    with 10% more threat (30% for ranged and magic enemies). The old table switched whenever anyone caught up.
+  - Not yet: effect icons or "Burn" numbers on stream (open question), enemies dealing elements themselves (their
+    definitions are all physical), taunts (they come with the skill trees).
 - [x] The baseline bugs (2026-11-07):
   - POWER, AIM and ARMOR enchantments counted twice (`UpdateEquipmentEffect` added the item's number with the bonus,
     then the bonus again). Fixed: a Lionsbane Katana (173 power) with POWER:20% wears 207, not 241. Enchanted gear

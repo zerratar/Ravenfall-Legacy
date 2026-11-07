@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using RavenNest.Models;
 using UnityEngine;
 using Skill = RavenNest.Models.Skill;
@@ -85,6 +86,11 @@ public class PlayerCombat
             return true;
         }
 
+        if (CombatEffects.CannotAct(owner))
+        {
+            return true; // stunned or frozen
+        }
+
         owner.Target = targetTransform;
         var attackType = GetAttackType();
         owner.InCombat = true;
@@ -136,7 +142,9 @@ public class PlayerCombat
         return true;
     }
 
-    private float GetAttackAnimationTime(AttackType attackType)
+    private float GetAttackAnimationTime(AttackType attackType) => GetBaseAttackAnimationTime(attackType) / CombatEffects.AttackSpeedFactor(owner); // chilled: slower
+
+    private float GetBaseAttackAnimationTime(AttackType attackType)
     {
         switch (attackType)
         {
@@ -179,7 +187,11 @@ public class PlayerCombat
                 return true;
 
             owner.SessionStats.AddHealingDealt(heal);
-            if (target is PlayerController healed) HeroHelpers.Healing(owner, healed, heal);
+            if (target is PlayerController healed)
+            {
+                HeroHelpers.Healing(owner, healed, heal);
+                AddHealingThreat(healed, heal);
+            }
             if (owner.dungeonHandler != null && owner.dungeonHandler.InDungeon) CombatMeter.Dungeon.AddHealing(owner, heal);
 
             // allow for some variation in gains based on how high you heal.
@@ -201,6 +213,17 @@ public class PlayerCombat
             owner.InCombat = false;
         }
         return true;
+    }
+
+    // combat v2: the enemies fighting the healed player take note of the healer (half the heal, shared)
+    private void AddHealingThreat(PlayerController healed, int heal)
+    {
+        if (!CombatRules.Enabled || heal <= 0) return;
+        var fighting = new List<EnemyController>();
+        foreach (var e in EnemyController.Active) if (e && e.TargetPlayer == healed && !e.Stats.IsDead) fighting.Add(e);
+        if (fighting.Count == 0) return;
+        var share = RavenNest.Combat.ThreatTable<PlayerController>.HealingThreat(heal, fighting.Count);
+        foreach (var e in fighting) e.AddHealingThreat(owner, share);
     }
 
     public bool DamageEnemy(IAttackable enemy, float hitTime, float startTime)

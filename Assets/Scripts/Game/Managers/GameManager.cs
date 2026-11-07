@@ -1175,6 +1175,7 @@ public class GameManager : MonoBehaviour, IGameManager
     {
         InputActivity.Track();
         GameSystems.Update(!isReloadingScene);
+        CombatEffects.Update(GameTime.deltaTime);
         FreezeChecker.SetCurrentScriptUpdate("GameManager Update");
 
         if (isReloadingScene)

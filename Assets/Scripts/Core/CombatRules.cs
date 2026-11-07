@@ -32,6 +32,9 @@ public static class CombatRules
 
     private static readonly ICombatRandom random = new UnityRandom();
 
+    /// <summary>Every blow worked out by the new rules, for the status effects (the game's CombatEffects sets it).</summary>
+    public static System.Action<IAttackable, IAttackable, AttackResult, CombatSheet> BlowLanded;
+
     public static float Melee(IAttackable attacker, IAttackable defender) => Blow(attacker, defender, AttackStyle.Melee);
     public static float Ranged(IAttackable attacker, IAttackable defender) => Blow(attacker, defender, AttackStyle.Ranged);
     public static float Magic(IAttackable attacker, IAttackable defender) => Blow(attacker, defender, AttackStyle.Magic);
@@ -54,7 +57,9 @@ public static class CombatRules
         if (defenderModifiers != null && defenderModifiers.DodgeChance > 0 && Random.value <= defenderModifiers.DodgeChance)
             return 0;
 
-        return CombatMath.Attack(attackerSheet, style, defenderSheet, random).Total;
+        var result = CombatMath.Attack(attackerSheet, style, defenderSheet, random);
+        BlowLanded?.Invoke(attacker, defender, result, defenderSheet); // burn, chill, shock, poison (CombatEffects)
+        return result.Total;
     }
 
     /// <summary>
