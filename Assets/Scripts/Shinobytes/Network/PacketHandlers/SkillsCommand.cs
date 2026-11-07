@@ -8,7 +8,7 @@ using UnityEngine;
 
 /// <summary>
 /// The skill trees from chat (combat v2, docs/combat-skills-design.md, section 6). The bot sends "skills_command" with
-/// the action first: !skills (points and loadout), !skills Might (a tree's nodes), !skills cleave (one node),
+/// the action first: !tree (points and loadout), !tree Might (a tree's nodes), !tree cleave (one node),
 /// !learn cleave, !loadout (the loadout), !loadout 1 cleave, !loadout clear 3, !respec (the price) and !respec confirm.
 /// The server saves every change and answers with the build, which the character then follows.
 /// </summary>

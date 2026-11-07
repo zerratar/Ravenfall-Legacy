@@ -1184,7 +1184,7 @@ public static class Localization
     public static string MSG_BOAT_FAILED = Meta("boat", "failed", "info") + "The shipwright is busy right now. Try again in a moment.";
 
     // Skill trees (combat v2, docs/combat-skills-design.md): !skills, !learn, !loadout, !respec
-    public static string MSG_SKILLS_SHOW = Meta("skills", "info") + "{free} of {earned} skill points to spend. Loadout: {loadout}. !skills Might (or another tree) lists its skills, !learn <skill> spends points, !loadout <slot> <skill> changes the loadout.";
+    public static string MSG_SKILLS_SHOW = Meta("skills", "info") + "{free} of {earned} skill points to spend. Loadout: {loadout}. !tree Might (or another tree) lists its skills, !learn <skill> spends points, !loadout <slot> <skill> changes the loadout.";
     public static string MSG_SKILLS_TREE = Meta("skills", "info") + "{tree} ({skill}): {nodes}. The number in brackets is the {skill} level a skill needs.";
     public static string MSG_SKILLS_INFO = Meta("skills", "info") + "{name} ({tree}, {kind}): {description} Needs {skill} {level}, {cost} point(s) per rank.";
     public static string MSG_SKILLS_KIND_ACTIVE = "active, every {0} s";
@@ -1192,7 +1192,7 @@ public static class Localization
     public static string MSG_SKILLS_KIND_RANKS = "passive, {0} ranks";
     public static string MSG_SKILLS_UNKNOWN = Meta("skills", "fail") + "There is no skill or tree called {name}. The trees are Bulwark, Restoration, Might, Precision, Marksman, Elements, Vitality and Hunter.";
     public static string MSG_SKILLS_LEARNED = Meta("skills", "success") + "You learned {name}. {free} skill point(s) left.";
-    public static string MSG_SKILLS_LEARN_USAGE = Meta("skills", "fail") + "Use !learn <skill>, for example !learn cleave. !skills Might lists a tree's skills.";
+    public static string MSG_SKILLS_LEARN_USAGE = Meta("skills", "fail") + "Use !learn <skill>, for example !learn cleave. !tree Might lists a tree's skills.";
     public static string MSG_SKILLS_LOADOUT = Meta("skills", "info") + "Loadout: {loadout}. The first one that fits is used first.";
     public static string MSG_SKILLS_LOADOUT_USAGE = Meta("skills", "fail") + "Use !loadout <slot> <skill>, for example !loadout 1 cleave, or !loadout clear 3.";
     public static string MSG_SKILLS_FAILED = Meta("skills", "fail") + "{reason}";
