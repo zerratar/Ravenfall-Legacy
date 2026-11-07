@@ -138,8 +138,11 @@ Chat is fine for the loadout, not for a tree of 160 nodes:
   poison green) and immune hits show "Immune".
 - All of it follows the potato mode and settings toggles, like other effects.
 
-## Open questions
+## Decided (2026-11-07)
 
-- The fifth loadout slot: at total combat level 1,000, a node in a tree, or later?
-- Should Health and Slayer have trees (as above), or fold Vitality into Defense and Hunter into Attack?
-- Respec price: coins only, or also a respec item from the tower or quests?
+- **The fifth loadout slot** is a node: *Battle Rhythm* in the Vitality (Health) tree, tier 3 (Health 300), 5 points.
+  Health is the one combat skill everyone trains (it gains a third of all combat experience), so any build can
+  reach it.
+- **Health and Slayer keep their own trees** (Vitality and Hunter, as above).
+- **Respec costs coins** (1,000 per point spent), and a **Tome of Forgetting** from quests gives one free respec.
+  The free respecs after balance updates and when the trees arrive stay.
