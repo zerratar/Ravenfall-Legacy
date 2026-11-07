@@ -239,6 +239,21 @@ Phases 1 to 3 share the same "skills on a cooldown, used automatically" machiner
 update (the headline being battle pets and the new combat), with gems and the first tower floors in the
 next.
 
+## Progress
+
+Phase 1 (foundation), started 2026-11-07:
+- [x] The shared library `RavenNest.Combat` (RavenNest repo): sheet, elements, hit chance, max hit, armour,
+  resistances, crits, element effects, status effects, threat. 40 tests.
+- [x] The simulator `src/tools/RavenNest.CombatSimulator` with `parity`; armour tuned to 640 from it.
+- [x] The game uses the library (`Assets/Scripts/Core/CombatRules.cs`, switch `CombatRules.Enabled`) and Health
+  is a pool of ten per level everywhere (game 8531a41). Play mode checked with 30 bots.
+- [ ] Enemy definitions (attack style, element, resistances, skills) generated from the scenes' stats.
+- [ ] Elements and resistances on gear (the server's flexible item stat list and the migration of aim/power).
+- [ ] Threat and status effects wired into the game's fights (the library has both; the game still uses its own
+  threat table and ignores poison, bleed and burn).
+- [ ] The baseline bugs: double counted POWER/AIM/ARMOR enchantments, StyleBonus, the raid boss's history.
+- [ ] Simulator scenarios against real island enemies, raids and dungeons, once enemy definitions exist.
+
 ## Open questions
 
 - Should Slayer and Health have their own skill trees (boss hunting; vitality and lifesteal), or only Attack, Strength, Defense, Ranged, Magic and Healing?
