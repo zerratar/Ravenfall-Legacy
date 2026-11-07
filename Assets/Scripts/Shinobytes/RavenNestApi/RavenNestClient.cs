@@ -82,6 +82,7 @@ namespace RavenNest.SDK
             Shop = new ShopApi(request);
             Quests = new QuestsApi(request);
             Boats = new BoatsApi(request);
+            Skills = new SkillsApi(request);
             Mangrove = new MangroveApi(request);
             botPlayerGenerator = new BotPlayerGenerator(gameManager);
 
@@ -133,6 +134,7 @@ namespace RavenNest.SDK
         public ShopApi Shop { get; }
         public QuestsApi Quests { get; }
         public BoatsApi Boats { get; }
+        public SkillsApi Skills { get; }
         public MangroveApi Mangrove { get; }
         public VillageApi Village { get; }
 

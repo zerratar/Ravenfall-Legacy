@@ -1182,6 +1182,29 @@ public static class Localization
     public static string MSG_BOAT_PARTS = Meta("boat", "parts", "info") + "For a {boatName} the shipwright still needs: {parts}.";
     public static string MSG_BOAT_COINS = Meta("boat", "coins", "info") + "A {boatName} costs {fee} coins at the shipwright; you do not have enough yet.";
     public static string MSG_BOAT_FAILED = Meta("boat", "failed", "info") + "The shipwright is busy right now. Try again in a moment.";
+
+    // Skill trees (combat v2, docs/combat-skills-design.md): !skills, !learn, !loadout, !respec
+    public static string MSG_SKILLS_SHOW = Meta("skills", "info") + "{free} of {earned} skill points to spend. Loadout: {loadout}. !skills Might (or another tree) lists its skills, !learn <skill> spends points, !loadout <slot> <skill> changes the loadout.";
+    public static string MSG_SKILLS_TREE = Meta("skills", "info") + "{tree} ({skill}): {nodes}. The number in brackets is the {skill} level a skill needs.";
+    public static string MSG_SKILLS_INFO = Meta("skills", "info") + "{name} ({tree}, {kind}): {description} Needs {skill} {level}, {cost} point(s) per rank.";
+    public static string MSG_SKILLS_KIND_ACTIVE = "active, every {0} s";
+    public static string MSG_SKILLS_KIND_PASSIVE = "passive";
+    public static string MSG_SKILLS_KIND_RANKS = "passive, {0} ranks";
+    public static string MSG_SKILLS_UNKNOWN = Meta("skills", "fail") + "There is no skill or tree called {name}. The trees are Bulwark, Restoration, Might, Precision, Marksman, Elements, Vitality and Hunter.";
+    public static string MSG_SKILLS_LEARNED = Meta("skills", "success") + "You learned {name}. {free} skill point(s) left.";
+    public static string MSG_SKILLS_LEARN_USAGE = Meta("skills", "fail") + "Use !learn <skill>, for example !learn cleave. !skills Might lists a tree's skills.";
+    public static string MSG_SKILLS_LOADOUT = Meta("skills", "info") + "Loadout: {loadout}. The first one that fits is used first.";
+    public static string MSG_SKILLS_LOADOUT_USAGE = Meta("skills", "fail") + "Use !loadout <slot> <skill>, for example !loadout 1 cleave, or !loadout clear 3.";
+    public static string MSG_SKILLS_FAILED = Meta("skills", "fail") + "{reason}";
+    public static string MSG_SKILLS_RESPEC_CONFIRM = Meta("skills", "info") + "A respec gives back all {spent} skill points for {price}. Type !respec confirm to do it.";
+    public static string MSG_SKILLS_RESPEC_FREE = "nothing (a free respec)";
+    public static string MSG_SKILLS_RESPEC_TOME = "a Tome of Forgetting";
+    public static string MSG_SKILLS_RESPEC_COINS = "{0} coins";
+    public static string MSG_SKILLS_RESPEC_NOTHING = Meta("skills", "fail") + "You have not spent any skill points yet.";
+    public static string MSG_SKILLS_RESPEC_BUSY = Meta("skills", "fail") + "Not during a raid, dungeon or duel. Try again after it.";
+    public static string MSG_SKILLS_RESPEC_DONE = Meta("skills", "success") + "All {spent} skill points are back. You have {earned} to spend.";
+    public static string MSG_SKILLS_DISABLED = Meta("skills", "fail") + "Skill trees come with the new combat.";
+    public static string MSG_SKILLS_ERROR = Meta("skills", "fail") + "The skill trees could not be reached right now. Try again in a moment.";
     public static string MSG_BOAT_CREW_USAGE = Meta("boat", "crew_usage", "info") + "Take someone along: !boat invite <player> asks them aboard your boat, !boat join <player> asks to come aboard theirs. The one asked answers with !boat accept or !boat decline; !boat leave gets you off.";
     public static string MSG_BOAT_PLAYER_NOT_FOUND = Meta("boat", "not_found", "info") + "There is no {playerName} in the game.";
     public static string MSG_BOAT_NOT_SELF = Meta("boat", "self", "info") + "That is your own boat.";

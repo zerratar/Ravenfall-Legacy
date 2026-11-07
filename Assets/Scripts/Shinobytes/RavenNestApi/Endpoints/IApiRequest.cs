@@ -24,5 +24,6 @@ namespace RavenNest.SDK.Endpoints
         Quests,
         Boats,
         Mangrove,
+        Skills,
     }
 }
