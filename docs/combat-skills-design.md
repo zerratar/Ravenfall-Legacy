@@ -171,7 +171,18 @@ Built 2026-11-07, on master and the dev database only (nothing deployed until v0
   Hunter on bosses 1.75 to 1.9; Elements up to 2.0 at level 999 (Meteor and cast speed), the first to tune down if
   playtests agree.
 
-Still to do: the Tome of Forgetting as a quest reward; the free respec after a balance update (a version on the
-trees); the loadout with cooldowns in the player details window; use rules set per skill on the website (the defaults
-only for now); area skills tested with groups of enemies; the game asking for the build again after a website change
-(it follows at the next `!tree` or join).
+Done since (2026-11-07):
+- **Tome of Forgetting** from every weekly quest and every finished chain (the quest text names it).
+- **Free respec after a balance update**: `SkillTrees.Version`; a build from before the current version gets a
+  free respec the next time it is looked at (`CharacterSkillBuild.TreeVersion`).
+- **When each skill is used** is the player's choice on the website (a picker per loadout slot, stored with the
+  build; the default clears it); the game follows it.
+- **Changes reach the game at once**: any change (website or chat) sends `SkillBuildChanged` to the game the
+  character plays in.
+- **The loadout in the player details window**: a chip per active with its cooldown draining and a gold edge when
+  ready, the skill's text in the tooltip.
+- **Area skills with a group**: three Metalons moved next to a level 47 fighter; Whirlwind fired once three were
+  near, Cleave hit several, and the group turned on the fighter.
+
+Still open: the website page has not been seen in a browser (the local certificate); taunt and the healing skills
+want a real group of players to be judged; Elements and Hunter look strong in the simulator.
