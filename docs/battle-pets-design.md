@@ -15,7 +15,8 @@ Decided with Zerratar (2026-11-06):
 
 ## 1. The skill
 
-**Name candidates** (Ravenfall's skills are one plain word each: Attack, Woodcutting, Sailing, Slayer,
+**Name: Taming** (chosen 2026-11-07; the clan skill's recommended name is *Menagerie*). The candidates were
+(Ravenfall's skills are one plain word each: Attack, Woodcutting, Sailing, Slayer,
 Enchanting, so the name should be too):
 
 | Name | For | Against |
@@ -25,7 +26,7 @@ Enchanting, so the name should be too):
 | *Kinship* | Warm, the bond with your pet is what grows | Not obvious what it does from the name alone |
 | *Husbandry* | Accurate | Dull, and it reads as farming |
 
-The code calls it "the pet skill" until the name is picked (`RavenNest.Combat/BattlePets.cs`).
+The library still says "the pet skill" (`RavenNest.Combat/BattlePets.cs`); it becomes Taming when the skill is added.
 
 - Every character starts at level 1; it goes to 999 like every skill.
 - **Experience:** while a battle pet is out, the pet skill gains a quarter of the experience of the skill you
@@ -53,13 +54,42 @@ The code calls it "the pet skill" until the name is picked (`RavenNest.Combat/Ba
 The species list depends on the tiered models available; a first set of about 12 to 15 species (three to four
 per role, a mix of elements) is plenty to launch with.
 
-**Getting pets:**
-- **A starter pet for everyone** from a short quest when the skill arrives (pick one of three: a tank, a
-  healer or a damage pet), so nobody starts without one.
-- **Eggs** drop rarely on islands (each island its own species), from raid and dungeon bosses, from tower
-  floors and quests. An egg hatches over time while you play.
-- **Eggs are tradeable; a hatched pet is bound to its owner.** Buying an egg is buying a chance at a
-  species, not buying a levelled pet.
+**Getting pets** (decided with Zerratar 2026-11-07: taming is real, so the skill's name means what it says):
+
+1. **A starter pet from a short quest** when the skill arrives: pick a tank, a healer or a damage pet, so nobody
+   starts without one and the quest teaches the idea.
+2. **Taming creatures on the islands: the main way.** Started like training, `!tame metalon`: the character
+   fights that kind of creature as usual, and when one is nearly beaten it has a chance to tame it instead of
+   killing it. A failed try is a normal kill with its usual experience.
+   - **The chance** comes from your Taming level against the creature's, and a **treat** raises it (cooked or
+     farmed, so Cooking and Farming get a new use). Rare enough to matter, about like a Slayer drop.
+   - **Only creatures:** beasts, insects, spirits and dragons. People (goblins, pirates, vikings, gladiators,
+     elves) cannot be tamed.
+   - **Taming experience comes from every try**, so the skill can be trained directly, not only through the
+     quarter share from normal play. This answers the high level catch-up question below: a level 600 player
+     levels Taming by taming low level creatures, which is real training rather than a free boost.
+   - **The pet starts at level 1**; its kind sets its role, element and skills, and the creature's model is used,
+     scaled down to pet size.
+   - **A tame is a stream moment**: "Zerratar tamed a Metalon!", throttled so a busy stream does not flood chat.
+3. **Eggs for the special pets** that cannot be found in the wild: raid and dungeon bosses, tower floors and towns,
+   quests and events. These species use the tiered model sets and **evolve like every other pet**. Eggs are
+   tradeable and hatch over time while you play; a hatched or tamed pet is bound to its owner.
+
+**Tameable today** (from the enemy list; levels are the creatures' combat levels, the Taming level to try is a
+first guess):
+
+| Creature | Where | Level | Taming | Pet |
+|---|---|---|---|---|
+| Bunny | Home island | 3 | 1 | a tiny support pet; the first tame for most players |
+| Cow | Home island, Ravebridge | 2 to 8 | 1 | a tank that moos at enemies (an easter egg that earns its place) |
+| Tormented Soul | Ravebridge | 15 | 15 | a spirit healer or support, ice or poison |
+| Metalon (red, purple, green) | Home island | 33 to 45 | 30 | one species: red, purple and green are its three evolution stages, so the models we already have make the chain |
+| Dragons (red, blue, green, white, purple) | Ironhill | 100 | 100 | one species per colour with its element (red fire, blue and white ice, green poison, purple lightning) |
+| Lord Quackers | Ironhill | 115 | 150 | very rare, one of a kind; a silly one |
+
+Dragons have one model per colour and no tiers. Their stages can be the same model growing (hatchling, drake,
+dragon) with the element's glow from the second stage (the same effects the elemental weapons may get; a
+setting, off in potato mode). New islands and tower bands bring their own tameable creatures.
 
 **Today's pets** (the cosmetic Pet items, the Monkey Pet, the Diamond Raven Pet and others) stay what they
 are and keep their slot. A battle pet that is out takes the place of the cosmetic pet while it is out, so
@@ -135,11 +165,11 @@ Enchanting (it takes `clanSkills.FirstOrDefault()` today).
 
 ## Open questions
 
-- The name: Taming (recommended), Beastmastery, Kinship or something else?
 - Should the cosmetic pet stay visible next to a battle pet, or does the battle pet take its place while out (as above)?
 - Can a battle pet wear the look of a cosmetic pet you own (a "skin"), so favourite pets can fight too?
 - How many species at launch, once the tiered models are counted?
-- **Pets of high level players start far behind.** The pet's level is capped by the pet skill, which starts at 1
+- **Pets of high level players start far behind** (taming experience from every try is the proposed answer, see
+  section 2; the rest of this point is kept for the record). The pet's level is capped by the pet skill, which starts at 1
   for everyone, and a level 1 pet does nothing next to a level 600 owner. Options: the pet skill grows much faster
   while it is far below the owner's combat level (a catch-up factor, like rested experience), or the starter quest
   sets the pet skill to a share of the combat level. Needs a decision before launch; the simulator shows pets only
