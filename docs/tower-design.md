@@ -203,6 +203,52 @@ Done in play mode in the editor against the local server, with 110 bots (then 30
 (this one is a flat test plane), towns, floor bosses, dying and coming back on a floor, and the fog and light per
 biome. Enemies on the floor came back after dying like island enemies do, which suits floors open for training.
 
+## 10. The first playable version (2026-11-07)
+
+Built on the plausibility test, against the local server only (nothing deployed):
+
+- **Floors 1 to 10** (the Overgrown Halls band: poison, weak to fire) in RavenNest.Combat (`Tower.cs`), shared by the
+  game, the server and the simulator: each floor's name, a line of text, its level (10 per floor), two quests
+  (defeat a number of two of its monsters), its monsters (looks from today's enemies: bunnies, goblins, Metalons,
+  skeletons, cows) and its boss. Bosses: Nibbles the Vicious (a giant bunny), Warchief Grubnose, the Brood Mother,
+  the Rootbound King, Old Thornback, the Moo-tant, King Grubnose the Second, Redshell the Blighted, the Gardener and
+  Viridia, the Verdant Wyrm on floor 10.
+- **Boss numbers** from the simulator's `tower` scenario (fallen players stay down, 10 minutes, a slam every few
+  swings): five players at the floor's level win in 2 to 4 minutes, easily on floors 1 to 4 and narrowly or not at
+  all on floors 8 and 10 (which want more players or higher levels); players at 1.5 times the level win in 1 to 2
+  minutes. Healers, skill trees and gems are not in the simulator, so the game is easier than these numbers.
+- **The server** (`TowerManager`, `api/tower`): one `StreamTower` row per streamer (its floor, the quest progress,
+  attempts) and a `TowerClear` row per cleared floor (when, how many players, after how many attempts; the earliest
+  is the world's first). A clear pays every player who took part 250 coins per floor number (twice that for a world
+  first) and a chest from the dungeon table (tier by floor, two items on every fifth floor), and the village 1,000
+  coins per floor number. Both tables are made at startup.
+- **The game:** `!tower` enters the stream's floor (the first player's `!tower` loads it), `!tower leave`,
+  `!tower info`, `!tower boss`. Kills on the floor count for its quests (reported every 8 seconds); when they are
+  done chat is told the boss is open. The streamer or a moderator starts an attempt at once, or three players in the
+  tower vote for one (everyone in it, when fewer are in). A 60 second countdown lets others join with `!tower`; the
+  boss then comes out on the plaza and everyone in the attempt fights it from their own place around it. Every few
+  swings it slams: a red ring on the ground, then everyone inside is hit. Won: the server records the clear, chat is
+  told (and a world first), the floor fills itself again as the next floor. Lost (everyone fell, or 10 minutes): 2
+  minutes to regroup. A floor nobody has been in for 90 seconds unloads.
+- **The first layout** (`Assets/Scenes/Tower/Tower_Overgrown.unity`, built by a script): a sunken courtyard of an
+  old hall gone wild, a terrain in a bowl of wooded hills (so it never ends at an edge), a colonnade of broken
+  arches, tall pillars around a cobbled plaza where the boss waits, 24 monster spots and its own navmesh. Uses the
+  local Polygon Nature Biomes and Dark Fortress packs (untracked, like the other Synty packs). All ten floors share it
+  for now; the camera follows players from above, so the clearing has no trees.
+- **Choices made for the open questions below, easy to change:** the tower is open whenever the stream is live (no
+  streamer opening); the streamer and moderators start attempts, chat can vote; progress is forever (no seasons
+  yet); a fallen player is out of the attempt (and back on their island, as in a dungeon), also when training.
+
+Checked in play mode with 30 to 40 bots: the floor loads in 0.2 to 0.4 s (one stall of 0.2 to 0.4 s in the editor,
++20 MB, or +290 MB the first time a session loads the packs), quests count and open the boss, an attempt starts,
+the boss falls, the server records the clear and the next floor fills; with a toughened boss the slam ring shows and
+the players stand around it; knocking everyone out ends the attempt, and they are back on their islands with their
+tasks. Progress was kept between play sessions (the server's).
+
+Not checked or not built: the chest and coins for a signed-in player (bots get none), chat lines in a real chat,
+towns, a second layout, bosses with more than the slam, the website's tower page and leaderboard, and training on
+floors already cleared (the tower always goes to the stream's current floor).
+
 ## Open questions
 
 - Is the tower always open while a stream is live, or does the streamer open it, as with Ravebridge?

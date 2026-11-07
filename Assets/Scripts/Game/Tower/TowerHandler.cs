@@ -12,6 +12,7 @@ public class TowerHandler : IAwayHandler
     private TowerFloor floor;
     private EnemyController enemyTarget;
     private PlayerController healTarget;
+    private EnemyController boss;
 
     public bool InTower { get; private set; }
 
@@ -26,12 +27,17 @@ public class TowerHandler : IAwayHandler
         this.player = player;
     }
 
+    /// <summary>Not away, not in a raid, duel, arena, war or Ravebridge, and standing.</summary>
+    public bool CanEnter => player && !player.isDestroyed && !player.Removed && !InTower && !player.IsAway
+        && !player.raidHandler.InRaid && !player.duelHandler.InDuel && !player.arenaHandler.InArena
+        && !player.streamRaidHandler.InWar && !player.InRavebridge && !player.Stats.IsDead;
+
+    /// <summary>In a boss attempt: the boss is the only target.</summary>
+    public bool InBossFight => boss;
+
     public bool Enter(TowerFloor target)
     {
-        if (InTower || !target || !player || player.isDestroyed || player.Removed) return false;
-        if (player.IsAway || player.raidHandler.InRaid || player.duelHandler.InDuel || player.arenaHandler.InArena
-            || player.streamRaidHandler.InWar || player.InRavebridge || player.Stats.IsDead)
-            return false;
+        if (!target || !CanEnter) return false;
 
         back.Leave(player);
         floor = target;
@@ -58,10 +64,33 @@ public class TowerHandler : IAwayHandler
 
     public void Died() => Exit();
 
+    public void BossFightStarted(EnemyController target)
+    {
+        boss = target;
+        enemyTarget = null;
+        player.attackTarget = null;
+    }
+
+    public void BossFightEnded()
+    {
+        boss = null;
+        enemyTarget = null;
+    }
+
+    /// <summary>The floor was filled for the next floor (the boss fell): new monsters to fight.</summary>
+    public void FloorChanged(TowerFloor target)
+    {
+        floor = target;
+        enemyTarget = null;
+        player.attackTarget = null;
+        player.Stats.Health.Reset();
+    }
+
     private void Clear()
     {
         enemyTarget = null;
         healTarget = null;
+        boss = null;
         floor = null;
         InTower = false;
         player.attackTarget = null;
@@ -84,12 +113,32 @@ public class TowerHandler : IAwayHandler
             return;
         }
 
-        if (enemyTarget && (enemyTarget.Stats.IsDead || enemyTarget.IsUnreachable)) enemyTarget = null;
+        if (boss && !boss.Stats.IsDead) enemyTarget = boss;
+        if (enemyTarget && (enemyTarget.Stats.IsDead || (enemyTarget.IsUnreachable && enemyTarget != boss))) enemyTarget = null;
         if (!enemyTarget) enemyTarget = floor.NearestEnemy(player.Position);
         if (!enemyTarget) return;
 
+        // a big boss is reached at its edge: its hit range grows with its size
+        var range = player.GetAttackRange();
+        var scale = enemyTarget.transform.lossyScale.x;
+        range = Mathf.Max(range, enemyTarget.GetHitRange() * scale, enemyTarget == boss ? range + scale : range);
+        // around a boss everyone takes their own place on a ring at its edge, instead of all on one spot, and fights
+        // from there (or from wherever they stand once that place is reached)
+        var destination = enemyTarget.transform.position;
         var distance = Vector3.Distance(player.Position, enemyTarget.transform.position);
-        if (distance <= player.GetAttackRange())
+        var inReach = distance <= range;
+        if (enemyTarget == boss)
+        {
+            var angle = (player.Id.GetHashCode() & 1023) / 1024f * Mathf.PI * 2f;
+            var place = destination + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * (range * 0.8f);
+            if (UnityEngine.AI.NavMesh.SamplePosition(place, out var hit, 3f, UnityEngine.AI.NavMesh.AllAreas))
+            {
+                destination = hit.position;
+                inReach = inReach && (Vector3.Distance(player.Position, destination) < 1.5f || distance < range * 0.5f);
+            }
+        }
+
+        if (inReach)
         {
             if (!player.IsReadyForAction)
             {
@@ -100,9 +149,10 @@ public class TowerHandler : IAwayHandler
             return;
         }
 
-        if (!player.SetDestination(enemyTarget.transform.position))
+        if (!player.SetDestination(destination))
         {
             player.Movement.DisableLocalAvoidance();
+            if (enemyTarget == boss) return;
             enemyTarget.IsUnreachable = true;
             enemyTarget = null;
         }

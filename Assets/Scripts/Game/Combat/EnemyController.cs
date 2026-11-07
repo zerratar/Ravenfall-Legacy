@@ -17,7 +17,27 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
     /// </summary>
     public EnemyDefinitionAsset Definition;
 
-    public RavenNest.Combat.EnemyDefinition CombatDefinition => Definition ? Definition.Definition : null;
+    public RavenNest.Combat.EnemyDefinition CombatDefinition => RuntimeDefinition ?? (Definition ? Definition.Definition : null);
+
+    /// <summary>A definition made while playing (a tower floor's monsters and bosses), used instead of the asset's.</summary>
+    [NonSerialized] public RavenNest.Combat.EnemyDefinition RuntimeDefinition;
+
+    /// <summary>
+    ///     Gives the enemy a definition made while playing (docs/tower-design.md): its levels, gear numbers, element and
+    ///     attack speed from it, a name to show, and how long it stays down; full health.
+    /// </summary>
+    public void ApplyRuntimeDefinition(RavenNest.Combat.EnemyDefinition d, string displayName, float respawnSeconds)
+    {
+        RuntimeDefinition = d;
+        if (d.AttackInterval > 0) attackInterval = (float)d.AttackInterval;
+        Stats = EnemyDefinitionAsset.SkillsOf(d);
+        EquipmentStats = EnemyDefinitionAsset.EquipmentOf(d);
+        if (!string.IsNullOrEmpty(displayName)) _name = displayName;
+        if (respawnSeconds > 0) respawnTime = respawnSeconds;
+        // levels stop at the level cap; a boss's bigger pool goes on top, the way raid and dungeon bosses get theirs
+        Stats.Health.GearHealth = d.Health > Stats.Health.Level ? CombatRules.MaxHealth(d.Health) - CombatRules.MaxHealth(Stats.Health.Level) : 0;
+        Stats.Health.Reset();
+    }
 
     internal readonly HashSet<string> AttackerNames = new HashSet<string>();
     internal readonly List<IAttackable> Attackers = new List<IAttackable>();
@@ -41,7 +61,7 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
         CombatEffects.Clear(this);
     }
 
-    private bool RangedStyle => Definition && Definition.Definition != null && Definition.Definition.Style != RavenNest.Combat.AttackStyle.Melee;
+    private bool RangedStyle => CombatDefinition != null && CombatDefinition.Style != RavenNest.Combat.AttackStyle.Melee;
 
     private bool ThreatAlive(PlayerController p) => p && !p.Stats.IsDead && !p.isDestroyed && !p.Removed && (Island == p.Island || !IsDungeonEnemy);
 
@@ -674,7 +694,7 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
                     return;
                 }
 
-                var style = Definition && Definition.Definition != null ? Definition.Definition.Style : RavenNest.Combat.AttackStyle.Melee;
+                var style = CombatDefinition != null ? CombatDefinition.Style : RavenNest.Combat.AttackStyle.Melee;
                 var damage = style == RavenNest.Combat.AttackStyle.Ranged ? GameMath.CalculateRangedDamage(this, targetPlayer)
                     : style == RavenNest.Combat.AttackStyle.Magic ? GameMath.CalculateMagicDamage(this, targetPlayer)
                     : GameMath.CalculateMeleeDamage(this, targetPlayer);

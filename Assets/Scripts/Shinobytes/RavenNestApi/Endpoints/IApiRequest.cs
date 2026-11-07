@@ -25,5 +25,6 @@ namespace RavenNest.SDK.Endpoints
         Boats,
         Mangrove,
         Skills,
+        Tower,
     }
 }

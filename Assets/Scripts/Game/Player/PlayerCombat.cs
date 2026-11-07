@@ -286,6 +286,9 @@ public class PlayerCombat
                 if (owner.Island.Island == IslandController.MangroveIsland) TreasureHunt.PirateDefeated(owner, enemyController);
             }
 
+            // a tower floor's monster counts for the floor's quests (docs/tower-design.md)
+            if (isMonster && owner.towerHandler != null && owner.towerHandler.InTower && TowerManager.Instance) TowerManager.Instance.EnemyDefeated(enemyController);
+
             // every player who fought it helped defeat it, as every one of them gets its experience (quests count it)
             if (isMonster)
             {

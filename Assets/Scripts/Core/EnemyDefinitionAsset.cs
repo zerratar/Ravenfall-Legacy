@@ -13,9 +13,11 @@ public class EnemyDefinitionAsset : ScriptableObject
     public EnemyDefinition Definition = new EnemyDefinition();
 
     /// <summary>Skills at the definition's levels, Health full.</summary>
-    public Skills CreateSkills()
+    public Skills CreateSkills() => SkillsOf(Definition);
+
+    /// <summary>Skills at a definition's levels, Health full.</summary>
+    public static Skills SkillsOf(EnemyDefinition d)
     {
-        var d = Definition;
         var skills = new Skills();
         skills.Attack.Set(d.Attack, 0, false);
         skills.Strength.Set(d.Strength, 0, false);
@@ -28,9 +30,11 @@ public class EnemyDefinitionAsset : ScriptableObject
     }
 
     /// <summary>The definition's power and accuracy on its own style, and its armour, as equipment numbers.</summary>
-    public EquipmentStats CreateEquipment()
+    public EquipmentStats CreateEquipment() => EquipmentOf(Definition);
+
+    /// <summary>A definition's power and accuracy on its own style, and its armour, as equipment numbers.</summary>
+    public static EquipmentStats EquipmentOf(EnemyDefinition d)
     {
-        var d = Definition;
         var eq = new EquipmentStats { BaseArmorPower = d.Armor };
         switch (d.Style)
         {

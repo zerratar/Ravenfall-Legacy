@@ -71,7 +71,7 @@ public sealed class CombatSkillRunner
     }
 
     private static bool IsBoss(IAttackable target) =>
-        target is EnemyController e && e && (e.IsRaidBoss || e.IsDungeonBoss || (e.Definition && e.Definition.Definition != null && e.Definition.Definition.IsBoss));
+        target is EnemyController e && e && (e.IsRaidBoss || e.IsDungeonBoss || (e.CombatDefinition != null && e.CombatDefinition.IsBoss));
 
     private bool RuleFits(ActiveSkill active, SkillUse rule, IAttackable target)
     {
