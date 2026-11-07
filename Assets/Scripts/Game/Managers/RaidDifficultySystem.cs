@@ -206,6 +206,10 @@ public class RaidDifficultyContext
         TotalRanged += other.TotalRanged;
         TotalMagic += other.TotalMagic;
         TotalArmorPower += other.TotalArmorPower;
+        // past raids counted their players but not their weapons, which watered the boss's weapon stats down (combat
+        // v2 baseline bug)
+        TotalWeaponAim += other.TotalWeaponAim;
+        TotalWeaponPower += other.TotalWeaponPower;
     }
 
     public void Add(PlayerController player)

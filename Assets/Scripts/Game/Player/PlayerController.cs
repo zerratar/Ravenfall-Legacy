@@ -979,6 +979,11 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
                     this.playerStatsModifiers.CriticalHitChance += effect.Amount;
                     return false;
 
+                case StatusEffectType.IncreasedCriticalHitDamage:
+                    // it had no case, so it was dropped the moment it arrived (combat v2 baseline bug)
+                    this.playerStatsModifiers.CriticalHitDamage += effect.Amount;
+                    return false;
+
                 case StatusEffectType.AttackAttributePoison:
                     this.playerStatsModifiers.AttackAttributePoisonEffect += effect.Amount;
                     return false;
@@ -3055,15 +3060,17 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
                 extras.Add(gear);
             }
 
-            EquipmentStats.BaseArmorPower += stats.ArmorPower;
-            EquipmentStats.BaseWeaponAim += stats.WeaponAim;
-            EquipmentStats.BaseWeaponPower += stats.WeaponPower;
+            // the item's own numbers here and the enchantment's in the bonus: an ItemStat read as an int is both, which
+            // counted every POWER, AIM and ARMOR enchantment twice (combat v2 baseline bug)
+            EquipmentStats.BaseArmorPower += stats.ArmorPower.Value;
+            EquipmentStats.BaseWeaponAim += stats.WeaponAim.Value;
+            EquipmentStats.BaseWeaponPower += stats.WeaponPower.Value;
 
-            EquipmentStats.BaseMagicPower += stats.MagicPower;
-            EquipmentStats.BaseMagicAim += stats.MagicAim;
+            EquipmentStats.BaseMagicPower += stats.MagicPower.Value;
+            EquipmentStats.BaseMagicAim += stats.MagicAim.Value;
 
-            EquipmentStats.BaseRangedPower += stats.RangedPower;
-            EquipmentStats.BaseRangedAim += stats.RangedAim;
+            EquipmentStats.BaseRangedPower += stats.RangedPower.Value;
+            EquipmentStats.BaseRangedAim += stats.RangedAim.Value;
 
             EquipmentStats.ArmorPowerBonus += stats.ArmorPower.Bonus;
             EquipmentStats.WeaponAimBonus += stats.WeaponAim.Bonus;

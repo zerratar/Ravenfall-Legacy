@@ -288,7 +288,18 @@ Phase 1 (foundation), started 2026-11-07:
   part of element damage too, give enemies a base resistance that grows with level, or keep weapon shares smaller.
 - [ ] Threat and status effects wired into the game's fights (the library has both; the game still uses its own
   threat table and ignores poison, bleed and burn).
-- [ ] The baseline bugs: double counted POWER/AIM/ARMOR enchantments, StyleBonus, the raid boss's history.
+- [x] The baseline bugs (2026-11-07):
+  - POWER, AIM and ARMOR enchantments counted twice (`UpdateEquipmentEffect` added the item's number with the bonus,
+    then the bonus again). Fixed: a Lionsbane Katana (173 power) with POWER:20% wears 207, not 241. Enchanted gear
+    shows lower numbers than in 0.9.6; the release notes must say why (section 9).
+  - `IncreasedCriticalHitDamage` effects were dropped on arrival (no case for them); they now add to the crit
+    multiplier, and the new rules add effects to the 150% base instead of replacing it.
+  - The dungeon boss's halved Defense never applied (combat reads MaxLevel, which kept the full level). Fixed.
+  - The raid boss's history counted past raids' players but not their weapons, watering its weapon power and aim
+    down. Fixed, so raid bosses hit harder and more often than in 0.9.6.
+  - Heals putting crit chance in the dodge slot, backwards hit chance effects and `StyleBonus` live in the old
+    `GameMath` formulas, which the new rules replace (`CombatRules`): heals can crit, hit chance effects raise
+    accuracy, and there is no style triangle. They stay as they were for `CombatRules.Enabled` off.
 - [~] Simulator scenarios: `enemies` (a player at each fighting area's requirement, every combat skill at that level,
   best melee gear, against its enemies) is in; raids and dungeons are next. First results (swings to win, new rules):
   Home 2 to 6, Ravebridge 8 to 16, the away island's pirates 5 to 7, Ironhill 6 to 9, then Kyojin 4, Iceheim 3 to 5,

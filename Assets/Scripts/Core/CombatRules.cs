@@ -80,7 +80,7 @@ public static class CombatRules
             Armor = eq.ArmorPower,
             IsPlayer = !fighter.IsEnemy,
             CritChance = CombatMath.BaseCritChance + (mods != null ? mods.CriticalHitChance : 0),
-            CritDamage = mods != null && mods.CriticalHitDamage > CombatMath.BaseCritDamage ? mods.CriticalHitDamage : CombatMath.BaseCritDamage,
+            CritDamage = CombatMath.BaseCritDamage + (mods != null ? mods.CriticalHitDamage : 0), // effects add to the base
         };
 
         sheet.Melee.DamageLevel = (int)(stats.Strength.MaxLevel * strength);

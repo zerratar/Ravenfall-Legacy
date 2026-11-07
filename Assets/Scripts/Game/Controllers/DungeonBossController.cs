@@ -259,8 +259,8 @@ public class DungeonBossController : MonoBehaviour
     {
         var skills = Skills.Random(rngLowStats, rngHighStats);
 
-        // reduce defense by 50%
-        skills.Defense.Level = skills.Defense.CurrentValue = (int)(skills.Defense.Level * 0.5);
+        // reduce defense by 50% (MaxLevel too: combat reads it, so the halving never applied; combat v2 baseline bug)
+        skills.Defense.Level = skills.Defense.CurrentValue = skills.Defense.MaxLevel = (int)(skills.Defense.Level * 0.5);
 
         // increase health by additional 15%
         skills.Health.Level = (int)(skills.Health.Level * healthScale * 1.15);

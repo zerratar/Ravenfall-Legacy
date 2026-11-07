@@ -52,6 +52,7 @@
 
         // Reset new additions
         CriticalHitChance = 0;
+        CriticalHitDamage = 0;
 
         AttackAttributePoisonEffect = 0;
         AttackAttributeBleedingEffect = 0;
