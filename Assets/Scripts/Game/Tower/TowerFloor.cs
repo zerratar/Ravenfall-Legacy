@@ -10,12 +10,10 @@ using UnityEngine;
 ///     (<see cref="Templates"/>, matched by their enemy definition id), the spots monsters stand on
 ///     (<see cref="Spawns"/>) and the boss's spot; <see cref="Apply"/> fills it for one floor from RavenNest.Combat.Tower.
 /// </summary>
-public sealed class TowerFloor : MonoBehaviour
+public sealed class TowerFloor : TowerPlace
 {
     /// <summary>The floor that is loaded now, or null.</summary>
     public static TowerFloor Loaded { get; private set; }
-
-    public Transform SpawnPoint;
 
     /// <summary>Hidden monsters to copy, one per look (their EnemyController.Definition id).</summary>
     public Transform Templates;
@@ -26,26 +24,13 @@ public sealed class TowerFloor : MonoBehaviour
     /// <summary>Where the boss waits during an attempt.</summary>
     public Transform BossPoint;
 
-    /// <summary>The camera within this distance of the floor's centre (on the ground plane) sees the floor's look.</summary>
-    public float Radius = 90f;
-
-    [Header("Look")]
-    public Color SkyAmbient = new Color(0.45f, 0.55f, 0.50f);
-    public Color EquatorAmbient = new Color(0.35f, 0.40f, 0.30f);
-    public Color GroundAmbient = new Color(0.15f, 0.14f, 0.10f);
-    public Color FogColor = new Color(0.55f, 0.65f, 0.55f);
-    public float FogDensity = 0.012f;
-    public Color SunColor = new Color(1f, 0.95f, 0.85f);
-    public float SunIntensity = 1.1f;
-    public Vector3 SunAngles = new Vector3(50f, -30f, 0f);
-
     private readonly List<EnemyController> enemies = new List<EnemyController>();
     private readonly Dictionary<EnemyController, TowerEnemy> kinds = new Dictionary<EnemyController, TowerEnemy>();
     private readonly List<GameObject> spawned = new List<GameObject>();
+    private readonly List<EnemyController> adds = new List<EnemyController>();
 
-    public Vector3 Centre => transform.position;
-
-    public Vector3 Spawn => SpawnPoint ? SpawnPoint.position : transform.position;
+    /// <summary>The monsters the boss called during an attempt (still standing or not).</summary>
+    public IReadOnlyList<EnemyController> Adds => adds;
 
     public IReadOnlyList<EnemyController> Enemies => enemies;
 
@@ -54,13 +39,6 @@ public sealed class TowerFloor : MonoBehaviour
 
     /// <summary>The boss of an attempt, while there is one.</summary>
     public EnemyController Boss { get; private set; }
-
-    public bool Contains(Vector3 point)
-    {
-        var d = point - Centre;
-        d.y = 0f;
-        return d.sqrMagnitude <= Radius * Radius;
-    }
 
     private void OnEnable()
     {
@@ -116,8 +94,64 @@ public sealed class TowerFloor : MonoBehaviour
         return Boss;
     }
 
+    /// <summary>
+    ///     The boss calls help: <paramref name="count"/> of the floor's first monster around it, at the floor's level, no
+    ///     respawn. They go with the boss when the attempt ends.
+    /// </summary>
+    public int SpawnAdds(int count)
+    {
+        if (Definition == null || !Boss || count <= 0) return 0;
+        var kind = Definition.Enemies[0];
+        var template = Template(kind.Model);
+        if (!template) return 0;
+        var definition = Tower.Enemy(Definition, kind);
+        var made = 0;
+        for (var i = 0; i < count; ++i)
+        {
+            var angle = (i + 0.5f) / count * Mathf.PI * 2f;
+            var radius = 3f + Boss.transform.localScale.x * 1.2f;
+            var spot = Boss.transform.position + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius;
+            if (UnityEngine.AI.NavMesh.SamplePosition(spot, out var hit, 4f, UnityEngine.AI.NavMesh.AllAreas)) spot = hit.position;
+            var enemy = Make(template, spot, Quaternion.LookRotation(Boss.transform.position - spot), 1f);
+            enemy.AutomaticRespawn = false;
+            enemy.ApplyRuntimeDefinition(definition, kind.Name, 0f);
+            adds.Add(enemy);
+            made++;
+        }
+        return made;
+    }
+
+    /// <summary>The boss's helpers still standing.</summary>
+    public int AliveAdds()
+    {
+        var count = 0;
+        foreach (var a in adds) if (a && a.Stats != null && !a.Stats.IsDead) count++;
+        return count;
+    }
+
+    /// <summary>The nearest of the boss's helpers still standing, or null.</summary>
+    public EnemyController NearestAdd(Vector3 from)
+    {
+        EnemyController best = null;
+        var bestDistance = float.MaxValue;
+        foreach (var e in adds)
+        {
+            if (!e || e.Stats == null || e.Stats.IsDead) continue;
+            var d = (e.transform.position - from).sqrMagnitude;
+            if (d < bestDistance) { bestDistance = d; best = e; }
+        }
+        return best;
+    }
+
     public void DespawnBoss()
     {
+        foreach (var a in adds)
+        {
+            if (!a) continue;
+            spawned.Remove(a.gameObject);
+            Destroy(a.gameObject);
+        }
+        adds.Clear();
         if (Boss)
         {
             spawned.Remove(Boss.gameObject);

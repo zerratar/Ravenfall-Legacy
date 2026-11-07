@@ -13,7 +13,7 @@ using UnityEngine;
 using Debug = UnityEngine.Debug;
 
 /// <summary>
-/// Image generation and editing in the editor through OpenAI's image models (GPT-Image-2.5 Flare and Sunburst), for
+/// Image generation and editing in the editor through OpenAI's image models (GPT-Image-2.6 Flare and Sunburst), for
 /// item icons, their cooked and burned variants, UI pictures and mockups. The requests are made by a small local
 /// service (tools/ImageGenService), which the editor builds on first use and starts when needed: it keeps the jobs on
 /// disk, so pictures in flight survive script reloads, editor restarts and crashes. A caller (the Image Generator
@@ -149,7 +149,7 @@ public static class ImageGen
         else EditorPrefs.SetString(KeyPref, key.Trim());
     }
 
-    public static string ModelId(Model model) => model == Model.Sunburst ? "gpt-image-2.5-sunburst" : "gpt-image-2.5-flare";
+    public static string ModelId(Model model) => model == Model.Sunburst ? "gpt-image-2.6-sunburst" : "gpt-image-2.6-flare";
 
     // ---- Requests ------------------------------------------------------------------------------------------
 

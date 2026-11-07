@@ -39,6 +39,22 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
         Stats.Health.Reset();
     }
 
+    /// <summary>
+    ///     A tower boss enrages (docs/tower-design.md, section 3): it swings faster and harder from now on. Its health and
+    ///     everything else stay as they are.
+    /// </summary>
+    public void Enrage(double intervalScale, double powerScale)
+    {
+        var d = RuntimeDefinition;
+        if (d == null) return;
+        var enraged = d.Copy();
+        enraged.AttackInterval = System.Math.Max(0.4, d.AttackInterval * intervalScale);
+        enraged.Power = (int)System.Math.Round(d.Power * powerScale);
+        RuntimeDefinition = enraged;
+        attackInterval = (float)enraged.AttackInterval;
+        EquipmentStats = EnemyDefinitionAsset.EquipmentOf(enraged);
+    }
+
     internal readonly HashSet<string> AttackerNames = new HashSet<string>();
     internal readonly List<IAttackable> Attackers = new List<IAttackable>();
     private readonly Dictionary<string, float> attackerAggro = new Dictionary<string, float>();

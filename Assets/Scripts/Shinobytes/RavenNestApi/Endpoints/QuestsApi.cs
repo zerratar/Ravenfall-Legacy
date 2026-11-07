@@ -72,6 +72,13 @@ namespace RavenNest.SDK.Endpoints
         }
 
         /// <summary>Answers the chain's riddle or choice (from 1).</summary>
+        /// <summary>Talks to someone in a tower town: the chain's talk step, when it names them.</summary>
+        public Task<QuestActionResult> TalkAsync(Guid characterId, string npc)
+        {
+            return request.Create().Identifier(characterId.ToString()).Method("talk").AddParameter(npc).Build()
+                .SendAsync<QuestActionResult>(ApiRequestTarget.Quests, ApiRequestType.Post);
+        }
+
         public Task<QuestActionResult> AnswerAsync(Guid characterId, int answer)
         {
             return request.Create().Identifier(characterId.ToString()).Method("answer").AddParameter(answer.ToString()).Build()

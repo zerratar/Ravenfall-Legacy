@@ -16,6 +16,9 @@ using UnityEngine.SceneManagement;
 ///     training as if nothing happened. While the camera is over the floor, the floor's light and fog replace the
 ///     world's, and the world-wide systems that follow the camera (sea, clouds, cloud shadows, weather) are switched off.
 ///     The stream's progress (its floor, the quests, clears) is the server's (api/tower); this keeps a copy.
+///     Beside the floor, the band's town (<see cref="TowerTown"/>) loads the same way when someone goes there with
+///     !tower town, and goes when it has been empty a while. When the next floor is a different layout (the forest, the
+///     marsh, the crypt), the players climb to it: the old scene goes and the new one loads with them in it.
 /// </summary>
 public sealed class TowerManager : MonoBehaviour
 {
@@ -41,6 +44,13 @@ public sealed class TowerManager : MonoBehaviour
 
     /// <summary>Seconds between the boss's slam warning and the slam.</summary>
     public const float SlamWarning = 1.6f;
+
+    /// <summary>Seconds between a spit's mark and the hit, and how far the spit splashes.</summary>
+    public const float SpitWarning = 1.4f;
+    public const float SpitRadius = 2.6f;
+
+    /// <summary>Seconds after a won fight before the players climb to a floor of another layout.</summary>
+    public const float ClimbDelay = 12f;
 
     /// <summary>What the last load and unload measured, for the tests.</summary>
     public string Report => report.ToString();
@@ -70,6 +80,8 @@ public sealed class TowerManager : MonoBehaviour
     private readonly HashSet<PlayerController> participants = new HashSet<PlayerController>();
     private readonly HashSet<string> bossVotes = new HashSet<string>();
     private readonly Dictionary<string, int> pendingKills = new Dictionary<string, int>();
+    private readonly Dictionary<(Guid Character, string Kind), int> characterKills = new Dictionary<(Guid, string), int>();
+    private readonly List<PlayerController> pendingTownJoins = new List<PlayerController>();
     private GameManager game;
     private bool stateRequested;
     private bool reporting;
@@ -81,6 +93,19 @@ public sealed class TowerManager : MonoBehaviour
     private float nextSlam;
     private float slamAt = -1f;
     private GameObject slamRing;
+    private GameObject spitRing;
+    private float nextSpit;
+    private float spitAt = -1f;
+    private Vector3 spitSpot;
+    private int addsCalled;
+    private bool enraged;
+    private float fightStarted;
+    private bool climbing;
+
+    // the town: loaded beside the floor
+    public bool TownLoading { get; private set; }
+    public string TownScene { get; private set; }
+    private float townEmptySince = -1f;
 
     // the look: what was on before the camera came over the floor
     private bool lookOn;
@@ -163,9 +188,11 @@ public sealed class TowerManager : MonoBehaviour
     public JoinResult Join(PlayerController player)
     {
         if (!player || player.towerHandler == null) return JoinResult.NotReady;
-        if (player.towerHandler.InTower || pendingJoins.Contains(player)) return JoinResult.AlreadyIn;
+        // from the town up to the floor keeps the way back; otherwise only from the world
+        var fromTown = player.towerHandler.InTown;
+        if ((player.towerHandler.InTower && !fromTown) || pendingJoins.Contains(player)) return JoinResult.AlreadyIn;
         if (Phase == TowerPhase.Fight) return JoinResult.FightUnderWay;
-        if (!player.towerHandler.CanEnter) return JoinResult.Busy;
+        if (!fromTown && !player.towerHandler.CanEnter) return JoinResult.Busy;
 
         if (Phase == TowerPhase.Open || Phase == TowerPhase.Countdown)
         {
@@ -197,6 +224,7 @@ public sealed class TowerManager : MonoBehaviour
     public void Leave(PlayerController player)
     {
         pendingJoins.Remove(player);
+        pendingTownJoins.Remove(player);
         if (player && player.towerHandler != null) player.towerHandler.Exit();
     }
 
@@ -206,8 +234,98 @@ public sealed class TowerManager : MonoBehaviour
         var g = Game;
         if (!g) return list;
         foreach (var p in g.Players.GetAllPlayers())
-            if (p && p.towerHandler != null && p.towerHandler.InTower) list.Add(p);
+            if (p && p.towerHandler != null && p.towerHandler.InTower && !p.towerHandler.InTown) list.Add(p);
         return list;
+    }
+
+    /// <summary>The players in the town.</summary>
+    public List<PlayerController> TownPlayers()
+    {
+        var list = new List<PlayerController>();
+        var g = Game;
+        if (!g) return list;
+        foreach (var p in g.Players.GetAllPlayers())
+            if (p && p.towerHandler != null && p.towerHandler.InTown) list.Add(p);
+        return list;
+    }
+
+    // ---- The town ---------------------------------------------------------------------------------------------
+
+    public enum TownJoinResult { Joined, Loading, Busy, AlreadyIn, NoTown }
+
+    /// <summary>The town the stream can visit now: the one of the band its floor is in.</summary>
+    public TowerTownDefinition StreamTown => Tower.TownFor(StreamFloor);
+
+    /// <summary>!tower town: into the band's town, loading it first; from a floor too (not during a boss attempt).</summary>
+    public TownJoinResult JoinTown(PlayerController player)
+    {
+        if (!player || player.towerHandler == null) return TownJoinResult.Busy;
+        var definition = StreamTown;
+        if (definition == null) return TownJoinResult.NoTown;
+        if (player.towerHandler.InTown || pendingTownJoins.Contains(player)) return TownJoinResult.AlreadyIn;
+        if (player.towerHandler.InBossFight) return TownJoinResult.Busy;
+        if (!player.towerHandler.InTower && !player.towerHandler.CanEnter) return TownJoinResult.Busy;
+
+        var town = TowerTown.Loaded;
+        if (town && !TownLoading)
+        {
+            if (!player.towerHandler.Enter(town)) return TownJoinResult.Busy;
+            pendingJoins.Remove(player);
+            townEmptySince = -1f;
+            return TownJoinResult.Joined;
+        }
+
+        pendingTownJoins.Add(player);
+        if (!TownLoading) StartCoroutine(LoadTownRoutine(ScenePath(definition.Layout)));
+        return TownJoinResult.Loading;
+    }
+
+    private IEnumerator LoadTownRoutine(string scene)
+    {
+        TownLoading = true;
+        AsyncOperation op;
+#if UNITY_EDITOR
+        op = UnityEditor.SceneManagement.EditorSceneManager.LoadSceneAsyncInPlayMode(scene, new LoadSceneParameters(LoadSceneMode.Additive));
+#else
+        op = SceneManager.LoadSceneAsync(scene, LoadSceneMode.Additive);
+#endif
+        if (op == null)
+        {
+            TownLoading = false;
+            pendingTownJoins.Clear();
+            yield break;
+        }
+        while (!op.isDone) yield return null;
+        yield return null;
+        TownScene = scene;
+        TownLoading = false;
+        var town = TowerTown.Loaded;
+        foreach (var p in pendingTownJoins)
+            if (p && !p.isDestroyed && town) p.towerHandler.Enter(town);
+        pendingTownJoins.Clear();
+        townEmptySince = -1f;
+    }
+
+    private IEnumerator UnloadTownRoutine()
+    {
+        var name = TownScene;
+        TownScene = null;
+        foreach (var p in TownPlayers()) p.towerHandler.Exit();
+        var scene = SceneManager.GetSceneByPath(name);
+        if (!scene.IsValid()) scene = SceneManager.GetSceneByName(name);
+        if (!scene.IsValid()) yield break;
+        var op = SceneManager.UnloadSceneAsync(scene);
+        while (op != null && !op.isDone) yield return null;
+    }
+
+    /// <summary>
+    ///     !tower talk: the town's person says their piece (their quest chain's step for this player, or one of their
+    ///     lines) in a speech bubble; the chat reply is the quest command's.
+    /// </summary>
+    public IslandNpc Person(string key)
+    {
+        var town = TowerTown.Loaded;
+        return town ? town.Person(key) : null;
     }
 
     // ---- Loading ----------------------------------------------------------------------------------------------
@@ -337,13 +455,23 @@ public sealed class TowerManager : MonoBehaviour
     // ---- Quests ----------------------------------------------------------------------------------------------
 
     /// <summary>A monster on the floor fell to a player in the tower (PlayerCombat.Defeated).</summary>
-    public void EnemyDefeated(EnemyController enemy)
+    public void EnemyDefeated(EnemyController enemy, PlayerController by)
     {
         var floor = TowerFloor.Loaded;
-        if (!floor || CurrentFloor != StreamFloor || AllCleared) return;
+        if (!floor) return;
         var kind = floor.KindOf(enemy);
+        if (kind == null) return;
+
+        // the player's own quests (Mossgate's chains) count kills on any floor
+        if (by && by.UserId != Guid.Empty)
+        {
+            var key = (by.Id, kind.Id);
+            characterKills.TryGetValue(key, out var mine);
+            characterKills[key] = mine + 1;
+        }
+
         var def = Definition;
-        if (kind == null || def == null) return;
+        if (CurrentFloor != StreamFloor || AllCleared || def == null) return;
         foreach (var q in def.Quests)
         {
             if (q.Target != kind.Id) continue;
@@ -352,8 +480,29 @@ public sealed class TowerManager : MonoBehaviour
         }
     }
 
+    private async void FlushCharacterKills()
+    {
+        if (characterKills.Count == 0) return;
+        var g = Game;
+        if (!g || g.RavenNest == null || !g.RavenNest.SessionStarted) return;
+        var report = new TowerKillReport
+        {
+            Kills = characterKills.Select(kv => new TowerCharacterKills { CharacterId = kv.Key.Character, Kind = kv.Key.Kind, Count = kv.Value }).ToArray(),
+        };
+        characterKills.Clear();
+        try
+        {
+            await g.RavenNest.Tower.KillsAsync(report);
+        }
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogError("TowerManager.FlushCharacterKills: " + exc.Message);
+        }
+    }
+
     private async void FlushKills()
     {
+        FlushCharacterKills();
         if (pendingKills.Count == 0 || reporting) return;
         var g = Game;
         if (!g || !g.RavenNest.SessionStarted) return;
@@ -439,8 +588,13 @@ public sealed class TowerManager : MonoBehaviour
 
         Phase = TowerPhase.Fight;
         phaseEnds = Time.time + Tower.BossTimeLimitSeconds;
+        fightStarted = Time.time;
         nextSlam = Time.time + SlamInterval(boss);
         slamAt = -1f;
+        nextSpit = Time.time + SpitInterval(boss) * 0.5f;
+        spitAt = -1f;
+        addsCalled = 0;
+        enraged = false;
         foreach (var p in participants) p.towerHandler.BossFightStarted(boss);
         Announce(Localization.MSG_TOWER_BOSS_START, def.Boss.Name, participants.Count, def.Boss.Line ?? "");
 
@@ -480,12 +634,14 @@ public sealed class TowerManager : MonoBehaviour
         if (standing == 0) { Lost(def, Localization.MSG_TOWER_BOSS_LOST_FALLEN); return; }
         if (PhaseSecondsLeft <= 0f) { Lost(def, Localization.MSG_TOWER_BOSS_LOST_TIME); return; }
 
+        UpdateKit(boss, def);
+
         // the slam: a ring on the ground first, then everyone inside it is hit
         var radius = SlamRadius(boss);
         if (slamAt < 0f && Time.time >= nextSlam)
         {
             slamAt = Time.time + SlamWarning;
-            ShowRing(boss.transform.position, radius);
+            ShowRing(ref slamRing, "Tower Slam Warning", boss.transform.position, radius, new Color(1f, 0.25f, 0.1f, 1f), 0.5f);
         }
         else if (slamAt >= 0f && Time.time >= slamAt)
         {
@@ -506,6 +662,83 @@ public sealed class TowerManager : MonoBehaviour
     }
 
     private static float SlamRadius(EnemyController boss) => 4f + 1.5f * boss.transform.localScale.x;
+
+    private float SpitInterval(EnemyController boss)
+    {
+        var def = Definition;
+        if (def == null || def.Boss.SpitEvery <= 0) return float.MaxValue;
+        return (float)(def.Boss.SpitEvery * Math.Max(0.5, boss.CombatDefinition?.AttackInterval ?? 2));
+    }
+
+    /// <summary>
+    ///     The boss's other moves: help at shares of its health, enrage after a while, and a spit at someone who is not
+    ///     holding it (the farthest from it), marked on the ground before it lands.
+    /// </summary>
+    private void UpdateKit(EnemyController boss, TowerFloorDefinition def)
+    {
+        var kit = def.Boss;
+        var floor = TowerFloor.Loaded;
+
+        var share = boss.Stats.HealthPercent;
+        if (kit.AddsAt != null && addsCalled < kit.AddsAt.Length && share <= kit.AddsAt[addsCalled])
+        {
+            addsCalled++;
+            var made = floor.SpawnAdds(kit.AddsCount);
+            if (made > 0) Announce(Localization.MSG_TOWER_BOSS_ADDS, kit.Name, made, def.Enemies[0].Name);
+        }
+
+        if (!enraged && kit.EnrageSeconds > 0 && Time.time - fightStarted >= kit.EnrageSeconds)
+        {
+            enraged = true;
+            boss.Enrage(kit.EnrageInterval, kit.EnragePower);
+            nextSlam = Mathf.Min(nextSlam, Time.time + SlamInterval(boss));
+            Announce(Localization.MSG_TOWER_BOSS_ENRAGED, kit.Name);
+        }
+
+        if (kit.SpitEvery <= 0) return;
+        if (spitAt < 0f && Time.time >= nextSpit)
+        {
+            var target = SpitTarget(boss);
+            if (!target)
+            {
+                nextSpit = Time.time + 2f;
+                return;
+            }
+            spitSpot = target.Position;
+            spitAt = Time.time + SpitWarning;
+            ShowRing(ref spitRing, "Tower Spit Warning", spitSpot, SpitRadius, new Color(0.55f, 1f, 0.2f, 1f), 0.3f);
+        }
+        else if (spitAt >= 0f && Time.time >= spitAt)
+        {
+            spitAt = -1f;
+            if (spitRing) spitRing.SetActive(false);
+            nextSpit = Time.time + SpitInterval(boss);
+            foreach (var p in participants.ToList())
+            {
+                if (!p || p.isDestroyed || p.Stats.IsDead || !p.towerHandler.InTower) continue;
+                var d = p.Position - spitSpot;
+                d.y = 0f;
+                if (d.magnitude > SpitRadius) continue;
+                var damage = Mathf.Max(1, (int)(GameMath.CalculateMeleeDamage(boss, p) * (float)kit.SpitShare));
+                p.TakeDamage(boss, damage);
+            }
+        }
+    }
+
+    /// <summary>Someone the boss is not fighting: the one standing farthest from it (healers stand back).</summary>
+    private PlayerController SpitTarget(EnemyController boss)
+    {
+        PlayerController best = null;
+        var bestDistance = -1f;
+        var holding = boss.TargetPlayer;
+        foreach (var p in participants)
+        {
+            if (!p || p.isDestroyed || p.Stats.IsDead || !p.towerHandler.InTower || p == holding) continue;
+            var d = Vector3.Distance(p.Position, boss.transform.position);
+            if (d > bestDistance) { bestDistance = d; best = p; }
+        }
+        return best;
+    }
 
     private async void Won(TowerFloorDefinition def)
     {
@@ -556,8 +789,24 @@ public sealed class TowerManager : MonoBehaviour
         }
         else
         {
-            Announce(Localization.MSG_TOWER_NEXT_FLOOR_LATER, next.Number, next.Name);
+            Announce(Localization.MSG_TOWER_CLIMB, next.Number, next.Name, (int)ClimbDelay);
+            StartCoroutine(ClimbRoutine(next.Number));
         }
+    }
+
+    /// <summary>
+    ///     The next floor is another layout: after a moment to celebrate, the players on the floor climb to it. The old
+    ///     scene goes (they step back to the world for the moment it takes) and the new one loads with them in it.
+    /// </summary>
+    private IEnumerator ClimbRoutine(int next)
+    {
+        climbing = true;
+        yield return new WaitForSeconds(ClimbDelay);
+        var climbers = Players();
+        foreach (var p in climbers) if (!pendingJoins.Contains(p)) pendingJoins.Add(p);
+        yield return UnloadRoutine();
+        LoadFloor(next);
+        climbing = false;
     }
 
     private void Lost(TowerFloorDefinition def, string message)
@@ -572,35 +821,37 @@ public sealed class TowerManager : MonoBehaviour
     {
         HideRing();
         slamAt = -1f;
+        spitAt = -1f;
+        if (spitRing) spitRing.SetActive(false);
         var floor = TowerFloor.Loaded;
         if (floor) floor.DespawnBoss();
         foreach (var p in participants) if (p && p.towerHandler != null) p.towerHandler.BossFightEnded();
         participants.Clear();
     }
 
-    private void ShowRing(Vector3 centre, float radius)
+    private static void ShowRing(ref GameObject ring, string name, Vector3 centre, float radius, Color color, float width)
     {
-        if (!slamRing)
+        if (!ring)
         {
-            slamRing = new GameObject("Tower Slam Warning");
-            var line = slamRing.AddComponent<LineRenderer>();
+            ring = new GameObject(name);
+            var line = ring.AddComponent<LineRenderer>();
             line.loop = true;
             line.useWorldSpace = false;
             line.positionCount = 48;
-            line.widthMultiplier = 0.5f;
+            line.widthMultiplier = width;
             var shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Sprites/Default");
             line.material = new Material(shader);
-            line.material.color = new Color(1f, 0.25f, 0.1f, 1f);
+            line.material.color = color;
             line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
-        var lr = slamRing.GetComponent<LineRenderer>();
+        var lr = ring.GetComponent<LineRenderer>();
         for (var i = 0; i < lr.positionCount; ++i)
         {
             var a = i / (float)lr.positionCount * Mathf.PI * 2f;
             lr.SetPosition(i, new Vector3(Mathf.Cos(a) * radius, 0.4f, Mathf.Sin(a) * radius));
         }
-        slamRing.transform.position = centre;
-        slamRing.SetActive(true);
+        ring.transform.position = centre;
+        ring.SetActive(true);
     }
 
     private void HideRing()
@@ -632,8 +883,16 @@ public sealed class TowerManager : MonoBehaviour
             FlushKills();
         }
 
+        // nobody in the town for a while: it goes
+        if (!TownLoading && !string.IsNullOrEmpty(TownScene))
+        {
+            if (TownPlayers().Count > 0 || pendingTownJoins.Count > 0) townEmptySince = -1f;
+            else if (townEmptySince < 0f) townEmptySince = Time.time;
+            else if (Time.time - townEmptySince > EmptyFloorSeconds) StartCoroutine(UnloadTownRoutine());
+        }
+
         // nobody in it for a while: the floor goes
-        if (Phase == TowerPhase.Open && !string.IsNullOrEmpty(LoadedScene))
+        if (Phase == TowerPhase.Open && !climbing && !string.IsNullOrEmpty(LoadedScene))
         {
             if (Players().Count > 0) emptySince = -1f;
             else if (emptySince < 0f) emptySince = Time.time;
@@ -643,9 +902,15 @@ public sealed class TowerManager : MonoBehaviour
 
     private void LateUpdate()
     {
-        var floor = TowerFloor.Loaded;
         var camera = Camera.main;
-        var over = floor && camera && floor.Contains(camera.transform.position);
+        TowerPlace floor = null;
+        if (camera)
+        {
+            var cam = camera.transform.position;
+            if (TowerFloor.Loaded && TowerFloor.Loaded.Contains(cam)) floor = TowerFloor.Loaded;
+            else if (TowerTown.Loaded && TowerTown.Loaded.Contains(cam)) floor = TowerTown.Loaded;
+        }
+        var over = floor;
         SetLook(over);
         if (!over) return;
 

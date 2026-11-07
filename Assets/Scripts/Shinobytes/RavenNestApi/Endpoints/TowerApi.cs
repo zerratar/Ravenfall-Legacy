@@ -29,6 +29,13 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<TowerState>(ApiRequestTarget.Tower, ApiRequestType.Post);
         }
 
+        /// <summary>Kills per character and kind on the floors, for the characters' own quests (Mossgate's chains).</summary>
+        public Task<bool> KillsAsync(TowerKillReport report)
+        {
+            return request.Create().Identifier("kills").Build()
+                .SendAsync<bool, TowerKillReport>(ApiRequestTarget.Tower, ApiRequestType.Post, report);
+        }
+
         public Task<TowerState> BossStartedAsync(int floor)
         {
             return request.Create().Identifier(floor.ToString()).Method("boss").Build()

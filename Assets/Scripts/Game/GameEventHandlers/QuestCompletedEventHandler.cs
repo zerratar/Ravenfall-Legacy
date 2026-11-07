@@ -24,7 +24,7 @@ public class QuestCompletedEventHandler : GameEventHandler<QuestCompleted>
             // a chain's step: on to the next
             var story = QuestChat.Story(quest.Key, quest.Step);
             bot.SendReply(player, Localization.MSG_QUEST_STEP_DONE, QuestChat.ChainName(quest.Key), quest.Step + 1, quest.Steps, story, QuestChat.Task(quest));
-            QuestChat.Say(gameManager, player, story);
+            QuestChat.Say(gameManager, player, story, quest.Key);
             return;
         }
 
@@ -36,7 +36,7 @@ public class QuestCompletedEventHandler : GameEventHandler<QuestCompleted>
             case 3:
                 bot.SendReply(player, Localization.MSG_QUEST_CHAIN_COMPLETE, QuestChat.ChainName(quest.Key), QuestChat.Ending(quest.Key),
                     QuestChat.Reward(quest), QuestChat.TitleText(quest.RewardTitle));
-                QuestChat.Say(gameManager, player, QuestChat.Ending(quest.Key));
+                QuestChat.Say(gameManager, player, QuestChat.Ending(quest.Key), quest.Key);
                 if (!string.IsNullOrEmpty(data.DecorUnlocked))
                 {
                     var decor = gameManager.Village ? gameManager.Village.Decor : null;

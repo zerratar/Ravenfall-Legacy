@@ -656,13 +656,22 @@ public static class QuestChat
         var key = FindChain(list.Chains, argument);
         if (key == null) { client.SendReply(gm, Localization.MSG_QUEST_CHAIN_UNKNOWN); return; }
 
+        // a tower town's chain is given by its person, in the town
+        var townChain = Array.Find(list.Chains, c => c.Key == key)?.Town;
+        if (!string.IsNullOrEmpty(townChain) && (player.towerHandler == null || !player.towerHandler.InTown))
+        {
+            var giver = GiverOf(key);
+            client.SendReply(gm, Localization.MSG_QUEST_CHAIN_IN_TOWN, ChainName(key), giver?.Name ?? "", RavenNest.Combat.Tower.Town(townChain)?.Name ?? townChain, giver?.Key ?? "");
+            return;
+        }
+
         var result = await api.BeginChainAsync(player.Id, key);
         if (result == null) { client.SendReply(gm, Localization.MSG_QUEST_FAILED); return; }
         if (result.Ok)
         {
             var q = result.Quest;
             client.SendReply(gm, Localization.MSG_QUEST_CHAIN_BEGUN, ChainName(key), Story(key, 0), Task(q));
-            Say(game, player, Story(key, 0));
+            Say(game, player, Story(key, 0), key);
             return;
         }
 
@@ -741,6 +750,114 @@ public static class QuestChat
             case "none": client.SendReply(gm, Localization.MSG_STORY_NONE); break;
             default: client.SendReply(gm, Localization.MSG_QUEST_FAILED); break;
         }
+    }
+
+    // ---- Tower towns ------------------------------------------------------------------------------------------
+
+    private static readonly System.Collections.Generic.Dictionary<Guid, string> lastTalked = new System.Collections.Generic.Dictionary<Guid, string>();
+
+    /// <summary>The town person who gives a chain, or null.</summary>
+    public static RavenNest.Combat.TowerNpc GiverOf(string chainKey)
+    {
+        foreach (var t in RavenNest.Combat.Tower.Towns)
+            foreach (var n in t.People)
+                if (n.Chain == chainKey) return n;
+        return null;
+    }
+
+    public static (RavenNest.Combat.TowerTownDefinition town, RavenNest.Combat.TowerNpc npc) TownPerson(string key)
+    {
+        foreach (var t in RavenNest.Combat.Tower.Towns)
+            foreach (var n in t.People)
+                if (string.Equals(n.Key, key, StringComparison.OrdinalIgnoreCase)) return (t, n);
+        return (null, null);
+    }
+
+    /// <summary>"Moss Goblins": a tower monster's name by its kind, plural when more than one.</summary>
+    public static string TowerMonsterName(string kind, long amount)
+    {
+        foreach (var f in RavenNest.Combat.Tower.Floors)
+            foreach (var e in f.Enemies)
+                if (e.Id == kind) return amount == 1 ? e.Name : Plural(e.Name);
+        return kind;
+    }
+
+    private static string Plural(string name)
+    {
+        if (name.EndsWith("y") && !name.EndsWith("ey")) return name.Substring(0, name.Length - 1) + "ies";
+        if (name.EndsWith("s")) return name;
+        return name + "s";
+    }
+
+    /// <summary>
+    ///     !tower talk elm, in a tower town: the person finishes the player's talk step when it names them, gives their
+    ///     chain when the player has none under way, tells the step when it is theirs, thanks them when it is done, or
+    ///     says one of their lines. The person says it in a speech bubble too.
+    /// </summary>
+    public static async System.Threading.Tasks.Task TalkAsync(GameManager game, PlayerController player, RavenNest.Combat.TowerNpc npc, GameMessage gm, GameClient client)
+    {
+        lastTalked[player.Id] = npc.Key;
+        var person = TowerTown.Loaded ? TowerTown.Loaded.Person(npc.Key) : null;
+        var api = game.RavenNest.Quests;
+        var list = await api.GetAsync(player.Id);
+        if (list?.Chains == null) { client.SendReply(gm, Localization.MSG_QUEST_FAILED); return; }
+
+        // the step that sends the player to them
+        if (list.Chain != null && list.Chain.Objective == "talk" && string.Equals(list.Chain.Target, npc.Key, StringComparison.OrdinalIgnoreCase))
+        {
+            var result = await api.TalkAsync(player.Id, npc.Key);
+            if (result == null || !result.Ok) client.SendReply(gm, Localization.MSG_QUEST_FAILED);
+            return; // the QuestCompleted event tells the next step or the ending
+        }
+
+        if (string.IsNullOrEmpty(npc.Chain))
+        {
+            var line = Rumour(npc);
+            client.SendReply(gm, Localization.MSG_TOWER_TALK_LINE, npc.Name, line);
+            if (person) person.Say(line);
+            return;
+        }
+
+        var chain = Array.Find(list.Chains, c => c.Key == npc.Chain);
+        if (chain == null) { client.SendReply(gm, Localization.MSG_QUEST_FAILED); return; }
+        if (chain.State == 2)
+        {
+            var thanks = Lookup("UI_CHAIN_" + npc.Chain + "_THANKS", Ending(npc.Chain));
+            client.SendReply(gm, Localization.MSG_TOWER_TALK_LINE, npc.Name, thanks);
+            if (person) person.Say(thanks);
+            return;
+        }
+        if (list.Chain != null && list.Chain.Key == npc.Chain)
+        {
+            client.SendReply(gm, Localization.MSG_QUEST_CHAIN_STEP, ChainName(npc.Chain), list.Chain.Step + 1, list.Chain.Steps, Story(npc.Chain, list.Chain.Step), Task(list.Chain));
+            if (person) person.Say(Story(npc.Chain, list.Chain.Step));
+            return;
+        }
+        if (list.Chain != null)
+        {
+            client.SendReply(gm, Localization.MSG_TOWER_TALK_BUSY, npc.Name, ChainName(list.Chain.Key));
+            return;
+        }
+        await BeginChainAsync(game, player, npc.Chain, gm, client);
+    }
+
+    /// <summary>
+    ///     What a person without a chain says: the innkeeper tells a rumour of the floor the stream is on (only its name,
+    ///     no spoilers past it), or one of their own lines.
+    /// </summary>
+    private static string Rumour(RavenNest.Combat.TowerNpc npc)
+    {
+        var tower = TowerManager.Instance;
+        var floor = tower ? RavenNest.Combat.Tower.Get(tower.StreamFloor) : null;
+        var lines = new System.Collections.Generic.List<string>();
+        for (var i = 1; i <= 6; ++i)
+        {
+            var line = Lookup("UI_TOWN_" + npc.Key + "_" + i, null);
+            if (line != null) lines.Add(line);
+        }
+        if (floor != null && (lines.Count == 0 || UnityEngine.Random.value < 0.4f))
+            return string.Format(Localization.UI_TOWN_RUMOUR, floor.Number, floor.Name, floor.Boss.Name);
+        return lines.Count > 0 ? lines[UnityEngine.Random.Range(0, lines.Count)] : "...";
     }
 
     /// <summary>A chain by its key, the start of its key or name, or its number in !quest chains.</summary>
@@ -852,6 +969,16 @@ public static class QuestChat
             case "deliver": return string.Format(Localization.UI_QUEST_DELIVER, amount, q.Target);
             case "visit": return string.Format(Localization.UI_QUEST_VISIT, q.Target);
             case "answer": return string.Format(Localization.UI_QUEST_ANSWER, q.Options);
+            case "tower_kill":
+                return string.IsNullOrEmpty(q.Target)
+                    ? string.Format(Localization.UI_QUEST_TOWER_KILL, amount)
+                    : string.Format(Localization.UI_QUEST_TOWER_KILL_KIND, amount, TowerMonsterName(q.Target, q.Amount));
+            case "tower_clear": return string.Format(q.Amount == 1 ? Localization.UI_QUEST_TOWER_CLEAR_ONE : Localization.UI_QUEST_TOWER_CLEAR, amount);
+            case "talk":
+                {
+                    var giver = TownPerson(q.Target);
+                    return string.Format(Localization.UI_QUEST_TALK, giver.npc?.Name ?? q.Target, giver.town?.Name ?? "", q.Target);
+                }
             default: return q.Key;
         }
     }
@@ -913,10 +1040,22 @@ public static class QuestChat
         }
     }
 
-    /// <summary>In the tavern, the quest giver (or the barkeep) says it to the player as well.</summary>
-    public static void Say(GameManager game, PlayerController player, string line)
+    /// <summary>
+    ///     In the tavern, the quest giver (or the barkeep) says it to the player as well; in a tower town, the person who
+    ///     gives the chain (or the one the player last talked to).
+    /// </summary>
+    public static void Say(GameManager game, PlayerController player, string line, string chainKey = null)
     {
-        if (string.IsNullOrEmpty(line) || !game.Tavern || !game.Tavern.IsActivated) return;
+        if (string.IsNullOrEmpty(line)) return;
+        if (player && player.towerHandler != null && player.towerHandler.InTown && TowerTown.Loaded)
+        {
+            var giver = chainKey != null ? GiverOf(chainKey) : null;
+            var key = giver?.Key ?? (lastTalked.TryGetValue(player.Id, out var last) ? last : null);
+            var person = key != null ? TowerTown.Loaded.Person(key) : null;
+            if (person) person.Say(string.Format(line, player.PlayerName));
+            return;
+        }
+        if (!game.Tavern || !game.Tavern.IsActivated) return;
         var npc = TavernNpc.Find(TavernNpc.NpcRole.QuestGiver)
             ?? TavernNpc.Find(TavernNpc.NpcRole.Barkeep)
             ?? TavernNpc.Find(TavernNpc.NpcRole.GhostBarkeep);

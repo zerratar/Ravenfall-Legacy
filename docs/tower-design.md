@@ -249,6 +249,65 @@ Not checked or not built: the chest and coins for a signed-in player (bots get n
 towns, a second layout, bosses with more than the slam, the website's tower page and leaderboard, and training on
 floors already cleared (the tower always goes to the stream's current floor).
 
+## 11. Mossgate, three looks, boss moves and no spoilers (2026-11-08)
+
+Asked by Zerratar on 2026-11-07: the town with NPCs and quests next; the website must not reveal floors no stream has
+reached; floors should vary their look, and some should be real dungeons (not like the dungeon events); and are the
+floors challenging enough?
+
+- **No spoilers on the website.** /tower shows a floor in full only once some stream has reached it (the floor after
+  the highest cleared anywhere, `Tower.Revealed`); the floors above are one dashed card ("Floors 5 to 10 are still
+  hidden") and bands above are "unseen". The leaderboard and first clears stay.
+- **Three looks in the first band** (`TowerFloorDefinition.Layout`): the overgrown courtyard (floors 1, 2, 5, 6), the
+  drowned marsh (3, 8: mud, black pools with steep banks, reeds, dead trees, mist, fireflies and frogs) and the crypt
+  under the halls (4, 7, 9, 10: a real dungeon of rooms, low broken walls and no ceiling for the camera, a pillared hall,
+  two side crypts with coffins, a throne hall for the boss, braziers with warm light against a cold green dark, roots of
+  grass through the floor, giant mushrooms, a dragon's skull as a hint of floor 10). Built by scripts like the first
+  (PolygonDungeon, Dungeon Realms, Nature Biomes, Dark Fortress, Fantasy Village; all local packs). When the next floor
+  is another layout, the players climb: 12 seconds after the clear the old scene goes and the new one loads with them.
+- **Roads with the village road tool** (Zerratar: "those roads look the best"): `SceneRoads` lays roads into a scene
+  with `RoadMesh` and the road shader's materials, and a new type, mossy flagstones (Resources/Roads/Road_4, made from
+  the forest's footpath and moss). The courtyard and the marsh have a flagstone road from the arrival to the plaza;
+  Mossgate has cobbles round its square, flagstones to the gate and dirt lanes. Road 4 is not offered in the village
+  yet (it needs a server road type and a price).
+- **Mossgate** (`Tower_Mossgate.unity`, at (600, 0, -6000), loaded beside the floor): a mossy hamlet with a cobbled
+  square and well, the Sleepy Stump inn, houses, Bramble's herb hut and garden, and the tower's walled gate at the north
+  end with the tower rising behind. `!tower town` goes there (from the world or from a floor, keeping the way back),
+  `!tower` goes up to the floor, `!tower talk elm` talks. Players stroll between spots. It unloads after 90 empty seconds.
+- **Its people** (`TowerTownDefinition.People`): Warden Elm at the gate, Bramble the herbalist, Pip (who lost his bunny)
+  and Old Mossbeard the innkeeper (lines and a rumour about the stream's current floor, never past it). The first three
+  each give a personal quest chain (the server's QuestChains, `Town = "mossgate"`, begun only in the town):
+  - *The warden's watch*: monsters on any floor, Moss Goblins, iron ore for the gate, take part in a floor clear, report
+    back; the Wardens Thornband (a ring) and the title "the Gatewarden".
+  - *Bramble's remedies*: mushrooms, Vine Metalons, which mushroom is safe, brew potions, come back; the Bramble Charm (an
+    amulet) and "the Herbwise".
+  - *Where is Nibbles?*: Feral Bunnies, an old man's question about swallows, cabbage, be there when a boss falls, tell
+    Pip; the Holy Hand Grenade (a keepsake: count to three) and "the Bunny Finder". Nibbles is the floor 1 boss.
+  New objectives: `tower_kill` (of one kind when the step names it; the game reports kills per character to
+  api/tower/kills), `tower_clear` (counted by the server when a clear is saved) and `talk` (!tower talk, in the town).
+- **Boss moves** (`TowerBoss`): help at shares of its health (the floor's first monster, 3 by default; the Gardener at
+  two thirds and one third, Viridia at three quarters, half and a quarter), enrage after 6 minutes (swings at 0.6 of the
+  time, 1.5 times the power; Viridia after 7), and a spit at the player farthest from it (not the one holding it): a
+  green ring under them, then a hit for everyone inside (the Brood Mother, the Moo-tant, Redshell, the Gardener,
+  Viridia). Players turn on the helpers first. In the simulator (no healers, skills or gems), five players at a floor's
+  level now win floors 1 and 2 almost always, floors 3 to 9 a quarter to half of the time, and floor 10 not at all (it
+  wants eight); eight players win every floor in about 2 minutes.
+
+Checked in play mode with 30 bots on the local server: Mossgate loads and its people stand with their marks, bots
+stroll; the marsh loads for floor 3 (0.26 s); bots go from the town up to the floor; a boss attempt calls its helpers
+below half, enrages (2.5 s to 1.5 s, power 21 to 32), the clear is saved and the players climb into the crypt for floor
+4 (0.24 s). Not checked: `!tower talk` and the chains with a real signed-in character (bots are not session
+characters), the spit landing, the new items' icons (none yet), Mossgate's gate braziers' fire in play.
+
+### Is it challenging enough?
+
+For a group at the floor's level, yes, and floors 8 and 10 are hard. For a real stream, no: twenty players far above
+the floor's level flatten any fixed boss (in the test, bots of combat level 100 to 1,200 killed a level 30 boss's
+helpers within a second). Two ways to keep it a climb, for Zerratar to choose:
+- **Level sync**: in the tower a player fights at most at the floor's level (plus a margin); gear, skills and gems still
+  count. Fixed bosses then stay fixed and mean the same for every stream.
+- **Group size**: a boss attempt takes at most a set number of players (for example 10), the rest train on the floor.
+
 ## Open questions
 
 - Is the tower always open while a stream is live, or does the streamer open it, as with Ravebridge?

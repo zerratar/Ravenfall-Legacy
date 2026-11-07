@@ -2,7 +2,8 @@ using UnityEngine;
 
 /// <summary>
 ///     A player in the tower (docs/tower-design.md, section 8): enters a loaded floor, fights its enemies (or heals the
-///     others in it when training Healing), and goes back to what they were doing when they leave or fall. Works like
+///     others in it when training Healing), or strolls about a tower town (<see cref="TowerTown"/>), and goes back to
+///     what they were doing when they leave or fall. Moving between the town and a floor keeps the way back. Works like
 ///     the dungeon's handler and shares its way back (<see cref="WorldReturn"/>).
 /// </summary>
 public class TowerHandler : IAwayHandler
@@ -10,6 +11,8 @@ public class TowerHandler : IAwayHandler
     private readonly PlayerController player;
     private readonly WorldReturn back = new WorldReturn();
     private TowerFloor floor;
+    private TowerTown town;
+    private float nextStroll;
     private EnemyController enemyTarget;
     private PlayerController healTarget;
     private EnemyController boss;
@@ -19,8 +22,12 @@ public class TowerHandler : IAwayHandler
     public AwayPlace Place => AwayPlace.Tower;
     public bool IsAway => InTower;
     public WorldReturn Return => back;
-    public Vector3 SpawnPosition => floor ? floor.Spawn : player.Position;
+    public Vector3 SpawnPosition => floor ? floor.Spawn : town ? town.Spawn : player.Position;
     public TowerFloor Floor => floor;
+    public TowerTown Town => town;
+
+    /// <summary>In a tower town (not on a floor).</summary>
+    public bool InTown => InTower && town;
 
     public TowerHandler(PlayerController player)
     {
@@ -35,17 +42,34 @@ public class TowerHandler : IAwayHandler
     /// <summary>In a boss attempt: the boss is the only target.</summary>
     public bool InBossFight => boss;
 
-    public bool Enter(TowerFloor target)
-    {
-        if (!target || !CanEnter) return false;
+    public bool Enter(TowerFloor target) => EnterPlace(target, null);
 
-        back.Leave(player);
-        floor = target;
+    public bool Enter(TowerTown target) => EnterPlace(null, target);
+
+    /// <summary>
+    ///     Into a floor or a town. From the other one (the town to a floor, or back) the way back to the world is kept;
+    ///     not during a boss attempt.
+    /// </summary>
+    private bool EnterPlace(TowerFloor targetFloor, TowerTown targetTown)
+    {
+        TowerPlace place = targetFloor ? (TowerPlace)targetFloor : targetTown;
+        if (!place) return false;
+        var moving = InTower && !boss && player && !player.isDestroyed && !player.Stats.IsDead;
+        if (!moving && !CanEnter) return false;
+        if (moving && (place == floor || place == town)) return false;
+
+        if (!moving) back.Leave(player);
+        enemyTarget = null;
+        healTarget = null;
+        player.attackTarget = null;
+        floor = targetFloor;
+        town = targetTown;
         InTower = true;
+        nextStroll = Time.time + Random.Range(2f, 6f);
 
         player.InterruptAction();
         var offset = Random.insideUnitCircle * 3f;
-        var spot = floor.Spawn + new Vector3(offset.x, 0f, offset.y);
+        var spot = place.Spawn + new Vector3(offset.x, 0f, offset.y);
         if (UnityEngine.AI.NavMesh.SamplePosition(spot, out var hit, 6f, UnityEngine.AI.NavMesh.AllAreas)) spot = hit.position;
         player.teleportHandler.Teleport(spot);
         player.Stats.Health.Reset();
@@ -92,6 +116,7 @@ public class TowerHandler : IAwayHandler
         healTarget = null;
         boss = null;
         floor = null;
+        town = null;
         InTower = false;
         player.attackTarget = null;
         player.taskTarget = null;
@@ -100,9 +125,14 @@ public class TowerHandler : IAwayHandler
     public void Update()
     {
         if (!InTower) return;
+        if (town)
+        {
+            UpdateTown();
+            return;
+        }
         if (!floor)
         {
-            // the floor went away under the player (unloaded): back to the world
+            // the floor (or town) went away under the player (unloaded): back to the world
             Exit();
             return;
         }
@@ -113,7 +143,13 @@ public class TowerHandler : IAwayHandler
             return;
         }
 
-        if (boss && !boss.Stats.IsDead) enemyTarget = boss;
+        // in an attempt the boss's helpers come first, then the boss
+        if (boss && !boss.Stats.IsDead)
+        {
+            var add = floor.NearestAdd(player.Position);
+            if (!enemyTarget || enemyTarget.Stats.IsDead || (enemyTarget != boss && !IsAdd(enemyTarget)) || (enemyTarget == boss && add))
+                enemyTarget = add ? add : boss;
+        }
         if (enemyTarget && (enemyTarget.Stats.IsDead || (enemyTarget.IsUnreachable && enemyTarget != boss))) enemyTarget = null;
         if (!enemyTarget) enemyTarget = floor.NearestEnemy(player.Position);
         if (!enemyTarget) return;
@@ -156,6 +192,24 @@ public class TowerHandler : IAwayHandler
             enemyTarget.IsUnreachable = true;
             enemyTarget = null;
         }
+    }
+
+    private bool IsAdd(EnemyController enemy)
+    {
+        foreach (var a in floor.Adds) if (a == enemy) return true;
+        return false;
+    }
+
+    /// <summary>In a town: wander to a spot now and then and linger there.</summary>
+    private void UpdateTown()
+    {
+        if (Time.time < nextStroll) return;
+        nextStroll = Time.time + Random.Range(12f, 30f);
+        var spot = town.RandomStroll();
+        var offset = Random.insideUnitCircle * 1.5f;
+        spot += new Vector3(offset.x, 0f, offset.y);
+        if (UnityEngine.AI.NavMesh.SamplePosition(spot, out var hit, 3f, UnityEngine.AI.NavMesh.AllAreas)) spot = hit.position;
+        player.SetDestination(spot);
     }
 
     private void UpdateHealing()

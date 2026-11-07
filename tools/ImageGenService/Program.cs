@@ -1,6 +1,6 @@
 // The Image Generator's worker: a small local service the Unity editor starts (Ravenfall > Image Generator, ImageGen.cs)
 // so that pictures in flight survive script reloads, editor restarts and crashes. It keeps the job list on disk, sends
-// the requests to OpenAI's image models (GPT-Image-2.5 Flare and Sunburst), writes each picture to its output path and
+// the requests to OpenAI's image models (GPT-Image-2.6 Flare and Sunburst), writes each picture to its output path and
 // answers how the jobs are doing. Anything that needs the picture itself (the cutout check, installing an icon) is done
 // by the editor when it sees a job finished.
 //
@@ -288,7 +288,7 @@ sealed class Worker
         }
     }
 
-    private static string ModelId(string model) => model == "sunburst" ? "gpt-image-2.5-sunburst" : "gpt-image-2.5-flare";
+    private static string ModelId(string model) => model == "sunburst" ? "gpt-image-2.6-sunburst" : "gpt-image-2.6-flare";
 
     private async Task SendAsync(Job job)
     {

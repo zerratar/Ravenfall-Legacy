@@ -5,7 +5,8 @@ using RavenNest.Combat;
 /// <summary>
 /// The tower from chat (docs/tower-design.md). The bot sends "tower_command" with the action first: !tower (enter the
 /// stream's floor, or where it stands when already in), !tower leave, !tower boss (the streamer or a moderator starts
-/// a boss attempt; anyone in the tower votes for one) and !tower info.
+/// a boss attempt; anyone in the tower votes for one), !tower info, !tower town (the band's town, Mossgate first) and
+/// !tower talk elm (one of the town's people: their quest chain, or a rumour).
 /// </summary>
 public class TowerCommand : ChatBotCommandHandler<string>
 {
@@ -45,6 +46,15 @@ public class TowerCommand : ChatBotCommandHandler<string>
                 case "status":
                 case "floor":
                     Info(tower, gm, client);
+                    return;
+                case "town":
+                case "mossgate":
+                case "rest":
+                    Town(tower, player, gm, client);
+                    return;
+                case "talk":
+                case "speak":
+                    Talk(player, space < 0 ? "" : text.Substring(space + 1).Trim(), gm, client);
                     return;
                 default:
                     Join(tower, player, gm, client);
@@ -91,6 +101,80 @@ public class TowerCommand : ChatBotCommandHandler<string>
             default:
                 client.SendReply(gm, Localization.MSG_TOWER_NOT_READY);
                 return;
+        }
+    }
+
+    private static void Town(TowerManager tower, PlayerController player, GameMessage gm, GameClient client)
+    {
+        if (!player)
+        {
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
+            return;
+        }
+
+        var town = tower.StreamTown;
+        switch (tower.JoinTown(player))
+        {
+            case TowerManager.TownJoinResult.Joined:
+            case TowerManager.TownJoinResult.Loading:
+                client.SendReply(gm, Localization.MSG_TOWER_TOWN_JOINED, town.Name, People(town));
+                return;
+            case TowerManager.TownJoinResult.AlreadyIn:
+                client.SendReply(gm, Localization.MSG_TOWER_TOWN_HERE, town.Name, People(town));
+                return;
+            case TowerManager.TownJoinResult.NoTown:
+                client.SendReply(gm, Localization.MSG_TOWER_NOT_READY);
+                return;
+            default:
+                client.SendReply(gm, player.towerHandler != null && player.towerHandler.InBossFight ? Localization.MSG_TOWER_TOWN_FIGHTING : Localization.MSG_TOWER_CANNOT_JOIN);
+                return;
+        }
+    }
+
+    /// <summary>"Warden Elm (!tower talk elm), Bramble (!tower talk bramble), ..."</summary>
+    private static string People(TowerTownDefinition town)
+    {
+        var parts = new System.Collections.Generic.List<string>();
+        foreach (var n in town.People) parts.Add(string.Format(CultureInfo.InvariantCulture, Localization.UI_TOWN_PERSON, n.Name, n.Role, n.Key));
+        return string.Join(", ", parts);
+    }
+
+    private async void Talk(PlayerController player, string who, GameMessage gm, GameClient client)
+    {
+        if (!player)
+        {
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
+            return;
+        }
+        var tower = TowerManager.Instance;
+        var town = TowerTown.Loaded;
+        if (!tower || player.towerHandler == null || !player.towerHandler.InTown || !town || town.Town == null)
+        {
+            client.SendReply(gm, Localization.MSG_TOWER_TALK_NOT_IN_TOWN, tower ? tower.StreamTown?.Name ?? "" : "");
+            return;
+        }
+
+        var definition = town.Town;
+        TowerNpc npc = null;
+        if (!string.IsNullOrEmpty(who))
+        {
+            foreach (var n in definition.People)
+                if (string.Equals(n.Key, who, StringComparison.OrdinalIgnoreCase) || n.Name.IndexOf(who, StringComparison.OrdinalIgnoreCase) >= 0) { npc = n; break; }
+        }
+        if (npc == null)
+        {
+            client.SendReply(gm, Localization.MSG_TOWER_TALK_WHO, definition.Name, People(definition));
+            return;
+        }
+
+        try
+        {
+            await QuestChat.TalkAsync(Game, player, npc, gm, client);
+        }
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogError("TowerCommand.Talk: " + exc);
+            client.SendReply(gm, Localization.MSG_QUEST_FAILED);
         }
     }
 
