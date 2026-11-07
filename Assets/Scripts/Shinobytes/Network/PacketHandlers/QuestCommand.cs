@@ -866,7 +866,8 @@ public static class QuestChat
 
     /// <summary>"1,200 coins and 3,400 Woodcutting exp".</summary>
     public static string Reward(RavenNest.Models.QuestInfo q) =>
-        string.Format(CultureInfo.InvariantCulture, Localization.UI_QUEST_REWARD, Number(q.RewardCoins), Number((long)q.RewardExp), Localization.SkillName((Skill)q.RewardSkill));
+        string.Format(CultureInfo.InvariantCulture, Localization.UI_QUEST_REWARD, Number(q.RewardCoins), Number((long)q.RewardExp), Localization.SkillName((Skill)q.RewardSkill))
+        + (string.IsNullOrEmpty(q.RewardItem) ? "" : string.Format(CultureInfo.InvariantCulture, Localization.UI_QUEST_REWARD_ITEM, q.RewardItem));
 
     public static string ChainName(string key) => Lookup("UI_CHAIN_" + key, key);
 

@@ -34,8 +34,9 @@ public sealed class CombatSkillRunner
         foreach (var node in owner.SkillBuild.Actives())
         {
             var active = node.Active;
-            if (CooldownLeft(node.Id) > 0f || !HasGear(active.Needs) || !RuleFits(active, target)) continue;
-            Resolve(active, target);
+            var rule = owner.SkillBuild.RuleOf(node); // the player's choice on the website, or the skill's default
+            if (CooldownLeft(node.Id) > 0f || !HasGear(active.Needs) || !RuleFits(active, rule, target)) continue;
+            Resolve(active, rule, target);
             if (targets.Count == 0) continue;
 
             Run(node, active, target);
@@ -72,10 +73,10 @@ public sealed class CombatSkillRunner
     private static bool IsBoss(IAttackable target) =>
         target is EnemyController e && e && (e.IsRaidBoss || e.IsDungeonBoss || (e.Definition && e.Definition.Definition != null && e.Definition.Definition.IsBoss));
 
-    private bool RuleFits(ActiveSkill active, IAttackable target)
+    private bool RuleFits(ActiveSkill active, SkillUse rule, IAttackable target)
     {
         var radius = active.Radius > 0 ? (float)active.Radius : 6f;
-        switch (active.Use)
+        switch (rule)
         {
             case SkillUse.InFight: return Enemy(target);
             case SkillUse.OnBoss: return Enemy(target) && IsBoss(target);
@@ -126,7 +127,7 @@ public sealed class CombatSkillRunner
 
     // ---- who a skill reaches --------------------------------------------------------------------------------
 
-    private void Resolve(ActiveSkill active, IAttackable target)
+    private void Resolve(ActiveSkill active, SkillUse rule, IAttackable target)
     {
         targets.Clear();
         var radius = active.Radius > 0 ? (float)active.Radius : 6f;
@@ -146,7 +147,7 @@ public sealed class CombatSkillRunner
                     foreach (var ally in Allies(radius))
                     {
                         var share = HealthShare(ally);
-                        if (active.Use == SkillUse.AllyHarmed ? CombatEffects.HasHarmful(ally) && share < least : share < least) { least = share; lowest = ally; }
+                        if (rule == SkillUse.AllyHarmed ? CombatEffects.HasHarmful(ally) && share < least : share < least) { least = share; lowest = ally; }
                     }
                     if (lowest) targets.Add(lowest);
                     break;
