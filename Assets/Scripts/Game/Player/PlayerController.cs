@@ -43,6 +43,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     [SerializeField] public ClanHandler clanHandler;
     [SerializeField] public DungeonHandler dungeonHandler;
+    [NonSerialized] public TowerHandler towerHandler;
     [SerializeField] public OnsenHandler onsenHandler;
 
     [SerializeField] public ArenaHandler arenaHandler;
@@ -165,6 +166,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         get
         {
             if (dungeonHandler != null && dungeonHandler.InDungeon) return dungeonHandler;
+            if (towerHandler != null && towerHandler.InTower) return towerHandler;
             return null;
         }
     }
@@ -584,6 +586,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         this._transform = this.transform;
         // Initialize handlers that are no longer monobehaviours
         this.dungeonHandler = new DungeonHandler(this, FindObjectOfType<DungeonManager>());
+        this.towerHandler = new TowerHandler(this);
         this.Progression = new PlayerProgression(this);
         this.HealthRegeneration = new PlayerHealthRegeneration(this);
         this.Combat = new PlayerCombat(this);
@@ -841,6 +844,12 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         if (dungeonHandler.InDungeon)
         {
             dungeonHandler.Update();
+            return;
+        }
+
+        if (towerHandler.InTower)
+        {
+            towerHandler.Update();
             return;
         }
 
@@ -2939,6 +2948,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     {
         if (!arena) arena = FindAnyObjectByType<ArenaController>();
         if (dungeonHandler.InDungeon) dungeonHandler.Died();
+        if (towerHandler.InTower) towerHandler.Died();
         if (arena) arena.Died(this);
         if (duelHandler.InDuel) duelHandler.Died();
         if (streamRaidHandler) streamRaidHandler.Died();
