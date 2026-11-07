@@ -64,9 +64,28 @@ different gems and skills. For example:
 | 41-50 | The crypt | undead (immune to poison) | fire, light |
 | ... | ... | ... | ... |
 
-Building it: one tower area that is **dressed per band** (Synty packs, as the islands), with each floor using
-its band's layout, its own enemies, its own boss and its own stats. Ten layouts carry all 100 floors, and a
-new band of ten is a new layout plus ten bosses and their quests.
+**Each band is its own biome** (Zerratar 2026-11-07: like Sword Art Online's and Solo Leveling's floors, a new
+floor can be a whole new place): a forest, a frozen vault, a forge, storm cliffs, a crypt. Building it: per band,
+one biome kit (Synty packs, as the islands), three or four floor layouts reused with changes (paths, props,
+weather, time of day) and a boss arena; each floor has its own enemies, boss and stats. A new band is a biome kit,
+its layouts, a town (below) and ten bosses with their quests.
+
+### Towns between the bands
+
+**Every band opens with a town**: a calm floor with no fighting, the first one at the tower's foot, then one after
+every tenth boss (so the town of floors 11 to 20 is reached by beating floor 10). In Sword Art Online every floor
+had its town; one per band is a tenth of the work and still gives the climb its resting places.
+
+- **NPCs** with dialogue (the quest system's NPC dialogue), in the band's style: a smith in the forge band's town,
+  a frozen-bearded fisher in the ice band's.
+- **Town quests for each player**, not only stream quests: errands, a hunt on the band's floors, a delivery, a
+  small story per town. They unlock **special items** that exist nowhere else: the band's cosmetics, a recipe,
+  a title, a decor piece for the village, and an **egg of a special pet** (one of the tiered model species, which
+  evolve like every pet).
+- **A vendor** with the band's goods (treats for taming the band's creatures, a few useful consumables).
+- **Places to train**: a gathering spot or two that fit the biome (a frozen pond to fish, an ore seam in the
+  forge), so a player can choose to stay in the town. Resting works as in the Onsen.
+- **Tameable creatures** on the band's floors (see the battle pets design): every band brings new pets.
 
 ## 5. Rewards
 
@@ -91,9 +110,77 @@ new band of ten is a new layout plus ten bosses and their quests.
 - Floor difficulty is set with the combat simulator (see the overview, section 8), so each band fits the
   levels and gear players have by then.
 
+## 8. Where the tower lives: the main world never stops
+
+The worry (Zerratar 2026-11-07): new places in their own Unity scenes could leave the players who stay behind not
+loaded, not gaining experience, unable to sail, and coming back to the main world would mean a big load and a
+fragile restore of everything. But cramming every new place into MainWorld makes it heavier with every update.
+
+**The answer is to never unload the main world.** Tower floors are their own Unity scenes, **loaded additively**
+next to MainWorld (far away in world space, out of sight of everything else), the way a dungeon works today,
+except that a floor is only in memory while it is used.
+
+- **Players who did not join notice nothing.** Their island, task, experience, sailing and commands keep working,
+  because nothing was taken down. There is no "give experience over time" stand-in and no state to rebuild when
+  the tower closes: the main world was running the whole time.
+- **Joining is a choice** (`!tower`, during a countdown, like raids and dungeons; auto join can work the same way it
+  does for them). Nobody who only wants to train is pulled in. The players who join go through what the dungeon
+  already does (`DungeonHandler`): their task, island and position are stored, they are moved to the floor, and on
+  leaving they get all three back. Commands that make no sense inside (sailing, the ferry) answer as they do in a
+  dungeon.
+- **Loading** happens during the join countdown (`SceneManager.LoadSceneAsync` with `LoadSceneMode.Additive`), so
+  by the time anyone is moved the floor is there. A floor is one arena or one town, not a whole island, so it loads
+  in a moment. If the camera is following a player who walks in early, only the camera shows a short "the tower
+  opens" card; the game itself never waits. At most one fighting floor and one town are loaded at once, and a floor
+  is unloaded when the last player leaves.
+- **The look follows the camera.** Sky, fog, sun, ambient light (`SceneAmbient`), weather, music, and the world-wide
+  systems (ocean, clouds, rain) switch to the floor's profile when the camera watches someone in the tower, and back
+  when it watches someone in the world. The game has no baked lighting, so there are no lightmaps to merge.
+- **Navigation:** each floor scene brings its own navmesh, added when it loads and removed when it unloads (Mangrove
+  already has a navmesh area of its own).
+- **A game restart during an attempt** puts the tower players back where they came from (the restore data keeps
+  their previous island) instead of loading the floor again. The attempt is lost, never the progress: which floors
+  a stream has cleared is the server's.
+
+**The one risky code change, done first and on its own:** the game asks `dungeonHandler.InDungeon` in 61 places
+across 37 files (sailing, travel, islands, auto join, the camera...). A tower handler would need every one of them.
+So before the tower: one question for all of it, "is this player away from the world, and in what" (dungeon, raid,
+tower, later others), with those 61 checks moved to it. Nothing changes for players; the tower then plugs into it.
+
+### And the main world getting crowded
+
+The same tool answers the second worry. Rendering is already culled (only what the camera sees is drawn), so a
+bigger MainWorld costs mostly memory, load time, scripts and animations updating everywhere, shadow and culling
+overhead, and a slower editor. Once the tower proves additive scenes work (loading, navmesh, the look following the
+camera, restore), the places that are only used now and then can move out the same way:
+- **Ravebridge** (the streamer opens it) and **the dungeons** (used only during a dungeon) are the first candidates:
+  loaded when the event starts, unloaded after.
+- Later, if the profiler says it is worth it: an island split into an always loaded part that the game needs to
+  play (navmesh, colliders, spawn points, resource spots; small) and its looks (buildings, decor, foliage; big),
+  with the looks loaded only near the camera. A large change; only after measuring what actually costs frames.
+
+## 9. Proving it first
+
+Before any floor is built, a test (a day or two) answers whether this works in Ravenfall:
+1. A test floor scene (`Assets/Scenes/Tower/TowerTest.unity`): one small Synty biome, its navmesh, spawn points,
+   a few enemies, a boss spot, its own light and fog profile.
+2. In play mode with 100+ bots: load it additively during a countdown and measure the hitch and the memory; move
+   20 bots in through a copy of the dungeon's handling; check they walk and fight there while the others keep
+   training on the islands with their experience rate unchanged.
+3. Switch the camera between a tower player and an island player: the look switches with it, the ocean and the
+   clouds do not show in the tower.
+4. Unload the floor: memory goes back down, the 20 bots are back on their islands doing what they did.
+5. Restart the game in the middle: the tower players come back where they came from.
+
+**Passes if** the hitch is short enough to hide in a countdown, nothing in the main world changes for the players
+who stayed, and memory returns after unloading. **If not**, the fallback is the dungeon way: floors as disabled
+areas inside MainWorld, which works today but grows the scene with every band.
+
 ## Open questions
 
 - Is the tower always open while a stream is live, or does the streamer open it, as with Ravebridge?
 - Who can start a boss attempt: only the streamer, or chat by vote as well?
 - Should a stream's climb ever reset (seasons, with rewards for how far you got), or is progress forever?
 - Can players who fall during a boss attempt be revived (a Restoration skill), or do they sit out the attempt?
+- Can players train on cleared floors and in towns while no attempt is running? (This doc assumes yes, with at most
+  one fighting floor and one town loaded at a time.)
