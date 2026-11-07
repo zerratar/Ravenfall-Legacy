@@ -687,7 +687,7 @@ public static class RavebridgeQuests
                 Shinobytes.Debug.LogWarning("Ravebridge quest " + quest.key + " not paid for " + player.Name + ": " + result.Error);
                 return;
             }
-            if (result.Coins > 0) player.Resources.Coins += result.Coins;
+            // the coins: the server's coin update (ResourceUpdate) brings the new amount; changing it here too raced that update
             if (result.Exp != null)
                 foreach (var e in result.Exp) player.Stats.GetSkill((Skill)e.Key)?.AddExp(e.Value, out _);
         }

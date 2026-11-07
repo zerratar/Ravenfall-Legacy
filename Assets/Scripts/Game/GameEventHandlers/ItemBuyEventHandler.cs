@@ -5,13 +5,11 @@ public class ItemBuyEventHandler : GameEventHandler<ItemTradeUpdate>
 {
     public override void Handle(GameManager gameManager, ItemTradeUpdate data)
     {
+        // nothing to change here: the server's coin update (ResourceUpdate) brings the new amount; changing it here too raced that update
         var player = gameManager.Players.GetPlayerById(data.BuyerPlayerId);
         if (player)
         {
-            var coinsBefore = player.Resources.Coins;
-            player.RemoveResource(Resource.Currency, data.Cost);
-            var coinsChange = coinsBefore - player.Resources.Coins;
-            Shinobytes.Debug.Log("Coins change after item buy: " + coinsChange);
+            Shinobytes.Debug.Log(player.Name + " bought for " + data.Cost + " coins");
         }
     }
 }

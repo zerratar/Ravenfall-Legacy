@@ -153,9 +153,9 @@ public class MangroveCommand : ChatBotCommandHandler<string>
 
     /// <summary>
     /// !regatta keg / wind / kraken. A random racer is free now and then; before the free one is back, or aimed at a
-    /// racer, it costs coins, and the viewer is told the price first and sends the command again to pay. The coins come
-    /// off the game's balance at once (a second command cannot spend them again), it happens, and then the server takes
-    /// them; a race that ends meanwhile never charges for nothing, and coins the server did not take are given back.
+    /// racer, it costs coins, and the viewer is told the price first and sends the command again to pay. The coins are
+    /// put on hold at once (a second command cannot spend them again), it happens, and then the server takes them; a race
+    /// that ends meanwhile never charges for nothing. The game's coin amount is only ever the server's.
     /// </summary>
     private async System.Threading.Tasks.Task Meddle(PlayerController player, global::Regatta.Meddling kind, string target, GameMessage gm, GameClient client)
     {
@@ -183,7 +183,7 @@ public class MangroveCommand : ChatBotCommandHandler<string>
                 else client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_PRICE, UnityEngine.Mathf.CeilToInt(freeIn), confirm, price);
                 return;
             }
-            if (player.Resources.Coins < price)
+            if (player.SpendableCoins < price)
             {
                 client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_NO_COINS, price);
                 return;
@@ -196,7 +196,7 @@ public class MangroveCommand : ChatBotCommandHandler<string>
             Refuse(result, name, wait, gm, client);
             return;
         }
-        if (price > 0) player.Resources.Coins -= price;
+        if (price > 0) player.CoinsOnHold += price;
         if (kind == global::Regatta.Meddling.Kraken)
         {
             client.SendReply(gm, Localization.MSG_REGATTA_KRAKEN_DONE, name);
@@ -214,15 +214,20 @@ public class MangroveCommand : ChatBotCommandHandler<string>
         {
             var left = await Game.RavenNest.Mangrove.SpendAsync(player.Id, price);
             taken = left >= 0;
+            // the server's own amount after the spend (its coin update brings the same)
+            if (taken && player) player.Resources.Coins = left;
             if (!taken) Shinobytes.Debug.LogWarning(player.Name + " meddled in the regatta for " + price + " coins the server did not find.");
         }
         catch (Exception exc)
         {
             Shinobytes.Debug.LogWarning("The regatta could not take " + player.Name + "'s " + price + " coins: " + exc.Message);
         }
+        finally
+        {
+            if (player) player.CoinsOnHold = System.Math.Max(0, player.CoinsOnHold - price);
+        }
         if (!taken)
         {
-            if (player) player.Resources.Coins += price;
             client.SendReply(gm, kind == global::Regatta.Meddling.Keg ? Localization.MSG_REGATTA_KEG_NOT_CHARGED : Localization.MSG_REGATTA_WIND_NOT_CHARGED, name);
             return;
         }

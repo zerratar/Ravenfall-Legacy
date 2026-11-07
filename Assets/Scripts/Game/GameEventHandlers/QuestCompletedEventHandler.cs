@@ -28,7 +28,7 @@ public class QuestCompletedEventHandler : GameEventHandler<QuestCompleted>
             return;
         }
 
-        if (quest.RewardCoins > 0) player.Resources.Coins += quest.RewardCoins;
+        // the reward coins: the server's coin update (ResourceUpdate) brings the new amount; changing it here too raced that update
         if (quest.RewardExp > 0) player.GetSkill((Skill)quest.RewardSkill)?.AddExp(quest.RewardExp);
 
         switch (quest.Kind)

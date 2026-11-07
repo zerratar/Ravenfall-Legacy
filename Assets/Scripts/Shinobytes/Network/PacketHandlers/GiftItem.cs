@@ -77,8 +77,8 @@ public class GiftItem : ChatBotCommandHandler<string>
                 var result = await Game.RavenNest.Players.SendCoinsAsync(player.Id, resolved.Player.Id, resolved.Count);
                 if (result > 0)
                 {
-                    resolved.Player.AddResource(Resource.Currency, result);
-                    player.RemoveResource(Resource.Currency, result);
+                    // Coins are the server's: its coin update brings both players' new amounts. Taking them off here
+                    // as well raced that update, and a player who gave all their coins was left with minus the gift.
                     if (result > 1)
                         client.SendReply(gm, Localization.MSG_GIFT_COINS, resolved.PlayerName, result);
                     else

@@ -299,8 +299,8 @@ public static class QuestChat
 
     /// <summary>
     /// !hero elite: an elite enemy sent at the hero during a wave (two a wave, one per viewer), for coins: the price is
-    /// told first, and the same command again within 30 s pays. As the regatta's meddling, the coins come off the game's
-    /// balance at once, the elite comes, then the server takes them; coins it did not take are given back.
+    /// told first, and the same command again within 30 s pays. As the regatta's meddling, the coins go on hold at once,
+    /// the elite comes, then the server takes them; the game's coin amount is only ever the server's.
     /// </summary>
     private static async System.Threading.Tasks.Task SendElite(GameManager game, PlayerController player, HeroController hero, GameMessage gm, GameClient client)
     {
@@ -313,22 +313,28 @@ public static class QuestChat
             client.SendReply(gm, Localization.MSG_HERO_ELITE_PRICE, ElitePrice, confirm);
             return;
         }
-        if (player.Resources.Coins < ElitePrice) { client.SendReply(gm, Localization.MSG_HERO_ELITE_NO_COINS, ElitePrice); return; }
+        if (player.SpendableCoins < ElitePrice) { client.SendReply(gm, Localization.MSG_HERO_ELITE_NO_COINS, ElitePrice); return; }
         var sent = run.SendElite(player.Name);
         if (sent != WaveRun.EliteResult.Sent) { RefuseElite(sent, gm, client); return; }
-        player.Resources.Coins -= ElitePrice;
+        // on hold until the server answers, so a second command cannot spend the same coins; the amount itself is the server's
+        player.CoinsOnHold += ElitePrice;
         var taken = false;
         try
         {
-            taken = await game.RavenNest.Quests.HeroSpendAsync(player.Id, ElitePrice) >= 0;
+            var left = await game.RavenNest.Quests.HeroSpendAsync(player.Id, ElitePrice);
+            taken = left >= 0;
+            if (taken && player) player.Resources.Coins = left;
         }
         catch (System.Exception exc)
         {
             Shinobytes.Debug.LogWarning("Hero mode could not take " + player.Name + "'s " + ElitePrice + " coins: " + exc.Message);
         }
+        finally
+        {
+            if (player) player.CoinsOnHold = System.Math.Max(0, player.CoinsOnHold - ElitePrice);
+        }
         if (!taken)
         {
-            if (player) player.Resources.Coins += ElitePrice;
             client.SendReply(gm, Localization.MSG_HERO_ELITE_FREE, hero && hero.Player ? hero.Player.Name : "?");
             return;
         }

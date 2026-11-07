@@ -28,9 +28,8 @@ public class StreamQuestEndedEventHandler : GameEventHandler<StreamQuestEnded>
                     long coins = 0;
                     foreach (var helper in helpers)
                     {
+                        // only counted for the announcement: the server's coin update (ResourceUpdate) brings the new amount; changing it here too raced that update
                         coins += helper.Coins;
-                        var player = gameManager.Players.GetPlayerById(helper.CharacterId);
-                        if (player && helper.Coins > 0) player.Resources.Coins += helper.Coins;
                     }
 
                     bot.Announce(Localization.MSG_STREAM_QUEST_DONE, StreamQuests.Text(quest), StreamQuests.VillageReward(quest),

@@ -2435,6 +2435,20 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     public bool AddExp(double factor = 1) => Progression.AddExp(factor);
 
 
+    /// <summary>
+    ///     Coins promised to a spend the server has not answered yet (the regatta's meddling, hero mode's elites), so a
+    ///     second command cannot spend them again in the meantime. Never taken off <see cref="Resources"/>: the coins
+    ///     there are the server's (its ResourceUpdate sets them), and changing them here raced that update.
+    /// </summary>
+    [NonSerialized] public long CoinsOnHold;
+
+    /// <summary>The coins a command may spend now: the server's amount less what is on hold.</summary>
+    public double SpendableCoins => Resources.Coins - CoinsOnHold;
+
+    /// <summary>
+    ///     Only for characters the game owns itself (bots, the Ravebridge character). A real character's coins are the
+    ///     server's: never change them here, its coin update brings the new amount.
+    /// </summary>
     public void RemoveResource(Resource resource, double amount)
     {
         switch (resource)

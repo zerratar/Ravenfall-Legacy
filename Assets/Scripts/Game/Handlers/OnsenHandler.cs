@@ -117,14 +117,8 @@ public class OnsenHandler : MonoBehaviour
 
         if (IsAutoResting)
         {
-            var before = (int)rested.AutoRestTime;
+            // the server charges the coins each second (RestedProcessor) and its coin update brings the new amount
             rested.AutoRestTime += GameTime.deltaTime;
-            var after = (int)rested.AutoRestTime;
-            if (after > before)
-            {
-                var delta = after - before;
-                player.Resources.Coins -= delta * player.GameManager.SessionSettings.AutoRestCost;
-            }
         }
         else
         {

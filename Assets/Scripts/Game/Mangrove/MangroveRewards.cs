@@ -21,12 +21,8 @@ public static class MangroveRewards
         var items = new List<EventItemReward>();
         foreach (var r in rewards)
         {
-            var player = game.Players.GetPlayerById(r.CharacterId);
-            if (player && r.Coins > 0)
-            {
-                player.Resources.Coins += r.Coins;
-                coins += r.Coins;
-            }
+            // only counted for the feed line: the server's coin update (ResourceUpdate) brings the new amount; changing it here too raced that update
+            if (r.Coins > 0) coins += r.Coins;
             if (r.Items != null) items.AddRange(r.Items);
         }
         if (items.Count > 0) game.AddItems(items.ToArray());

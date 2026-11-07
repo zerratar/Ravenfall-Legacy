@@ -20,9 +20,8 @@ public class VillageStoryCompletedEventHandler : GameEventHandler<VillageStoryCo
         var helpers = data.Helpers ?? System.Array.Empty<StreamQuestHelper>();
         foreach (var helper in helpers)
         {
+            // only counted for the announcement: the server's coin update (ResourceUpdate) brings the new amount; changing it here too raced that update
             coins += helper.Coins;
-            var player = gameManager.Players.GetPlayerById(helper.CharacterId);
-            if (player && helper.Coins > 0) player.Resources.Coins += helper.Coins;
         }
 
         gameManager.RavenBot.Announce(Localization.MSG_STORY_DONE, StoryLog.Name(story.Key), StoryLog.Ending(story.Key),

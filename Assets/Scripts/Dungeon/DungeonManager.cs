@@ -521,10 +521,7 @@ public class DungeonManager : MonoBehaviour, IEvent
                 player.dungeonHandler.AutoJoinCounter--;
             }
 
-            if (paid != null)
-            {
-                player.Resources.Coins = Math.Max(0, player.Resources.Coins - autoJoinCost);
-            }
+            // the cost: the server's coin update (ResourceUpdate) brings the new amount; changing it here too raced that update
 
             player.dungeonHandler.AutoJoinCount++;
             playersToJoin.Add(player);
