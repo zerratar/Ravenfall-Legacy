@@ -176,6 +176,33 @@ Before any floor is built, a test (a day or two) answers whether this works in R
 who stayed, and memory returns after unloading. **If not**, the fallback is the dungeon way: floors as disabled
 areas inside MainWorld, which works today but grows the scene with every band.
 
+### Result (2026-11-07): it passes
+
+Done in play mode in the editor against the local server, with 110 bots (then 30 for a second run).
+
+- **The away refactor first** (game 50f7057d): `player.Away` / `IsAway` and `IAwayHandler` replace the dungeon checks
+  that meant "away from the islands"; what a player leaves behind and the way back moved from `DungeonHandler` into
+  `WorldReturn`. Six bots went into a dungeon and came back with their tasks and islands.
+- **Loading** a test floor (`Assets/Scenes/Tower/TowerTest.unity`, at (0, 0, -6000), its own navmesh, eight
+  Metalons, Synty props): 0.25 to 0.32 s over two frames; the worst frame 188 ms (normal frames about 50 ms in the
+  editor with 110 bots), so one stall of about 140 ms, easy to hide in a join countdown. Memory +6 to +48 MB (the
+  larger figure on the first load of a session, which also brings the props' assets in).
+- **20 of 20 bots joined** and fought the floor's enemies. **The 90 who stayed:** none away, none without their
+  island, and their experience per minute with the tower running was 7,785 against 7,726 before it loaded. (One
+  window read 1,612; it was taken while screenshots slowed the editor, and the clean repeat matched.)
+- **The look:** with the camera on a tower player, the floor's light and fog, and the sea, clouds, cloud shadows and
+  weather off; back on an island player, everything as before, the fog setting included. `GameManager` sets those
+  systems from potato mode every frame, so the tower switches them off every frame while the camera is over the
+  floor.
+- **Unloading:** 0.54 to 0.57 s, worst frame 205 to 245 ms; every player back on the island they left, doing the
+  same task; the floor's enemies gone from the game.
+- **A restart:** the saved state of the players in the tower names the island and the spot they came from, so a
+  restart puts them back there. Bots are never saved, so a real restart needs a signed-in player to check.
+
+**Not built yet:** `!tower` and the server side (floors cleared per stream, the countdown, rewards), a real floor
+(this one is a flat test plane), towns, floor bosses, dying and coming back on a floor, and the fog and light per
+biome. Enemies on the floor came back after dying like island enemies do, which suits floors open for training.
+
 ## Open questions
 
 - Is the tower always open while a stream is live, or does the streamer open it, as with Ravebridge?
