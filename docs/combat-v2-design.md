@@ -319,6 +319,25 @@ Phase 1 (foundation), started 2026-11-07:
   the requirement barely gets touched; the next tuning step gives enemies power, accuracy and armour like the best
   gear at their level (the parity table says that lands at 4 to 9 swings). Mangrove's "Lv. 1" group holds level 15
   pirates and a level 34 captain that a new character cannot beat (today's rules or new).
+  **`bosses`** (2026-11-07): groups of 5 to 50 players of one level in the best melee gear for it, against the boss the
+  game makes for them (raid: the players' average levels, Health times 100, their average gear, a swing every 3 s;
+  dungeon: their levels times 0.75 times the dungeon's scale, Defense halved, Health times 100 times players/10 times
+  the scale times 1.15, a third of their gear, a swing every 2 s). Minutes to win, new rules:
+
+  | | 5 players | 10 | 25 | 50 |
+  |---|---|---|---|---|
+  | Raid boss | 2.8 to 4.7 | 1.3 to 2.3 | 0.5 to 0.9 | 0.3 to 0.5 |
+  | Dungeon, Normal | 0.6 to 1.9 | 0.3 to 0.9 | 0.3 to 0.9 | 0.3 to 0.9 |
+  | Dungeon, Heroic | 8.6 to 17.7 (60 to 90 falls) | 3.8 to 8.0 (about 30 to 40 falls) | 3.5 to 7.6 | 3.4 to 7.5 |
+
+  The raid boss's health ignores how many fight it, so a big stream ends it in half a minute (the target is 3 to 6
+  minutes for a normal group); Normal dungeon bosses fall in under a minute and barely touch anyone; Heroic ones
+  (2.5 times stronger) take a few minutes but knock a ten player group down 30 to 40 times. **To tune next:** raid boss
+  health by group size, Normal dungeon bosses stronger, Heroic ones hitting less hard.
+- [x] Data migration check (2026-11-07): food and potion heals and heal over time are shares of the maximum health
+  (`Stats.Health.MaxValue * amount`), so they grow with the ten times larger pool by themselves; nothing to migrate.
+  The enchantment rename (AIM to ACCURACY) waits for the server's item stat switch, when 0.9.6 games stop reading
+  the old columns.
 
 ## Open questions
 
