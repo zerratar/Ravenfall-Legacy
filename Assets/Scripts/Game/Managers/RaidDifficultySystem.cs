@@ -73,6 +73,8 @@ public class RaidDifficultySystem
                 BaseWeaponAim = Mathf.CeilToInt(tmp.TotalWeaponAim / pCount),
                 BaseArmorPower = Mathf.CeilToInt(tmp.TotalArmorPower / pCount),
             };
+
+            ScaleBossPool(d.BossSkills, players.Count);
         }
         catch
         {
@@ -103,6 +105,23 @@ public class RaidDifficultySystem
         }
 
         return d;
+    }
+
+    // Combat v2 (docs/combat-v2-design.md; the simulator's "bosses tuned"): the boss's health ignored how many fight it,
+    // so a big stream ended it in half a minute. Its pool now grows with the raiders expected (the past raids' average,
+    // or the players in the game before any raid): 2.5 times at ten raiders, at least half that. Only the pool: its
+    // Health level, which sets its combat level and the rewards, stays. A raid takes 3 to 6 minutes at any size.
+    private const float RaidBossPool = 2.5f;
+
+    private void ScaleBossPool(Skills boss, int playersInGame)
+    {
+        if (!CombatRules.Enabled || boss?.Health == null) return;
+        var past = contexts.Values.Where(c => c.PlayerCount > 0).ToList();
+        var expected = past.Count > 0 ? (float)past.Average(c => c.PlayerCount) : Mathf.Max(1, playersInGame);
+        var scale = RaidBossPool * Mathf.Max(0.5f, expected / 10f);
+        boss.Health.GearHealth = 0;
+        boss.Health.GearHealth = (int)(boss.Health.MaxValue * (scale - 1f));
+        boss.Health.CurrentValue = boss.Health.MaxValue;
     }
 
     private static int Random<T>(IReadOnlyList<T> input, System.Func<T, int> selector, int defaultMin = 1, int defaultMax = 1)

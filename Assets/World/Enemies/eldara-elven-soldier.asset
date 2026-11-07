@@ -24,9 +24,9 @@ MonoBehaviour:
     Ranged: 7
     Magic: 7
     Healing: 6
-    Power: 0
-    Accuracy: 0
-    Armor: 0
+    Power: 161
+    Accuracy: 129
+    Armor: 1372
     Style: 0
     Element: 0
     ElementShare: 0

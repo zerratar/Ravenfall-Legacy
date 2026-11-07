@@ -718,12 +718,14 @@ public class DungeonManager : MonoBehaviour, IEvent
             }
 
             var config = Dungeon.ActiveDungeonType;
+            var combatScale = BossCombatScale(config);
             Boss.Create(
-                lowestStats * combatStatsScale * config.BossCombatScale,
-                highestStats * combatStatsScale * config.BossCombatScale,
-                rngLowEq * equipmentStatsScale * config.BossCombatScale,
-                rngHighEq * equipmentStatsScale * config.BossCombatScale,
+                lowestStats * combatStatsScale * combatScale,
+                highestStats * combatStatsScale * combatScale,
+                rngLowEq * equipmentStatsScale * combatScale,
+                rngHighEq * equipmentStatsScale * combatScale,
                 GetBossHealthScale());
+            ApplyBossPool(config);
 
             return true;
         }
@@ -788,13 +790,38 @@ public class DungeonManager : MonoBehaviour, IEvent
             var rngHighEq = joinedPlayers.Max(x => x.EquipmentStats);
 
             var config = Dungeon.ActiveDungeonType;
+            var combatScale = BossCombatScale(config);
             Boss.SetStats(
-                lowestStats * combatStatsScale * config.BossCombatScale,
-                highestStats * combatStatsScale * config.BossCombatScale,
-                rngLowEq * equipmentStatsScale * config.BossCombatScale,
-                rngHighEq * equipmentStatsScale * config.BossCombatScale,
+                lowestStats * combatStatsScale * combatScale,
+                highestStats * combatStatsScale * combatScale,
+                rngLowEq * equipmentStatsScale * combatScale,
+                rngHighEq * equipmentStatsScale * combatScale,
                 GetBossHealthScale());
+            ApplyBossPool(config);
         }
+    }
+
+    // Combat v2's dungeon boss tuning (docs/combat-v2-design.md; the simulator's "bosses tuned"): Normal bosses fell in
+    // under a minute and Heroic ones (2.5 times stronger) knocked a ten player group down 30 to 40 times. With the new
+    // combat a dungeon type's combat scale moves toward 1 (2.5 becomes about 1.4) and the boss's health pool grows,
+    // three times on Normal and twice on Heroic: Normal takes 1 to 3 minutes for ten players, Heroic about twice that.
+    private const float BossCombatEase = 0.27f;
+    private const float NormalBossPool = 3f;
+    private const float HeroicBossPool = 2f;
+
+    private static float BossCombatScale(DungeonType config)
+    {
+        return CombatRules.Enabled ? 1f + (config.BossCombatScale - 1f) * BossCombatEase : config.BossCombatScale;
+    }
+
+    private void ApplyBossPool(DungeonType config)
+    {
+        if (!CombatRules.Enabled || !Boss || Boss.Enemy == null || Boss.Enemy.Stats == null) return;
+        var health = Boss.Enemy.Stats.Health;
+        var pool = config.BossHealthScale > 1f ? HeroicBossPool : NormalBossPool;
+        health.GearHealth = 0;
+        health.GearHealth = (int)(health.MaxValue * (pool - 1f));
+        health.CurrentValue = health.MaxValue;
     }
 
     private float GetBossHealthScale()

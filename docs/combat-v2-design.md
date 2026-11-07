@@ -338,6 +338,47 @@ Phase 1 (foundation), started 2026-11-07:
   (`Stats.Health.MaxValue * amount`), so they grow with the ten times larger pool by themselves; nothing to migrate.
   The enchantment rename (AIM to ACCURACY) waits for the server's item stat switch, when 0.9.6 games stop reading
   the old columns.
+- [x] Armour against elements (2026-11-07): armour takes half its usual share off element damage
+  (`CombatMath.ElementArmorShare`). Elements skipping armour made any unresisted element end armoured fights a third
+  sooner; at half, an unresisted quarter-element weapon ends them 5 to 18% sooner (gladiator 4.9 swings to 4.3) and a
+  resisted one takes longer, so the element is a choice, not a must.
+- [x] Magical attributes (2026-11-07), not bound to the old formulas: six new gear stats in `GearStats`, each capped
+  for players: **thorns** (a share of melee blows taken hurts the attacker, at most 50%), **threat** (more threat
+  from damage and healing, the tank's stat), **damage reduction** (off all damage, at most 50%), **life steal** (a
+  share of damage dealt heals, at most 25%), **attack speed** (shorter swings, at most twice as fast) and **armour
+  penetration** (ignore part of the target's armour, at most 75%), on top of crit chance and damage, evasion, health,
+  element damage and resistances. Enchanting can roll eight of them as attributes, named like the stats: crit chance
+  1-5%, crit damage 2-25%, attack speed 1-8%, armour penetration 2-15% and life steal 1-5% on weapons, rings and
+  amulets (attack speed on gloves too); thorns 2-15% and damage reduction 1-6% on armour and shields; threat 5-30% on
+  shields, helmets and chests (server `GameData.MagicalAttributes.cs`). Element damage and resistances stay with gems
+  (phase 4). Checked in play mode: 20% thorns gave back 18 of a samurai's 90 damage, life steal healed, attack speed
+  1.1, threat 1.3. More to add the same way (one stat, one cap, one place in the blow): block chance, crit
+  resistance, healing received, damage against a family (Dragonslayer), movement speed.
+- [x] Accuracy instead of aim (2026-11-07): the game's tooltips, `!eq`, `!stats` and the enchantment label, and the
+  website's tooltips, item chips and admin editor say Melee/Ranged/Magic Accuracy and Power, and armour "takes a share
+  off physical damage (and half that off elements)". The stored names (item columns, the AIM enchantment) stay while
+  0.9.6 games read them.
+- [x] Enemy gear (2026-11-07): each island kind wears 75% of the armour and 25% of the power and accuracy of the
+  standard melee kit (the metal sets, no joke weapons) at its own combat level (simulator `enemygear 500 0.75 0.25`,
+  applied with `tools/combat/apply-enemy-gear.cs`). A player at the enemy's level in the standard kit for it wins in 5
+  to 9 swings with about half their health left and falls in at most 5% of fights; gladiators 6.6 swings (63% left),
+  elven soldiers 5.9 (70%). **Areas whose requirement is below their enemies** (simulator, a player at the
+  requirement): Ravebridge's skeletons and souls (level 15 and 26 at "Lv. 10/15"), Home's purple and green Metalons
+  (57 and 71 at "Lv. 40"), Ironhill's dragons (120 to 135 at "Lv. 100") and Mangrove's "Lv. 1" pirates (15 and 34):
+  a player at the requirement loses most fights there. Raise those requirements, or lower the enemies.
+- [x] Raid and dungeon bosses (2026-11-07, with the new combat; simulator `bosses tuned`): the raid boss's health pool
+  grows with the raiders expected (the past raids' average, or the players in the game): 2.5 times at ten, at least
+  half that, its level and rewards unchanged, so a raid takes 3.3 to 5.9 minutes at any group size. Dungeon bosses: a
+  type's combat scale moves toward 1 (Heroic's 2.5 becomes about 1.4) and the pool grows three times on Normal and
+  twice on Heroic: ten players beat Normal in 0.9 to 2.8 minutes (a couple of falls) and Heroic in 2.5 to 7.2 (5 to 14
+  falls).
+
+## For later
+
+- **Weapon effects you can see:** weapons with an element could carry a visual effect (embers on a fire sword, frost
+  on an ice staff, sparks on lightning, dripping venom), not on every item but where it fits: the themed sets'
+  higher tiers, the silly weapons (a sizzling Bacon 2H Sword), and later gems socketed into weapons. Like the other
+  look features, it needs a settings toggle and turns off in potato mode.
 
 ## Open questions
 

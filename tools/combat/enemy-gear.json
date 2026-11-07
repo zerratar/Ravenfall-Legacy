@@ -1,0 +1,158 @@
+[
+  {
+    "Id": "home-bunny",
+    "Power": 17,
+    "Accuracy": 14,
+    "Armor": 72
+  },
+  {
+    "Id": "ravebridge-cow",
+    "Power": 17,
+    "Accuracy": 14,
+    "Armor": 72
+  },
+  {
+    "Id": "mangrove-pirate",
+    "Power": 20,
+    "Accuracy": 15,
+    "Armor": 98
+  },
+  {
+    "Id": "mangrove-pirate-captain",
+    "Power": 22,
+    "Accuracy": 17,
+    "Armor": 132
+  },
+  {
+    "Id": "ravebridge-goblin",
+    "Power": 17,
+    "Accuracy": 14,
+    "Armor": 72
+  },
+  {
+    "Id": "ravebridge-skeleton",
+    "Power": 20,
+    "Accuracy": 15,
+    "Armor": 98
+  },
+  {
+    "Id": "ravebridge-tormented-soul",
+    "Power": 20,
+    "Accuracy": 15,
+    "Armor": 98
+  },
+  {
+    "Id": "home-cow",
+    "Power": 17,
+    "Accuracy": 14,
+    "Armor": 72
+  },
+  {
+    "Id": "home-metalon-red",
+    "Power": 22,
+    "Accuracy": 17,
+    "Armor": 132
+  },
+  {
+    "Id": "home-metalon-purple",
+    "Power": 26,
+    "Accuracy": 20,
+    "Armor": 177
+  },
+  {
+    "Id": "home-metalon-green",
+    "Power": 33,
+    "Accuracy": 26,
+    "Armor": 243
+  },
+  {
+    "Id": "away-pirate",
+    "Power": 26,
+    "Accuracy": 20,
+    "Armor": 177
+  },
+  {
+    "Id": "away-pirate-captain",
+    "Power": 26,
+    "Accuracy": 20,
+    "Armor": 177
+  },
+  {
+    "Id": "ironhill-dragon",
+    "Power": 41,
+    "Accuracy": 34,
+    "Armor": 426
+  },
+  {
+    "Id": "ironhill-dragon-blue",
+    "Power": 41,
+    "Accuracy": 34,
+    "Armor": 426
+  },
+  {
+    "Id": "ironhill-dragon-green",
+    "Power": 41,
+    "Accuracy": 34,
+    "Armor": 426
+  },
+  {
+    "Id": "ironhill-dragon-purple",
+    "Power": 41,
+    "Accuracy": 34,
+    "Armor": 426
+  },
+  {
+    "Id": "ironhill-dragon-red",
+    "Power": 41,
+    "Accuracy": 34,
+    "Armor": 426
+  },
+  {
+    "Id": "ironhill-dragon-white",
+    "Power": 41,
+    "Accuracy": 34,
+    "Armor": 426
+  },
+  {
+    "Id": "ironhill-lord-quackers",
+    "Power": 41,
+    "Accuracy": 34,
+    "Armor": 426
+  },
+  {
+    "Id": "kyojin-ninja",
+    "Power": 48,
+    "Accuracy": 40,
+    "Armor": 487
+  },
+  {
+    "Id": "kyojin-samurai",
+    "Power": 48,
+    "Accuracy": 40,
+    "Armor": 487
+  },
+  {
+    "Id": "iceheim-viking",
+    "Power": 57,
+    "Accuracy": 48,
+    "Armor": 555
+  },
+  {
+    "Id": "iceheim-viking-chief",
+    "Power": 68,
+    "Accuracy": 57,
+    "Armor": 630
+  },
+  {
+    "Id": "atria-gladiator",
+    "Power": 99,
+    "Accuracy": 79,
+    "Armor": 807
+  },
+  {
+    "Id": "eldara-elven-soldier",
+    "Power": 161,
+    "Accuracy": 129,
+    "Armor": 1372
+  }
+]
