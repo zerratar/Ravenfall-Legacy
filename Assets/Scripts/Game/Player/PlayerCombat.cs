@@ -178,6 +178,10 @@ public class PlayerCombat
             if (target == null || !target.Transform || target.GetStats().IsDead)
                 return true;
 
+            // an active from the loadout (Mend, Renew, Barrier...) instead of the basic heal, when one fits (combat v2)
+            if (owner.SkillRunner.TryUse(owner.Target ? owner.Target.GetComponent<EnemyController>() : null))
+                return true;
+
             // on the same scale as the heal, so the experience bonus below stays what it was
             var maxHeal = CombatRules.MaxHit(owner.Stats.Healing.MaxLevel, owner.EquipmentStats.BaseMagicPower);
             var heal = CalculateDamage(target);
@@ -240,6 +244,12 @@ public class PlayerCombat
         if (owner.TrainingRanged)
         {
             owner.effectHandler.DestroyProjectile();
+        }
+
+        // an active from the loadout instead of the basic attack, when one is ready and fits (combat v2)
+        if (owner.SkillRunner.TryUse(enemy))
+        {
+            return true;
         }
 
         var damage = CalculateDamage(enemy);

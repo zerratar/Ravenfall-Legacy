@@ -52,6 +52,14 @@
     color: rgb(110, 230, 140);
 }
 
+/* a skill's name over the character who used it (combat v2's skill trees): warm gold, a heavier outline so it
+   reads over snow and sand as well as grass */
+.rf-float--skill {
+    color: rgb(255, 205, 90);
+    -unity-text-outline-width: 3px;
+    -unity-text-outline-color: rgba(20, 14, 8, 1);
+}
+
 .rf-float--miss {
     color: rgb(228, 222, 208);
     -unity-text-outline-width: 2px;

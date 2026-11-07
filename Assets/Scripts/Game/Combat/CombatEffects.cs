@@ -17,7 +17,17 @@ public static class CombatEffects
     {
         public readonly StatusEffectSet Set = new StatusEffectSet();
         public IAttackable Source;
+        public readonly List<Modifier> Modifiers = new List<Modifier>();
+        public readonly List<Hot> Hots = new List<Hot>();
+        public bool Empty => Set.Active.Count == 0 && Modifiers.Count == 0 && Hots.Count == 0;
     }
+
+    /// <summary>A skill's timed change to a fighter (Shield Wall, Expose Weakness, Disarm, Rally, Rapid Fire).</summary>
+    public enum ModifierKind { DamageTaken, DamageDealt, AttackSpeed }
+
+    private sealed class Modifier { public ModifierKind Kind; public double Amount; public float Until; }
+
+    private sealed class Hot { public IAttackable Healer; public double PerSecond; public float Until; }
 
     private static readonly Dictionary<IAttackable, Entry> entries = new Dictionary<IAttackable, Entry>();
     private static readonly List<IAttackable> gone = new List<IAttackable>();
@@ -38,6 +48,92 @@ public static class CombatEffects
     {
         entries.Clear();
         CombatRules.BlowLanded = OnBlow;
+        CombatRules.SheetModifiers = ApplyModifiers;
+    }
+
+    // the skills' timed buffs and debuffs on a fighter's sheet
+    private static void ApplyModifiers(IAttackable fighter, CombatSheet sheet)
+    {
+        if (fighter == null || !entries.TryGetValue(fighter, out var entry) || entry.Modifiers.Count == 0) return;
+        var now = Time.time;
+        foreach (var m in entry.Modifiers)
+        {
+            if (m.Until < now) continue;
+            switch (m.Kind)
+            {
+                case ModifierKind.DamageTaken: sheet.DamageTakenMultiplier *= System.Math.Max(0.05, 1 + m.Amount); break;
+                case ModifierKind.DamageDealt: sheet.DamageMultiplier *= System.Math.Max(0.05, 1 + m.Amount); break;
+                case ModifierKind.AttackSpeed: sheet.AttackSpeed *= 1 + m.Amount; break;
+            }
+        }
+    }
+
+    /// <summary>A skill's timed change on a fighter; the same kind from the same skill again refreshes it.</summary>
+    public static void AddModifier(IAttackable fighter, ModifierKind kind, double amount, float seconds)
+    {
+        if (!CombatRules.Enabled || fighter == null) return;
+        var entry = GetOrAdd(fighter, null, null);
+        var until = Time.time + seconds;
+        var same = entry.Modifiers.Find(m => m.Kind == kind && System.Math.Abs(m.Amount - amount) < 1e-6);
+        if (same != null) same.Until = Mathf.Max(same.Until, until);
+        else entry.Modifiers.Add(new Modifier { Kind = kind, Amount = amount, Until = until });
+    }
+
+    /// <summary>Damage over time from a skill (Arrow Rain, Toxic Cloud): fire burns, poison stacks, the rest bleeds.</summary>
+    public static void AddDamageOverTime(IAttackable source, IAttackable target, Element? element, double total, float seconds)
+    {
+        if (!CombatRules.Enabled || target == null || total < 1 || seconds <= 0) return;
+        var entry = GetOrAdd(target, source, CombatRules.Sheet(target));
+        var perSecond = total / seconds;
+        switch (element)
+        {
+            case Element.Fire: entry.Set.Burn(perSecond, seconds); break;
+            case Element.Poison: entry.Set.Poison(perSecond); break;
+            default: entry.Set.Bleed(perSecond, seconds); break;
+        }
+    }
+
+    /// <summary>Healing over time from a skill (Renew, Sanctuary), once a second.</summary>
+    public static void AddHealOverTime(IAttackable healer, IAttackable target, double total, float seconds)
+    {
+        if (!CombatRules.Enabled || target == null || total < 1 || seconds <= 0) return;
+        var entry = GetOrAdd(target, null, null);
+        entry.Hots.Add(new Hot { Healer = healer, PerSecond = total / seconds, Until = Time.time + seconds });
+    }
+
+    /// <summary>A stun, freeze or root from a skill; false when it did not land (a boss shrugging it off, Iron Skin).</summary>
+    public static bool CrowdControl(IAttackable source, IAttackable target, StatusEffectKind kind, float seconds)
+    {
+        if (!CombatRules.Enabled || target == null || seconds <= 0) return false;
+        var entry = GetOrAdd(target, source, CombatRules.Sheet(target));
+        return entry.Set.CrowdControl(kind, seconds);
+    }
+
+    /// <summary>Iron Skin.</summary>
+    public static void ImmuneToCrowdControl(IAttackable fighter, float seconds)
+    {
+        if (!CombatRules.Enabled || fighter == null) return;
+        GetOrAdd(fighter, null, null).Set.ImmuneToCrowdControl(seconds);
+    }
+
+    /// <summary>Cleanse: burns, poison, chills and bleeding end.</summary>
+    public static void Cleanse(IAttackable fighter)
+    {
+        if (fighter != null && entries.TryGetValue(fighter, out var entry)) entry.Set.Cleanse();
+    }
+
+    /// <summary>Burning, poisoned, chilled or bleeding (for Cleanse's use rule).</summary>
+    public static bool HasHarmful(IAttackable fighter)
+    {
+        var set = Get(fighter);
+        return set != null && (set.Has(StatusEffectKind.Burn) || set.Has(StatusEffectKind.Poison) || set.Has(StatusEffectKind.Chill) || set.Has(StatusEffectKind.Bleed));
+    }
+
+    /// <summary>Rooted, stunned or frozen: stays where it is.</summary>
+    public static bool CannotMove(IAttackable fighter)
+    {
+        var set = Get(fighter);
+        return set != null && set.CannotMove;
     }
 
     /// <summary>The effects on a fighter, null when it has none.</summary>
@@ -53,11 +149,14 @@ public static class CombatEffects
         return set != null && set.CannotAct;
     }
 
-    /// <summary>Attack intervals are divided by this: below 1 while chilled.</summary>
+    /// <summary>Attack intervals are divided by this: below 1 while chilled, above it with Rapid Fire.</summary>
     public static float AttackSpeedFactor(IAttackable fighter)
     {
-        var set = Get(fighter);
-        return set == null ? 1f : (float)set.AttackSpeedFactor;
+        if (fighter == null || !entries.TryGetValue(fighter, out var entry)) return 1f;
+        var factor = entry.Set.AttackSpeedFactor;
+        var now = Time.time;
+        foreach (var m in entry.Modifiers) if (m.Kind == ModifierKind.AttackSpeed && m.Until >= now) factor *= 1 + m.Amount;
+        return (float)factor;
     }
 
     /// <summary>A blow landed (CombatRules): its element effects go on the defender, lightning jumps on.</summary>
@@ -151,8 +250,18 @@ public static class CombatEffects
                 continue;
             }
 
+            var now = Time.time;
+            entry.Modifiers.RemoveAll(m => m.Until < now);
+            for (var i = entry.Hots.Count - 1; i >= 0; --i)
+            {
+                var hot = entry.Hots[i];
+                var healed = Mathf.RoundToInt((float)(hot.PerSecond * seconds));
+                if (healed >= 1) fighter.Heal(healed);
+                if (hot.Until <= now) entry.Hots.RemoveAt(i);
+            }
+
             var dot = entry.Set.Tick(seconds);
-            if (entry.Set.Active.Count == 0) gone.Add(fighter);
+            if (entry.Empty) gone.Add(fighter);
             if (dot.Total <= 0) continue;
 
             // burn by fire resistance, poison by poison resistance (it ignores armour), bleed by armour

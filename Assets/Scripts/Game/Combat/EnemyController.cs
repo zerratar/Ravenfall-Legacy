@@ -45,6 +45,17 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
 
     private bool ThreatAlive(PlayerController p) => p && !p.Stats.IsDead && !p.isDestroyed && !p.Removed && (Island == p.Island || !IsDungeonEnemy);
 
+    /// <summary>Taunt (Bulwark): it attacks <paramref name="player"/> for a while, whatever the threat says.</summary>
+    public void Taunt(PlayerController player, float seconds)
+    {
+        if (!CombatRules.Enabled || !player || Stats.IsDead) return;
+        if (AttackerNames.Add(player.Name)) Attackers.Add(player);
+        threat.Add(player, 1);
+        threat.Taunt(player, seconds);
+        SetTarget(player);
+        InCombat = true;
+    }
+
     /// <summary>Someone healed a player this enemy fights: half the heal, shared, as threat (CombatRules.Enabled only).</summary>
     public void AddHealingThreat(PlayerController healer, double amount)
     {
@@ -529,7 +540,7 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
             // a hunter (hero mode) stands to finish its swing: a hero who steps or rolls away makes it miss
             Lock();
         }
-        else
+        else if (!CombatEffects.CannotMove(this)) // rooted, stunned or frozen: it stays put
         {
             SetDestination(Target.position);
         }
@@ -632,6 +643,7 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
         if (!targetPlayer) return;
         if (!movement) return;
         if (CombatEffects.CannotAct(this)) return; // stunned or frozen
+        threat.Tick(GameTime.deltaTime); // taunts run out
         attackTimer -= GameTime.deltaTime * CombatEffects.AttackSpeedFactor(this); // chilled: slower
         if (attackTimer <= 0f)
         {

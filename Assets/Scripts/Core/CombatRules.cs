@@ -69,6 +69,37 @@ public static class CombatRules
         return sheet == null ? 0 : CombatMath.Heal(sheet, random).Amount;
     }
 
+    /// <summary>
+    ///     A skill's blow (combat v2's skill trees): the new rules with the skill's options (multiplier, element, armour
+    ///     ignored), its effects reported like a basic blow's. Null with the old rules or without sheets.
+    /// </summary>
+    public static AttackResult Strike(IAttackable attacker, IAttackable defender, AttackStyle style, AttackOptions options)
+    {
+        if (!Enabled || attacker == null || defender == null) return null;
+        var attackerSheet = Sheet(attacker);
+        var defenderSheet = Sheet(defender);
+        if (attackerSheet == null || defenderSheet == null) return null;
+        var result = CombatMath.Attack(attackerSheet, style, defenderSheet, random, options);
+        BlowLanded?.Invoke(attacker, defender, result, defenderSheet);
+        return result;
+    }
+
+    /// <summary>A skill's heal: the healer's basic heal times <paramref name="multiplier"/>.</summary>
+    public static int SkillHeal(IAttackable healer, double multiplier)
+    {
+        var sheet = Enabled ? Sheet(healer) : null;
+        return sheet == null ? 0 : CombatMath.Heal(sheet, random, multiplier).Amount;
+    }
+
+    /// <summary>A rough basic hit of a style (70% of the max hit), for damage over time from skills.</summary>
+    public static double TypicalHit(IAttackable attacker, AttackStyle style)
+    {
+        var sheet = Enabled ? Sheet(attacker) : null;
+        if (sheet == null) return 0;
+        var s = sheet.Style(style);
+        return CombatMath.MaxHit(s.DamageLevel, s.EffectivePower) * 0.7 * sheet.DamageMultiplier;
+    }
+
     private static float Blow(IAttackable attacker, IAttackable defender, AttackStyle style)
     {
         if (attacker == null || defender == null) return 0;

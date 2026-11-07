@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -49,7 +49,7 @@ namespace Shinobytes.UI
 
         private const int MaxActive = 160;
 
-        private enum Kind { Dealt, Taken, Heal, Miss }
+        private enum Kind { Dealt, Taken, Heal, Miss, Skill }
 
         private sealed class Number
         {
@@ -66,6 +66,7 @@ namespace Shinobytes.UI
             public Kind Kind;
             public bool Merged;
             public EntityId TargetId;
+            public string Text;
         }
 
         private sealed class TargetInfo
@@ -76,6 +77,7 @@ namespace Shinobytes.UI
             public float PeakTime;
             public Number Merged;
             public Number Miss;
+            public Number Skill;
         }
 
         private readonly List<Number> active = new List<Number>();
@@ -175,6 +177,53 @@ namespace Shinobytes.UI
             }
         }
 
+        /// <summary>
+        /// A skill's name over the character who used it (combat v2's skill trees), at most one at a time per
+        /// character: a newer one replaces it. Bold and big enough to read on stream.
+        /// </summary>
+        public void AddText(Transform target, string text)
+        {
+            if (!target || layer == null || string.IsNullOrEmpty(text))
+            {
+                return;
+            }
+
+            var id = target.GetEntityId();
+            var info = GetTarget(target, id);
+            var shown = info.Skill;
+            if (shown != null && shown.Kind == Kind.Skill && shown.Target == target && shown.Age < shown.Life)
+            {
+                shown.Text = text;
+                shown.Age = 0f;
+                Write(shown);
+                return;
+            }
+
+            if (active.Count >= MaxActive)
+            {
+                Release(0);
+            }
+
+            var number = Take();
+            number.Target = target;
+            number.TargetId = id;
+            number.Height = info.Height + 1.6f; // above the name tag
+            number.Age = 0f;
+            number.Life = lifetime * 1.6f;
+            number.Value = 0;
+            number.Text = text;
+            number.Kind = Kind.Skill;
+            number.Merged = false;
+            number.OffsetX = 0f;
+            number.DriftX = 0f;
+            number.Tilt = 0f;
+            number.Size = Mathf.Lerp(fontSizeRange.x, fontSizeRange.y, 0.45f); // about 36 px: readable on stream
+            Write(number);
+            layer.Add(number.Label);
+            active.Add(number);
+            info.Skill = number;
+        }
+
         private TargetInfo GetTarget(Transform target, EntityId id)
         {
             if (!targets.TryGetValue(id, out var info))
@@ -221,6 +270,7 @@ namespace Shinobytes.UI
         {
             var label = n.Label;
             label.text = n.Kind == Kind.Miss ? Localization.UI_FLOAT_MISS
+                : n.Kind == Kind.Skill ? n.Text
                 : n.Kind == Kind.Heal ? "+" + n.Value.ToString(CultureInfo.InvariantCulture)
                 : n.Value.ToString(CultureInfo.InvariantCulture);
 
@@ -228,6 +278,7 @@ namespace Shinobytes.UI
             label.EnableInClassList("rf-float--taken", n.Kind == Kind.Taken);
             label.EnableInClassList("rf-float--heal", n.Kind == Kind.Heal);
             label.EnableInClassList("rf-float--miss", n.Kind == Kind.Miss);
+            label.EnableInClassList("rf-float--skill", n.Kind == Kind.Skill);
             label.EnableInClassList("rf-float--big", n.Kind == Kind.Dealt && n.Size >= Mathf.Lerp(fontSizeRange.x, fontSizeRange.y, 0.85f));
         }
 

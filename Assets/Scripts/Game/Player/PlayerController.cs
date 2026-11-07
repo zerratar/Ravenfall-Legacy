@@ -2784,6 +2784,10 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     /// <summary>The skill tree choices from the server (docs/combat-skills-design.md): passives count like gear stats.</summary>
     [NonSerialized] public RavenNest.Combat.SkillBuild SkillBuild = new RavenNest.Combat.SkillBuild();
 
+    /// <summary>Uses the loadout's actives by themselves (combat v2).</summary>
+    public CombatSkillRunner SkillRunner => skillRunner ??= new CombatSkillRunner(this);
+    [NonSerialized] private CombatSkillRunner skillRunner;
+
     /// <summary>A shield from Barrier or a heal with Warding Light: taken off before health until it runs out.</summary>
     [NonSerialized] public int CombatShield;
     [NonSerialized] public float CombatShieldUntil;
