@@ -272,7 +272,20 @@ Phase 1 (foundation), started 2026-11-07:
   gear but weapons) and `WeaponExtras` per style: a player wears a sword, a bow and a staff at once, and each weapon's
   element damage converts the hits of its own style only; element damage on other gear adds to every hit. Max health
   from gear adds to the Health pool (`SkillStat.GearHealth`). Item tooltips and `!stats` list the new stats.
-  **No item carries an element yet:** that is content (themed weapons, and gems in phase 4).
+  **Themed gear** (server `GameData.GearStats.cs`, given at startup where an item has no stats yet, so admin edits
+  are kept; 134 items on the dev copy): each of four sets has one element, its weapons turn 25% of their hits into it
+  (Elder versions 35%) and each armour piece resists it 5% (Elder 8%, a full set with shield 30% or 48%): Dragon fire,
+  Abraxas poison, Phantom ice, Ether lightning. Jewellery: Ruby and Emerald resist fire and poison, Dragon and
+  Phantom rings and amulets add a little of their element and resist it, Ring Of The Celestial resists lightning,
+  Windcallers Amulet adds lightning and evasion, Owls Eye Ring crit chance, Archmages Pendant and Warriors Might Ring
+  crit damage, Knights Emblem health. The silly weapons get theirs: Bacon 2H Sword fire, Turd 2H Sword 50% poison,
+  Ultimate Tuna Slapper ice, the Pickle Ricks poison, Ghrims Stick lightning, the Bananarang crit chance.
+  **Simulator `elements`** (a player at each area's requirement with a weapon a quarter physical, fire, ice, lightning
+  or poison): against today's enemies (no armour) an element changes little except where they resist or are weak
+  (skeletons: poison 14.4 swings against 11.0 physical, fire 10.4). Against enemies in armour like the player's, any
+  element they do not resist ends fights a third sooner from level 200 up (gladiator 7.1 swings physical, 4.8 with a
+  quarter fire), because element damage skips armour entirely. **To decide before enemy gear tuning:** let armour take
+  part of element damage too, give enemies a base resistance that grows with level, or keep weapon shares smaller.
 - [ ] Threat and status effects wired into the game's fights (the library has both; the game still uses its own
   threat table and ignores poison, bleed and burn).
 - [ ] The baseline bugs: double counted POWER/AIM/ARMOR enchantments, StyleBonus, the raid boss's history.
