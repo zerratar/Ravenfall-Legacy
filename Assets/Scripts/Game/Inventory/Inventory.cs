@@ -132,6 +132,79 @@ public class Inventory : MonoBehaviour
 
     public IReadOnlyList<GameInventoryItem> Equipped => equipped;
 
+    /// <summary>
+    /// The server's inventory feed keeps this inventory (RavenNest.SDK.V2.InventorySync): whatever a server call
+    /// changes arrives by itself, as the stacks are now. A handler must then not change the inventory again after the
+    /// call: when the feed came first, the change counts twice (the negative coins after a gift, 2026-11-07, was the
+    /// same race). The server has the say; the game shows what it sends. Bots are the game's own and not fed.
+    /// Changing the inventory before a server call is fine (an item found): the feed's numbers follow.
+    /// </summary>
+    public bool FedByServer => player && !player.IsBot && gameManager && gameManager.RavenNest != null && gameManager.RavenNest.InventoryFeedOn;
+
+    /// <summary>How many of an item the inventory holds, equipped or not.</summary>
+    public long CountOf(Guid itemId)
+    {
+        lock (mutex)
+        {
+            long count = 0;
+            foreach (var x in backpack) if (x.InventoryItem.ItemId == itemId) count += x.InventoryItem.Amount;
+            foreach (var x in equipped) if (x.InventoryItem.ItemId == itemId) count += x.InventoryItem.Amount;
+            return count;
+        }
+    }
+
+    /// <summary>
+    /// Waits for what a server call gave to come in by the feed (<see cref="FedByServer"/>): a stack of the item once
+    /// the inventory holds more than <paramref name="countBefore"/> of it. Null when it did not come in time. Main
+    /// thread.
+    /// </summary>
+    public System.Threading.Tasks.Task<GameInventoryItem> WaitForItemAsync(Guid itemId, long countBefore, float seconds = 6f)
+    {
+        return WaitForAsync(() => CountOf(itemId) > countBefore ? PlainStackOf(itemId) : null, seconds);
+    }
+
+    /// <summary>
+    /// Waits for a stack to come in by the feed (<see cref="FedByServer"/>), and to be as <paramref name="ready"/>
+    /// wants it when given. Null when it did not come in time. Main thread.
+    /// </summary>
+    public System.Threading.Tasks.Task<GameInventoryItem> WaitForStackAsync(Guid inventoryItemId, Func<GameInventoryItem, bool> ready = null, float seconds = 6f)
+    {
+        return WaitForAsync(() =>
+        {
+            var stack = GetInventoryItem(inventoryItemId);
+            return stack != null && (ready == null || ready(stack)) ? stack : null;
+        }, seconds);
+    }
+
+    private async System.Threading.Tasks.Task<GameInventoryItem> WaitForAsync(Func<GameInventoryItem> find, float seconds)
+    {
+        var until = Time.realtimeSinceStartup + seconds;
+        while (this && player)
+        {
+            var found = find();
+            if (found != null) return found;
+            if (Time.realtimeSinceStartup >= until) return null;
+            await System.Threading.Tasks.Task.Delay(100);
+        }
+        return null;
+    }
+
+    // a stack of the item without an enchantment or a skin, the backpack's first
+    private GameInventoryItem PlainStackOf(Guid itemId)
+    {
+        lock (mutex)
+        {
+            GameInventoryItem any = null;
+            foreach (var x in backpack.Concat(equipped))
+            {
+                if (x.InventoryItem.ItemId != itemId) continue;
+                if (string.IsNullOrEmpty(x.InventoryItem.Enchantment) && x.InventoryItem.TransmogrificationId == null) return x;
+                any ??= x;
+            }
+            return any;
+        }
+    }
+
     public void RemoveByItemId(Guid itemId, long amount)
     {
         lock (mutex)
@@ -522,8 +595,17 @@ public class Inventory : MonoBehaviour
         player.GameManager.ObservedPlayerDetails.PlayerEquipmentUpdated(player);
     }
 
+    /// <summary>
+    /// Scroll counts from the server (!scrolls). Ignored while <see cref="FedByServer"/>: the feed already has the
+    /// scroll stacks as they are, and this would swap them for new ones the server does not know.
+    /// </summary>
     public void UpdateScrolls(ScrollInfoCollection scrolls)
     {
+        if (FedByServer || scrolls == null)
+        {
+            return;
+        }
+
         lock (mutex)
         {
             var existingScrolls = GetInventoryItemsOfCategory(ItemCategory.Scroll);
@@ -549,6 +631,11 @@ public class Inventory : MonoBehaviour
         {
             var scrolls = GetInventoryItemsOfCategory(ItemCategory.Scroll);
             var s = scrolls.FirstOrDefault(x => x.Item.Name.IndexOf(scroll.ToString(), StringComparison.OrdinalIgnoreCase) >= 0);
+            if (s != null && FedByServer)
+            {
+                return s.InventoryItem.Amount; // the server took it (maybe from the stash); the feed says what is left
+            }
+
             if (s != null)
             {
                 if (--s.InventoryItem.Amount <= 0)

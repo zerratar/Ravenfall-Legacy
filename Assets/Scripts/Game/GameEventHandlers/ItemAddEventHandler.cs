@@ -19,6 +19,13 @@ public class ItemAddEventHandler : GameEventHandler<ItemAdd>
             return;
         }
 
+        if (player.Inventory.FedByServer)
+        {
+            // the feed brings the stack (server authority); gear goes on once it is here
+            if (item.Category != ItemCategory.Resource) player.EquipIfBetterWhenArrived(data.InventoryItemId, equipAll: true);
+            return;
+        }
+
         var result = player.Inventory.AddToBackpack(data);
 
         if (item.Category != ItemCategory.Resource)

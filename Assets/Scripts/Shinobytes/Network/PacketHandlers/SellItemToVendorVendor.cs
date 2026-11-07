@@ -46,12 +46,15 @@ public class SellItemToVendorVendor : ChatBotCommandHandler<string>
         var vendorCount = await Game.RavenNest.Players.VendorInventoryItemAsync(player.Id, item.InventoryItem.InstanceId, toVendor);
         if (vendorCount > 0)
         {
-            if (player.Inventory.IsEquipped(item.InventoryItem))
+            if (!player.Inventory.FedByServer) // else the server's feed carries the change (server authority)
             {
-                player.Inventory.Unequip(item.InventoryItem);
-            }
+                if (player.Inventory.IsEquipped(item.InventoryItem))
+                {
+                    player.Inventory.Unequip(item.InventoryItem);
+                }
 
-            player.Inventory.Remove(item.InventoryItem, vendorCount);
+                player.Inventory.Remove(item.InventoryItem, vendorCount);
+            }
 
             client.SendReply(gm, Localization.MSG_VENDOR_ITEM,
                 vendorCount,

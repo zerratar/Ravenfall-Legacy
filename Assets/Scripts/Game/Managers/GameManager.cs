@@ -550,11 +550,17 @@ public class GameManager : MonoBehaviour, IGameManager
             }
 
             var item = this.itemManager.Get(reward.ItemId);
-            var stack = player.Inventory.AddToBackpack(reward.InventoryItemId, item, reward.Amount);
-
             player.RecordLoot(item, reward.Amount, dungeonIndex, raidIndex);
 
-            player.EquipIfBetter(stack);
+            if (player.Inventory.FedByServer)
+            {
+                // the server gave it and its feed brings the stack (server authority); gear goes on once it is here
+                player.EquipIfBetterWhenArrived(reward.InventoryItemId);
+            }
+            else
+            {
+                player.EquipIfBetter(player.Inventory.AddToBackpack(reward.InventoryItemId, item, reward.Amount));
+            }
 
             var key = rewardItem.Name;
 

@@ -100,9 +100,8 @@ public class SendItem : ChatBotCommandHandler<string>
                     var result = await Game.RavenNest.Players.SendItemAsync(player.Id, targetPlayer, stack.InstanceId, left);
                     if (result.Status != RavenNest.Models.GiftItemStatus.OK) continue;
 
-                    // Update game client with the changes
-                    // this is done locally to avoid sending additional data from server to client and visa versa.
-                    player.Inventory.RemoveOrSetInventoryItem(result.StackToDecrement);
+                    // without the server's inventory feed the game updates the inventory from the reply
+                    if (!player.Inventory.FedByServer) player.Inventory.RemoveOrSetInventoryItem(result.StackToDecrement);
                     left -= result.Amount;
                     sentOfThis += result.Amount;
                 }
@@ -194,14 +193,16 @@ public class SendItem : ChatBotCommandHandler<string>
         var result = await Game.RavenNest.Players.SendItemAsync(player.Id, item.PlayerName, item.InventoryItem.InstanceId, amount);
         if (result.Status == RavenNest.Models.GiftItemStatus.OK)
         {
-            // Update game client with the changes
-            // this is done locally to avoid sending additional data from server to client and visa versa.
+            // without the server's inventory feed the game updates both inventories from the reply
             var targetPlayer = item.Player;
-            if (targetPlayer)
+            if (!player.Inventory.FedByServer)
             {
-                targetPlayer.Inventory.AddOrSetInventoryItem(result.StackToIncrement);
+                if (targetPlayer)
+                {
+                    targetPlayer.Inventory.AddOrSetInventoryItem(result.StackToIncrement);
+                }
+                player.Inventory.RemoveOrSetInventoryItem(result.StackToDecrement);
             }
-            player.Inventory.RemoveOrSetInventoryItem(result.StackToDecrement);
             client.SendReply(gm, Localization.MSG_SEND, result.Amount, item.Item.Name, item.PlayerName);
         }
         else

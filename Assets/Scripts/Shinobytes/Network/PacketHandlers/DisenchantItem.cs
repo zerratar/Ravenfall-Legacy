@@ -102,20 +102,44 @@ public class DisenchantItem : ChatBotCommandHandler<string>
 
         var inventory = player.Inventory;
         var wasEquipped = inventory.IsEquipped(inventoryItem);
-        if (wasEquipped)
+        if (inventory.FedByServer)
         {
-            player.Unequip(inventoryItem);
+            // the server's feed brings the plain stack (server authority), worn where the enchanted one was
+            if (wasEquipped) WearWhenArrived(player, enchantedItem.Id);
         }
-
-        inventory.RemoveByInventoryId(result.OldItemStack.Id, 1);
-        var addedItem = inventory.AddToBackpack(enchantedItem, 1);
-
-        if (wasEquipped)
+        else
         {
-            player.Equip(addedItem, false);
-        }
+            if (wasEquipped)
+            {
+                player.Unequip(inventoryItem);
+            }
 
-        inventory.UpdateEquipmentEffect();
+            inventory.RemoveByInventoryId(result.OldItemStack.Id, 1);
+            var addedItem = inventory.AddToBackpack(enchantedItem, 1);
+
+            if (wasEquipped)
+            {
+                player.Equip(addedItem, false);
+            }
+
+            inventory.UpdateEquipmentEffect();
+        }
         client.SendReply(gm, Localization.MSG_DISENCHANT_SUCCESS, oldItemName);
+    }
+
+    // the plain stack, once the feed has it: worn where the enchanted one was
+    private static async void WearWhenArrived(PlayerController player, System.Guid stackId)
+    {
+        try
+        {
+            var stack = await player.Inventory.WaitForStackAsync(stackId, x => string.IsNullOrEmpty(x.InventoryItem.Enchantment));
+            if (!player || stack == null || player.Inventory.IsEquipped(stack)) return;
+            player.Equip(stack, false);
+            player.Inventory.UpdateEquipmentEffect();
+        }
+        catch (System.Exception exc)
+        {
+            Shinobytes.Debug.LogError("DisenchantItem.WearWhenArrived: " + exc);
+        }
     }
 }

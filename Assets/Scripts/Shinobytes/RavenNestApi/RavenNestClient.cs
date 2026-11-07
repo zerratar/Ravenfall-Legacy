@@ -104,6 +104,12 @@ namespace RavenNest.SDK
         /// <summary>The v2 connection's main thread side, while <see cref="UseV2"/>.</summary>
         public NetworkV2 V2 { get; private set; }
 
+        /// <summary>
+        /// The server sends every inventory change itself (the v2 inventory feed, see <see cref="InventorySync"/>), so
+        /// what a server call changes in an inventory arrives without the game copying it.
+        /// </summary>
+        public bool InventoryFeedOn => UseV2 && V2 != null && V2.InventoryFeed.Enabled;
+
         private GameConnectionV2 v2Connection;
         private string clientVersion;
         private DateTime lastV2TokenRefresh;

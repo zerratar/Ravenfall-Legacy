@@ -37,7 +37,7 @@ public class PlayerStartRaidEventHandler : GameEventHandler<RavenNest.Models.Pla
                         if (raidScroll != null)
                         {
                             await Game.RavenNest.Players.AddItemAsync(player.Id, raidScroll.Id);
-                            player.Inventory.AddToBackpack(raidScroll);
+                            if (!player.Inventory.FedByServer) player.Inventory.AddToBackpack(raidScroll);
                         }
                     }
                 }

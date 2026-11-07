@@ -99,7 +99,7 @@ public class RaidForce : ChatBotCommandHandler
                         {
                             client.SendReply(gm, Localization.MSG_RAID_FORCE_FAILED_REFUND);
                             await Game.RavenNest.Players.AddItemAsync(plr.Id, raidScroll.Id);
-                            plr.Inventory.AddToBackpack(raidScroll);
+                            if (!plr.Inventory.FedByServer) plr.Inventory.AddToBackpack(raidScroll);
                         }
                     }
                 }

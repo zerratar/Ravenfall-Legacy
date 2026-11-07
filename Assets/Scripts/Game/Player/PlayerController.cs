@@ -2888,9 +2888,28 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     public double GetExperience() => 0;
 
+    /// <summary>
+    /// Equips a stack the server gave once the inventory feed brings it (see <see cref="Inventory.FedByServer"/>), if
+    /// it beats what is worn.
+    /// </summary>
+    public async void EquipIfBetterWhenArrived(Guid inventoryItemId, bool equipAll = false)
+    {
+        try
+        {
+            var stack = await Inventory.WaitForStackAsync(inventoryItemId);
+            if (!this || stack == null) return;
+            EquipIfBetter(stack);
+            if (equipAll) Inventory.EquipAll();
+        }
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogError("EquipIfBetterWhenArrived: " + exc);
+        }
+    }
+
     public bool EquipIfBetter(GameInventoryItem item)
     {
-        if (!item.CanBeEquipped())
+        if (item == null || !item.CanBeEquipped())
             return false;
 
         var currentEquipment = Inventory.GetEquipmentOfType(item.Category, item.Type);

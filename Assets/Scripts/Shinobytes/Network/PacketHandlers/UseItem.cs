@@ -134,7 +134,7 @@ public class UseItem : ChatBotCommandHandler<string>
             return;
         }
 
-        player.Inventory.UpdateInventoryItem(result.InventoryItemId, result.NewStackAmount);
+        if (!player.Inventory.FedByServer) player.Inventory.UpdateInventoryItem(result.InventoryItemId, result.NewStackAmount); // else the server's feed carries the change (server authority)
 
         // depending on item type, change the term.
         var message = Localization.MSG_USE_ITEM_USED;

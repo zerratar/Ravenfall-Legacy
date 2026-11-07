@@ -17,6 +17,11 @@ public class ItemRemoveEventHandler : GameEventHandler<ItemRemove>
             return;
         }
 
+        if (player.Inventory.FedByServer)
+        {
+            return; // the feed carries the change (server authority)
+        }
+
         player.Inventory.RemoveByInventoryId(data.InventoryItemId, data.Amount);
     }
 }

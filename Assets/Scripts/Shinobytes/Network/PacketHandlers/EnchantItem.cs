@@ -146,27 +146,36 @@ public class EnchantItem : ChatBotCommandHandler<string>
 
         var inventory = player.Inventory;
         var wasEquipped = inventory.IsEquipped(inventoryItem);
-        if (wasEquipped)
+        if (inventory.FedByServer)
         {
-            player.Unequip(inventoryItem);
-        }
-
-        if (result.OldItemStack.Id != enchantedItem.Id)
-        {
-            inventory.RemoveByInventoryId(result.OldItemStack.Id, 1);
-            addedItem = inventory.AddToBackpack(enchantedItem, 1);
+            // the server's feed brings the enchanted stack (server authority); the reply's copy names it until then
+            addedItem = new GameInventoryItem(player, enchantedItem, Game.Items.Get(enchantedItem.ItemId));
+            WearWhenArrived(player, enchantedItem, wasEquipped);
         }
         else
         {
-            addedItem = inventory.ApplyEnchantment(enchantedItem);
-        }
+            if (wasEquipped)
+            {
+                player.Unequip(inventoryItem);
+            }
 
-        if (wasEquipped)
-        {
-            player.Equip(addedItem, false);
-        }
+            if (result.OldItemStack.Id != enchantedItem.Id)
+            {
+                inventory.RemoveByInventoryId(result.OldItemStack.Id, 1);
+                addedItem = inventory.AddToBackpack(enchantedItem, 1);
+            }
+            else
+            {
+                addedItem = inventory.ApplyEnchantment(enchantedItem);
+            }
 
-        inventory.UpdateEquipmentEffect();
+            if (wasEquipped)
+            {
+                player.Equip(addedItem, false);
+            }
+
+            inventory.UpdateEquipmentEffect();
+        }
 
         if (string.IsNullOrEmpty(result.OldItemStack.Enchantment))
         {
@@ -181,6 +190,27 @@ public class EnchantItem : ChatBotCommandHandler<string>
 
         player.LastEnchantedItem = addedItem;
         player.LastEnchantedItemExpire = DateTime.UtcNow.AddMinutes(2);
+    }
+
+    // The enchanted stack, once the feed has it with its enchantment: worn again if the item was, and the one
+    // !disenchant last means. Taking one off a stack of several leaves the server's new stack unequipped.
+    private static async void WearWhenArrived(PlayerController player, InventoryItem enchanted, bool wasEquipped)
+    {
+        try
+        {
+            var stack = await player.Inventory.WaitForStackAsync(enchanted.Id, x => x.InventoryItem.Enchantment == enchanted.Enchantment);
+            if (!player || stack == null) return;
+            if (player.LastEnchantedItem != null && player.LastEnchantedItem.InstanceId == stack.InstanceId) player.LastEnchantedItem = stack;
+            if (wasEquipped && !player.Inventory.IsEquipped(stack))
+            {
+                player.Equip(stack, false);
+                player.Inventory.UpdateEquipmentEffect();
+            }
+        }
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogError("EnchantItem.WearWhenArrived: " + exc);
+        }
     }
 
     private string FormatEnchantmentValues(IReadOnlyList<ItemEnchantment> enchantments)

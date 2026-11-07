@@ -286,7 +286,7 @@ public class TicTacToe : MonoBehaviour, ITavernGame
             var result = await gameManager.RavenNest.Players.AddTokensAsync(player.Id, 1);
             if (result)
             {
-                player.Inventory.AddStreamerTokens(1);
+                if (!player.Inventory.FedByServer) player.Inventory.AddStreamerTokens(1); // else the server's feed carries the change (server authority)
                 gameManager.RavenBot.SendReply(player, Localization.MSG_TICTACTOE_WON_TOKEN, tokenName);
             }
         }

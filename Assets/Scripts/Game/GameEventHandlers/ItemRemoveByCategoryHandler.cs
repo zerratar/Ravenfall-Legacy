@@ -11,6 +11,11 @@ public class ItemRemoveByCategoryHandler : GameEventHandler<ItemRemoveByCategory
             return;
         }
 
+        if (player.Inventory.FedByServer)
+        {
+            return; // the feed carries the change (server authority)
+        }
+
         var items = player.Inventory.GetInventoryItems();
         foreach (var invItem in items)
         {

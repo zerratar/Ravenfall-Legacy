@@ -112,7 +112,7 @@ public class TeleportToIsland : ChatBotCommandHandler<string>
             return;
         }
 
-        player.Inventory.UpdateInventoryItem(result.InventoryItemId, result.NewStackAmount);
+        if (!player.Inventory.FedByServer) player.Inventory.UpdateInventoryItem(result.InventoryItemId, result.NewStackAmount); // else the server's feed carries the change (server authority)
 
         var targetIsland = Game.Islands.Get(result.EffectIsland);
 

@@ -152,10 +152,12 @@ public class GiftItem : ChatBotCommandHandler<string>
                     var result = await Game.RavenNest.Players.GiftItemAsync(player.Id, targetPlayer.Id, stack.InstanceId, left);
                     if (result.Status != RavenNest.Models.GiftItemStatus.OK) continue;
 
-                    // Update game client with the changes
-                    // this is done locally to avoid sending additional data from server to client and visa versa.
-                    targetPlayer.Inventory.AddOrSetInventoryItem(result.StackToIncrement);
-                    player.Inventory.RemoveOrSetInventoryItem(result.StackToDecrement);
+                    // without the server's inventory feed the game updates both inventories from the reply
+                    if (!player.Inventory.FedByServer)
+                    {
+                        targetPlayer.Inventory.AddOrSetInventoryItem(result.StackToIncrement);
+                        player.Inventory.RemoveOrSetInventoryItem(result.StackToDecrement);
+                    }
                     left -= result.Amount;
                     sentOfThis += result.Amount;
                 }
@@ -241,11 +243,13 @@ public class GiftItem : ChatBotCommandHandler<string>
         var result = await Game.RavenNest.Players.GiftItemAsync(player.Id, item.Player.Id, item.InventoryItem.InstanceId, amount);
         if (result.Status == RavenNest.Models.GiftItemStatus.OK)
         {
-            // Update game client with the changes
-            // this is done locally to avoid sending additional data from server to client and visa versa.
+            // without the server's inventory feed the game updates both inventories from the reply
             var targetPlayer = item.Player;
-            targetPlayer.Inventory.AddOrSetInventoryItem(result.StackToIncrement);
-            player.Inventory.RemoveOrSetInventoryItem(result.StackToDecrement);
+            if (!player.Inventory.FedByServer)
+            {
+                targetPlayer.Inventory.AddOrSetInventoryItem(result.StackToIncrement);
+                player.Inventory.RemoveOrSetInventoryItem(result.StackToDecrement);
+            }
             client.SendReply(gm, Localization.MSG_GIFT, result.Amount, item.Item.Name, item.Player.PlayerName);
         }
         else

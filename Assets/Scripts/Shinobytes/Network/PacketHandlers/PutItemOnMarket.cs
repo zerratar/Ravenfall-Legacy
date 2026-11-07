@@ -92,7 +92,7 @@ public class PutItemOnMarket : ChatBotCommandHandler<string>
                     client.SendReply(gm, Localization.MSG_SELL_MARKETPLACE_ERROR);
                     break;
                 case ItemTradeState.Success:
-                    player.Inventory.Remove(item.InventoryItem, item.Count);
+                    if (!player.Inventory.FedByServer) player.Inventory.Remove(item.InventoryItem, item.Count); // else the server's feed carries the change (server authority)
                     client.SendReply(gm, Localization.MSG_SELL,
                         item.Count.ToString(),
                         item.Item.Name,

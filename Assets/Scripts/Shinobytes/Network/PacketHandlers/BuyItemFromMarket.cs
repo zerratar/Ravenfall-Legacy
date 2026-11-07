@@ -47,6 +47,7 @@ public class BuyItemFromMarket : ChatBotCommandHandler<string>
             if (pricePerItem > long.MaxValue)
                 pricePerItem = long.MaxValue;
 
+            var countBefore = player.Inventory.CountOf(item.Item.Id);
             var result = await Game.RavenNest.Marketplace.BuyItemAsync(player.Id, item.Id, (long)amount, (long)pricePerItem);
 
             switch (result.State)
@@ -72,8 +73,18 @@ public class BuyItemFromMarket : ChatBotCommandHandler<string>
                     break;
 
                 case ItemTradeState.Success:
-                    var instance = player.Inventory.AddToBackpack(item.Item, item.Count);
-                    var equipped = player.EquipIfBetter(instance);
+                    GameInventoryItem instance;
+                    if (player.Inventory.FedByServer)
+                    {
+                        // the server's feed brings what was bought (server authority): wait for it, so the real stack goes on
+                        instance = await player.Inventory.WaitForItemAsync(item.Item.Id, countBefore);
+                        if (!player) return;
+                    }
+                    else
+                    {
+                        instance = player.Inventory.AddToBackpack(item.Item, item.Count);
+                    }
+                    var equipped = instance != null && player.EquipIfBetter(instance);
                     var totalCost = Utility.FormatAmount(result.TotalCost);
 
                     if (result.TotalAmount > 1)

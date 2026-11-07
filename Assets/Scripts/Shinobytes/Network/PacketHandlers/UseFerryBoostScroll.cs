@@ -40,7 +40,7 @@ public class UseFerryBoostScroll : ChatBotCommandHandler
                 return;
             }
 
-            player.Inventory.UpdateInventoryItem(result.InventoryItemId, result.NewStackAmount);
+            if (!player.Inventory.FedByServer) player.Inventory.UpdateInventoryItem(result.InventoryItemId, result.NewStackAmount); // else the server's feed carries the change (server authority)
             Game.Ferry.ApplyFerryBoost(result.Effects.FirstOrDefault());
             client.SendReply(gm, Localization.MSG_FERRY_BOOST_ACTIVE, Game.Ferry.GetRemainingBoostTime());
         }

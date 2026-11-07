@@ -385,10 +385,10 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
         // get total amount of items that was crafted.
         var producedItemAmount = result.Items.Sum(x => x.Amount);
 
-        // TODO: This may cause a bug where inventory is out of sync if we remove items based on what it should cost
-        //       instead of what the server changed. Server may have updated the stash and not removed items from inventory.
-        //       This is a rare case, but it can happen.
-        foreach (var req in recipe.Ingredients)
+        // Without the server's inventory feed the game takes the ingredients itself, by what the recipe costs. That can
+        // be wrong (the server may have taken them from the stash); with the feed the server's own numbers arrive.
+        var fed = player.Inventory.FedByServer;
+        foreach (var req in fed ? Enumerable.Empty<ItemRecipeIngredient>() : recipe.Ingredients)
         {
             var a = req.Amount * producedItemAmount;
             var stacks = player.Inventory.GetInventoryItemsByItemId(req.ItemId);
@@ -453,7 +453,7 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
                     terms[0], recipe.Name, GetQuantityForm(producedItem.Amount, item.Name), item.Name);
             }
 
-            player.Inventory.AddToBackpack(producedItem.InventoryItemId, item, producedItem.Amount);
+            if (!fed) player.Inventory.AddToBackpack(producedItem.InventoryItemId, item, producedItem.Amount);
             return;
         }
 
@@ -469,6 +469,7 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
             var producedItem = result.Items[i];
             var item = Game.Items.Get(producedItem.ItemId);
             receivedItems.Add((GetQuantityForm(producedItem.Amount, item.Name) + " " + item.Name).Trim());
+            if (fed) continue;
 
             var existing = inventory.GetInventoryItem(producedItem.InventoryItemId);
             if (existing != null)
