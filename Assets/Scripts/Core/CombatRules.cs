@@ -10,7 +10,7 @@ using UnityEngine;
 public static class CombatRules
 {
     /// <summary>The new combat: the health pool, the new hit chance, armour, crits and the times ten scale.</summary>
-    public static bool Enabled = true;
+    public static bool Enabled = false;
 
     /// <summary>Health points per Health level: ten with the new combat, one with today's.</summary>
     public static int HealthPerLevel => Enabled ? CombatMath.HealthPerLevel : 1;
