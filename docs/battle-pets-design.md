@@ -15,18 +15,27 @@ Decided with Zerratar (2026-11-06):
 
 ## 1. The skill
 
-**Name candidates:** *Beastmastery* (recommended: clear, fits a fantasy game), *Taming*, *Companionship*,
-*Pet Handling*.
+**Name candidates** (Ravenfall's skills are one plain word each: Attack, Woodcutting, Sailing, Slayer,
+Enchanting, so the name should be too):
+
+| Name | For | Against |
+|---|---|---|
+| **Taming** (recommended) | Short, plain, reads like the other skills, easy in chat (`!taming`, "Taming 120"). Pairs well with the clan skill *Menagerie* | Pets also come from eggs, which you hatch rather than tame (players will not mind) |
+| *Beastmastery* | Evocative, says "pets that fight" | Long on name tags and in the stats list; strongly tied to another game's hunter class |
+| *Kinship* | Warm, the bond with your pet is what grows | Not obvious what it does from the name alone |
+| *Husbandry* | Accurate | Dull, and it reads as farming |
+
+The code calls it "the pet skill" until the name is picked (`RavenNest.Combat/BattlePets.cs`).
 
 - Every character starts at level 1; it goes to 999 like every skill.
-- **Experience:** while a battle pet is out, Beastmastery gains a quarter of the experience of the skill you
+- **Experience:** while a battle pet is out, the pet skill gains a quarter of the experience of the skill you
   are training, the way Health gains a third of combat experience. So it grows with normal play, whatever
   you do, as long as your pet is with you.
 - **What the level gives:**
-  - **The pet's level cap:** a pet can never be higher level than your Beastmastery.
+  - **The pet's level cap:** a pet can never be higher level than your pet skill level.
   - **Stable size:** you can keep 1 pet at level 1, one more at 50, 150, 300 and 500 (5 in all). One is out at a time.
-  - **Skill slots:** pets use 2 skills at level 1, 3 at Beastmastery 100, 4 at 400 (and evolution adds one).
-  - **Evolution:** each evolution stage needs a Beastmastery level as well as a pet level.
+  - **Skill slots:** pets use 2 skills at level 1, 3 at pet skill level 100, 4 at 400 (and evolution adds one).
+  - **Evolution:** each evolution stage needs a pet skill level as well as a pet level.
 
 ## 2. Pets
 
@@ -58,9 +67,9 @@ there is one animal at your heels, not two. (See the open questions.)
 
 ## 3. Levels and evolution
 
-- Pets gain experience while they are out, the same share as Beastmastery, and level up to your Beastmastery
+- Pets gain experience while they are out, the same share as the pet skill, and level up to your pet skill
   level.
-- **Evolution** at set levels (for example 30 and 100, plus a Beastmastery level and some materials): the pet
+- **Evolution** at set levels (for example 30 and 100, plus a pet skill level and some materials): the pet
   changes to the next model in its set, its base stats go up (+15% at the first step, +30% at the second),
   it gets one more skill slot, and sometimes a skill only the evolved form learns.
 - Evolving is a moment: a short glow and burst on the pet, and a chat line ("Zerratar's Pebble evolved into
@@ -126,7 +135,47 @@ Enchanting (it takes `clanSkills.FirstOrDefault()` today).
 
 ## Open questions
 
-- The name: Beastmastery, Taming, Companionship or something else?
+- The name: Taming (recommended), Beastmastery, Kinship or something else?
 - Should the cosmetic pet stay visible next to a battle pet, or does the battle pet take its place while out (as above)?
 - Can a battle pet wear the look of a cosmetic pet you own (a "skin"), so favourite pets can fight too?
 - How many species at launch, once the tiered models are counted?
+- **Pets of high level players start far behind.** The pet's level is capped by the pet skill, which starts at 1
+  for everyone, and a level 1 pet does nothing next to a level 600 owner. Options: the pet skill grows much faster
+  while it is far below the owner's combat level (a catch-up factor, like rested experience), or the starter quest
+  sets the pet skill to a share of the combat level. Needs a decision before launch; the simulator shows pets only
+  at their owner's level.
+
+---
+
+## Prepared ahead of the models (2026-11-07)
+
+Built so the models are the only thing missing; nothing in the game or on the server uses it yet.
+
+- **`RavenNest.Combat/BattlePets.cs`** (RavenNest repo): `PetRole`, `PetStatProfile` (levels as shares of the pet's
+  level, power, accuracy and armour per level standing in for gear, threat, attack interval), `PetSpecies` (three
+  stage names, role, element, resistances, skills, origin, and `Sheet(level, stage)` that builds the same
+  `CombatSheet` players and enemies fight with), `PetSkill` (learned at a pet level, an `ActiveSkill` like the
+  characters' actives, or a gather bonus for gatherer pets) and the rules: experience share, 30 s knockout, stable
+  levels, evolution levels and the pet skill level each needs, stage multipliers, skill slots, `CanEvolve` with
+  what is missing for `!pet evolve`.
+- **The 14 skills from section 5** with numbers. One **stand-in species per role** (`BattlePets.Archetypes`) until
+  the real species are picked from the tiered models; a real species copies its role's numbers and changes them.
+- **The simulator's `pets` scenario** (`dotnet run -c Release -- pets [runs] [armour share] [offence share]`): an
+  owner in the standard melee kit with each stand-in at the owner's level (evolved at 30 and 100), one enemy of the
+  same level, two minutes, the enemy choosing targets with the game's threat table. With the starting numbers:
+
+  | Role | Result |
+  |---|---|
+  | Damage | +28 to 35% damage at every level |
+  | Support | +17 to 23% damage (Howl, Hex and its own hits) |
+  | Tank | takes 54 to 60% of the enemy's hits, the owner takes about 60% less; knocked out about once in two minutes (three times at level 10, the early tank is too soft) |
+  | Healer | heals back 18% (level 10) to 53% (level 999) of the damage taken |
+
+- **Clan skills** no longer assume Enchanting is the only one (`ClanProcessor`): every clan skill is sent to the
+  game, a level up goes out at once (the old check compared a level with itself), and a clan gets a clan skill its
+  level opens even when it already has another (it only checked clans with none). So *Menagerie* can be added as a
+  row in the `Skill` table with its `RequiredClanLevel`.
+
+**Still waiting:** the species list (models), the `BattlePet` table and `!pet` commands, the pet skill's column and
+attribute index (needs the name), the game's battle pet controller on top of `PetController`, the website's pets
+page, and the catch-up question above.
