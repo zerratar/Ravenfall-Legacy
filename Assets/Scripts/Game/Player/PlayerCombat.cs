@@ -150,11 +150,11 @@ public class PlayerCombat
         switch (attackType)
         {
             case AttackType.Healing:
-                return owner.HealingAnimationTime / owner.GetModifiers().CastSpeedMultiplier;
+                return owner.HealingAnimationTime / owner.GetModifiers().CastSpeedMultiplier / CombatRules.CastSpeed(owner);
             case AttackType.Ranged:
                 return owner.RangeAnimationTime / owner.GetModifiers().AttackSpeedMultiplier;
             case AttackType.Magic:
-                return owner.MagicAnimationTime / owner.GetModifiers().CastSpeedMultiplier;
+                return owner.MagicAnimationTime / owner.GetModifiers().CastSpeedMultiplier / CombatRules.CastSpeed(owner);
             default:
                 return owner.AttackAnimationTime / owner.GetModifiers().AttackSpeedMultiplier;
         }
@@ -192,6 +192,9 @@ public class PlayerCombat
             {
                 HeroHelpers.Healing(owner, healed, heal);
                 AddHealingThreat(healed, heal);
+                // Warding Light: the heal also shields
+                var shieldShare = CombatRules.Enabled ? owner.EquipmentStats.Gear(RavenNest.Combat.GearStat.HealShield) : 0;
+                if (shieldShare > 0) healed.AddShield(Mathf.RoundToInt((float)(heal * shieldShare)), 10f);
             }
             if (owner.dungeonHandler != null && owner.dungeonHandler.InDungeon) CombatMeter.Dungeon.AddHealing(owner, heal);
 

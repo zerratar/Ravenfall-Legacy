@@ -1556,6 +1556,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         Movement.SetAvoidancePriority(UnityEngine.Random.Range(1, 99));
 
         PatreonTier = player.PatreonTier;
+        SkillBuild = RavenNest.Combat.SkillBuild.Parse(player.SkillBuild);
         PlayerName = player.Name;
         PlayerNameLowerCase = player.Name.ToLower();
         Stats = new Skills(player.Skills);
@@ -2778,6 +2779,34 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         Attackers.Clear();
     }
 
+    // ---- combat v2: skill trees -------------------------------------------------------------------------------
+
+    /// <summary>The skill tree choices from the server (docs/combat-skills-design.md): passives count like gear stats.</summary>
+    [NonSerialized] public RavenNest.Combat.SkillBuild SkillBuild = new RavenNest.Combat.SkillBuild();
+
+    /// <summary>A shield from Barrier or a heal with Warding Light: taken off before health until it runs out.</summary>
+    [NonSerialized] public int CombatShield;
+    [NonSerialized] public float CombatShieldUntil;
+
+    // Last Stand: once per fight; a fight ends after 10 s without being hit
+    [NonSerialized] private bool lastStandUsed;
+    [NonSerialized] private float lastHitTime;
+
+    /// <summary>The server changed the skill build (!learn, !loadout, !respec): passives and the loadout follow.</summary>
+    public void ApplySkillBuild(string build)
+    {
+        SkillBuild = RavenNest.Combat.SkillBuild.Parse(build);
+        UpdateEquipmentEffect();
+    }
+
+    public void AddShield(int amount, float seconds)
+    {
+        if (amount <= 0) return;
+        if (Time.time > CombatShieldUntil) CombatShield = 0;
+        CombatShield = Mathf.Max(CombatShield, amount);
+        CombatShieldUntil = Mathf.Max(CombatShieldUntil, Time.time + seconds);
+    }
+
     public bool Heal(int amount)
     {
         if (!transform || transform == null)
@@ -2785,6 +2814,13 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
         if (Stats == null || Stats.IsDead)
             return false;
+
+        // more healing received (Resilience)
+        if (CombatRules.Enabled && amount > 0)
+        {
+            var received = EquipmentStats.Gear(RavenNest.Combat.GearStat.HealingReceived);
+            if (received != 0) amount = Mathf.Max(0, Mathf.RoundToInt(amount * (float)(1 + received)));
+        }
 
         if (!damageCounterManager)
             damageCounterManager = FindAnyObjectByType<DamageCounterManager>();
@@ -2824,6 +2860,24 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             if (AttackerNames.Add(attacker.Name))
             {
                 Attackers.Add(attacker);
+            }
+        }
+
+        // combat v2: a shield takes the blow first; Last Stand leaves 1 health once a fight
+        if (CombatRules.Enabled)
+        {
+            if (Time.time - lastHitTime > 10f) lastStandUsed = false;
+            lastHitTime = Time.time;
+            if (CombatShield > 0 && Time.time <= CombatShieldUntil)
+            {
+                var absorbed = Mathf.Min(CombatShield, damage);
+                CombatShield -= absorbed;
+                damage -= absorbed;
+            }
+            if (damage >= Stats.Health.CurrentValue && !lastStandUsed && SkillBuild.HasLastStand)
+            {
+                lastStandUsed = true;
+                damage = Mathf.Max(0, (int)Stats.Health.CurrentValue - 1);
             }
         }
 
@@ -3114,10 +3168,16 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             }
         }
 
+        // the skill trees' passives count like gear stats (combat v2)
+        if (CombatRules.Enabled && SkillBuild != null) extras.Add(SkillBuild.Passives());
+
         EquipmentStats.Extras = extras;
         EquipmentStats.WeaponExtras = weaponExtras;
         var gearHealth = extras[RavenNest.Combat.GearStat.MaxHealth];
         if (weaponExtras != null) foreach (var w in weaponExtras) if (w != null) gearHealth += w[RavenNest.Combat.GearStat.MaxHealth];
+        // a share more health (Hardy, Titan): of the pool the Health level gives
+        var healthBonus = EquipmentStats.Gear(RavenNest.Combat.GearStat.MaxHealthBonus);
+        if (healthBonus != 0) gearHealth += CombatRules.MaxHealth(Mathf.FloorToInt(Stats.Health.Level + Stats.Health.Bonus)) * healthBonus;
         if (Stats.Health.GearHealth != (int)gearHealth)
         {
             Stats.Health.GearHealth = (int)gearHealth;

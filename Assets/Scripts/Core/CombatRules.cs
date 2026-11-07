@@ -39,6 +39,16 @@ public static class CombatRules
         return eq == null ? 1f : Mathf.Clamp((float)(1 + eq.Gear(GearStat.AttackSpeed)), 0.2f, (float)CombatMath.MaxAttackSpeed);
     }
 
+    /// <summary>Heal and spell times are divided by this: 1 plus the CAST_SPEED stat (Quick Hands), 1 with the old rules.</summary>
+    public static float CastSpeed(IAttackable fighter)
+    {
+        var eq = Enabled ? fighter?.GetEquipmentStats() : null;
+        return eq == null ? 1f : Mathf.Clamp((float)(1 + eq.Gear(GearStat.CastSpeed)), 0.2f, (float)CombatMath.MaxAttackSpeed);
+    }
+
+    /// <summary>Timed changes to a fighter's sheet (skills' buffs and debuffs; the game's CombatEffects sets it).</summary>
+    public static System.Action<IAttackable, CombatSheet> SheetModifiers;
+
     /// <summary>Threat is multiplied by this: 1 plus the THREAT gear stat, 1 with the old rules.</summary>
     public static float ThreatBonus(IAttackable fighter)
     {
@@ -139,9 +149,14 @@ public static class CombatRules
         }
         sheet.MaxHealth = stats.Health.MaxValue;
 
+        // health left, for execute damage and the low health passives
+        sheet.CurrentHealthShare = stats.Health.MaxValue > 0 ? Mathf.Clamp01((float)stats.Health.CurrentValue / stats.Health.MaxValue) : 1f;
+
         // an enemy's element, resistances and boss flag come from its definition
         if (fighter is IHasEnemyDefinition defined && defined.CombatDefinition != null)
             defined.CombatDefinition.ApplyElement(sheet);
+
+        SheetModifiers?.Invoke(fighter, sheet); // Shield Wall, Expose Weakness, Disarm, Rally, Rapid Fire
 
         return sheet;
     }

@@ -72,9 +72,27 @@ public static class CombatEffects
         if (result.Reflected > 0 && attacker != null && Alive(attacker)) Deal(defender, attacker, result.Reflected);
         if (result.Healed > 0 && attacker != null && Alive(attacker)) attacker.Heal(result.Healed);
 
+        // Rend: a crit bleeds over 4 seconds
+        if (result.Bleed >= 1 && defender != null && Alive(defender))
+        {
+            var bleeding = GetOrAdd(defender, attacker, defenderSheet);
+            bleeding.Set.Bleed(result.Bleed / 4.0, 4);
+        }
+
         if (result.Procs == null || result.Procs.Count == 0)
         {
             return;
+        }
+
+        // Searing: the attacker's burns hurt more
+        var burnBonus = attacker != null && CombatRules.Enabled ? attacker.GetEquipmentStats()?.Gear(GearStat.BurnBonus) ?? 0 : 0;
+        if (burnBonus != 0)
+        {
+            for (var i = 0; i < result.Procs.Count; ++i)
+            {
+                var proc = result.Procs[i];
+                if (proc.Element == Element.Fire) { proc.Damage *= 1 + burnBonus; result.Procs[i] = proc; }
+            }
         }
 
         if (!entries.TryGetValue(defender, out var entry))
@@ -91,6 +109,14 @@ public static class CombatEffects
         }
     }
 
+    private static Entry GetOrAdd(IAttackable fighter, IAttackable source, CombatSheet sheet)
+    {
+        if (!entries.TryGetValue(fighter, out var entry)) entries[fighter] = entry = new Entry();
+        if (sheet != null) entry.Set.IsBoss = sheet.IsBoss;
+        if (source != null) entry.Source = source;
+        return entry;
+    }
+
     /// <summary>A fighter died, left or came back: its effects end.</summary>
     public static void Clear(IAttackable fighter)
     {
@@ -100,12 +126,6 @@ public static class CombatEffects
     /// <summary>Once a frame (GameManager): damage over time once a second, effects run out.</summary>
     public static void Update(float deltaTime)
     {
-        if (entries.Count == 0)
-        {
-            tickTimer = 0f;
-            return;
-        }
-
         tickTimer += deltaTime;
         if (tickTimer < 1f)
         {
@@ -114,6 +134,12 @@ public static class CombatEffects
 
         var seconds = tickTimer;
         tickTimer = 0f;
+        Regenerate(seconds);
+        if (entries.Count == 0)
+        {
+            return;
+        }
+
         gone.Clear();
         foreach (var pair in entries)
         {
@@ -140,6 +166,22 @@ public static class CombatEffects
         }
 
         foreach (var fighter in gone) entries.Remove(fighter);
+    }
+
+    // Regeneration (Vitality): a share of max health each second while in combat
+    private static void Regenerate(float seconds)
+    {
+        if (!CombatRules.Enabled) return;
+        var game = GameManager.Instance;
+        if (!game || game.Players == null) return;
+        foreach (var player in game.Players.GetAllPlayers())
+        {
+            if (!player || !player.InCombat || player.Stats == null || player.Stats.IsDead) continue;
+            var regen = player.EquipmentStats.Gear(GearStat.CombatRegen);
+            if (regen <= 0) continue;
+            var amount = Mathf.RoundToInt((float)(player.Stats.Health.MaxValue * regen * seconds));
+            if (amount >= 1 && player.Stats.Health.CurrentValue < player.Stats.Health.MaxValue) player.Stats.Health.Add(amount);
+        }
     }
 
     private static bool Alive(IAttackable fighter)
