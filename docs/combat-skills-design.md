@@ -184,5 +184,16 @@ Done since (2026-11-07):
 - **Area skills with a group**: three Metalons moved next to a level 47 fighter; Whirlwind fired once three were
   near, Cleave hit several, and the group turned on the fighter.
 
-Still open: the website page has not been seen in a browser (the local certificate); taunt and the healing skills
-want a real group of players to be judged; Elements and Hunter look strong in the simulator.
+- **The skill tree map** (`wwwroot/js/rf-skill-tree.js`): all eight trees on one zoomable map, WebGL (three.js:
+  glowing nodes, rank arcs, drifting motes) with a 2D canvas fallback for browsers with WebGL off; drag, pinch, wheel
+  and double tap zoom; tap a node to see it and learn it. On the character page's Skill trees tab (Map and List
+  views) and on the public **planner** at `/skill-trees`: set any levels, build, take ranks back, slot actives, see
+  what the build gives, and share it as a link (the address carries the build and the levels). Checked in a browser
+  in WebGL and 2D, desktop and phone sized. Local testing: `RAVENNEST_HTTP=1` with the Development environment
+  keeps the site on plain http, for browsers that refuse the development certificate.
+- **A combat guide** at `/combat`: how a blow lands, a calculator (hit chance, max hit, armour), elements,
+  resistances, every magical attribute with its cap, threat, crowd control and the trees. Its numbers come from
+  RavenNest.Combat, so it follows balance changes.
+
+Still open: the character page's tab has not been seen signed in; taunt and the healing skills want a real group of
+players to be judged; Elements and Hunter look strong in the simulator.
