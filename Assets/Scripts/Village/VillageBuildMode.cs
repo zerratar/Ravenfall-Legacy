@@ -1324,7 +1324,6 @@ public class VillageBuildMode : MonoBehaviour
         var townHall = gameManager.Village.TownHall;
         if (!townHall || Busy || IsMoving || !townHall.CanUpgrade) return;
 
-        long wood = townHall.NextWood, ore = townHall.NextOre, fish = townHall.NextFish, wheat = townHall.NextWheat;
         await Run(async () =>
         {
             var state = await gameManager.RavenNest.Village.UpgradeTownHallAsync();
@@ -1334,7 +1333,8 @@ public class VillageBuildMode : MonoBehaviour
                 return;
             }
 
-            townHall.Spend(wood, ore, fish, wheat);
+            // the resources it cost: the server sends the village's new amounts right after (VillageInfo); taking them
+            // off here as well raced that update and could count the cost twice
             gameManager.Village.ApplyTownHallTier(state);
             // a bigger hall, a bigger village: the grid grows to the new room
             if (IsActive) ShowVillageGrid();

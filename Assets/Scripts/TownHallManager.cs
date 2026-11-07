@@ -133,12 +133,6 @@ public class TownHallManager : MonoBehaviour
         if (info) info.MakeDirty();
     }
 
-    /// <summary>Takes resources spent on an upgrade off the village's stock, until the server's next update.</summary>
-    public void Spend(long wood, long ore, long fish, long wheat)
-    {
-        SetResources(coins, this.ore - ore, this.wood - wood, this.fish - fish, this.wheat - wheat);
-    }
-
     public void SetTier(int tier)
     {
         if (this.tier == tier)
