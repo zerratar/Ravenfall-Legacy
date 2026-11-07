@@ -146,3 +146,32 @@ Chat is fine for the loadout, not for a tree of 160 nodes:
 - **Health and Slayer keep their own trees** (Vitality and Hunter, as above).
 - **Respec costs coins** (1,000 per point spent), and a **Tome of Forgetting** from quests gives one free respec.
   The free respecs after balance updates and when the trees arrive stay.
+
+## Progress (phase 2)
+
+Built 2026-11-07, on master and the dev database only (nothing deployed until v0.9.7):
+- **Library** (RavenNest.Combat `SkillTrees.cs`): the eight trees, 69 nodes (actives with cooldown, targeting, use
+  rule, gear and effects; passives as gear stats per rank), tiers at the skill's level 1, 100, 300 and 600, costs that
+  grow with the tier (all trees about 580 points; every combat skill at 999 earns 274), Battle Rhythm (fifth slot),
+  Last Stand, `SkillBuild` (ranks and loadout as text, the checks for learning and slotting). 21 passive stats joined
+  the gear stats (power, accuracy, armour and health bonuses, block, cast speed, healing received, boss, execute and
+  undead damage, low health reduction, bleed on crit, heal shield, combat regen, burn bonus, resistance shred, loot luck,
+  crowd control duration).
+- **Server**: `CharacterSkillBuild` (a table made at startup), `SkillTreeManager` (learn, loadout, respec: free, a Tome
+  of Forgetting, or 1,000 coins a point), `api/skills`, the build sent with each character (`Player.SkillBuild`), the
+  Tome of Forgetting item (quests still need to give it).
+- **Game**: passives count like gear stats; `CombatSkillRunner` uses the loadout by itself when a swing or heal would
+  land; `CombatEffects` carries the skills' buffs, debuffs, damage and healing over time, shields, taunts, stuns,
+  freezes, roots and cleanses; the skill's name floats up in gold above the name tag. Checked in play mode with bots.
+- **Chat**: `!tree` (the bot's `!skills` already means `!stats`), `!tree Might`, `!tree cleave`, `!learn`, `!loadout`,
+  `!respec` / `!respec confirm`, in the hosted bot and the local one (RavenBot bd82d26).
+- **Website**: a Skill trees tab on the character page (points, respec, loadout slots, the trees with Learn buttons).
+  Not seen in a browser yet: the local site's certificate does not cover localhost for the built-in browser.
+- **Simulator** `builds`: a full single-tree build deals 1.35 to 1.5 times the damage of no build against one enemy;
+  Hunter on bosses 1.75 to 1.9; Elements up to 2.0 at level 999 (Meteor and cast speed), the first to tune down if
+  playtests agree.
+
+Still to do: the Tome of Forgetting as a quest reward; the free respec after a balance update (a version on the
+trees); the loadout with cooldowns in the player details window; use rules set per skill on the website (the defaults
+only for now); area skills tested with groups of enemies; the game asking for the build again after a website change
+(it follows at the next `!tree` or join).
