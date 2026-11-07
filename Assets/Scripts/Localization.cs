@@ -1185,6 +1185,8 @@ public static class Localization
 
     // Skill trees (combat v2, docs/combat-skills-design.md): !skills, !learn, !loadout, !respec
     public static string UI_QUEST_REWARD_ITEM = " and a {0}";
+    public static string UI_DETAILS_SKILL_COOLDOWN = "Cooldown";
+    public static string UI_DETAILS_SKILL_READY = "Ready";
     public static string MSG_SKILLS_SHOW = Meta("skills", "info") + "{free} of {earned} skill points to spend. Loadout: {loadout}. !tree Might (or another tree) lists its skills, !learn <skill> spends points, !loadout <slot> <skill> changes the loadout.";
     public static string MSG_SKILLS_TREE = Meta("skills", "info") + "{tree} ({skill}): {nodes}. The number in brackets is the {skill} level a skill needs.";
     public static string MSG_SKILLS_INFO = Meta("skills", "info") + "{name} ({tree}, {kind}): {description} Needs {skill} {level}, {cost} point(s) per rank.";

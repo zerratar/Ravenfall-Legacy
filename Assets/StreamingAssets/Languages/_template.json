@@ -1492,6 +1492,8 @@
     "UI_DETAILS_SCROLL_DUNGEON": "Dungeon scrolls",
     "UI_DETAILS_SCROLL_EXP": "Exp scrolls",
     "UI_DETAILS_SCROLL_RAID": "Raid scrolls",
+    "UI_DETAILS_SKILL_COOLDOWN": "Cooldown",
+    "UI_DETAILS_SKILL_READY": "Ready",
     "UI_DETAILS_STAT_ARMOR": "ARMOR",
     "UI_DETAILS_STAT_MAGIC": "MAGIC",
     "UI_DETAILS_STAT_MELEE": "MELEE",

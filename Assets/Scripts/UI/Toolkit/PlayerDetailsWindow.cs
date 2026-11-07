@@ -344,6 +344,7 @@ namespace Shinobytes.UI
             BuildSlots(root.Q<VisualElement>("details-slots"));
             BuildStats(root.Q<VisualElement>("details-stats"));
             BuildScrolls(root.Q<VisualElement>("details-scrolls"));
+            loadoutRow = root.Q<VisualElement>("details-loadout");
             ApplyPreviewTexture();
 
             if (header != null)
@@ -683,6 +684,77 @@ namespace Shinobytes.UI
             RefreshHeader();
             RefreshTraining();
             RefreshSkills();
+            RefreshLoadout();
+        }
+
+        // ---- The skill tree loadout (combat v2) --------------------------------------------------
+
+        private sealed class LoadoutChip
+        {
+            public VisualElement Root;
+            public Label Name;
+            public VisualElement Fill;
+            public string Id;
+        }
+
+        private VisualElement loadoutRow;
+        private readonly List<LoadoutChip> loadoutChips = new List<LoadoutChip>();
+
+        /// <summary>The observed character's active skills in loadout order, each draining while it cools down.</summary>
+        private void RefreshLoadout()
+        {
+            if (loadoutRow == null) return;
+            var build = CombatRules.Enabled ? player.SkillBuild : null;
+            var actives = build != null ? new List<RavenNest.Combat.SkillNode>(build.Actives()) : null;
+            if (actives == null || actives.Count == 0)
+            {
+                loadoutRow.style.display = DisplayStyle.None;
+                return;
+            }
+
+            loadoutRow.style.display = DisplayStyle.Flex;
+            while (loadoutChips.Count < actives.Count) loadoutChips.Add(NewLoadoutChip());
+            for (var i = 0; i < loadoutChips.Count; ++i)
+            {
+                var chip = loadoutChips[i];
+                if (i >= actives.Count)
+                {
+                    chip.Root.style.display = DisplayStyle.None;
+                    continue;
+                }
+
+                var node = actives[i];
+                chip.Root.style.display = DisplayStyle.Flex;
+                chip.Id = node.Id;
+                if (chip.Name.text != node.Name) chip.Name.text = node.Name;
+                var left = player.SkillRunner.CooldownLeft(node.Id);
+                var share = node.Active.Cooldown > 0 ? Mathf.Clamp01(left / (float)node.Active.Cooldown) : 0f;
+                chip.Fill.style.width = new Length(share * 100f, LengthUnit.Percent);
+                chip.Root.EnableInClassList("rf-loadout__slot--ready", left <= 0f);
+            }
+        }
+
+        private LoadoutChip NewLoadoutChip()
+        {
+            var chip = new LoadoutChip { Root = new VisualElement() };
+            chip.Root.AddToClassList("rf-loadout__slot");
+            chip.Fill = new VisualElement { pickingMode = PickingMode.Ignore };
+            chip.Fill.AddToClassList("rf-loadout__cooldown");
+            chip.Name = new Label { pickingMode = PickingMode.Ignore };
+            chip.Name.AddToClassList("rf-loadout__name");
+            chip.Root.Add(chip.Fill);
+            chip.Root.Add(chip.Name);
+            tooltip?.Attach(chip.Root, t =>
+            {
+                var node = RavenNest.Combat.SkillTrees.Get(chip.Id);
+                if (node == null) return;
+                t.SetTitle(node.Name);
+                t.SetNote(node.Description);
+                var left = player ? player.SkillRunner.CooldownLeft(node.Id) : 0f;
+                t.AddRow(Localization.UI_DETAILS_SKILL_COOLDOWN, left > 0f ? Mathf.CeilToInt(left) + " s" : Localization.UI_DETAILS_SKILL_READY);
+            });
+            loadoutRow.Add(chip.Root);
+            return chip;
         }
 
         /// <summary>Gear stats, scroll counts and the clan skill.</summary>

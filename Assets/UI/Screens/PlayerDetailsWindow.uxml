@@ -98,6 +98,9 @@
                 <!-- Every skill. Columns are filled top to bottom in code. -->
                 <engine:VisualElement name="details-skills" class="rf-skills" />
 
+                <!-- The skill tree loadout (combat v2): each active with its cooldown. Hidden without one. -->
+                <engine:VisualElement name="details-loadout" class="rf-loadout" />
+
                 <!-- Gear, folded away by default. -->
                 <engine:VisualElement name="details-gear-header" class="rf-gear-header">
                     <engine:Label name="gear-title" text="EQUIPMENT" class="rf-gear-header__title" picking-mode="Ignore" />

@@ -549,6 +549,53 @@
     align-items: center;
 }
 
+/* The skill tree loadout (combat v2): a chip per active, its cooldown draining from the left. */
+.rf-loadout {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-top: var(--rf-space-2);
+}
+
+.rf-loadout__slot {
+    flex-grow: 1;
+    flex-basis: 40%;
+    height: 34px;
+    margin-right: 4px;
+    margin-bottom: 4px;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 4px;
+    border-width: 2px;
+    border-color: rgba(255, 255, 255, 0.12);
+    background-color: rgba(20, 22, 28, 0.96);
+}
+
+.rf-loadout__slot--ready {
+    border-color: rgb(255, 196, 92);
+}
+
+.rf-loadout__cooldown {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 0;
+    background-color: rgba(120, 130, 150, 0.45);
+}
+
+.rf-loadout__name {
+    font-size: 20px;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+    -unity-font-style: normal;
+    -unity-text-align: middle-center;
+    color: rgb(255, 236, 200);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-left: 4px;
+    padding-right: 4px;
+}
+
 .rf-scroll-chip {
     flex-direction: row;
     align-items: center;
