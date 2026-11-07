@@ -127,6 +127,11 @@ public class EquipmentSlot : MonoBehaviour
             sb.AppendLine(s.Name.PadRight(14, ' ') + " <b>" + s.Value + bonus + "</b>");
         }
 
+        foreach (var (label, value) in item.Item.GetExtraStatLines())
+        {
+            sb.AppendLine(label.PadRight(14, ' ') + " <b>" + value + "</b>");
+        }
+
         if (item.Enchantments != null && item.Enchantments.Count > 0)
         {
             sb.AppendLine();

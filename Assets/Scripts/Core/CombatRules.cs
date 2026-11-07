@@ -111,6 +111,15 @@ public static class CombatRules
             sheet.Magic.AimLevel = (int)(sheet.Magic.AimLevel * hitChance);
         }
 
+        // gear's element damage, resistances, evasion, crits and healing power (MaxHealth is in the Health pool already)
+        if (eq.Extras != null) eq.Extras.ApplyExtras(sheet, null);
+        if (eq.WeaponExtras != null)
+        {
+            for (var s = 0; s < eq.WeaponExtras.Length; ++s)
+                eq.WeaponExtras[s]?.ApplyExtras(sheet, (AttackStyle)s);
+        }
+        sheet.MaxHealth = stats.Health.MaxValue;
+
         // an enemy's element, resistances and boss flag come from its definition
         if (fighter is IHasEnemyDefinition defined && defined.CombatDefinition != null)
             defined.CombatDefinition.ApplyElement(sheet);

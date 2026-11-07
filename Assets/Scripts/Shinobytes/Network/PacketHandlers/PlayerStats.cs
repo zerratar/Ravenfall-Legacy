@@ -76,7 +76,7 @@ public class PlayerStats : ChatBotCommandHandler<string>
     private void SendInventoryItemStats(GameInventoryItem inventoryItem, GameMessage gm, GameClient client)
     {
         var stats = inventoryItem.GetItemStats(true);
-        var statsString = string.Join(", ", stats.Select(FormatStat));
+        var statsString = string.Join(", ", stats.Select(FormatStat).Concat(inventoryItem.Item.GetExtraStatLines().Select(x => x.Label + ": " + x.Value)));
         if (string.IsNullOrEmpty(statsString))
         {
             client.SendReply(gm, Localization.MSG_STATS_ITEM_MISSING, inventoryItem.Name);
@@ -88,7 +88,7 @@ public class PlayerStats : ChatBotCommandHandler<string>
     private void SendItemStats(Item item, GameMessage gm, GameClient client)
     {
         var stats = item.GetItemStats();
-        var statsString = string.Join(", ", stats.Select(FormatStat));
+        var statsString = string.Join(", ", stats.Select(FormatStat).Concat(item.GetExtraStatLines().Select(x => x.Label + ": " + x.Value)));
         if (string.IsNullOrEmpty(statsString))
         {
             client.SendReply(gm, Localization.MSG_STATS_ITEM_MISSING, item.Name);

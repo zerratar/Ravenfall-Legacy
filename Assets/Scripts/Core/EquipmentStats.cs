@@ -21,6 +21,19 @@ public class EquipmentStats : IComparable
     public int RangedAimBonus;
     public int HealingPowerBonus;
 
+    /// <summary>
+    ///     Combat v2's gear stats beyond aim, power and armour (element damage, resistances, evasion, health, crits,
+    ///     healing power), summed over the worn gear except the weapon (RavenNest.Combat.GearStats, from Item.Stats).
+    ///     Element damage here adds to every hit.
+    /// </summary>
+    [NonSerialized] public RavenNest.Combat.GearStats Extras;
+
+    /// <summary>
+    ///     The weapons' own extras by style (index: RavenNest.Combat.AttackStyle). A player wears a weapon per style
+    ///     (a sword, a bow and a staff at once); each weapon's element damage converts the hits of its own style only.
+    /// </summary>
+    [NonSerialized] public RavenNest.Combat.GearStats[] WeaponExtras;
+
     public int WeaponBonus => WeaponAimBonus + WeaponPowerBonus;
     public int RangedBonus => RangedAimBonus + RangedPowerBonus;
     public int MagicBonus => MagicAimBonus + MagicPowerBonus;

@@ -88,6 +88,48 @@ public static class ItemExtension
         return result;
     }
 
+    /// <summary>
+    ///     Every gear stat of the item for combat v2 (RavenNest.Combat.GearStats): from Item.Stats when the server
+    ///     sends it, from the classic columns otherwise (servers before it).
+    /// </summary>
+    public static RavenNest.Combat.GearStats GetGearStats(this Item i)
+    {
+        if (i == null) return new RavenNest.Combat.GearStats();
+        if (!string.IsNullOrEmpty(i.Stats)) return RavenNest.Combat.GearStats.Parse(i.Stats);
+        return RavenNest.Combat.GearStats.FromLegacy(i.WeaponAim, i.WeaponPower, i.RangedAim, i.RangedPower, i.MagicAim, i.MagicPower, i.ArmorPower);
+    }
+
+    /// <summary>
+    ///     Combat v2's stats beyond aim, power and armour for showing (tooltips, !stats): ("Fire Damage", "30%"),
+    ///     ("Evasion", "20"). Empty for items without them.
+    /// </summary>
+    public static List<(string Label, string Value)> GetExtraStatLines(this Item i)
+    {
+        var lines = new List<(string, string)>();
+        if (i == null || string.IsNullOrEmpty(i.Stats)) return lines;
+        var gear = RavenNest.Combat.GearStats.Parse(i.Stats);
+        for (var s = 0; s < RavenNest.Combat.GearStats.Count; ++s)
+        {
+            var stat = (RavenNest.Combat.GearStat)s;
+            switch (stat)
+            {
+                case RavenNest.Combat.GearStat.MeleePower: case RavenNest.Combat.GearStat.MeleeAccuracy:
+                case RavenNest.Combat.GearStat.RangedPower: case RavenNest.Combat.GearStat.RangedAccuracy:
+                case RavenNest.Combat.GearStat.MagicPower: case RavenNest.Combat.GearStat.MagicAccuracy:
+                case RavenNest.Combat.GearStat.Armor:
+                    continue; // shown from the columns, with their enchantment bonus
+            }
+
+            var value = gear[stat];
+            if (value == 0) continue;
+            var text = RavenNest.Combat.GearStats.IsShare(stat)
+                ? System.Math.Round(value * 100).ToString(System.Globalization.CultureInfo.InvariantCulture) + "%"
+                : System.Math.Round(value).ToString(System.Globalization.CultureInfo.InvariantCulture);
+            lines.Add((RavenNest.Combat.GearStats.Label(stat), text));
+        }
+        return lines;
+    }
+
     public static ItemStatsCollection GetItemStats(this Item i)
     {
         var stats = new List<ItemStat>();

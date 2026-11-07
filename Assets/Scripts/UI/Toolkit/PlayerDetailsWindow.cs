@@ -1311,6 +1311,11 @@ namespace Shinobytes.UI
                 }
             }
 
+            foreach (var (label, value) in item.Item.GetExtraStatLines())
+            {
+                t.AddRow(label, value, null);
+            }
+
             if (item.Enchantments != null)
             {
                 for (var i = 0; i < item.Enchantments.Count; ++i)

@@ -20,7 +20,10 @@ public class SkillStat
     ///     The most the current value goes to: the level with its bonus, except for Health, whose current value is
     ///     the health pool (combat v2, docs/combat-v2-design.md: CombatRules.HealthPerLevel per level).
     /// </summary>
-    public int MaxValue => Type == Skill.Health ? CombatRules.MaxHealth(Mathf.FloorToInt(Level + Bonus)) : Mathf.FloorToInt(Level + Bonus);
+    public int MaxValue => Type == Skill.Health ? CombatRules.MaxHealth(Mathf.FloorToInt(Level + Bonus)) + (CombatRules.Enabled ? GearHealth : 0) : Mathf.FloorToInt(Level + Bonus);
+
+    /// <summary>Health from worn gear (the MAX_HEALTH gear stat), added to the Health pool with the new combat.</summary>
+    [NonSerialized] public int GearHealth;
 
     public int Index;
 

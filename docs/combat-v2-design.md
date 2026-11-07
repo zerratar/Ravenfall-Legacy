@@ -259,7 +259,20 @@ Phase 1 (foundation), started 2026-11-07:
   since, v0.9.5.0 to v0.9.6.1 included. Their levels come back from MainWorld at f944e82 (2025-05-09), matched by
   file ID. Two strays were evened out with their group (one bunny with Defense 3 instead of 4, one Red Metalon with
   Health 35 instead of 20).
-- [ ] Elements and resistances on gear (the server's flexible item stat list and the migration of aim/power).
+- [x] Elements and resistances on gear (2026-11-07). `GearStats` in the library: one list of named stats in the
+  enchantments' text form (`MELEE_POWER:120;MELEE_ACCURACY:95;FIRE_DAMAGE:30%;ICE_RESISTANCE:10%`): power and accuracy
+  per style, healing power, armour, evasion, max health, crit chance and damage, element damage and resistances for the
+  four elements. Shares are written as percentages. Stats a reader does not know are kept, not dropped.
+  The aim/power migration (section 9) is `GearStats.FromLegacy`: WeaponAim becomes MeleeAccuracy, ArmorPower Armor.
+  On the server, `Item.ExtraStats` (a new column, made at startup) holds what the classic columns cannot; the columns
+  stay the record for power, accuracy and armour while 0.9.6 games read them. `RavenNest.Models.Item.Stats` sends the
+  full list (columns plus extras), so a new game reads one list and an old one ignores it. The website's item tooltips
+  show the new stats; the admin item editor has a "Combat v2 stats" field and the list shows them as a chip.
+  In the game, `Item.GetGearStats()` (Stats, or the columns from older servers) feeds `EquipmentStats.Extras` (all worn
+  gear but weapons) and `WeaponExtras` per style: a player wears a sword, a bow and a staff at once, and each weapon's
+  element damage converts the hits of its own style only; element damage on other gear adds to every hit. Max health
+  from gear adds to the Health pool (`SkillStat.GearHealth`). Item tooltips and `!stats` list the new stats.
+  **No item carries an element yet:** that is content (themed weapons, and gems in phase 4).
 - [ ] Threat and status effects wired into the game's fights (the library has both; the game still uses its own
   threat table and ignores poison, bleed and burn).
 - [ ] The baseline bugs: double counted POWER/AIM/ARMOR enchantments, StyleBonus, the raid boss's history.

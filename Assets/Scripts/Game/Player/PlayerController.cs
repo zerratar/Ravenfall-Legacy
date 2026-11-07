@@ -3017,6 +3017,9 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         EquipmentStats.RangedPowerBonus = 0;
         EquipmentStats.RangedAimBonus = 0;
 
+        var extras = new RavenNest.Combat.GearStats();
+        RavenNest.Combat.GearStats[] weaponExtras = null;
+
         foreach (var s in Stats.SkillList)
         {
             s.Bonus = 0;
@@ -3038,6 +3041,19 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
                 continue;
 
             var stats = e.GetItemStats();
+
+            // combat v2's stats beyond aim, power and armour; a weapon's element goes on its own style
+            var gear = e.Item.GetGearStats();
+            var gearStyle = e.Item.Category == ItemCategory.Weapon ? gear.WeaponStyle() : null;
+            if (gearStyle.HasValue)
+            {
+                weaponExtras ??= new RavenNest.Combat.GearStats[4];
+                (weaponExtras[(int)gearStyle.Value] ??= new RavenNest.Combat.GearStats()).Add(gear);
+            }
+            else
+            {
+                extras.Add(gear);
+            }
 
             EquipmentStats.BaseArmorPower += stats.ArmorPower;
             EquipmentStats.BaseWeaponAim += stats.WeaponAim;
@@ -3070,6 +3086,16 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
                 sb.Skill.CurrentValue = Mathf.FloorToInt(sb.Skill.Level + (float)sb.Skill.Bonus);
                 sb.Skill.MaxLevel = Mathf.FloorToInt(sb.Skill.Level + sb.Skill.Bonus);
             }
+        }
+
+        EquipmentStats.Extras = extras;
+        EquipmentStats.WeaponExtras = weaponExtras;
+        var gearHealth = extras[RavenNest.Combat.GearStat.MaxHealth];
+        if (weaponExtras != null) foreach (var w in weaponExtras) if (w != null) gearHealth += w[RavenNest.Combat.GearStat.MaxHealth];
+        if (Stats.Health.GearHealth != (int)gearHealth)
+        {
+            Stats.Health.GearHealth = (int)gearHealth;
+            if (Stats.Health.CurrentValue > Stats.Health.MaxValue) Stats.Health.CurrentValue = Stats.Health.MaxValue;
         }
 
         if (GameManager && !Overlay.IsOverlay)
