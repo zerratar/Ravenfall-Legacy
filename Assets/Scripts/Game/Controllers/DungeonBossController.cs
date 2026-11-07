@@ -97,9 +97,9 @@ public class DungeonBossController : MonoBehaviour
 
     public void UpdateHealthBar()
     {
-        var proc = (float)Enemy.Stats.Health.CurrentValue / Enemy.Stats.Health.Level;
+        var proc = (float)Enemy.Stats.Health.CurrentValue / Enemy.Stats.Health.MaxValue;
 
-        dungeonManager.Notifications.SetHealthBarValue(proc, Enemy.Stats.Health.Level);
+        dungeonManager.Notifications.SetHealthBarValue(proc, Enemy.Stats.Health.MaxValue);
     }
 
     public bool UpdateAction()
@@ -263,7 +263,9 @@ public class DungeonBossController : MonoBehaviour
         skills.Defense.Level = skills.Defense.CurrentValue = (int)(skills.Defense.Level * 0.5);
 
         // increase health by additional 15%
-        skills.Health.Level = skills.Health.CurrentValue = (int)(skills.Health.Level * healthScale * 1.15);
+        skills.Health.Level = (int)(skills.Health.Level * healthScale * 1.15);
+        skills.Health.MaxLevel = skills.Health.Level;
+        skills.Health.CurrentValue = skills.Health.MaxValue;
         return skills;
     }
 

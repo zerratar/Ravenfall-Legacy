@@ -77,7 +77,7 @@ public class EnemyObserveDialog : MonoBehaviour
         // update health
         if (healthBar)
         {
-            healthBar.fillAmount = target.Stats.Health.CurrentValue / target.Stats.Health.Level; // don't use max level here.
+            healthBar.fillAmount = target.Stats.Health.CurrentValue / (float)target.Stats.Health.MaxValue;
             lblHealth.text = target.Stats.Health.CurrentValue + " HP";
         }
 

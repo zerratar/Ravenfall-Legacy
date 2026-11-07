@@ -171,7 +171,7 @@ public class Skills : IComparable
             Alchemy.Level
         };
     }
-    public float HealthPercent => Health.CurrentValue / (float)Health.MaxLevel;
+    public float HealthPercent => Health.CurrentValue / (float)Health.MaxValue;
     public SkillStat[] SkillList => skillList ??
         (skillList = new SkillStat[]
         {

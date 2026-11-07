@@ -169,7 +169,8 @@ public class PlayerCombat
             if (target == null || !target.Transform || target.GetStats().IsDead)
                 return true;
 
-            var maxHeal = GameMath.MaxHit(owner.Stats.Healing.MaxLevel, owner.EquipmentStats.BaseMagicPower);
+            // on the same scale as the heal, so the experience bonus below stays what it was
+            var maxHeal = CombatRules.MaxHit(owner.Stats.Healing.MaxLevel, owner.EquipmentStats.BaseMagicPower);
             var heal = CalculateDamage(target);
             // on the hero in a wave run: out of what the hero may be healed a second, whoever heals (WaveRun)
             var run = WaveRun.Current;

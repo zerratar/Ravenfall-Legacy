@@ -26,7 +26,7 @@ public class DungeonProceed : ChatBotCommandHandler
                     var randomPlayer = players.Random();
                     if (!enemy.Stats.IsDead)
                     {
-                        enemy.TakeDamage(randomPlayer, enemy.Stats.Health.MaxLevel);
+                        enemy.TakeDamage(randomPlayer, enemy.Stats.Health.MaxValue);
                     }
                 }
 

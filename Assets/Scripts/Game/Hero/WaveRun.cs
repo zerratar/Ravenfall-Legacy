@@ -630,7 +630,7 @@ public partial class WaveRun : MonoBehaviour
     {
         if (!viewer || !alive.TryGetValue(enemy, out var kind)) return 0;
         var share = kind.Blow * ViewerBlowShare * (1f + Wave * 0.03f) * UnityEngine.Random.Range(0.7f, 1.2f) * Steep * Fierce(enemy);
-        return Mathf.Max(1, Mathf.RoundToInt(viewer.Stats.Health.MaxLevel * share));
+        return Mathf.Max(1, Mathf.RoundToInt(viewer.Stats.Health.MaxValue * share));
     }
 
     /// <summary>A helper's blow on a wave enemy, soft capped at twice the hero's hit (EnemyController.TakeDamage).</summary>
@@ -644,7 +644,7 @@ public partial class WaveRun : MonoBehaviour
     public int HealOnHero(PlayerController healer, int heal)
     {
         if (State == Phase.Over || !Hero || !healer || healer == Hero || heal <= 0) return heal;
-        var perSecond = Hero.Stats.Health.MaxLevel * HeroHealPerSecond;
+        var perSecond = Hero.Stats.Health.MaxValue * HeroHealPerSecond;
         var now = Time.time;
         if (healBudgetAt <= 0f) { healBudget = perSecond * HeroHealStore; healBudgetAt = now; }
         healBudget = Mathf.Min(perSecond * HeroHealStore, healBudget + (now - healBudgetAt) * perSecond);
@@ -687,11 +687,11 @@ public partial class WaveRun : MonoBehaviour
     {
         if (!alive.TryGetValue(enemy, out var kind)) return 0;
         // a move landing (a lunge, a bolt, a slam) brings its own share, whenever the last blow was
-        if (special > 0f) return Mathf.Max(0.01f, Hero.Stats.Health.MaxLevel * special * (1f + Wave * 0.03f) * Steep * Fierce(enemy) * BoonTaken);
+        if (special > 0f) return Mathf.Max(0.01f, Hero.Stats.Health.MaxValue * special * (1f + Wave * 0.03f) * Steep * Fierce(enemy) * BoonTaken);
         if (lastBlow.TryGetValue(enemy, out var last) && Time.time - last < BlowCooldown) return 0;
         lastBlow[enemy] = Time.time;
         var share = kind.Blow * (1f + Wave * 0.03f) * UnityEngine.Random.Range(0.7f, 1.2f) * Steep * Fierce(enemy) * BoonTaken;
-        return Mathf.Max(0.01f, Hero.Stats.Health.MaxLevel * share);
+        return Mathf.Max(0.01f, Hero.Stats.Health.MaxValue * share);
     }
 
     /// <summary>The hero falls: chat has a while to get the hero back up.</summary>
@@ -749,7 +749,7 @@ public partial class WaveRun : MonoBehaviour
         }
         if (votes.Count == 0 && lastHealer) HeroHelpers.Revive(lastHealer);
         HeroHelpers.Say(string.Format(Localization.UI_HERO_FEED_REVIVED, Hero.Name));
-        Hero.Heal(Hero.Stats.Health.MaxLevel / 2);
+        Hero.Heal(Hero.Stats.Health.MaxValue / 2);
         if (Hero.Animations) Hero.Animations.Revive();
         HeroController.Active?.Invulnerable(2.5f);
         HeroEffects.Burst(HeroEffects.Get?.Angel, Hero.Position + Vector3.up, 2f, 2.5f);
@@ -809,7 +809,7 @@ public partial class WaveRun : MonoBehaviour
         {
             if (Downed && Hero.Animations) Hero.Animations.Revive();
             Downed = false;
-            Hero.Heal(Hero.Stats.Health.MaxLevel);
+            Hero.Heal(Hero.Stats.Health.MaxValue);
             if (Cleared > Best)
             {
                 Best = Cleared;

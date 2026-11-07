@@ -207,7 +207,7 @@ namespace Shinobytes.UI
             SetText(level, string.Format(CultureInfo.InvariantCulture, Localization.UI_ENEMY_LEVEL, (int)s.CombatLevel));
 
             // Level rather than MaxLevel: scaled enemies set Level and CurrentValue directly.
-            int max = s.Health.Level;
+            int max = s.Health.MaxValue;
             int hp = Mathf.Max(0, s.Health.CurrentValue);
             var fill = max > 0 ? Mathf.Clamp01(hp / (float)max) : 0f;
             if (Mathf.Abs(fill - shownFill) >= 0.002f)

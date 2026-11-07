@@ -16,6 +16,12 @@ public class SkillStat
 
     public ObscuredIntSplit MaxLevel;// => Mathf.FloorToInt(Level + Bonus);
 
+    /// <summary>
+    ///     The most the current value goes to: the level with its bonus, except for Health, whose current value is
+    ///     the health pool (combat v2, docs/combat-v2-design.md: CombatRules.HealthPerLevel per level).
+    /// </summary>
+    public int MaxValue => Type == Skill.Health ? CombatRules.MaxHealth(Mathf.FloorToInt(Level + Bonus)) : Mathf.FloorToInt(Level + Bonus);
+
     public int Index;
 
     public bool IsDirty;
@@ -49,6 +55,8 @@ public class SkillStat
         Experience = exp;
         Name = name;
         this.MaxLevel = Mathf.FloorToInt(Level + Bonus);
+        // Health starts with a full health pool, not its level
+        if (type == Skill.Health) CurrentValue = MaxValue;
     }
 
     public void Set(int newLevel, double newExp, bool updateExpPerHour = true)
@@ -66,7 +74,7 @@ public class SkillStat
             Level = newLevel;
             Experience = newExp;
             // the equipment's bonus stays on top of the new level (UpdateEquipmentEffect sets it)
-            CurrentValue = Mathf.FloorToInt(Level + Bonus);
+            CurrentValue = MaxValue;
             this.MaxLevel = Mathf.FloorToInt(Level + Bonus);
             return;
         }
@@ -152,7 +160,7 @@ public class SkillStat
         {
             // the equipment's bonus (an enchantment) stays on top of the new level; setting the bare level here made
             // it vanish from the skill panel on every level up until something reapplied the equipment
-            CurrentValue = Mathf.FloorToInt(Level + Bonus);
+            CurrentValue = MaxValue;
             this.MaxLevel = Mathf.FloorToInt(Level + Bonus);
             return true;
         }
@@ -208,15 +216,16 @@ public class SkillStat
 
     public void Reset()
     {
-        CurrentValue = Mathf.FloorToInt(Level + Bonus);
+        CurrentValue = MaxValue;
         MaxLevel = Mathf.FloorToInt(Level + Bonus);
     }
 
     public void Add(int value)
     {
         CurrentValue += value;
-        if (CurrentValue > Level)
-            CurrentValue = Level;
+        var max = Type == Skill.Health ? MaxValue : (int)Level;
+        if (CurrentValue > max)
+            CurrentValue = max;
     }
 
     public override string ToString()

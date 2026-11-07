@@ -248,7 +248,8 @@ public sealed class PirateRaid : MonoBehaviour
         enemy.Stats.Attack = new SkillStat(level);
         enemy.Stats.Strength = new SkillStat(level);
         enemy.Stats.Defense = new SkillStat(level);
-        enemy.Stats.Health = new SkillStat(Mathf.Max(20, level * (captain ? 30 : 5) * (1f + wave * 0.15f)));
+        // marked as Health, so the pool follows the combat scale (ten per level with combat v2), as blows do
+        enemy.Stats.Health = new SkillStat(RavenNest.Models.Skill.Health, "Health", Mathf.CeilToInt(Mathf.Max(20, level * (captain ? 30 : 5) * (1f + wave * 0.15f))), 0);
         enemy.transform.localScale = Vector3.one * (captain ? 1.35f : 1f);
         enemy.AutomaticRespawn = false;
         enemy.Hunting = true;

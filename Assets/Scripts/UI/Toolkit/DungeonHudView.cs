@@ -294,7 +294,7 @@ namespace Shinobytes.UI
             // Level, not MaxLevel: the boss's health is scaled to the group by setting Level and
             // CurrentValue directly, which leaves MaxLevel at the unscaled value. The old bar used
             // Level too.
-            var max = stats != null ? (float)stats.Health.Level : 0f;
+            var max = stats != null ? (float)stats.Health.MaxValue : 0f;
             var current = stats != null ? Mathf.Max(0f, stats.Health.CurrentValue) : 0f;
 
             // The bar appears in the boss room, or as soon as the boss is hurt, whichever is first.

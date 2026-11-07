@@ -166,7 +166,7 @@ public class HealthBar : MonoBehaviour
 
         if (hasTarget)
         {
-            float proc = stats.Health.CurrentValue > 0 ? 100f * ((float)stats.Health.CurrentValue / stats.Health.Level) : 0f;
+            float proc = stats.Health.CurrentValue > 0 ? 100f * ((float)stats.Health.CurrentValue / stats.Health.MaxValue) : 0f;
             this.transform.position = targetTransform.position + targetOffset;
             this.transform.rotation = targetCamera.rotation;
             progress.sizeDelta = new Vector2(proc, progress.sizeDelta.y);

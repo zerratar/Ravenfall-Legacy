@@ -24,7 +24,7 @@ public class DungeonKillBoss : ChatBotCommandHandler
                 if (randomPlayer && dungeonManager.Boss)
                 {
                     var boss = dungeonManager.Boss.Enemy;
-                    boss.TakeDamage(randomPlayer, boss.Stats.Health.Level);
+                    boss.TakeDamage(randomPlayer, boss.Stats.Health.MaxValue);
                     Shinobytes.Debug.Log(player.Name + " used their admin powers to kill the dungeon boss.");
                 }
             }

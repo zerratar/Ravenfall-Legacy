@@ -417,7 +417,7 @@ public class DungeonHandler
 
                 // unreachable enemy in dungeon
                 enemyTarget.IsUnreachable = true;
-                enemyTarget.TakeDamage(player, enemyTarget.Stats.Health.Level);
+                enemyTarget.TakeDamage(player, enemyTarget.Stats.Health.MaxValue);
             }
 
             enemyTarget = null;

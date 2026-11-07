@@ -84,7 +84,7 @@ public class RaidHandler : MonoBehaviour
                         continue;
                     }
 
-                    int missingHealth = raider.Stats.Health.MaxLevel - raider.Stats.Health.CurrentValue;
+                    int missingHealth = raider.Stats.Health.MaxValue - raider.Stats.Health.CurrentValue;
                     if (healTarget == null || missingHealth > mostHurt)
                     {
                         healTarget = raider;

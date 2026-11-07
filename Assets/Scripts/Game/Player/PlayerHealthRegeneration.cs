@@ -79,12 +79,12 @@ public class PlayerHealthRegeneration
             {
                 var oldValue = stats.Health.CurrentValue;
 
-                var amount = stats.Health.MaxLevel * player.RegenRate * GameTime.deltaTime;
+                var amount = stats.Health.MaxValue * player.RegenRate * GameTime.deltaTime;
                 regenAmount += amount;
                 var add = Mathf.FloorToInt(regenAmount);
                 if (add > 0)
                 {
-                    var newValue = Mathf.Min(stats.Health.MaxLevel, stats.Health.CurrentValue + add);
+                    var newValue = Mathf.Min(stats.Health.MaxValue, stats.Health.CurrentValue + add);
                     stats.Health.CurrentValue = newValue;
                     regenAmount -= add;
 
@@ -95,7 +95,7 @@ public class PlayerHealthRegeneration
                     }
                 }
 
-                if (stats.Health.CurrentValue == stats.Health.MaxLevel)
+                if (stats.Health.CurrentValue == stats.Health.MaxValue)
                 {
                     regenTimer = 0;
                 }

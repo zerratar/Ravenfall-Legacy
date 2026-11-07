@@ -47,6 +47,7 @@ public static class GameMath
 
     public static float CalculateHealing(IAttackable attacker, IAttackable defender)
     {
+        if (CombatRules.Enabled) return CombatRules.Heal(attacker);
         try
         {
             if (attacker == null || defender == null) return 0;
@@ -76,6 +77,7 @@ public static class GameMath
 
     public static float CalculateMagicDamage(IAttackable attacker, IAttackable defender)
     {
+        if (CombatRules.Enabled) return CombatRules.Magic(attacker, defender);
         try
         {
             if (attacker == null || defender == null) return 0;
@@ -113,6 +115,7 @@ public static class GameMath
 
     public static float CalculateRangedDamage(IAttackable attacker, IAttackable defender)
     {
+        if (CombatRules.Enabled) return CombatRules.Ranged(attacker, defender);
         try
         {
             if (attacker == null || defender == null) return 0;
@@ -151,6 +154,7 @@ public static class GameMath
 
     public static float CalculateMeleeDamage(IAttackable attacker, IAttackable defender)
     {
+        if (CombatRules.Enabled) return CombatRules.Melee(attacker, defender);
         try
         {
             if (attacker == null || defender == null) return 0;

@@ -2340,7 +2340,7 @@ public class GameManager : MonoBehaviour, IGameManager
                     var randomPlayer = players.Random();
                     if (!enemy.Stats.IsDead)
                     {
-                        enemy.TakeDamage(randomPlayer, enemy.Stats.Health.MaxLevel);
+                        enemy.TakeDamage(randomPlayer, enemy.Stats.Health.MaxValue);
                     }
                 }
 
@@ -2364,7 +2364,7 @@ public class GameManager : MonoBehaviour, IGameManager
                 if (randomPlayer && dungeonManager.Boss)
                 {
                     var boss = dungeonManager.Boss.Enemy;
-                    boss.TakeDamage(randomPlayer, (int)(boss.Stats.Health.Level * 0.25f));
+                    boss.TakeDamage(randomPlayer, (int)(boss.Stats.Health.MaxValue * 0.25f));
                 }
             }
 
@@ -2375,7 +2375,7 @@ public class GameManager : MonoBehaviour, IGameManager
                 if (randomPlayer && dungeonManager.Boss)
                 {
                     var boss = dungeonManager.Boss.Enemy;
-                    boss.TakeDamage(randomPlayer, boss.Stats.Health.Level);
+                    boss.TakeDamage(randomPlayer, boss.Stats.Health.MaxValue);
                 }
             }
 

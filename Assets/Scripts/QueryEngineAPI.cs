@@ -169,7 +169,7 @@ public class QueryEngineAPI
             QueryEngineContext.Column<DungeonManager, double>("Elapsed", x => x.Elapsed.TotalSeconds),
             QueryEngineContext.Column<DungeonManager, int>("Count", x => x.Counter),
             QueryEngineContext.Column<DungeonManager, int>("Boss.Health", x => x.Boss?.Enemy.Stats.Health.CurrentValue ?? 0),
-            QueryEngineContext.Column<DungeonManager, int>("Boss.MaxHealth", x => x.Boss?.Enemy.Stats.Health.MaxLevel ?? 0),
+            QueryEngineContext.Column<DungeonManager, int>("Boss.MaxHealth", x => x.Boss?.Enemy.Stats.Health.MaxValue ?? 0),
             QueryEngineContext.Column<DungeonManager, float>("Boss.HealthPercent", x => x.Boss?.Enemy.Stats.HealthPercent ?? 0f),
             QueryEngineContext.Column<DungeonManager, int>("Boss.CombatLevel", x => x.Boss?.Enemy.Stats.CombatLevel ?? 0)
         ).HasOnlyOneRow();
@@ -180,7 +180,7 @@ public class QueryEngineAPI
             QueryEngineContext.Column<RaidManager, float>("TimeLeft", x => x.SecondsLeft),
             QueryEngineContext.Column<RaidManager, int>("Count", x => x.Counter),
             QueryEngineContext.Column<RaidManager, int>("Boss.Health", x => x.Boss?.Enemy.Stats.Health.CurrentValue ?? 0),
-            QueryEngineContext.Column<RaidManager, int>("Boss.MaxHealth", x => x.Boss?.Enemy.Stats.Health.MaxLevel ?? 0),
+            QueryEngineContext.Column<RaidManager, int>("Boss.MaxHealth", x => x.Boss?.Enemy.Stats.Health.MaxValue ?? 0),
             QueryEngineContext.Column<RaidManager, float>("Boss.HealthPercent", x => x.Boss?.Enemy.Stats.HealthPercent ?? 0f),
             QueryEngineContext.Column<RaidManager, int>("Boss.CombatLevel", x => x.Boss?.Enemy.Stats.CombatLevel ?? 0)
         ).HasOnlyOneRow();

@@ -287,7 +287,7 @@ public partial class HeroController : MonoBehaviour
         if (angel)
         {
             angel = false;
-            Player.Heal(Player.Stats.Health.MaxLevel / 2);
+            Player.Heal(Player.Stats.Health.MaxValue / 2);
             HeroEffects.Burst(HeroEffects.Get?.Angel, Player.Position + Vector3.up, 2.5f, 3f);
             invulnerableUntil = Time.time + 1f;
             return 0;
@@ -343,7 +343,7 @@ public partial class HeroController : MonoBehaviour
     public void Refill(float healthShare, float mana)
     {
         if (!Player || Player.Stats.IsDead) return;
-        Player.Heal(Mathf.RoundToInt(Player.Stats.Health.MaxLevel * healthShare));
+        Player.Heal(Mathf.RoundToInt(Player.Stats.Health.MaxValue * healthShare));
         Mana = Mathf.Min(MaxMana, Mana + mana);
     }
 
@@ -639,7 +639,7 @@ public partial class HeroController : MonoBehaviour
         var leech = RavebridgeGear.Stat(Player, "leech") + WaveRun.BoonLeech;
         if (leech > 0f)
         {
-            var back = Mathf.Min(damage * leech / 100f, Player.Stats.Health.MaxLevel * 0.05f);
+            var back = Mathf.Min(damage * leech / 100f, Player.Stats.Health.MaxValue * 0.05f);
             if (back >= 1f) Player.Heal(Mathf.RoundToInt(back));
         }
         Player.SessionStats.AddDamageDealt(damage);
@@ -668,8 +668,8 @@ public partial class HeroController : MonoBehaviour
     public void HealAlly(PlayerController p, float share, bool effect = true)
     {
         if (!p || p.Stats.IsDead) return;
-        var amount = Mathf.Max(1f, p.Stats.Health.MaxLevel * share * RankFactor);
-        var heal = Mathf.Min(Mathf.RoundToInt(amount), p.Stats.Health.MaxLevel);
+        var amount = Mathf.Max(1f, p.Stats.Health.MaxValue * share * RankFactor);
+        var heal = Mathf.Min(Mathf.RoundToInt(amount), p.Stats.Health.MaxValue);
         if (!p.Heal(heal)) return;
         Player.SessionStats.AddHealingDealt(heal);
         if (effect)
@@ -860,7 +860,7 @@ public partial class HeroController : MonoBehaviour
         if (Potions > 0) Potions--;
         else if (!RavebridgeLoot.TakePotion(Player)) { Refused?.Invoke(-2, "empty"); return; }
         potionReadyAt = Time.time + PotionCooldown;
-        Player.Heal(Mathf.RoundToInt(Player.Stats.Health.MaxLevel * PotionShare * (1f + RavebridgeGear.Stat(Player, "potion") / 100f)));
+        Player.Heal(Mathf.RoundToInt(Player.Stats.Health.MaxValue * PotionShare * (1f + RavebridgeGear.Stat(Player, "potion") / 100f)));
         Play("Hero-Drink");
         GameSounds.Play(SoundKind.Heal, Player.Position, 0.7f, 0.4f, Player);
     }

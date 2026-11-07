@@ -924,7 +924,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
                 case StatusEffectType.Heal:
                     // one time use, heal this player!
-                    this.Heal((int)(this.Stats.Health.MaxLevel * effect.Amount));
+                    this.Heal((int)(this.Stats.Health.MaxValue * effect.Amount));
                     return true;
 
                 case StatusEffectType.IncreasedStrength:
@@ -1008,7 +1008,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
                     return false;
 
                 case StatusEffectType.Damage:
-                    this.TakeDamage(null, (int)(this.Stats.Health.MaxLevel * effect.Amount));
+                    this.TakeDamage(null, (int)(this.Stats.Health.MaxValue * effect.Amount));
                     return true;
 
                 case StatusEffectType.ReducedHitChance:
@@ -1042,7 +1042,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             return true;
         }
 
-        var fullAmount = this.Stats.Health.MaxLevel * effectAmount;
+        var fullAmount = this.Stats.Health.MaxValue * effectAmount;
         var healAmount = 0f;
         if (lastHealTick <= 0)
         {
@@ -3214,14 +3214,14 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     public int ApplyInstantHealEffect(CharacterStatusEffect effect)
     {
-        var healAmount = Mathf.FloorToInt(effect.Amount * this.Stats.Health.MaxLevel);
+        var healAmount = Mathf.FloorToInt(effect.Amount * this.Stats.Health.MaxValue);
         this.Heal(healAmount);
         return healAmount;
     }
 
     public int ApplyInstantDamageEffect(CharacterStatusEffect effect)
     {
-        var damage = Mathf.FloorToInt(effect.Amount * this.Stats.Health.MaxLevel);
+        var damage = Mathf.FloorToInt(effect.Amount * this.Stats.Health.MaxValue);
         this.TakeDamage(null, damage);
         return damage;
     }

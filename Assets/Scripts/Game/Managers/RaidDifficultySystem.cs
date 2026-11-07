@@ -60,7 +60,9 @@ public class RaidDifficultySystem
                 Attack = new(tmp.TotalAttack / pCount),
                 Defense = new(tmp.TotalDefense / pCount),
                 Strength = new(tmp.TotalStrength / pCount),
-                Health = new((tmp.TotalHealth / pCount) * 100),
+                // marked as Health, so the boss's health pool follows the combat scale (ten per level with combat v2)
+                // while its level, which sets its combat level and rewards, stays what it was
+                Health = new SkillStat(RavenNest.Models.Skill.Health, "Health", Mathf.CeilToInt((tmp.TotalHealth / pCount) * 100), 0),
                 Ranged = new(tmp.TotalRanged / pCount),
                 Magic = new(tmp.TotalMagic / pCount)
             };
@@ -87,7 +89,7 @@ public class RaidDifficultySystem
                 Attack = new(Random(players, x => x.Stats.Attack.Level, 1, 99)),
                 Defense = new(Random(players, x => x.Stats.Defense.Level, 1, 99)),
                 Strength = new(Random(players, x => x.Stats.Strength.Level, 1, 99)),
-                Health = new(Random(players, x => x.Stats.Health.Level, 10, 99) * 100),
+                Health = new SkillStat(RavenNest.Models.Skill.Health, "Health", Mathf.CeilToInt(Random(players, x => x.Stats.Health.Level, 10, 99) * 100), 0),
                 Ranged = new(Random(players, x => x.Stats.Ranged.Level, 1, 99)),
                 Magic = new(Random(players, x => x.Stats.Magic.Level, 1, 99))
             };
