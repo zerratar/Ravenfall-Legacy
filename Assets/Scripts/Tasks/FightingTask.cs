@@ -69,9 +69,8 @@ public class FightingTask : ChunkTask
             for (var i = 0; i < playerCount; ++i)
             {
                 var x = players[i];
-                var playerInDungeon = player.dungeonHandler.InDungeon;
-                var otherPlayerInDungeon = x.dungeonHandler.InDungeon;
-                if (x.Stats.Health.CurrentValue <= 0 || x.ferryHandler.OnFerry || x.onsenHandler.InOnsen || (playerInDungeon != otherPlayerInDungeon))
+                // only players in the same place (the islands, the dungeon, the tower)
+                if (x.Stats.Health.CurrentValue <= 0 || x.ferryHandler.OnFerry || x.onsenHandler.InOnsen || player.Away != x.Away)
                 {
                     continue;
                 }

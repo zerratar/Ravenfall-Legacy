@@ -38,7 +38,7 @@ public class PlayerValidator
             }
 
             // ignore if we are in a raid or dungeon for now.
-            if (player.raidHandler.InRaid || player.dungeonHandler.InDungeon)
+            if (player.raidHandler.InRaid || player.IsAway)
             {
                 return true;
             }

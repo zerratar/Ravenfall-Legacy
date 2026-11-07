@@ -86,7 +86,7 @@ public class FerryHandler : MonoBehaviour
         EnsureReferences();
         BoatCrews.Tick();
 
-        if (player.raidHandler.InRaid || player.dungeonHandler.InDungeon || player.duelHandler.InDuel)
+        if (player.raidHandler.InRaid || player.IsAway || player.duelHandler.InDuel)
         {
             player.Animations.SetCaptainState(false);
             return;
@@ -801,7 +801,7 @@ public class FerryHandler : MonoBehaviour
         {
             var f = guest.ferryHandler;
             var free = guest.Island == from && !f.ownBoat && !f.guestRiding && !(f.OnFerry && !f.Embarking)
-                && !guest.raidHandler.InRaid && !guest.dungeonHandler.InDungeon && !guest.duelHandler.InDuel
+                && !guest.raidHandler.InRaid && !guest.IsAway && !guest.duelHandler.InDuel
                 && !guest.arenaHandler.InArena && !guest.streamRaidHandler.InWar && !guest.InRavebridge;
             if (free && f.BoardAsGuest(ownBoat)) continue;
             BoatCrews.Leave(guest);

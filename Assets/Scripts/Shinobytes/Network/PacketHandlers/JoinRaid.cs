@@ -27,9 +27,9 @@ public class RaidJoin : ChatBotCommandHandler<string>
                 return;
             }
 
-            if (player.dungeonHandler.InDungeon)
+            if (player.IsAway)
             {
-                client.SendReply(gm, Localization.MSG_JOIN_RAID_DUNGEON);
+                client.SendReply(gm, player.AwayReply(Localization.MSG_JOIN_RAID_DUNGEON));
                 return;
             }
             //if (player.ferryHandler.OnFerry)

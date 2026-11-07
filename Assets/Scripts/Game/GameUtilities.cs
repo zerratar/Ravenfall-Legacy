@@ -50,7 +50,7 @@ namespace Assets.Scripts.Game
 
                 if (!player.Island || player.Island == null)
                 {
-                    if (!player.dungeonHandler.InDungeon && player.ferryHandler && !player.ferryHandler.OnFerry && !player.streamRaidHandler.InWar)
+                    if (!player.IsAway && player.ferryHandler && !player.ferryHandler.OnFerry && !player.streamRaidHandler.InWar)
                     {
                         sb.AppendLine(nameof(player.Island) + " is null.");
                     }

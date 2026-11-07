@@ -131,9 +131,9 @@ public class FerryTravel : ChatBotCommandHandler<string>
             return;
         }
 
-        if (player.dungeonHandler.InDungeon)
+        if (player.IsAway)
         {
-            if (!otherPlayer) client.SendReply(gm, Localization.MSG_TRAVEL_DUNGEON);
+            if (!otherPlayer) client.SendReply(gm, player.AwayReply(Localization.MSG_TRAVEL_DUNGEON));
             return;
         }
 

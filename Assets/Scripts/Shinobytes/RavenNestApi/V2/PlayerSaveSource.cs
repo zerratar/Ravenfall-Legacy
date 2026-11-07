@@ -58,7 +58,7 @@ public static class PlayerSaveSource
         var isTraining = skill != null;
 
         var currentIsland = p.Island;
-        if (!ferryHandler.OnFerry && !dungeonHandler.InDungeon && !p.streamRaidHandler.InWar && currentIsland == null)
+        if (!ferryHandler.OnFerry && !p.IsAway && !p.streamRaidHandler.InWar && currentIsland == null)
         {
             // we should be on an island.
             p.Island = gameManager.Islands.FindPlayerIsland(p);
@@ -104,12 +104,13 @@ public static class PlayerSaveSource
         var rested = p.Rested;
         var pos = p.transform.position;
 
-        // in case we are in a dungeon, we should send the position and island of the player prior to entering the dungeon.
-        // this will allow the player to return to the same position if game is restarted during the dungeon.
-        if (dungeonHandler.InDungeon && dungeonHandler.PreviousIsland != null && !dungeonHandler.Ferry.OnFerry)
+        // in a dungeon (or the tower), send the position and island from before it, so a restart during it puts the
+        // player back where they came from.
+        var away = p.AwayHandler;
+        if (away != null && away.Return.Island != null && !away.Return.Ferry.OnFerry)
         {
-            pos = dungeonHandler.PreviousPosition;
-            island = dungeonHandler.PreviousIsland.Island;
+            pos = away.Return.Position;
+            island = away.Return.Island.Island;
         }
 
         // same with raid, in case we were not on the ferry.

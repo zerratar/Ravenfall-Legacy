@@ -128,7 +128,7 @@ public class SkillsCommand : ChatBotCommandHandler<string>
             return;
         }
 
-        if (player.raidHandler.InRaid || player.dungeonHandler.InDungeon || player.duelHandler.InDuel)
+        if (player.raidHandler.InRaid || player.IsAway || player.duelHandler.InDuel)
         {
             client.SendReply(gm, Localization.MSG_SKILLS_RESPEC_BUSY);
             return;

@@ -26,9 +26,9 @@ public class TeleportToIsland : ChatBotCommandHandler<string>
             return;
         }
 
-        if (player.dungeonHandler.InDungeon)
+        if (player.IsAway)
         {
-            client.SendReply(gm, Localization.MSG_TELEPORT_FAILED_DUNGEON);
+            client.SendReply(gm, player.AwayReply(Localization.MSG_TELEPORT_FAILED_DUNGEON));
             return;
         }
 

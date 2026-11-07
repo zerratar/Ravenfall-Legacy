@@ -73,9 +73,9 @@
             return;
         }
 
-        if (player1.dungeonHandler.InDungeon)
+        if (player1.IsAway)
         {
-            client.SendReply(gm, Localization.MSG_DUEL_FAILED_IN_DUNGEON);
+            client.SendReply(gm, player1.AwayReply(Localization.MSG_DUEL_FAILED_IN_DUNGEON));
             return;
         }
 
@@ -97,9 +97,9 @@
             return;
         }
 
-        if (player2.dungeonHandler.InDungeon)
+        if (player2.IsAway)
         {
-            client.SendReply(gm, Localization.MSG_DUEL_TARGET_IN_DUNGEON, player2.PlayerName);
+            client.SendReply(gm, player2.Away == AwayPlace.Dungeon ? Localization.MSG_DUEL_TARGET_IN_DUNGEON : Localization.MSG_DUEL_TARGET_IN_TOWER, player2.PlayerName);
             return;
         }
 

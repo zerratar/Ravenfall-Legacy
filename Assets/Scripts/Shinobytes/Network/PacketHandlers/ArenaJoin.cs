@@ -56,7 +56,7 @@ public class ArenaJoin : ChatBotCommandHandler<Empty>
                 || Game.Dungeons.Started
                 || player.raidHandler.InRaid
                 || player.duelHandler.InDuel
-                || player.dungeonHandler.InDungeon)
+                || player.IsAway)
             {
                 var errorMessage = "";
                 if (Game.Raid.Started)
@@ -67,9 +67,9 @@ public class ArenaJoin : ChatBotCommandHandler<Empty>
                 {
                     errorMessage = Localization.MSG_DUNGEON_STARTED;
                 }
-                else if (player.dungeonHandler.InDungeon)
+                else if (player.IsAway)
                 {
-                    errorMessage = Localization.MSG_IN_DUNGEON;
+                    errorMessage = player.AwayReply(Localization.MSG_IN_DUNGEON);
                 }
                 else if (player.duelHandler.InDuel)
                 {

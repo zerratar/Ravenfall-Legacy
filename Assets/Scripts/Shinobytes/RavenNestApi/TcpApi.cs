@@ -842,12 +842,13 @@ namespace RavenNest.SDK
                     }
                 }
 
-                if (player.dungeonHandler.InDungeon)
+                var away = player.AwayHandler;
+                if (away != null)
                 {
-                    pos = player.dungeonHandler.PreviousPosition;
-                    if (player.dungeonHandler.PreviousIsland != null)
+                    pos = away.Return.Position;
+                    if (away.Return.Island != null)
                     {
-                        island = player.dungeonHandler.PreviousIsland?.Island ?? Island.Ferry;
+                        island = away.Return.Island?.Island ?? Island.Ferry;
                     }
                 }
 

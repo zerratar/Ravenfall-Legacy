@@ -41,11 +41,11 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
             return;
         }
 
-        if (player.arenaHandler.InArena || player.raidHandler.InRaid || player.dungeonHandler.InDungeon || player.duelHandler.InDuel || player.onsenHandler.InOnsen)
+        if (player.arenaHandler.InArena || player.raidHandler.InRaid || player.IsAway || player.duelHandler.InDuel || player.onsenHandler.InOnsen)
         {
             if (player.arenaHandler.InArena) client.SendReply(gm, Localization.MSG_GENERIC_FAILED_ARENA);
             if (player.raidHandler.InRaid) client.SendReply(gm, Localization.MSG_GENERIC_FAILED_RAID);
-            if (player.dungeonHandler.InDungeon) client.SendReply(gm, Localization.MSG_GENERIC_FAILED_DUNGEON);
+            if (player.IsAway) client.SendReply(gm, player.AwayReply(Localization.MSG_GENERIC_FAILED_DUNGEON));
             if (player.duelHandler.InDuel) client.SendReply(gm, Localization.MSG_GENERIC_FAILED_DUEL);
             if (player.onsenHandler.InOnsen) client.SendReply(gm, Localization.MSG_GENERIC_FAILED_RESTING);
             return;

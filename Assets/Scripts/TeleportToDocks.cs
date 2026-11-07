@@ -40,7 +40,7 @@ public class TeleportToDocks : MonoBehaviour
 
         foreach (var player in island.GetPlayers())
         {
-            if (!player || player == null || player.Removed || player.isDestroyed || player.dungeonHandler.InDungeon || player.raidHandler.InRaid || player.Stats.IsDead)
+            if (!player || player == null || player.Removed || player.isDestroyed || player.IsAway || player.raidHandler.InRaid || player.Stats.IsDead)
                 continue;
 
             var p = player._transform.position;

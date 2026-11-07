@@ -47,7 +47,7 @@ public class MaxMultiplier : ChatBotCommandHandler
             multi += hutMulti;
         }
 
-        if (player.raidHandler.InRaid || player.dungeonHandler.InDungeon)
+        if (player.raidHandler.InRaid || player.IsAway)
         {
             var slayerBonus = Game.Village.GetExpBonusBySkill(Skill.Slayer);
             hutMulti += slayerBonus;

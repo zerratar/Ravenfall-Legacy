@@ -154,7 +154,7 @@ public class IslandController : MonoBehaviour
         foreach (var p in playerManager.GetAllPlayers())
         {
 
-            if (p.ferryHandler.OnFerry || p.dungeonHandler.InDungeon)
+            if (p.ferryHandler.OnFerry || p.IsAway)
                 continue;
 
             if (InsideIsland(p.transform.position))

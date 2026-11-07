@@ -20,7 +20,7 @@ public class PlayerJoinRaidEventHandler : GameEventHandler<PlayerId>
         //if (player.ferryHandler.Active)
         //    player.ferryHandler.Disembark();
 
-        if (player.dungeonHandler.InDungeon)
+        if (player.IsAway)
             return;
 
         if (player.arenaHandler.InArena && gameManager.Arena.Started)

@@ -225,7 +225,7 @@ public class RavebridgeManager : MonoBehaviour, IEvent
             return JoinResult.Joined;
         }
         if (player.Stats.IsDead) return JoinResult.Dead;
-        if (player.dungeonHandler.InDungeon || player.raidHandler.InRaid || player.streamRaidHandler.InWar
+        if (player.IsAway || player.raidHandler.InRaid || player.streamRaidHandler.InWar
             || player.arenaHandler.InArena || player.duelHandler.InDuel)
         {
             return JoinResult.Busy;

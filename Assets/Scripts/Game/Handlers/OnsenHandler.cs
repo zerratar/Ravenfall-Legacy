@@ -34,7 +34,7 @@ public class OnsenHandler : MonoBehaviour
             // player cannot be on or waiting for the ferry, in dungeon, in raid, duel or arena
             !player.ferryHandler.OnFerry &&
             player.ferryHandler.State != PlayerFerryState.Embarking &&
-            !player.dungeonHandler.InDungeon &&
+            !player.IsAway &&
             !player.raidHandler.InRaid &&
             !player.duelHandler.InDuel &&
             !player.arenaHandler.InArena &&

@@ -205,7 +205,7 @@ public class PlayerCombat
             // allow for some variation in gains based on how high you heal.
             var state = ExpGainState.FullGain;
             var factor = (1 + (heal / maxHeal * 0.2)) *
-                ((owner.raidHandler.InRaid || owner.dungeonHandler.InDungeon) ? 1.0 : owner.Chunk?.CalculateExpFactor(owner, out state) ?? 1.0);
+                ((owner.raidHandler.InRaid || owner.IsAway) ? 1.0 : owner.Chunk?.CalculateExpFactor(owner, out state) ?? 1.0);
 
             owner.SetExpGainState(state, owner.Stats.Healing);
 
@@ -310,7 +310,7 @@ public class PlayerCombat
                 {
                     //activeSkill = Skill.Health; // ALL
                     var state = ExpGainState.FullGain;
-                    var factor = owner.dungeonHandler.InDungeon ? 1d : owner.Chunk?.CalculateExpFactor(player, out state) ?? 1d;
+                    var factor = owner.IsAway ? 1d : owner.Chunk?.CalculateExpFactor(player, out state) ?? 1d;
 
                     player.SetExpGainState(state, null);
 

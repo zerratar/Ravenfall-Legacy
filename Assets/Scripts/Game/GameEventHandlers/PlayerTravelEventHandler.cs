@@ -8,7 +8,7 @@ public class PlayerTravelEventHandler : GameEventHandler<RavenNest.Models.Player
         if (!player) return;
 
         if (player.InRavebridge || player.streamRaidHandler.InWar || player.arenaHandler.InArena || player.duelHandler.InDuel
-            || player.dungeonHandler.InDungeon)
+            || player.IsAway)
         {
             return;
         }

@@ -1429,6 +1429,7 @@ public static class Localization
     public static string MSG_TRAVEL_DUEL = "You cannot travel when duelling another player.";
     public static string MSG_TRAVEL_ARENA = "You cannot travel when participating in the arena.";
     public static string MSG_TRAVEL_DUNGEON = "You cannot travel when in the dungeon.";
+    public static string MSG_BUSY_IN_TOWER = "You cannot do that while in the tower. Use !tower leave to come back first.";
     public static string MSG_HIGHEST_SKILL_NO_PLAYERS = "Seems like no one is playing.";
     public static string MSG_HIGHEST_SKILL = "{player} has the highest level {skillName} with level {level}.";
     public static string MSG_HIGHEST_COMBAT = "{player} has the highest combat level with {combatLevel}.";
@@ -2801,6 +2802,7 @@ public static class Localization
     public static string MSG_DUEL_TARGET_IN_ARENA = Meta("duel", "fail") + "You cannot duel {targetPlayerName} as he or she is participating in the Arena.";
     public static string MSG_DUEL_TARGET_IN_RAID = Meta("duel", "fail") + "You cannot duel {targetPlayerName} as he or she is participating in a Raid.";
     public static string MSG_DUEL_TARGET_IN_DUNGEON = Meta("duel", "fail") + "You cannot duel {targetPlayerName} as he or she is participating in a Dungeon.";
+    public static string MSG_DUEL_TARGET_IN_TOWER = Meta("duel", "fail") + "You cannot duel {targetPlayerName} while they are in the tower.";
     public static string MSG_DUEL_TARGET_HAS_REQUEST = Meta("duel", "fail") + "You cannot duel {targetPlayerName} as he or she already has an active duel request.";
 
     // GiftItem

@@ -3,30 +3,28 @@ using System;
 using Tessera;
 using UnityEngine;
 
-public class DungeonHandler
+public class DungeonHandler : IAwayHandler
 {
 
     private EnemyController enemyTarget;
     private PlayerController healTarget;
 
-    private TaskType previousTask;
-    private string previousTaskArgument;
-
     private float waitForDungeon;
 
-    private Vector3 previousPosition;
-    private IslandController previousIsland;
-
-    public FerryContext Ferry;
-
-    private bool wasResting;
+    // what the player left for the dungeon, and the way back (shared with the tower)
+    private readonly WorldReturn back = new WorldReturn();
 
     private PlayerController player;
     private DungeonManager dungeon;
 
-    public IslandController PreviousIsland => previousIsland;
-    public Vector3 PreviousPosition => previousPosition;
+    public IslandController PreviousIsland => back.Island;
+    public Vector3 PreviousPosition => back.Position;
+    public FerryContext Ferry => back.Ferry;
     public bool InDungeon;
+
+    public AwayPlace Place => AwayPlace.Dungeon;
+    public bool IsAway => InDungeon;
+    public WorldReturn Return => back;
     public int AutoJoinCounter { get; set; }
     public long AutoJoinCount { get; set; }
     //public int AutoJoinCost { get; set; } = 5000;
@@ -176,45 +174,11 @@ public class DungeonHandler
             return;
         }
 
-        if (player.Island)
-        {
-            player.Island.RemovePlayer(player);
-        }
-
         waitForDungeon = 0;
         InDungeon = true;
 
         var startingPoint = dungeon.StartingPoint;
-        this.previousTask = this.player.GetTask();
-        this.previousTaskArgument = this.player.GetTaskArgument();
-
-        Ferry = new()
-        {
-            OnFerry = player.ferryHandler.OnFerry,
-            State = player.ferryHandler.State,
-            HasDestination = !!player.ferryHandler.Destination,
-            Destination = player.ferryHandler.Destination
-        };
-
-        if (Ferry.OnFerry)
-        {
-            player.ferryHandler.RemoveFromFerry();
-        }
-        else
-        {
-            previousPosition = player.Position;
-        }
-
-        wasResting = this.player.onsenHandler.InOnsen;
-
-        if (player.onsenHandler.InOnsen)
-        {
-            previousPosition = player.onsenHandler.EntryPoint;
-            player.onsenHandler.Exit();
-            player.transform.parent = null;
-        }
-
-        previousIsland = this.player.Island;
+        back.Leave(player);
 
         player.InterruptAction();
         player.teleportHandler.Teleport(startingPoint);
@@ -229,36 +193,6 @@ public class DungeonHandler
         }
     }
 
-    /// <summary>
-    /// Where to put the player back after the dungeon: where they stood before it, if that is still somewhere to
-    /// stand. It may not be: they may have joined from the ferry's deck at a dock (over the sea), or the ground there
-    /// may have changed. The spot must be on an island, on navmesh at about its height, above the sea, and joined to
-    /// the island's spawn point by a path (not a patch of seabed or a hole round a tree); otherwise it is the spawn
-    /// point of the island they came from, or of the island nearest the spot.
-    /// </summary>
-    private Vector3 ReturnPoint()
-    {
-        var islands = player.GameManager ? player.GameManager.Islands : null;
-        var island = islands ? islands.FindIsland(previousPosition) : null;
-        var home = previousIsland ? previousIsland : island;
-        if (!home && islands) home = islands.Find("Home");
-        if (island && NavMeshHelper.SampleNearHeight(previousPosition, 1f, 1.5f, out var ground))
-        {
-            var ocean = UnityEngine.Object.FindAnyObjectByType<Ocean>();
-            var dry = !ocean || ground.y > ocean.transform.position.y + 0.3f;
-            var path = new UnityEngine.AI.NavMeshPath();
-            var joined = UnityEngine.AI.NavMesh.CalculatePath(ground, island.SpawnPosition, NavMeshHelper.AreaMaskAt(ground), path)
-                && path.status == UnityEngine.AI.NavMeshPathStatus.PathComplete;
-            if (dry && joined) return ground;
-        }
-        if (home)
-        {
-            Shinobytes.Debug.LogWarning(player.Name + " could not go back to where they left for the dungeon (" + previousPosition + "), so they go to " + home.Identifier + " instead.");
-            return home.SpawnPosition;
-        }
-        return previousPosition;
-    }
-
     public void OnExit()
     {
         if (!InDungeon || !player || !player.Movement)
@@ -268,44 +202,7 @@ public class DungeonHandler
 
         Clear();
 
-        if (previousTask != TaskType.None)
-        {
-            this.player.SetTask(previousTask, previousTaskArgument, true);
-        }
-        this.player.taskTarget = null;
-
-        if (Ferry.OnFerry)
-        {
-            player.Movement.Lock();
-            player.ferryHandler.AddPlayerToFerry(Ferry.Destination);
-            Ferry.HasReturned = true;
-        }
-        else
-        {
-            player.teleportHandler.Teleport(ReturnPoint());
-        }
-
-
-        if (Ferry.State == PlayerFerryState.Embarking)
-        {
-            // if we were embarking, make sure we do that again.
-            player.ferryHandler.Embark(Ferry.Destination);
-        }
-        else
-        {
-            var currentTask = player.GetTask();
-            if (!Ferry.OnFerry && currentTask != TaskType.None)
-            {
-                player.GotoClosest(currentTask, true);
-            }
-
-            if (wasResting)
-            {
-                player.GameManager.Onsen.Join(player);
-            }
-        }
-
-        wasResting = false;
+        back.Back(player, "the dungeon");
     }
 
     public void Died()

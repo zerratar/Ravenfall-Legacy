@@ -80,9 +80,9 @@ public class ChunkManager : MonoBehaviour
 
         /* In case we are in a dungeon or raid when using this method. 
            Use the previous island as reference */
-        if (!refIsland && playerRef.dungeonHandler.InDungeon)
+        if (!refIsland && playerRef.IsAway)
         {
-            refIsland = playerRef.dungeonHandler.PreviousIsland;
+            refIsland = playerRef.AwayHandler.Return.Island;
         }
 
         if (!refIsland && playerRef.raidHandler.InRaid)

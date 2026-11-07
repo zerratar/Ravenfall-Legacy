@@ -30,7 +30,7 @@
                 return;
             }
 
-            if (player.dungeonHandler.InDungeon)
+            if (player.IsAway)
             {
                 return;
             }

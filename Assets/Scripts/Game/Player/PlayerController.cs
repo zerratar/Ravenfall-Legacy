@@ -156,6 +156,28 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     [NonSerialized] public bool IsModerator;
     [NonSerialized] public bool IsBroadcaster;
 
+    /// <summary>
+    ///     The handler of the place the player is away from the islands in (a dungeon, later the tower), or null when
+    ///     on the islands, at sea or anywhere else in the world (docs/tower-design.md, section 8).
+    /// </summary>
+    public IAwayHandler AwayHandler
+    {
+        get
+        {
+            if (dungeonHandler != null && dungeonHandler.InDungeon) return dungeonHandler;
+            return null;
+        }
+    }
+
+    /// <summary>Where the player is away from the islands, or None.</summary>
+    public AwayPlace Away => AwayHandler?.Place ?? AwayPlace.None;
+
+    /// <summary>Away from the islands (a dungeon, later the tower): no sailing, travel, rest or raids until back.</summary>
+    public bool IsAway => AwayHandler != null;
+
+    /// <summary>The reply for something that cannot be done away from the islands: the dungeon's own words in a dungeon.</summary>
+    public string AwayReply(string dungeonMessage) => Away == AwayPlace.Dungeon ? dungeonMessage : Localization.MSG_BUSY_IN_TOWER;
+
     /// <summary>On the Ravebridge event island (RavebridgeManager): brought back where they came from when it ends.</summary>
     [NonSerialized] public bool InRavebridge;
 
@@ -1202,7 +1224,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     public void GotoClosest(TaskType type, bool silent = false)
     {
-        if (raidHandler.InRaid || dungeonHandler.InDungeon)
+        if (raidHandler.InRaid || IsAway)
         {
             return;
         }
@@ -1896,7 +1918,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         CurrentTaskName = currentTask.ToString();
         SetTaskArgument(args);
 
-        if (raidHandler.InRaid || dungeonHandler.InDungeon)
+        if (raidHandler.InRaid || IsAway)
         {
             return;
         }
@@ -3260,10 +3282,11 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
                 return true;
             }
 
-            // if we are in a dungeon, teleport to the spawnposition of the dungeon
-            if (dungeonHandler.InDungeon)
+            // if we are in a dungeon (or the tower), back to where it puts players
+            var away = AwayHandler;
+            if (away != null)
             {
-                this.SetPosition(dungeonHandler.SpawnPosition);
+                this.SetPosition(away.SpawnPosition);
                 return true;
             }
 

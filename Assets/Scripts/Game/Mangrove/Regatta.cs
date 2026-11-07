@@ -333,7 +333,7 @@ public sealed class Regatta : MonoBehaviour
     }
 
     private static bool Busy(PlayerController p) =>
-        !p || p.Controlled || p.InRavebridge || p.Stats.IsDead || p.raidHandler.InRaid || p.dungeonHandler.InDungeon
+        !p || p.Controlled || p.InRavebridge || p.Stats.IsDead || p.raidHandler.InRaid || p.IsAway
         || p.duelHandler.InDuel || p.arenaHandler.InArena || p.ferryHandler.IsGuest || (p.ferryHandler.OnFerry && !p.ferryHandler.OnOwnBoat);
 
     private static IslandController Mangrove() =>
@@ -1667,7 +1667,7 @@ public sealed class Regatta : MonoBehaviour
             if (r.AtSea ? r.HomeTo == island : !r.Home || r.Home == island) continue;
             var aboard = r.Boat && p.ferryHandler.OwnBoat == r.Boat;
             if (!aboard && p.Island != island) continue;
-            if (p.Controlled || p.InRavebridge || p.Stats.IsDead || p.raidHandler.InRaid || p.dungeonHandler.InDungeon
+            if (p.Controlled || p.InRavebridge || p.Stats.IsDead || p.raidHandler.InRaid || p.IsAway
                 || p.duelHandler.InDuel || p.arenaHandler.InArena || p.ferryHandler.IsGuest) continue;
             if (r.AtSea)
             {

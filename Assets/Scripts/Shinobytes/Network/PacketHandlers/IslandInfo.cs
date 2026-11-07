@@ -18,9 +18,9 @@ public class IslandInfo : ChatBotCommandHandler
             return;
         }
 
-        if (player.dungeonHandler.InDungeon)
+        if (player.IsAway)
         {
-            client.SendReply(gm, Localization.MSG_IN_DUNGEON);
+            client.SendReply(gm, player.AwayReply(Localization.MSG_IN_DUNGEON));
             return;
         }
 
@@ -62,9 +62,9 @@ public class IslandInfo : ChatBotCommandHandler
         }
         else
         {
-            if (player.dungeonHandler.InDungeon)
+            if (player.IsAway)
             {
-                client.SendReply(gm, Localization.MSG_ISLAND_INSIDE_DUNGEON);
+                client.SendReply(gm, player.AwayReply(Localization.MSG_ISLAND_INSIDE_DUNGEON));
                 return;
             }
 

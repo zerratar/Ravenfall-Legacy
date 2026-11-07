@@ -36,7 +36,7 @@ public class BotPlayerController : MonoBehaviour
             return;
         }
 
-        if (playerController.raidHandler.InRaid || playerController.dungeonHandler.InDungeon)
+        if (playerController.raidHandler.InRaid || playerController.IsAway)
         {
             return;
         }

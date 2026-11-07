@@ -26,7 +26,7 @@
         }
 
         if (target.Island != Game.Arena.Island || target.ferryHandler.OnFerry || target.InRavebridge || target.raidHandler.InRaid
-            || target.dungeonHandler.InDungeon || target.duelHandler.InDuel || !Game.Arena.CanJoin(target, out _, out _))
+            || target.IsAway || target.duelHandler.InDuel || !Game.Arena.CanJoin(target, out _, out _))
         {
             client.SendReply(gm, Localization.MSG_ARENA_ADD_FAILED, target.PlayerName);
             return;
