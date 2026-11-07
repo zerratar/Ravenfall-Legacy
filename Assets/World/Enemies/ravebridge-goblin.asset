@@ -17,10 +17,10 @@ MonoBehaviour:
     Name: Goblin
     Area: Ravebridge, Fighting Lv. 5
     Family: 1
-    Attack: 6
-    Strength: 6
-    Defense: 5
-    Health: 18
+    Attack: 3
+    Strength: 3
+    Defense: 3
+    Health: 10
     Ranged: 1
     Magic: 1
     Healing: 1

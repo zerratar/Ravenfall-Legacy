@@ -17,10 +17,10 @@ MonoBehaviour:
     Name: Tormented Soul
     Area: Ravebridge, Fighting Lv. 15 (soul)
     Family: 3
-    Attack: 16
-    Strength: 16
-    Defense: 14
-    Health: 60
+    Attack: 9
+    Strength: 9
+    Defense: 8
+    Health: 35
     Ranged: 1
     Magic: 1
     Healing: 1

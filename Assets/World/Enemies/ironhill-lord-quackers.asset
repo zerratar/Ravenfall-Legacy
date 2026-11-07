@@ -17,16 +17,16 @@ MonoBehaviour:
     Name: Lord Quackers
     Area: Ironhill Island, Fighting Lv. 100
     Family: 4
-    Attack: 120
-    Strength: 150
-    Defense: 120
-    Health: 150
+    Attack: 102
+    Strength: 128
+    Defense: 102
+    Health: 128
     Ranged: 1
     Magic: 1
     Healing: 0
-    Power: 41
-    Accuracy: 34
-    Armor: 426
+    Power: 36
+    Accuracy: 30
+    Armor: 291
     Style: 0
     Element: 0
     ElementShare: 0

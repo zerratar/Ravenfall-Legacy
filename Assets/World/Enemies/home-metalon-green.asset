@@ -17,16 +17,16 @@ MonoBehaviour:
     Name: Green Metalon
     Area: Main Island, Fighting Lv. 40
     Family: 5
-    Attack: 88
-    Strength: 78
-    Defense: 69
-    Health: 50
+    Attack: 56
+    Strength: 49
+    Defense: 44
+    Health: 32
     Ranged: 1
     Magic: 1
     Healing: 0
-    Power: 33
-    Accuracy: 26
-    Armor: 243
+    Power: 22
+    Accuracy: 17
+    Armor: 132
     Style: 0
     Element: 0
     ElementShare: 0

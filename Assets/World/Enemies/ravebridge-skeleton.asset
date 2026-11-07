@@ -17,10 +17,10 @@ MonoBehaviour:
     Name: Skeleton
     Area: Ravebridge, Fighting Lv. 10 (skeletons)
     Family: 2
-    Attack: 10
-    Strength: 10
-    Defense: 9
-    Health: 32
+    Attack: 7
+    Strength: 7
+    Defense: 6
+    Health: 21
     Ranged: 1
     Magic: 1
     Healing: 1

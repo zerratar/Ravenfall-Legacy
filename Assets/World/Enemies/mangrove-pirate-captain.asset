@@ -17,16 +17,16 @@ MonoBehaviour:
     Name: Pirate Captain
     Area: Mangrove, Fighting Lv. 1
     Family: 1
-    Attack: 25
-    Strength: 25
-    Defense: 25
-    Health: 60
+    Attack: 4
+    Strength: 4
+    Defense: 4
+    Health: 11
     Ranged: 1
     Magic: 1
     Healing: 1
-    Power: 22
-    Accuracy: 17
-    Armor: 132
+    Power: 17
+    Accuracy: 14
+    Armor: 72
     Style: 0
     Element: 0
     ElementShare: 0

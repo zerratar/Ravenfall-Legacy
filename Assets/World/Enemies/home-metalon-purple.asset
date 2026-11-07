@@ -17,16 +17,16 @@ MonoBehaviour:
     Name: Purple Metalon
     Area: Main Island, Fighting Lv. 40
     Family: 5
-    Attack: 60
-    Strength: 68
-    Defense: 62
-    Health: 40
+    Attack: 42
+    Strength: 48
+    Defense: 44
+    Health: 28
     Ranged: 1
     Magic: 1
     Healing: 0
-    Power: 26
-    Accuracy: 20
-    Armor: 177
+    Power: 22
+    Accuracy: 17
+    Armor: 132
     Style: 0
     Element: 0
     ElementShare: 0

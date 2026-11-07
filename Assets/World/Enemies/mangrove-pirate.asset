@@ -17,16 +17,16 @@ MonoBehaviour:
     Name: Pirate
     Area: Mangrove, Fighting Lv. 1
     Family: 1
-    Attack: 12
-    Strength: 12
-    Defense: 12
-    Health: 25
+    Attack: 1
+    Strength: 1
+    Defense: 1
+    Health: 10
     Ranged: 1
     Magic: 1
     Healing: 1
-    Power: 20
-    Accuracy: 15
-    Armor: 98
+    Power: 17
+    Accuracy: 14
+    Armor: 72
     Style: 0
     Element: 0
     ElementShare: 0

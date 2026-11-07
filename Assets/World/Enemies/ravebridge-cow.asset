@@ -17,10 +17,10 @@ MonoBehaviour:
     Name: Cow
     Area: Ravebridge, Fighting Lv. 1 (cows)
     Family: 0
-    Attack: 2
-    Strength: 2
-    Defense: 2
-    Health: 10
+    Attack: 1
+    Strength: 1
+    Defense: 1
+    Health: 5
     Ranged: 1
     Magic: 1
     Healing: 1

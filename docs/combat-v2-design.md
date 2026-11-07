@@ -365,7 +365,14 @@ Phase 1 (foundation), started 2026-11-07:
   elven soldiers 5.9 (70%). **Areas whose requirement is below their enemies** (simulator, a player at the
   requirement): Ravebridge's skeletons and souls (level 15 and 26 at "Lv. 10/15"), Home's purple and green Metalons
   (57 and 71 at "Lv. 40"), Ironhill's dragons (120 to 135 at "Lv. 100") and Mangrove's "Lv. 1" pirates (15 and 34):
-  a player at the requirement loses most fights there. Raise those requirements, or lower the enemies.
+  a player at the requirement loses most fights there. **Fixed (2026-11-07)** by lowering those enemies
+  (`tools/combat/fit-enemy-levels.cs`), not raising the areas: Home's Lv. 40 area holds all three Metalons (raising it
+  would lock out the red one and leave nothing between 20 and 71), Ironhill at 120 would leave a gap after Small
+  Island's 50, and every island from Kyojin up keeps its enemies at or below the requirement. Now: Ravebridge cows 2,
+  goblins 5, skeletons 10, the soul 15; Mangrove pirates 3, the captain 6; purple Metalons 40, green 45; Ironhill's
+  dragons 100, Lord Quackers 115. A player at the requirement loses at most 10% of fights against the regular enemies;
+  the tougher ones are meant to be harder (green Metalon 24%, the captain 18%, Lord Quackers 45%). Ravebridge takes any
+  character, and maxed ones beat these whatever their level.
 - [x] Raid and dungeon bosses (2026-11-07, with the new combat; simulator `bosses tuned`): the raid boss's health pool
   grows with the raiders expected (the past raids' average, or the players in the game): 2.5 times at ten, at least
   half that, its level and rewards unchanged, so a raid takes 3.3 to 5.9 minutes at any group size. Dungeon bosses: a

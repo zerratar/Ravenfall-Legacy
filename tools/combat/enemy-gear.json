@@ -6,22 +6,22 @@
     "Armor": 72
   },
   {
+    "Id": "mangrove-pirate",
+    "Power": 17,
+    "Accuracy": 14,
+    "Armor": 72
+  },
+  {
     "Id": "ravebridge-cow",
     "Power": 17,
     "Accuracy": 14,
     "Armor": 72
   },
   {
-    "Id": "mangrove-pirate",
-    "Power": 20,
-    "Accuracy": 15,
-    "Armor": 98
-  },
-  {
     "Id": "mangrove-pirate-captain",
-    "Power": 22,
-    "Accuracy": 17,
-    "Armor": 132
+    "Power": 17,
+    "Accuracy": 14,
+    "Armor": 72
   },
   {
     "Id": "ravebridge-goblin",
@@ -55,15 +55,15 @@
   },
   {
     "Id": "home-metalon-purple",
-    "Power": 26,
-    "Accuracy": 20,
-    "Armor": 177
+    "Power": 22,
+    "Accuracy": 17,
+    "Armor": 132
   },
   {
     "Id": "home-metalon-green",
-    "Power": 33,
-    "Accuracy": 26,
-    "Armor": 243
+    "Power": 22,
+    "Accuracy": 17,
+    "Armor": 132
   },
   {
     "Id": "away-pirate",
@@ -79,45 +79,45 @@
   },
   {
     "Id": "ironhill-dragon",
-    "Power": 41,
-    "Accuracy": 34,
-    "Armor": 426
+    "Power": 36,
+    "Accuracy": 30,
+    "Armor": 291
   },
   {
     "Id": "ironhill-dragon-blue",
-    "Power": 41,
-    "Accuracy": 34,
-    "Armor": 426
+    "Power": 36,
+    "Accuracy": 30,
+    "Armor": 291
   },
   {
     "Id": "ironhill-dragon-green",
-    "Power": 41,
-    "Accuracy": 34,
-    "Armor": 426
+    "Power": 36,
+    "Accuracy": 30,
+    "Armor": 291
   },
   {
     "Id": "ironhill-dragon-purple",
-    "Power": 41,
-    "Accuracy": 34,
-    "Armor": 426
+    "Power": 36,
+    "Accuracy": 30,
+    "Armor": 291
   },
   {
     "Id": "ironhill-dragon-red",
-    "Power": 41,
-    "Accuracy": 34,
-    "Armor": 426
+    "Power": 36,
+    "Accuracy": 30,
+    "Armor": 291
   },
   {
     "Id": "ironhill-dragon-white",
-    "Power": 41,
-    "Accuracy": 34,
-    "Armor": 426
+    "Power": 36,
+    "Accuracy": 30,
+    "Armor": 291
   },
   {
     "Id": "ironhill-lord-quackers",
-    "Power": 41,
-    "Accuracy": 34,
-    "Armor": 426
+    "Power": 36,
+    "Accuracy": 30,
+    "Armor": 291
   },
   {
     "Id": "kyojin-ninja",
