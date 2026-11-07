@@ -9,8 +9,16 @@ using UnityEngine;
 using UnityEngine.AI;
 
 
-public class EnemyController : MonoBehaviour, IAttackable, IPollable
+public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyDefinition
 {
+    /// <summary>
+    ///     The kind of enemy this is (combat v2): its levels, style, element, resistances and skills. Its levels replace
+    ///     the scene's when it wakes, unless the definition is scaled by its encounter (dungeons, raids).
+    /// </summary>
+    public EnemyDefinitionAsset Definition;
+
+    public RavenNest.Combat.EnemyDefinition CombatDefinition => Definition ? Definition.Definition : null;
+
     internal readonly HashSet<string> AttackerNames = new HashSet<string>();
     internal readonly List<IAttackable> Attackers = new List<IAttackable>();
     private readonly Dictionary<string, float> attackerAggro = new Dictionary<string, float>();
@@ -364,6 +372,20 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
             hitRangeRadius = hitRangeCollider.radius;
         }
     }
+    /// <summary>
+    ///     Takes the levels, gear numbers and attack speed from the definition. Runs on Awake, so code that spawns an
+    ///     enemy and then sets its stats (dungeons, waves, the pirates' raid) still has the last word.
+    /// </summary>
+    public void ApplyDefinition()
+    {
+        if (!Definition || Definition.Definition == null) return;
+        var d = Definition.Definition;
+        if (d.AttackInterval > 0) attackInterval = (float)d.AttackInterval;
+        if (d.Scaled) return;
+        Stats = Definition.CreateSkills();
+        EquipmentStats = Definition.CreateEquipment();
+    }
+
     public float GetHitRange()
     {
         return hitRangeRadius;
@@ -372,6 +394,7 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
     void Awake()
     {
         this._transform = this.transform;
+        ApplyDefinition();
         AssignManagers();
         FindFirstObjectByType<EnemyManager>().Register(this);
     }
@@ -606,7 +629,10 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
                     return;
                 }
 
-                var damage = GameMath.CalculateMeleeDamage(this, targetPlayer);
+                var style = Definition && Definition.Definition != null ? Definition.Definition.Style : RavenNest.Combat.AttackStyle.Melee;
+                var damage = style == RavenNest.Combat.AttackStyle.Ranged ? GameMath.CalculateRangedDamage(this, targetPlayer)
+                    : style == RavenNest.Combat.AttackStyle.Magic ? GameMath.CalculateMagicDamage(this, targetPlayer)
+                    : GameMath.CalculateMeleeDamage(this, targetPlayer);
                 if (atHero) GameSounds.Play(SoundKind.HeroStruck, targetPlayer.Position + Vector3.up, 0.6f, 0f, targetPlayer);
                 if (targetPlayer.TakeDamage(this, (int)damage))
                 {

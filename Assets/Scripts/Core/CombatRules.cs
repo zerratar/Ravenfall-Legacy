@@ -111,6 +111,10 @@ public static class CombatRules
             sheet.Magic.AimLevel = (int)(sheet.Magic.AimLevel * hitChance);
         }
 
+        // an enemy's element, resistances and boss flag come from its definition
+        if (fighter is IHasEnemyDefinition defined && defined.CombatDefinition != null)
+            defined.CombatDefinition.ApplyElement(sheet);
+
         return sheet;
     }
 }

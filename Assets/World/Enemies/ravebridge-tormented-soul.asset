@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ad09737d6ccd3dc45a6b2ba865310faf, type: 3}
+  m_Name: ravebridge-tormented-soul
+  m_EditorClassIdentifier: Ravenfall.Core::EnemyDefinitionAsset
+  Definition:
+    Id: ravebridge-tormented-soul
+    Name: Tormented Soul
+    Area: Ravebridge, Fighting Lv. 15 (soul)
+    Family: 3
+    Attack: 16
+    Strength: 16
+    Defense: 14
+    Health: 60
+    Ranged: 1
+    Magic: 1
+    Healing: 1
+    Power: 0
+    Accuracy: 0
+    Armor: 0
+    Style: 0
+    Element: 0
+    ElementShare: 0
+    Resistance:
+      Physical: 0
+      Fire: -0.25
+      Ice: 0.25
+      Lightning: 0
+      Poison: 1
+    Skills: []
+    AttackInterval: 1.5
+    IsBoss: 0
+    Scaled: 0

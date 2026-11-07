@@ -247,12 +247,29 @@ Phase 1 (foundation), started 2026-11-07:
 - [x] The simulator `src/tools/RavenNest.CombatSimulator` with `parity`; armour tuned to 640 from it.
 - [x] The game uses the library (`Assets/Scripts/Core/CombatRules.cs`, switch `CombatRules.Enabled`) and Health
   is a pool of ten per level everywhere (game 8531a41). Play mode checked with 30 bots.
-- [ ] Enemy definitions (attack style, element, resistances, skills) generated from the scenes' stats.
+- [x] Enemy definitions (attack style, element, resistances, skills): `EnemyDefinition` in the library, one
+  `EnemyDefinitionAsset` per kind in `Assets/World/Enemies` (28: 26 island kinds, the dungeon and raid bosses as
+  scaled), every MainWorld enemy points at its kind and takes its levels from it on Awake. Made by
+  `tools/combat/make-enemy-definitions.py` and `apply-enemy-definitions.cs`; exported to the simulator with
+  Ravenfall > Combat > Export Enemy Definitions To Simulator. Resistances are flavour for now (nothing deals element
+  damage yet) and every kind still attacks in melee with physical damage.
+  **Found on the way:** the Unity 6.7 upgrade (c016ead, 2026-08-14) made SkillStat's levels `ObscuredIntSplit`, and Unity
+  dropped the old numbers from the scene: 136 of the island enemies (Home's bunnies, cows and Metalons, the away
+  island's pirates, Ironhill, Kyojin, Iceheim, Atria, Eldara) have been combat level 3 with 10 HP in every release
+  since, v0.9.5.0 to v0.9.6.1 included. Their levels come back from MainWorld at f944e82 (2025-05-09), matched by
+  file ID. Two strays were evened out with their group (one bunny with Defense 3 instead of 4, one Red Metalon with
+  Health 35 instead of 20).
 - [ ] Elements and resistances on gear (the server's flexible item stat list and the migration of aim/power).
 - [ ] Threat and status effects wired into the game's fights (the library has both; the game still uses its own
   threat table and ignores poison, bleed and burn).
 - [ ] The baseline bugs: double counted POWER/AIM/ARMOR enchantments, StyleBonus, the raid boss's history.
-- [ ] Simulator scenarios against real island enemies, raids and dungeons, once enemy definitions exist.
+- [~] Simulator scenarios: `enemies` (a player at each fighting area's requirement, every combat skill at that level,
+  best melee gear, against its enemies) is in; raids and dungeons are next. First results (swings to win, new rules):
+  Home 2 to 6, Ravebridge 8 to 16, the away island's pirates 5 to 7, Ironhill 6 to 9, then Kyojin 4, Iceheim 3 to 5,
+  Atria 3 and Eldara 2. From Kyojin up the enemies sit below their area's requirement and have no gear, so a player at
+  the requirement barely gets touched; the next tuning step gives enemies power, accuracy and armour like the best
+  gear at their level (the parity table says that lands at 4 to 9 swings). Mangrove's "Lv. 1" group holds level 15
+  pirates and a level 34 captain that a new character cannot beat (today's rules or new).
 
 ## Open questions
 
