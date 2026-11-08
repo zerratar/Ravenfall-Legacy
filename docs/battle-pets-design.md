@@ -289,6 +289,16 @@ a bot taming a bunny (it went to the bunnies by itself) and Taming rising from t
 - **Taming's icon** in the details window: the icon pack's bear paw. No name tags over pets (they would crowd the
   player tags at overview zoom).
 
+### Round three (2026-11-08)
+
+- **/pets on the website**: how pets work and every kind there is, with pictures rendered from the game's own models
+  (tools/website/pet-renders.cs in edit mode, then pet-renders.py crops them into the website's imgs/pets; the orbs
+  have no mesh and no picture). The character's Pets tab shows them too.
+- **The character details window** shows the pet that is out as the last chip of the loadout row: name and level over
+  its health, red while knocked out, its kind and skills in the tooltip.
+- A leaving player's unsent pet experience is sent at once; on a tower floor a pet fights at most at its owner's synced
+  level. Guard and Moo say what they really do (the pet takes the blows).
+
 ### Not yet done
 
 - The signed-in path (the server commands with a real character, the stable on join) is built but untested: bots
