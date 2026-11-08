@@ -145,7 +145,8 @@ public class PetCommand : ChatBotCommandHandler<string>
     {
         var pets = player.BattlePets;
         if (pets.Stable.Count == 0) { client.SendReply(gm, Localization.MSG_PET_NONE); return; }
-        client.SendReply(gm, Localization.MSG_PET_STABLE, pets.Stable.Count, BattlePets.StableSize(player.Stats.Taming.Level), List(player));
+        var size = pets.ServerStableSize > 0 ? pets.ServerStableSize : BattlePets.StableSize(player.Stats.Taming.Level);
+        client.SendReply(gm, Localization.MSG_PET_STABLE, pets.Stable.Count, size, List(player));
     }
 
     private async Task Use(PlayerController player, string name, GameMessage gm, GameClient client)
