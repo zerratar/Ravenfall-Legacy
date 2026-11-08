@@ -515,6 +515,8 @@ namespace Shinobytes.UI
                 SettingsApplier.SetAmbientEffects);
             Switch(c, Localization.UI_SETTINGS_TREE_WIND, Localization.UI_SETTINGS_TREE_WIND_HINT, SettingsApplier.TreeWind, SettingsApplier.Defaults.TreeWind,
                 SettingsApplier.SetTreeWind);
+            Switch(c, Localization.UI_SETTINGS_BATTLE_PETS, Localization.UI_SETTINGS_BATTLE_PETS_HINT, SettingsApplier.BattlePets, SettingsApplier.Defaults.BattlePets,
+                SettingsApplier.SetBattlePets);
             Switch(c, Localization.UI_SETTINGS_DUNGEON_LIGHTING, Localization.UI_SETTINGS_DUNGEON_LIGHTING_HINT, SettingsApplier.DungeonLighting, SettingsApplier.Defaults.DungeonLighting,
                 SettingsApplier.SetDungeonLighting);
             Switch(c, Localization.UI_SETTINGS_HAZE, Localization.UI_SETTINGS_HAZE_HINT, SettingsApplier.AtmosphericHaze, SettingsApplier.Defaults.AtmosphericHaze,

@@ -37,7 +37,7 @@ public static class PetFx
         }
     }
 
-    private static bool On => GraphicsToggler.GraphicsEnabled;
+    private static bool On => GraphicsToggler.GraphicsEnabled && BattlePetController.Shown;
 
     /// <summary>A material of one colour (a property block does not tint the unlit shader under the SRP batcher).</summary>
     private static Material Tinted(Color color)

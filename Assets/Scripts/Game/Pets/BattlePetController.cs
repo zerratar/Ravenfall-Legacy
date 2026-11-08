@@ -28,6 +28,21 @@ public sealed class BattlePetController : MonoBehaviour
     public bool KnockedOut => Time.time < knockedUntil;
     public float Height => model != null ? model.Height : 0.6f;
 
+    /// <summary>Whether battle pets are drawn (Settings > Battle pets, never in potato mode). Unseen, they still fight.</summary>
+    public static bool Shown
+    {
+        get
+        {
+            if (shownFrame == Time.frameCount) return shown;
+            shownFrame = Time.frameCount;
+            var game = GameManager.Instance;
+            shown = SettingsApplier.BattlePets && !(game && game.PotatoMode);
+            return shown;
+        }
+    }
+    private static bool shown = true;
+    private static int shownFrame = -1;
+
     private PetModels.Model model;
     private PetClipPlayer clips;
     private CombatSheet sheet;
@@ -113,10 +128,11 @@ public sealed class BattlePetController : MonoBehaviour
     private void Update()
     {
         if (!Owner || Owner.isDestroyed) { Destroy(gameObject); return; }
-        clips?.Tick();
 
         var hidden = Owner.ferryHandler.OnFerry || Owner.ferryHandler.Active || Owner.onsenHandler.InOnsen || Owner.Stats == null || Owner.Stats.IsDead;
-        if (model != null && model.Root && model.Root.activeSelf == hidden) model.Root.SetActive(!hidden);
+        var drawn = !hidden && Shown;
+        if (model != null && model.Root && model.Root.activeSelf != drawn) model.Root.SetActive(drawn);
+        if (drawn) clips?.Tick();
         if (hidden) { placed = false; move = Move.None; return; }
 
         if (KnockedOut) { Lie(); return; }
@@ -236,6 +252,12 @@ public sealed class BattlePetController : MonoBehaviour
         moveTarget = target;
         moveHit = hit;
         moveStarted = Time.time;
+        if (!Shown)
+        {
+            // unseen: the blow lands at once, no leap or bolt to watch
+            RunHit();
+            return;
+        }
         switch (Species.Strike)
         {
             case PetStrike.Bite:

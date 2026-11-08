@@ -113,7 +113,7 @@ namespace RavenNest.Protocol
         /// <summary>(Guid characterId) -> PetResult with Pets: the stable</summary>
         public const string PetList = "pets.list";
 
-        /// <summary>(Guid characterId, string species) -> PetResult: a creature tamed (the game rolled the chance)</summary>
+        /// <summary>(Guid characterId, string species, Guid treatItemId (empty: none)) -> PetResult: a creature tamed (the game rolled the chance; the treat is eaten)</summary>
         public const string PetTame = "pets.tame";
 
         /// <summary>(Guid characterId, Guid itemId) -> PetResult: a pet item the character has, woken to fight</summary>

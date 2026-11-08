@@ -107,7 +107,7 @@ public sealed class PlayerBattlePets
         if (now >= nextHide)
         {
             nextHide = now + 1f;
-            ShowCosmetic(!Controller);
+            ShowCosmetic(!Controller || !BattlePetController.Shown);
             if (Active != null && !Controller) Sync(); // a model that could not be made, or the player came back
         }
 
@@ -218,7 +218,9 @@ public sealed class PlayerBattlePets
         var exp = GameMath.ExperienceForLevel(level + 1) / RavenNest.Combat.Taming.TriesPerLevel(level) * RavenNest.Combat.Taming.TryShare(level, species.TameLevel);
         if (stat.AddExp(exp, out var levels)) owner.CelebrateSkillLevelUp(RavenNest.Models.Skill.Taming, levels);
 
-        if (UnityEngine.Random.value >= RavenNest.Combat.Taming.Chance(stat.Level, species)) return;
+        // a treat it loves makes it likelier, and is eaten when it works
+        var treat = Treat(species);
+        if (UnityEngine.Random.value >= RavenNest.Combat.Taming.Chance(stat.Level, species, treat != null)) return;
         if (owner.IsBot)
         {
             AddLocal(species.Id);
@@ -228,7 +230,7 @@ public sealed class PlayerBattlePets
 
         try
         {
-            var result = await owner.GameManager.RavenNest.Players.PetTameAsync(owner.Id, species.Id);
+            var result = await owner.GameManager.RavenNest.Players.PetTameAsync(owner.Id, species.Id, treat?.Item?.Id ?? Guid.Empty);
             if (result == null) return;
             if (result.Status == PetResultStatus.StableFull)
             {
@@ -244,6 +246,18 @@ public sealed class PlayerBattlePets
         {
             Shinobytes.Debug.LogError("Taming for " + owner.PlayerName + ": " + exc.Message);
         }
+    }
+
+    /// <summary>A treat the species loves that the owner carries, or null.</summary>
+    public GameInventoryItem Treat(PetSpecies species)
+    {
+        if (species?.Treats == null || species.Treats.Length == 0 || owner.Inventory == null) return null;
+        foreach (var item in owner.Inventory.GetAllItems())
+        {
+            if (item?.Item == null || item.Amount <= 0 || (item.InventoryItem != null && item.InventoryItem.Equipped)) continue;
+            foreach (var t in species.Treats) if (string.Equals(t, item.Item.Name, StringComparison.OrdinalIgnoreCase)) return item;
+        }
+        return null;
     }
 
     private void Tamed(Vector3 where, PetSpecies species)

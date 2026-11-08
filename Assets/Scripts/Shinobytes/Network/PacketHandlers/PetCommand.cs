@@ -241,7 +241,7 @@ public class PetCommand : ChatBotCommandHandler<string>
             ?? BattlePets.SpeciesForCreature(null, name)
             ?? BattlePets.Species.FirstOrDefault(x => x.StageNames.Any(n => n.IndexOf(name ?? "", StringComparison.OrdinalIgnoreCase) >= 0) && !string.IsNullOrWhiteSpace(name));
         if (s == null) { client.SendReply(gm, Localization.MSG_PET_UNKNOWN_KIND, name); return; }
-        var how = s.Source == PetSource.Tamed ? string.Format(Localization.MSG_PET_ABOUT_TAME, s.TameLevel) : Localization.MSG_PET_ABOUT_ITEM;
+        var how = s.Source == PetSource.Tamed ? string.Format(Localization.MSG_PET_ABOUT_TAME, s.TameLevel, string.Join(" or ", s.Treats)) : Localization.MSG_PET_ABOUT_ITEM;
         client.SendReply(gm, Localization.MSG_PET_ABOUT, s.NameAt(0), Role(s.Role), Element(s.Element), Strike(s.Strike), s.Blurb, how, string.Join(", ", s.StageNames));
     }
 
@@ -302,7 +302,7 @@ public class TameCommand : ChatBotCommandHandler<string>
         if (text.Length == 0)
         {
             if (pets.Taming == null) client.SendReply(gm, Localization.MSG_TAME_NOTHING);
-            else client.SendReply(gm, Localization.MSG_TAME_STATUS, pets.Taming.NameAt(0), ChanceText(level, pets.Taming), level);
+            else client.SendReply(gm, Localization.MSG_TAME_STATUS, pets.Taming.NameAt(0), ChanceText(level, pets.Taming, pets.Treat(pets.Taming) != null), level);
             return;
         }
         if (text.Equals("stop", StringComparison.OrdinalIgnoreCase) || text.Equals("off", StringComparison.OrdinalIgnoreCase))
@@ -315,13 +315,15 @@ public class TameCommand : ChatBotCommandHandler<string>
         var species = Find(text);
         var problem = pets.StartTaming(species, text);
         if (problem != null) { client.SendReply(gm, Localization.MSG_TAME_CANNOT, problem); return; }
+        var treat = pets.Treat(species);
         client.SendReply(gm, player.ActiveSkill.IsCombatSkill() ? Localization.MSG_TAME_STARTED : Localization.MSG_TAME_NOT_FIGHTING,
-            species.NameAt(0), ChanceText(level, species), level);
+            species.NameAt(0), ChanceText(level, species, treat != null), level);
+        client.SendReply(gm, treat != null ? Localization.MSG_TAME_TREAT : Localization.MSG_TAME_NO_TREAT, treat?.Item?.Name ?? string.Join(" or ", species.Treats), species.NameAt(0));
     }
 
-    private static string ChanceText(int level, PetSpecies species)
+    private static string ChanceText(int level, PetSpecies species, bool treat = false)
     {
-        var c = Taming.Chance(level, species) * 100;
+        var c = Taming.Chance(level, species, treat) * 100;
         return c.ToString(c < 1 ? "0.##" : "0.#", CultureInfo.InvariantCulture) + "%";
     }
 

@@ -85,6 +85,7 @@ public static class SettingsApplier
         public const float AmbientOcclusionStrength = 0.4f;
         public const bool AmbientEffects = true;
         public const bool TreeWind = true;
+        public const bool BattlePets = true;
         public const bool DungeonLighting = true;
         public const float NightBrightness = 0.75f;
         public const bool AtmosphericHaze = true;
@@ -762,6 +763,14 @@ public static class SettingsApplier
     }
 
     private static void ApplyTreeWind() => Wind.Enabled = TreeWind;
+
+    // ---- Battle pets --------------------------------------------------------------------------------
+    // The battle pets beside their owners, with their leaps, bolts and rings (docs/battle-pets-design.md). Off, and in
+    // potato mode, they still fight and take blows, unseen; the cosmetic pets show again.
+
+    public static bool BattlePets => PlayerSettings.Instance.BattlePets.GetValueOrDefault(Defaults.BattlePets);
+
+    public static void SetBattlePets(bool value) => PlayerSettings.Instance.BattlePets = value;
 
     // ---- Dungeon lighting ------------------------------------------------------------------------
     // Dungeons by torchlight. Potato mode leaves them in plain daylight, without changing the setting.

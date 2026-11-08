@@ -60,6 +60,8 @@ public class PlayerSettings
     public float? AmbientOcclusionStrength;
     public bool? AmbientEffects;
     public bool? TreeWind;
+    /// <summary>Battle pets are drawn beside their owners (off, and in potato mode, they still fight, unseen).</summary>
+    public bool? BattlePets;
     public bool? DungeonLighting;
     public float? NightBrightness;
     public bool? AtmosphericHaze;
@@ -470,6 +472,7 @@ public class PlayerSettings
             Serialize(sw, "ambientOcclusionStrength", obj.AmbientOcclusionStrength);
             Serialize(sw, "ambientEffects", obj.AmbientEffects);
             Serialize(sw, "treeWind", obj.TreeWind);
+            Serialize(sw, "battlePets", obj.BattlePets);
             Serialize(sw, "dungeonLighting", obj.DungeonLighting);
             Serialize(sw, "nightBrightness", obj.NightBrightness);
             Serialize(sw, "atmosphericHaze", obj.AtmosphericHaze);
