@@ -6,10 +6,11 @@ using RavenNest.Combat;
 using RavenNest.Models;
 
 /// <summary>
-///     Battle pets from chat (docs/battle-pets-design.md). The bot sends "pet_command" with the action first: !pet (the
-///     pet that is out), !pet stable, !pet use (name or number), !pet away, !pet rename (name), !pet skills, !pet slot 2
-///     howl, !pet evolve, !pet wake (a pet item you have; the one you wear when left out), !pet release (name) confirm,
-///     !pet about (kind). The server keeps the stable; the answer brings it back and the pet in the world follows.
+///     Battle pets from chat (docs/battle-pets-design.md). !pet stays the cosmetic pet; the bot sends "pet_command" for
+///     !pets with the action first: !pets (the pet that is out), !pets stable, !pets use (name or number), !pets away,
+///     !pets rename (name), !pets skills, !pets slot 2 howl, !pets evolve, !pets wake (a pet item you have; the one you
+///     wear when left out), !pets release (name) confirm, !pets about (kind). The server keeps the stable; the answer
+///     brings it back and the pet in the world follows.
 /// </summary>
 public class PetCommand : ChatBotCommandHandler<string>
 {

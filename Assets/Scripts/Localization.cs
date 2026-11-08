@@ -1560,9 +1560,9 @@ public static class Localization
     public static string MSG_GEM_ERROR = Meta("gems", "fail") + "The gem did not take. Try again in a moment.";
 
     // battle pets (docs/battle-pets-design.md)
-    public static string MSG_PET_USAGE = Meta("pets", "fail") + "!pet shows your pet. !pet stable, !pet use (name), !pet away, !pet rename (name), !pet skills, !pet slot 2 howl, !pet evolve, !pet wake (pet item), !pet about (kind). !tame (creature) tames.";
-    public static string MSG_PET_NONE = Meta("pets") + "You have no battle pets yet. !tame bunny on the home island, or !pet wake to wake a pet item you have.";
-    public static string MSG_PET_NONE_OUT = Meta("pets") + "No pet is out. !pet use (name) sends one out: {pets}.";
+    public static string MSG_PET_USAGE = Meta("pets", "fail") + "!pets shows your battle pet. !pets stable, !pets use (name), !pets away, !pets rename (name), !pets skills, !pets slot 2 howl, !pets evolve, !pets wake (pet item), !pets about (kind). !tame (creature) tames.";
+    public static string MSG_PET_NONE = Meta("pets") + "You have no battle pets yet. !tame bunny on the home island, or !pets wake to wake a pet item you have.";
+    public static string MSG_PET_NONE_OUT = Meta("pets") + "No pet is out. !pets use (name) sends one out: {pets}.";
     public static string MSG_PET_INFO = Meta("pets") + "{name}, a level {level} {kind} ({role}, {element}, {strike}). Health {health}/{max}. Skills: {skills}. {next}";
     public static string MSG_PET_NEXT_EVOLVE = "Evolves into {0} at level {1} (Taming {2}).";
     public static string MSG_PET_NEXT_DONE = "Fully evolved.";
@@ -1575,7 +1575,7 @@ public static class Localization
     public static string MSG_PET_EVOLVED = Meta("pets") + "{player}'s {old} evolved into {new}!";
     public static string MSG_PET_CANNOT_EVOLVE = Meta("pets", "fail") + "{name} cannot evolve yet: it needs {missing}.";
     public static string MSG_PET_WOKEN = Meta("pets") + "Your {item} woke up, ready to fight as a {kind} ({role}, {strike}). It is out with you.";
-    public static string MSG_PET_ALREADY_AWAKE = Meta("pets", "fail") + "{name} is awake already. !pet use {name} sends it out.";
+    public static string MSG_PET_ALREADY_AWAKE = Meta("pets", "fail") + "{name} is awake already. !pets use {name} sends it out.";
     public static string MSG_PET_NO_ITEM = Meta("pets", "fail") + "You have no pet item called {name}.";
     public static string MSG_PET_NOT_A_PET = Meta("pets", "fail") + "{name} is not a pet that can fight.";
     public static string MSG_PET_ITEM_MISSING = Meta("pets", "fail") + "{name} only comes out while you have its pet item.";
@@ -1584,11 +1584,11 @@ public static class Localization
     public static string MSG_PET_NOT_LEARNED = Meta("pets", "fail") + "{name} learns {skill} at level {level}.";
     public static string MSG_PET_NO_SLOT = Meta("pets", "fail") + "{name} has {count} skill slots.";
     public static string MSG_PET_BAD_NAME = Meta("pets", "fail") + "That name will not do: letters, numbers and spaces, at most 24.";
-    public static string MSG_PET_RELEASE_CONFIRM = Meta("pets", "fail") + "Letting {name} go is for good. !pet release {name} confirm, if you are sure.";
+    public static string MSG_PET_RELEASE_CONFIRM = Meta("pets", "fail") + "Letting {name} go is for good. !pets release {name} confirm, if you are sure.";
     public static string MSG_PET_RELEASED = Meta("pets") + "{name} went back to the wild. It looked back once.";
     public static string MSG_PET_ABOUT = Meta("pets") + "{kind} ({role}, {element}, {strike}): {blurb} {how} Stages: {stages}.";
     public static string MSG_PET_ABOUT_TAME = "Tame it with !tame at Taming {0}.";
-    public static string MSG_PET_ABOUT_ITEM = "Wake its pet item with !pet wake.";
+    public static string MSG_PET_ABOUT_ITEM = "Wake its pet item with !pets wake.";
     public static string MSG_PET_UNKNOWN_KIND = Meta("pets", "fail") + "There is no kind of pet called {name}.";
     public static string MSG_PET_ERROR = Meta("pets", "fail") + "Your pet did not hear you. Try again in a moment.";
     public static string MSG_PET_TAMED = Meta("pets") + "{player} tamed a {kind}!";
