@@ -283,8 +283,9 @@ a bot taming a bunny (it went to the bunnies by itself) and Taming rising from t
   half as likely again; one is eaten when it works. `!tame` and `!pets about` name them.
 - **Starter pets**: `!pets starter fox` (damage), `bear` (tank) or `fawn` (healer) for an empty stable, on the HD animal
   models. This stands in for the starter quest.
-- **Menagerie**, the clan skill: opens at clan level 20, fed a tenth of the experience members' pets earn; members'
-  pets earn 0.1% more a level (50% at most) and their stables hold one more pet at 100, two at 300. The skill row is
+- **Menagerie**, the clan skill: opens at clan level 20 and grows while members have pets out (see "Menagerie grows from
+  time" below; it first took a tenth of the pets' experience, far too fast); members' pets earn 0.1% more a level (50%
+  at most) and their stables hold one more pet at 100, two at 300. The skill row is
   made at startup with a fixed id. Clan pages show it at once.
 - **Taming's icon** in the details window: the icon pack's bear paw. No name tags over pets (they would crowd the
   player tags at overview zoom).
@@ -325,6 +326,26 @@ independent review of the same path ran alongside. Fixed:
 
 Still unseen: gatherer bonuses in real drops, the Menagerie growing on a clan of level 20, a real evolution (needs
 pet level 30 and Taming 50), the website Pets tab signed in.
+
+### Menagerie grows from time (2026-11-08)
+
+Zerratar: the first test put a clan's Menagerie from 1 to 33 off one player's report; clans with hundreds of players
+would max it in days, and Enchanting, the other clan skill, only grows when members use its command on a cooldown
+(after five years the best clan, 655 members, is 412; the average is 54). An idle skill must grow slower than that.
+
+Now Menagerie grows from the **minutes members have a pet out**, not from what the pets earn (which grows with levels).
+Each level takes 60 minutes times the level of one member's pet time (an hour for level 2, 100 hours for level 101),
+and n members out at once count as 1 + log2(n) members: 2 count as 2, 20 as 5.3, 300 as 9.2. Every pet report (once a
+minute while a pet earns) adds the minutes since that member's last one, at most 1.5. Days to a level:
+
+| Clan | 20 | 100 | 250 | 412 | 500 |
+|---|---|---|---|---|---|
+| 300 members out at once, all day and night | 1 | 22 | 141 | 382 | 563 |
+| 20 out at once, 16 hours a day | 2 | 58 | 366 | 994 | 1465 |
+| 3 out at once, 4 hours a day | 18 | 479 | 3010 | | |
+
+The numbers live in RavenNest.Combat `Menagerie` (MinutesPerLevel, Pace, ShareOfLevel), with a test that a big clan
+stays well behind Enchanting's best. The dev clan's test level was set back to 1.
 
 ### Not yet done
 
