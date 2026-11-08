@@ -299,10 +299,34 @@ a bot taming a bunny (it went to the bunnies by itself) and Taming rising from t
 - A leaving player's unsent pet experience is sent at once; on a tower floor a pet fights at most at its owner's synced
   level. Guard and Moo say what they really do (the pet takes the blows).
 
+### The signed-in path tested (2026-11-08)
+
+Run on the local server with Zerratar's dev character through the real chat handlers (replies kept, never sent):
+`!pets` (empty stable, info, stable, starter, rename, skills, slot, evolve, about, wake, release with and without
+confirm, away, use), `!tame` (a creature, too high a level, a player, stop), the server's tame with its pause, the
+experience share, the per-minute report, the report on leaving, and the stable and Taming coming back on join. An
+independent review of the same path ran alongside. Fixed:
+
+- **Pets were never saved.** `Pet.PlayTime` is a bigint column and the save sent TimeSpans as text, so every pet
+  insert failed and pets lived only in the server's memory. TimeSpans are written as ticks now; the old server's
+  unsaved changes were replayed on the next start. The first start with saved pets then failed to load: Happiness and
+  Hunger are float (8 byte) columns read as 4 byte floats. Both mapped now.
+- A pet at its Taming cap lost the experience over the cap. Taming is saved a little after the pet's report, so it was
+  lost almost every report; it is kept now and spent once Taming is higher.
+- The last experience report of a leaving player could reach the server after the remove and be refused.
+- An experience answer replaced the whole pet, so a late one could bring a pet sent away back out; experience earned
+  by one pet could be reported for the next one sent out.
+- A woken pet whose pet item is gone (sold, gifted, banked) sleeps again on join and stops helping gather.
+- A tame the game rolled could be refused because the server's Taming level was a level behind; it is tried once more.
+- Smaller: a woken pet is named after its kind ("Disco Raven", not "Disco Raven Pet") so evolving renames it,
+  `!pets use floof` finds Sir Floof, `!pets stable` asks the server for its places, "Taming 50" instead of "pet skill
+  level 50", `!train taming` says how Taming trains instead of starting farming (two letters away), Discord's `!pets`
+  offers starter.
+
+Still unseen: gatherer bonuses in real drops, the Menagerie growing on a clan of level 20, a real evolution (needs
+pet level 30 and Taming 50), the website Pets tab signed in.
+
 ### Not yet done
 
-- The signed-in path (the server commands with a real character, the stable on join) is built but untested: bots
-  have no server.
-- Evolution materials, eggs and the evolved model sets, enemies targeting pets directly, a picture per species on the
-  website.
+- Evolution materials, eggs and the evolved model sets, enemies targeting pets directly.
 

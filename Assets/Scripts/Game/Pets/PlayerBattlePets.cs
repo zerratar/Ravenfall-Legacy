@@ -278,6 +278,13 @@ public sealed class PlayerBattlePets
         try
         {
             var result = await owner.GameManager.RavenNest.Players.PetTameAsync(owner.Id, species.Id, treat?.Item?.Id ?? Guid.Empty);
+            if (result != null && result.Status == PetResultStatus.TamingTooLow)
+            {
+                // the server checks the saved Taming level, which can be a level behind just after a level up: once more after the next save
+                await System.Threading.Tasks.Task.Delay(15000);
+                if (!owner || owner.Removed) return;
+                result = await owner.GameManager.RavenNest.Players.PetTameAsync(owner.Id, species.Id, treat?.Item?.Id ?? Guid.Empty);
+            }
             if (result == null) return;
             if (result.Status == PetResultStatus.StableFull)
             {
