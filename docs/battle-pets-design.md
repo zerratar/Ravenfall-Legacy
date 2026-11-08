@@ -270,10 +270,29 @@ a bot taming a bunny (it went to the bunnies by itself) and Taming rising from t
 - The first pet tamed or woken goes straight out; a tame is announced at most every 8 s.
 - `!pets release (name) confirm` lets a pet go for good.
 
+### Round two (2026-11-08)
+
+- **Taming is idle** (Zerratar asked): while a pet is out, the pet and Taming each get a quarter of all experience the
+  owner earns, whatever they do; `!tame` tries are an extra way to train it. The chat texts say so.
+- **A Battle pets setting** (Settings > Graphics): off, and in potato mode, pets still fight and guard unseen, their
+  blows land at once and the cosmetic pet shows again.
+- **Gatherer pets** help on the server, in every gathering skill's drops: Forage a chance of one more of a drop, Keen
+  Nose better drop odds, Dig a find now and then when nothing dropped.
+- **Treats**: each tameable creature loves some foods (bunny carrots or cabbage, cow wheat or corn, Tormented Soul apple
+  pie or bread, metalon raw meat, dragons steak or raw meat, Lord Quackers bread, as one feeds ducks). Carried, a tame is
+  half as likely again; one is eaten when it works. `!tame` and `!pets about` name them.
+- **Starter pets**: `!pets starter fox` (damage), `bear` (tank) or `fawn` (healer) for an empty stable, on the HD animal
+  models. This stands in for the starter quest.
+- **Menagerie**, the clan skill: opens at clan level 20, fed a tenth of the experience members' pets earn; members'
+  pets earn 0.1% more a level (50% at most) and their stables hold one more pet at 100, two at 300. The skill row is
+  made at startup with a fixed id. Clan pages show it at once.
+- **Taming's icon** in the details window: the icon pack's bear paw. No name tags over pets (they would crowd the
+  player tags at overview zoom).
+
 ### Not yet done
 
 - The signed-in path (the server commands with a real character, the stable on join) is built but untested: bots
   have no server.
-- Evolution materials, eggs, the starter pet quest, the treat item, Menagerie (the clan skill), gatherer pets'
-  bonuses while gathering, a website pets page, a Taming skill icon, the evolved model sets.
+- Evolution materials, eggs and the evolved model sets, enemies targeting pets directly, a picture per species on the
+  website.
 
