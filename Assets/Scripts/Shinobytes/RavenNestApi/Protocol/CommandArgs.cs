@@ -39,6 +39,11 @@ namespace RavenNest.Protocol
             return Write(4, (ref MessagePackWriter w) => { Put(ref w, a); Put(ref w, b); Put(ref w, c); Put(ref w, d); });
         }
 
+        public static byte[] Pack<T1, T2, T3, T4, T5>(T1 a, T2 b, T3 c, T4 d, T5 e)
+        {
+            return Write(5, (ref MessagePackWriter w) => { Put(ref w, a); Put(ref w, b); Put(ref w, c); Put(ref w, d); Put(ref w, e); });
+        }
+
         public static void Unpack<T1>(byte[] data, out T1 a)
         {
             var r = Open(data, out var count);
@@ -67,6 +72,16 @@ namespace RavenNest.Protocol
             b = Take<T2>(ref r, ref count);
             c = Take<T3>(ref r, ref count);
             d = Take<T4>(ref r, ref count);
+        }
+
+        public static void Unpack<T1, T2, T3, T4, T5>(byte[] data, out T1 a, out T2 b, out T3 c, out T4 d, out T5 e)
+        {
+            var r = Open(data, out var count);
+            a = Take<T1>(ref r, ref count);
+            b = Take<T2>(ref r, ref count);
+            c = Take<T3>(ref r, ref count);
+            d = Take<T4>(ref r, ref count);
+            e = Take<T5>(ref r, ref count);
         }
 
         private delegate void WriteArgs(ref MessagePackWriter writer);

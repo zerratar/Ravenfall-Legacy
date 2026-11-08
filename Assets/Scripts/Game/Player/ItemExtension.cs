@@ -100,6 +100,61 @@ public static class ItemExtension
     }
 
     /// <summary>
+    ///     Where a gem in this item sits (docs/gems-design.md): weapons, armour and shields, rings and amulets take gems;
+    ///     tools, pets, hats and looks do not. The same rule as the server's GemManager.TryGetSlot.
+    /// </summary>
+    public static bool TryGetGemSlot(this Item i, out RavenNest.Combat.GemSlot slot)
+    {
+        slot = RavenNest.Combat.GemSlot.Armor;
+        if (i == null) return false;
+        switch (i.Category)
+        {
+            case ItemCategory.Weapon: slot = RavenNest.Combat.GemSlot.Weapon; return true;
+            case ItemCategory.Ring:
+            case ItemCategory.Amulet: slot = RavenNest.Combat.GemSlot.Jewellery; return true;
+            case ItemCategory.Armor: return i.Type != ItemType.Hat && i.Type != ItemType.Mask && i.Type != ItemType.HeadCovering;
+        }
+        return false;
+    }
+
+    /// <summary>How many sockets the item has (none below item level 25).</summary>
+    public static int GetSocketCount(this Item i)
+    {
+        if (!i.TryGetGemSlot(out var slot)) return 0;
+        var level = RavenNest.Combat.Gems.ItemLevel(i.RequiredAttackLevel, i.RequiredDefenseLevel, i.RequiredMagicLevel, i.RequiredRangedLevel, i.RequiredSlayerLevel, i.Level);
+        return RavenNest.Combat.Gems.Sockets(level, slot);
+    }
+
+    /// <summary>The bonus of every gem in the item's sockets, or null without gems.</summary>
+    public static RavenNest.Combat.GearStats GetGemStats(this GameInventoryItem e)
+    {
+        var text = e?.InventoryItem?.Sockets;
+        if (string.IsNullOrEmpty(text) || !e.Item.TryGetGemSlot(out var slot)) return null;
+        return RavenNest.Combat.Gems.SocketBonus(text, slot);
+    }
+
+    /// <summary>
+    ///     The item's sockets for showing: ("Socket 1", "Flawless Ruby: +18% Fire Damage") or ("Socket 2", "empty").
+    ///     Empty for items without sockets.
+    /// </summary>
+    public static List<(string Label, string Value)> GetSocketLines(this GameInventoryItem e)
+    {
+        var lines = new List<(string, string)>();
+        if (e?.Item == null || !e.Item.TryGetGemSlot(out var slot)) return lines;
+        var count = e.Item.GetSocketCount();
+        var sockets = RavenNest.Combat.Gems.ParseSockets(e.InventoryItem?.Sockets, count);
+        for (var s = 0; s < sockets.Length; ++s)
+        {
+            var label = string.Format(Localization.UI_GEM_SOCKET, s + 1);
+            if (sockets[s].HasValue && RavenNest.Combat.Gems.TryGetGem(sockets[s].Value, out var kind, out var tier))
+                lines.Add((label, RavenNest.Combat.Gems.Name(kind, tier) + ": " + RavenNest.Combat.Gems.Describe(kind, tier, slot)));
+            else
+                lines.Add((label, Localization.UI_GEM_SOCKET_EMPTY));
+        }
+        return lines;
+    }
+
+    /// <summary>
     ///     Combat v2's stats beyond aim, power and armour for showing (tooltips, !stats): ("Fire Damage", "30%"),
     ///     ("Evasion", "20"). Empty for items without them.
     /// </summary>

@@ -40,7 +40,9 @@ public sealed class CombatSkillRunner
             if (targets.Count == 0) continue;
 
             Run(node, active, target);
-            readyAt[node.Id] = Time.time + (float)active.Cooldown;
+            // an Amethyst in a ring or amulet shortens cooldowns (at most 30%)
+            var shorter = Mathf.Min((float)CombatMath.MaxCooldownReduction, (float)(owner.GetEquipmentStats()?.Gear(GearStat.CooldownReduction) ?? 0));
+            readyAt[node.Id] = Time.time + (float)active.Cooldown * (1f - shorter);
             pauseUntil = Time.time + (float)SkillTrees.SharedPause;
             ShowName(node.Name);
             UsedCounts[node.Id] = UsedCounts.TryGetValue(node.Id, out var used) ? used + 1 : 1;

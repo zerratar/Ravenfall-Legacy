@@ -380,6 +380,8 @@ Phase 1 (foundation), started 2026-11-07:
   twice on Heroic: ten players beat Normal in 0.9 to 2.8 minutes (a couple of falls) and Heroic in 2.5 to 7.2 (5 to 14
   falls).
 
+- [x] Gems and sockets (phase 4, 2026-11-08): see [gems-design.md](gems-design.md), section 7.
+
 ## For later
 
 - **Weapon effects you can see:** weapons with an element could carry a visual effect (embers on a fire sword, frost

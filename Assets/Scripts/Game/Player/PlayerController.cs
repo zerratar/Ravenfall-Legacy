@@ -3173,6 +3173,9 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             var gear = e.Item.GetGearStats();
             var gearStyle = e.Item.Category == ItemCategory.Weapon ? gear.WeaponStyle() : null;
             AddMagicalEnchantments(e, extras);
+            // gems in its sockets (combat v2, gems): a weapon's go with its style, like its own element
+            var gems = e.GetGemStats();
+            if (gems != null) gear.Add(gems);
             if (gearStyle.HasValue)
             {
                 weaponExtras ??= new RavenNest.Combat.GearStats[4];

@@ -108,5 +108,8 @@ namespace RavenNest.Protocol
         [Key(7)] public string Tag { get; set; }
         [Key(8)] public Guid? TransmogrificationId { get; set; }
         [Key(9)] public int Flags { get; set; }
+
+        /// <summary>Gems in the sockets (RavenNest.Combat.Gems); null without gems.</summary>
+        [Key(10)] public string Sockets { get; set; }
     }
 }

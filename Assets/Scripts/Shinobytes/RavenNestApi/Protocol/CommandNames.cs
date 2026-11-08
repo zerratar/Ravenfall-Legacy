@@ -94,6 +94,20 @@ namespace RavenNest.Protocol
         /// <summary>(Guid characterId) -> ClearEnchantmentCooldownResult</summary>
         public const string ClearEnchantmentCooldown = "enchanting.clear-cooldown";
 
+        // Gems (docs/gems-design.md in the game repo); kinds and tiers are RavenNest.Combat's GemKind and GemTier
+
+        /// <summary>(Guid characterId, int kind, int amount) -> GemResult: raw gems enchanted by the clan</summary>
+        public const string GemEnchant = "gems.enchant";
+
+        /// <summary>(Guid characterId, int kind, int tier, int times) -> GemResult: three of a tier into one of the next</summary>
+        public const string GemCombine = "gems.combine";
+
+        /// <summary>(Guid characterId, Guid inventoryItemId, int kind, int tier (-1 the best owned), int socket (0 the first free)) -> GemResult</summary>
+        public const string GemSocket = "gems.socket";
+
+        /// <summary>(Guid characterId, Guid inventoryItemId, int socket (0 the last filled)) -> GemResult</summary>
+        public const string GemUnsocket = "gems.unsocket";
+
         // Raids and dungeons
 
         /// <summary>(Guid[] characterIds) -> bool[]</summary>

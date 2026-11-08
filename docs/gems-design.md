@@ -26,7 +26,7 @@ enchanted gem that fits in a socket. A gem does something different depending on
 | **Onyx** (new) | Vitality | life steal | max HP | healing received |
 | **Amethyst** (new) | Arcane | healing power | all resistances (small) | skill cooldowns |
 
-**Tiers:** Chipped, Flawed, Normal, Flawless, Perfect. Each tier roughly doubles the bonus of the one before.
+**Tiers:** Chipped, Flawed, Polished, Flawless, Perfect. Each tier roughly doubles the bonus of the one before.
 A gem's bonus depends only on its kind and tier, so gems of the same kind and tier are the same: easy to
 price, easy to trade.
 
@@ -77,6 +77,51 @@ price, easy to trade.
   own field rather than sharing the tag.)
 - Gem bonuses go into the character sheet like other stats (see the overview, section 1), through the shared
   combat library.
+
+## 7. Built (2026-11-08)
+
+The first version, with the defaults below for the open questions (easy to change in `RavenNest.Combat.Gems`):
+
+- **The rules** live in the shared library (`RavenNest.Combat/Gems.cs`, tests in `GemsTests.cs`), so the server, the game
+  and the website agree. An enchanted gem is an item with a **fixed id** made from its name (`Gems.ItemId`), so any reader
+  knows a gem from its id alone. An item keeps its gems in `InventoryItem.Sockets`: one gem item id per socket, comma
+  separated, empty for an empty socket, null without gems. Socketed gear is one of a kind (part of the stack key), keeps its
+  gems in the bank, the clan bank and on the marketplace, and cannot go on a streamer's shelf yet.
+- **Bonuses** (Chipped; times 2, 3.5, 6 and 10 for the tiers above):
+
+  | Gem | Weapon | Armour | Ring or amulet |
+  |---|---|---|---|
+  | Ruby | 3% fire damage | 1.5% fire resistance | 4% stronger burns |
+  | Sapphire | 3% ice damage | 1.5% ice resistance | 4% longer freezes and stuns |
+  | Topaz | 3% lightning damage | 1.5% lightning resistance | 4% harder lightning jumps |
+  | Emerald | 3% poison damage | 1.5% poison resistance | 4% stronger poison |
+  | Diamond | 0.5% crit chance | 1% crit resistance | 2% crit damage |
+  | Onyx | 0.4% life steal | 0.5% more health | 2% more healing received |
+  | Amethyst | 2% healing power | 0.5% every resistance | 1.5% shorter cooldowns (30% at most) |
+
+  Four new gear stats came with them: crit resistance, poison bonus, lightning jump bonus and cooldown reduction. A
+  weapon's gems go with its style, like its own element. They count in full in the tower (level sync caps only levels and
+  classic gear numbers).
+- **Raw gems:** Topaz now drops while mining from level 40, and the new Amethyst (60), Onyx (80) and Diamond (100) too.
+- **Enchanting a gem** takes no cooldown and gives no clan experience; the tier odds come from the clan's Enchanting level
+  (Flawed from 30, Polished from 100, Flawless from 250, at most 50%, 30% and 10%). Perfect only by combining.
+- **Combining** costs 1,000, 5,000, 25,000 and 125,000 coins for the four steps. Gems sell to the vendor for the raw gem's
+  price times three per tier, so combining never pays at the vendor.
+- **Keeping a gem** taken out: from clan Enchanting 100, up to 40% at 400. The *Gem Salvager* node is not in the skill
+  trees yet (the library takes its ranks when it is).
+- **Commands:** `!gems` (what you own), `!gems ruby` (what a ruby does where), `!gems enchant ruby 5`,
+  `!gems combine ruby flawed 2`, `!socket rune sword ruby` (the best ruby you own into the first free socket; a tier
+  picks the gem, a number at the end picks the socket and replaces the gem in it) and `!unsocket rune sword 2`. Sent by the
+  bot as `gems_command`; the game calls the server's `gems.enchant`, `gems.combine`, `gems.socket` and `gems.unsocket`.
+- **Shown** in the game's item tooltips (both), `!stats` of an item, and the website's item details on the character page.
+- **Icons:** the three new raw gems and one enchanted look per kind from the Image Generator; the five tiers are made from
+  it by `tools/items/gem-tiers.py` (gold pips, one to five; Chipped duller, Perfect glowing).
+
+Checked on the local server with the streamer's own character: ten raw rubies enchanted (7 Chipped, 3 Flawed at the
+clan's level), six Chipped combined into two Flawed for 2,000 coins, two socketed into the worn Elder Atlarus 2H Sword
+(fire damage 5% to 17% in the game at once, through the inventory feed), one replaced and one taken out (a 3.9% keep
+chance, lost both times). Bots: two Perfect Rubies in a staff give its magic hits 60% fire on the combat sheet, a Perfect
+Onyx 5% more health. Not seen yet: the tooltips on screen, the website dialog, the commands through a real chat.
 
 ## Open questions
 

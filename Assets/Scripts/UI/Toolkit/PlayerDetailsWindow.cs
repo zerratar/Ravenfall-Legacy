@@ -1388,6 +1388,11 @@ namespace Shinobytes.UI
                 t.AddRow(label, value, null);
             }
 
+            foreach (var (label, value) in item.GetSocketLines())
+            {
+                t.AddRow(label, value, value == Localization.UI_GEM_SOCKET_EMPTY ? null : "rf-tooltip__value--magic");
+            }
+
             if (item.Enchantments != null)
             {
                 for (var i = 0; i < item.Enchantments.Count; ++i)

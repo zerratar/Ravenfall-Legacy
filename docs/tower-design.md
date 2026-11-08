@@ -350,8 +350,9 @@ island, so waiting for the next floor costs nothing (the same complaint came fro
   apply as usual. Until 90 seconds on an island are known, a typical island rate per skill is used. The server keeps
   giving resources as before (it sees the island they came from).
 - **Resting place**: Mossgate has a campfire beside the inn with six cushions (meditating) and five rugs (sleeping).
-  `!rest` or `!onsen` in the tower (from a floor: down to the town first), or `!tower rest` from anywhere, takes a free spot; resting there is the Onsen's rest (the server
-  counts it by the same flag, so no training meanwhile). A new task, `!onsen leave` or `!tower` gets them up; leaving ends it.
+  `!rest` or `!onsen` in the tower (from a floor: down to the town first), or `!tower rest` from anywhere, takes a
+  free spot; resting there is the Onsen's rest (the server counts it by the same flag, so no training meanwhile). A new
+  task, `!onsen leave` or `!tower` gets them up; leaving ends it.
 - **Ravebridge uprisings** can be turned off (Settings > Game > World): Ravebridge then only opens when the streamer
   starts it, for streams left running (AFK streamers found the random uprisings disruptive for their viewers).
 

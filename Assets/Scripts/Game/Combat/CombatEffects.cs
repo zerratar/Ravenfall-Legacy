@@ -183,14 +183,20 @@ public static class CombatEffects
             return;
         }
 
-        // Searing: the attacker's burns hurt more
-        var burnBonus = attacker != null && CombatRules.Enabled ? attacker.GetEquipmentStats()?.Gear(GearStat.BurnBonus) ?? 0 : 0;
-        if (burnBonus != 0)
+        // Searing and fire gems: the attacker's burns hurt more; emeralds: poison; topaz: lightning's jumps
+        var eq = attacker != null ? attacker.GetEquipmentStats() : null;
+        var burnBonus = eq?.Gear(GearStat.BurnBonus) ?? 0;
+        var poisonBonus = eq?.Gear(GearStat.PoisonBonus) ?? 0;
+        var jumpBonus = eq?.Gear(GearStat.LightningJumpBonus) ?? 0;
+        if (burnBonus != 0 || poisonBonus != 0 || jumpBonus != 0)
         {
             for (var i = 0; i < result.Procs.Count; ++i)
             {
                 var proc = result.Procs[i];
-                if (proc.Element == Element.Fire) { proc.Damage *= 1 + burnBonus; result.Procs[i] = proc; }
+                if (proc.Element == Element.Fire) proc.Damage *= 1 + burnBonus;
+                else if (proc.Element == Element.Poison) proc.Damage *= 1 + poisonBonus;
+                else if (proc.Element == Element.Lightning) proc.Damage *= 1 + jumpBonus;
+                result.Procs[i] = proc;
             }
         }
 

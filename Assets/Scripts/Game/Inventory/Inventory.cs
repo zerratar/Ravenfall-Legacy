@@ -499,9 +499,9 @@ public class Inventory : MonoBehaviour
                     continue;
                 }
 
-                // another item, an enchantment, a skin or a name: a new instance, so everything read from them is right
+                // another item, an enchantment, gems, a skin or a name: a new instance, so everything read from them is right
                 var ii = keep.InventoryItem;
-                if (ii.ItemId != s.ItemId || ii.Enchantment != s.Enchantment || ii.TransmogrificationId != s.TransmogrificationId || ii.Name != s.Name)
+                if (ii.ItemId != s.ItemId || ii.Enchantment != s.Enchantment || ii.Sockets != s.Sockets || ii.TransmogrificationId != s.TransmogrificationId || ii.Name != s.Name)
                 {
                     var replacement = NewServerStack(s);
                     replacement.InventoryItem.Equipped = keepEquipped;
@@ -581,6 +581,7 @@ public class Inventory : MonoBehaviour
             Tag = s.Tag,
             Soulbound = s.Soulbound,
             Enchantment = s.Enchantment,
+            Sockets = s.Sockets,
             Name = s.Name,
             TransmogrificationId = s.TransmogrificationId,
             Flags = s.Flags

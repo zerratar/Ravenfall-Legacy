@@ -1529,6 +1529,37 @@ public static class Localization
     public static string MSG_TOWER_TOWN_HERE = Meta("tower", "info") + "You are in {town}. Its people: {people}. !tower takes you up to the floor.";
     public static string MSG_TOWER_REST = Meta("tower", "success") + "You settle down by the campfire in {town} and rest, as in the Onsen. A new task, !onsen leave or !tower gets you up again.";
     public static string MSG_TOWER_REST_ALREADY = Meta("tower", "info") + "You are already resting by the campfire.";
+    // gems (docs/gems-design.md)
+    public static string MSG_GEM_USAGE = Meta("gems", "fail") + "!gems lists your gems. !gems enchant ruby 5, !gems combine ruby flawed, !socket (item) (gem) and !unsocket (item). !gems ruby says what a ruby does.";
+    public static string MSG_GEM_INFO = Meta("gems") + "{gem}: in a weapon {weapon}, in armour {armour}, in a ring or amulet {jewellery} (Chipped; a Perfect one gives ten times as much, {perfect} in a weapon).";
+    public static string MSG_GEM_NONE = Meta("gems") + "You have no enchanted gems. Mine raw ones (Sapphire, Emerald, Ruby, Topaz, Amethyst, Onyx, Diamond) and have your clan enchant them: !gems enchant ruby.";
+    public static string MSG_GEM_LIST = Meta("gems") + "Your gems: {gems}.";
+    public static string MSG_GEM_ENCHANT_USAGE = Meta("gems", "fail") + "Name the raw gem and how many: !gems enchant ruby 5.";
+    public static string MSG_GEM_COMBINE_USAGE = Meta("gems", "fail") + "Name the gem and its tier: !gems combine ruby flawed (three make one of the next tier). Add a number to do it more than once.";
+    public static string MSG_GEM_SOCKET_USAGE = Meta("gems", "fail") + "Name the item, then the gem: !socket rune sword ruby. A tier picks the gem (flawless ruby), a number at the end picks the socket (and replaces the gem in it).";
+    public static string MSG_GEM_UNSOCKET_USAGE = Meta("gems", "fail") + "Name the item, and the socket if it has more gems: !unsocket rune sword 2. The gem crumbles unless you are lucky: your clan's Enchanting level gives the chance to keep it.";
+    public static string MSG_GEM_ENCHANTED = Meta("gems", "success") + "Your clan enchanted your gems: {gems}. !socket (item) (gem) puts one in.";
+    public static string MSG_GEM_COMBINED = Meta("gems", "success") + "Combined into {gems} for {coins} coins.";
+    public static string MSG_GEM_SOCKETED = Meta("gems", "success") + "Socketed: {socketed}. {old}";
+    public static string MSG_GEM_UNSOCKETED = Meta("gems", "success") + "Taken out of {itemName}: {old}";
+    public static string MSG_GEM_KEPT = "Your {0} came back ({1} chance).";
+    public static string MSG_GEM_LOST = "The {0} crumbled to dust ({1} chance to keep it).";
+    public static string MSG_GEM_NOT_IN_CLAN = Meta("gems", "fail", "no clan") + "Gems are enchanted by a clan's Enchanting skill. Join a clan to enchant them.";
+    public static string MSG_GEM_NO_ENCHANTING = Meta("gems", "fail") + "Your clan has not learned Enchanting yet.";
+    public static string MSG_GEM_NO_RAW = Meta("gems", "fail") + "You have no raw {gem}. Mining finds them.";
+    public static string MSG_GEM_NOT_OWNED = Meta("gems", "fail") + "You have no enchanted {gem} of that tier. !gems lists yours.";
+    public static string MSG_GEM_NOT_ENOUGH = Meta("gems", "fail") + "Combining takes three {gem}.";
+    public static string MSG_GEM_NO_COINS = Meta("gems", "fail") + "Combining these costs {coins} coins.";
+    public static string MSG_GEM_HIGHEST = Meta("gems", "fail") + "Perfect gems are as good as gems get.";
+    public static string MSG_GEM_NO_SOCKETS = Meta("gems", "fail") + "{itemName} has no sockets. Weapons, armour, rings and amulets from item level 25 have them (2 from 150, 3 from 400; rings and amulets 1).";
+    public static string MSG_GEM_FULL = Meta("gems", "fail") + "Every socket of {itemName} is filled ({count}). Add a socket number to replace a gem: the old one crumbles unless you are lucky.";
+    public static string MSG_GEM_NO_SUCH_SOCKET = Meta("gems", "fail") + "{itemName} has {count} socket(s).";
+    public static string MSG_GEM_EMPTY_SOCKET = Meta("gems", "fail") + "Socket {socket} of {itemName} is empty.";
+    public static string MSG_GEM_BUSY = Meta("gems", "fail") + "That item is busy (being enchanted or traded). Try again in a moment.";
+    public static string MSG_GEM_ERROR = Meta("gems", "fail") + "The gem did not take. Try again in a moment.";
+    public static string UI_GEM_SOCKET = "Socket {0}";
+    public static string UI_GEM_SOCKET_EMPTY = "empty";
+
     public static string MSG_TOWER_REST_FULL = Meta("tower", "fail") + "Every spot by the campfire is taken. You keep training here as on your island.";
     public static string MSG_TOWER_TOWN_FIGHTING = Meta("tower", "fail") + "Not in the middle of a boss fight!";
     public static string MSG_TOWER_TALK_NOT_IN_TOWN = Meta("tower", "fail") + "Go to {town} first with !tower town, then talk to its people.";

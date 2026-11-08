@@ -405,6 +405,7 @@ namespace RavenNest.SDK.V2
                 Soulbound = s.Soulbound,
                 Name = s.Name,
                 Enchantment = s.Enchantment,
+                Sockets = s.Sockets,
                 Tag = s.Tag,
                 TransmogrificationId = s.TransmogrificationId,
                 Flags = s.Flags
@@ -422,6 +423,7 @@ namespace RavenNest.SDK.V2
                 Soulbound = s.Soulbound,
                 Name = s.Name,
                 Enchantment = s.Enchantment,
+                Sockets = s.Sockets,
                 Tag = s.Tag,
                 TransmogrificationId = s.TransmogrificationId,
                 Flags = s.Flags

@@ -202,6 +202,19 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
+        // gems (docs/gems-design.md): only over the v2 connection; older servers have none
+        public Task<GemResult> GemEnchantAsync(Guid characterId, int kind, int amount) =>
+            client.UseV2 ? client.V2.Commands.CallAsync<GemResult>(Commands.GemEnchant, CommandArgs.Pack(characterId, kind, amount)) : Task.FromResult<GemResult>(null);
+
+        public Task<GemResult> GemCombineAsync(Guid characterId, int kind, int tier, int times) =>
+            client.UseV2 ? client.V2.Commands.CallAsync<GemResult>(Commands.GemCombine, CommandArgs.Pack(characterId, kind, tier, times)) : Task.FromResult<GemResult>(null);
+
+        public Task<GemResult> GemSocketAsync(Guid characterId, Guid inventoryItem, int kind, int tier, int socket) =>
+            client.UseV2 ? client.V2.Commands.CallAsync<GemResult>(Commands.GemSocket, CommandArgs.Pack(characterId, inventoryItem, kind, tier, socket)) : Task.FromResult<GemResult>(null);
+
+        public Task<GemResult> GemUnsocketAsync(Guid characterId, Guid inventoryItem, int socket) =>
+            client.UseV2 ? client.V2.Commands.CallAsync<GemResult>(Commands.GemUnsocket, CommandArgs.Pack(characterId, inventoryItem, socket)) : Task.FromResult<GemResult>(null);
+
         public Task<ItemEnchantmentResult> EnchantInventoryItemAsync(Guid characterId, Guid inventoryItem)
         {
             if (client.UseV2)
