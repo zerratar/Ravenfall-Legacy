@@ -1602,6 +1602,7 @@ public static class Localization
     public static string MSG_TAME_NOT_FIGHTING = Meta("pets") + "Taming {kind}: train a combat skill and each one you defeat is a try ({chance} each). !tame stop ends it.";
     public static string MSG_TAME_STATUS = Meta("pets") + "You are taming {kind}: {chance} a try at Taming {level}.";
     public static string MSG_TAME_NOTHING = Meta("pets") + "You are not taming anything. !tame bunny, !tame cow, !tame metalon... Creatures only.";
+    public static string MSG_TRAIN_TAMING = Meta("pets") + "Taming trains by itself while a battle pet is out with you, with whatever you train. !pets starter fox, bear or fawn gives you a first one; !tame (creature) tames more.";
     public static string MSG_TAME_STOPPED = Meta("pets") + "You stopped taming.";
     public static string MSG_TAME_TREAT = Meta("pets") + "You carry {treat}: a {kind} finds it hard to say no (half as likely again). One is eaten when it works.";
     public static string MSG_TAME_NO_TREAT = Meta("pets") + "Carry {treats} and a {kind} is half as likely again to be tamed: it loves them.";

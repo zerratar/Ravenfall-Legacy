@@ -24,6 +24,7 @@ public sealed class PlayerBattlePets
     private readonly PlayerController owner;
     private readonly List<BattlePet> stable = new List<BattlePet>();
     private double pendingExperience;
+    private Guid pendingPet; // the pet that earned the pending experience
     private float nextReport, nextSteer, nextHide;
     private bool cosmeticHidden;
 
@@ -46,6 +47,25 @@ public sealed class PlayerBattlePets
     /// <summary>A command's answer: the stable after the change.</summary>
     /// <summary>The stable's places as the server last said (Taming and the clan's Menagerie); 0 before it said.</summary>
     public int ServerStableSize { get; private set; }
+
+    /// <summary>
+    ///     An experience report's answer: only the pet's numbers. The whole pet would bring back its Active flag as it was
+    ///     when the report left, and a pet sent away meanwhile would come back out.
+    /// </summary>
+    private void ApplyExperience(PetResult result)
+    {
+        if (result == null) return;
+        if (result.StableSize > 0) ServerStableSize = result.StableSize;
+        var pet = result.Pet;
+        if (pet == null) return;
+        var mine = stable.FirstOrDefault(p => p.Id == pet.Id);
+        if (mine == null) return;
+        mine.Level = pet.Level;
+        mine.Experience = pet.Experience;
+        mine.Stage = pet.Stage;
+        mine.Slots = pet.Slots;
+        if (Controller && Controller.Data != null && Controller.Data.Id == mine.Id) Controller.Refresh(mine);
+    }
 
     public void Apply(PetResult result)
     {
@@ -99,14 +119,14 @@ public sealed class PlayerBattlePets
     /// <summary>The owner leaves the game: the pet's unsent experience is sent (the owner is gone by the answer), and the pet goes.</summary>
     public void Leave()
     {
-        var pet = Active;
+        var pet = pendingPet;
         var amount = pendingExperience;
         pendingExperience = 0;
         var game = owner ? owner.GameManager : null;
-        if (pet != null && amount > 0 && game && !owner.IsBot)
+        if (pet != Guid.Empty && amount > 0 && game && !owner.IsBot)
         {
             var characterId = owner.Id;
-            _ = game.RavenNest.Players.PetExperienceAsync(characterId, pet.Id, amount);
+            _ = game.RavenNest.Players.PetExperienceAsync(characterId, pet, amount);
         }
         Remove();
     }
@@ -156,6 +176,14 @@ public sealed class PlayerBattlePets
     {
         if (!Controller || experience <= 0 || skill == RavenNest.Models.Skill.Taming) return;
         var share = experience * BattlePets.ExperienceShare;
+        var earner = Controller.Data.Id;
+        if (earner != pendingPet)
+        {
+            // another pet is out now: what the last one earned is sent first, for that one
+            if (pendingExperience > 0 && !owner.IsBot) Report();
+            pendingExperience = 0;
+            pendingPet = earner;
+        }
         pendingExperience += share;
         var taming = owner.Stats?.Taming;
         if (taming != null && taming.AddExp(share, out var levels)) owner.CelebrateSkillLevelUp(RavenNest.Models.Skill.Taming, levels);
@@ -163,17 +191,17 @@ public sealed class PlayerBattlePets
 
     private async void Report()
     {
-        var pet = Active;
-        if (pet == null) return;
+        var pet = pendingPet;
+        if (pet == Guid.Empty) return;
         var amount = pendingExperience;
         pendingExperience = 0;
         nextReport = Time.time + ReportEvery;
         try
         {
-            var result = await owner.GameManager.RavenNest.Players.PetExperienceAsync(owner.Id, pet.Id, amount);
-            if (result == null || result.Status != PetResultStatus.Ok) { if (result == null) pendingExperience += amount; return; }
-            Apply(result);
-            if (result.LevelsGained > 0 && Controller)
+            var result = await owner.GameManager.RavenNest.Players.PetExperienceAsync(owner.Id, pet, amount);
+            if (result == null || result.Status != PetResultStatus.Ok) { if (result == null && pet == pendingPet) pendingExperience += amount; return; }
+            ApplyExperience(result);
+            if (result.LevelsGained > 0 && Controller && Controller.Data != null && Controller.Data.Id == pet)
             {
                 Controller.ShowText(string.Format(Localization.MSG_PET_LEVEL_SHORT, result.Pet.Level));
                 PetFx.Burst(Controller.transform.position, Mathf.Max(0.5f, Controller.Height), PetFx.ElementColor(Controller.Species.Element));
@@ -181,7 +209,7 @@ public sealed class PlayerBattlePets
         }
         catch (Exception exc)
         {
-            pendingExperience += amount;
+            if (pet == pendingPet) pendingExperience += amount;
             Shinobytes.Debug.LogError("Pet experience for " + owner.PlayerName + ": " + exc.Message);
         }
     }

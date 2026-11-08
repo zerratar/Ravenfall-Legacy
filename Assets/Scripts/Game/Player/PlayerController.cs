@@ -1825,6 +1825,13 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             targetTaskName = "Alchemy";
         }
 
+        // Taming is not a task: it trains while a battle pet is out, with whatever is trained ("taming" is two letters from farming)
+        if (t == "taming" || t == "tame" || t == "pets")
+        {
+            if (!silent) GameManager.RavenBot.SendReply(this, Localization.MSG_TRAIN_TAMING);
+            return;
+        }
+
         if (!Enum.TryParse<TaskType>(targetTaskName, true, out var type) || type == TaskType.None)
         {
             var score = int.MaxValue;

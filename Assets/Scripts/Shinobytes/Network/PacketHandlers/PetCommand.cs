@@ -45,6 +45,8 @@ public class PetCommand : ChatBotCommandHandler<string>
                 case "stable":
                 case "list":
                 case "all":
+                    // the places come from the server (Taming and the clan's Menagerie): asked once, then known
+                    if (pets.ServerStableSize == 0 && pets.Stable.Count > 0) pets.Apply(await Game.RavenNest.Players.PetListAsync(player.Id));
                     Stable(player, gm, client);
                     return;
                 case "use":
@@ -116,7 +118,10 @@ public class PetCommand : ChatBotCommandHandler<string>
         if (int.TryParse(name, out var n) && n >= 1 && n <= stable.Count) return stable[n - 1];
         return stable.FirstOrDefault(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase))
             ?? stable.FirstOrDefault(p => p.Name != null && p.Name.StartsWith(name, StringComparison.OrdinalIgnoreCase))
-            ?? stable.FirstOrDefault(p => string.Equals(BattlePets.GetSpecies(p.Species)?.NameAt(p.Stage), name, StringComparison.OrdinalIgnoreCase));
+            ?? stable.FirstOrDefault(p => string.Equals(BattlePets.GetSpecies(p.Species)?.NameAt(p.Stage), name, StringComparison.OrdinalIgnoreCase))
+            // a word of its name ("floof" for Sir Floof), or of its kind's
+            ?? stable.FirstOrDefault(p => p.Name != null && p.Name.IndexOf(name, StringComparison.OrdinalIgnoreCase) >= 0)
+            ?? stable.FirstOrDefault(p => BattlePets.GetSpecies(p.Species)?.NameAt(p.Stage)?.IndexOf(name, StringComparison.OrdinalIgnoreCase) >= 0);
     }
 
     private static string List(PlayerController player) =>
