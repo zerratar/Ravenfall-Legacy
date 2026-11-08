@@ -108,6 +108,35 @@ namespace RavenNest.Protocol
         /// <summary>(Guid characterId, Guid inventoryItemId, int socket (0 the last filled)) -> GemResult</summary>
         public const string GemUnsocket = "gems.unsocket";
 
+        // Battle pets (docs/battle-pets-design.md in the game repo); species are RavenNest.Combat.PetSpecies ids
+
+        /// <summary>(Guid characterId) -> PetResult with Pets: the stable</summary>
+        public const string PetList = "pets.list";
+
+        /// <summary>(Guid characterId, string species) -> PetResult: a creature tamed (the game rolled the chance)</summary>
+        public const string PetTame = "pets.tame";
+
+        /// <summary>(Guid characterId, Guid itemId) -> PetResult: a pet item the character has, woken to fight</summary>
+        public const string PetWake = "pets.wake";
+
+        /// <summary>(Guid characterId, Guid petId (empty: put the pet away)) -> PetResult</summary>
+        public const string PetUse = "pets.use";
+
+        /// <summary>(Guid characterId, Guid petId, string name) -> PetResult</summary>
+        public const string PetRename = "pets.rename";
+
+        /// <summary>(Guid characterId, Guid petId, int slot (0 based), string skill (empty clears)) -> PetResult</summary>
+        public const string PetSlot = "pets.slot";
+
+        /// <summary>(Guid characterId, Guid petId) -> PetResult</summary>
+        public const string PetEvolve = "pets.evolve";
+
+        /// <summary>(Guid characterId, Guid petId) -> PetResult: let go for good</summary>
+        public const string PetRelease = "pets.release";
+
+        /// <summary>(Guid characterId, Guid petId, double experience) -> PetResult: what the pet earned while out</summary>
+        public const string PetExperience = "pets.exp";
+
         // Raids and dungeons
 
         /// <summary>(Guid[] characterIds) -> bool[]</summary>

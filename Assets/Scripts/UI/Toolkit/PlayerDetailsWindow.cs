@@ -88,7 +88,7 @@ namespace Shinobytes.UI
             new[] { Skill.Attack, Skill.Defense, Skill.Strength, Skill.Health, Skill.Magic },
             new[] { Skill.Ranged, Skill.Healing, Skill.Alchemy, Skill.None, Skill.Woodcutting },
             new[] { Skill.Fishing, Skill.Mining, Skill.Crafting, Skill.Cooking, Skill.Farming },
-            new[] { Skill.Slayer, Skill.Sailing, Skill.Gathering },
+            new[] { Skill.Slayer, Skill.Sailing, Skill.Gathering, Skill.Taming },
         };
 
         /// <summary>Equipment grid, three to a row.</summary>

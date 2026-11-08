@@ -266,6 +266,9 @@ public class PlayerProgression
             var exp = GetExperience(skill, factor);
             var autoTrainTargetLevel = player.AutoTrainTargetLevel;
 
+            // a battle pet out shares it: the pet and Taming get a quarter (docs/battle-pets-design.md)
+            player.BattlePets.Earned(skill, exp);
+
             if (skill.IsCombatSkill())
             {
                 if (stats.Health.AddExp(exp / 3d, out var hpLevels))

@@ -215,6 +215,34 @@ namespace RavenNest.SDK.Endpoints
         public Task<GemResult> GemUnsocketAsync(Guid characterId, Guid inventoryItem, int socket) =>
             client.UseV2 ? client.V2.Commands.CallAsync<GemResult>(Commands.GemUnsocket, CommandArgs.Pack(characterId, inventoryItem, socket)) : Task.FromResult<GemResult>(null);
 
+        // battle pets (docs/battle-pets-design.md): only over the v2 connection; older servers have none
+        public Task<PetResult> PetListAsync(Guid characterId) =>
+            client.UseV2 ? client.V2.Commands.CallAsync<PetResult>(Commands.PetList, CommandArgs.Pack(characterId)) : Task.FromResult<PetResult>(null);
+
+        public Task<PetResult> PetTameAsync(Guid characterId, string species) =>
+            client.UseV2 ? client.V2.Commands.CallAsync<PetResult>(Commands.PetTame, CommandArgs.Pack(characterId, species)) : Task.FromResult<PetResult>(null);
+
+        public Task<PetResult> PetWakeAsync(Guid characterId, Guid itemId) =>
+            client.UseV2 ? client.V2.Commands.CallAsync<PetResult>(Commands.PetWake, CommandArgs.Pack(characterId, itemId)) : Task.FromResult<PetResult>(null);
+
+        public Task<PetResult> PetUseAsync(Guid characterId, Guid petId) =>
+            client.UseV2 ? client.V2.Commands.CallAsync<PetResult>(Commands.PetUse, CommandArgs.Pack(characterId, petId)) : Task.FromResult<PetResult>(null);
+
+        public Task<PetResult> PetRenameAsync(Guid characterId, Guid petId, string name) =>
+            client.UseV2 ? client.V2.Commands.CallAsync<PetResult>(Commands.PetRename, CommandArgs.Pack(characterId, petId, name ?? "")) : Task.FromResult<PetResult>(null);
+
+        public Task<PetResult> PetSlotAsync(Guid characterId, Guid petId, int slot, string skill) =>
+            client.UseV2 ? client.V2.Commands.CallAsync<PetResult>(Commands.PetSlot, CommandArgs.Pack(characterId, petId, slot, skill ?? "")) : Task.FromResult<PetResult>(null);
+
+        public Task<PetResult> PetEvolveAsync(Guid characterId, Guid petId) =>
+            client.UseV2 ? client.V2.Commands.CallAsync<PetResult>(Commands.PetEvolve, CommandArgs.Pack(characterId, petId)) : Task.FromResult<PetResult>(null);
+
+        public Task<PetResult> PetReleaseAsync(Guid characterId, Guid petId) =>
+            client.UseV2 ? client.V2.Commands.CallAsync<PetResult>(Commands.PetRelease, CommandArgs.Pack(characterId, petId)) : Task.FromResult<PetResult>(null);
+
+        public Task<PetResult> PetExperienceAsync(Guid characterId, Guid petId, double experience) =>
+            client.UseV2 ? client.V2.Commands.CallAsync<PetResult>(Commands.PetExperience, CommandArgs.Pack(characterId, petId, experience)) : Task.FromResult<PetResult>(null);
+
         public Task<ItemEnchantmentResult> EnchantInventoryItemAsync(Guid characterId, Guid inventoryItem)
         {
             if (client.UseV2)

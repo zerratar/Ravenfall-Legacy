@@ -380,6 +380,7 @@ public static class GameMath
             case Skill.Healing: return "Healing";
             case Skill.Gathering: return "Gathering";
             case Skill.Alchemy: return "Alchemy";
+            case Skill.Taming: return "Taming";
             case Skill.Melee: return "Melee";
             case Skill.None: return "None";
             default: return "All";
@@ -407,6 +408,7 @@ public static class GameMath
             case Skill.Healing: return "Heal";
             case Skill.Gathering: return "Gat";
             case Skill.Alchemy: return "Alc";
+            case Skill.Taming: return "Tam";
             case Skill.Melee: return "All";
             case Skill.None: return "None";
             default: return "All";

@@ -10,6 +10,9 @@ public class Chunk : MonoBehaviour
     private RockController[] miningSpots;
     private FishingController[] fishingSpots;
     private EnemyController[] enemies;
+
+    /// <summary>The enemies of a fighting area (taming looks for the creature being tamed).</summary>
+    public EnemyController[] Enemies => enemies;
     private ResourceTarget[] trees;
     private CraftingStation[] craftingStations;
     private FarmController[] farmingPatches;

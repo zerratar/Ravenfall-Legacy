@@ -289,12 +289,17 @@ public class PlayerCombat
             // a tower floor's monster counts for the floor's quests (docs/tower-design.md)
             if (isMonster && owner.towerHandler != null && owner.towerHandler.InTower && TowerManager.Instance) TowerManager.Instance.EnemyDefeated(enemyController, owner);
 
-            // every player who fought it helped defeat it, as every one of them gets its experience (quests count it)
+            // every player who fought it helped defeat it, as every one of them gets its experience (quests count it);
+            // a player taming its kind gets a try (docs/battle-pets-design.md)
             if (isMonster)
             {
                 foreach (var attacker in enemy.GetAttackers())
                 {
-                    if (attacker is PlayerController helper && helper && !helper.isDestroyed) helper.EnemiesDefeated++;
+                    if (attacker is PlayerController helper && helper && !helper.isDestroyed)
+                    {
+                        helper.EnemiesDefeated++;
+                        if (helper.BattlePets.Taming != null) helper.BattlePets.Defeated(enemyController);
+                    }
                 }
             }
 

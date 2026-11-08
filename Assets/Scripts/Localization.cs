@@ -1558,6 +1558,49 @@ public static class Localization
     public static string MSG_GEM_EMPTY_SOCKET = Meta("gems", "fail") + "Socket {socket} of {itemName} is empty.";
     public static string MSG_GEM_BUSY = Meta("gems", "fail") + "That item is busy (being enchanted or traded). Try again in a moment.";
     public static string MSG_GEM_ERROR = Meta("gems", "fail") + "The gem did not take. Try again in a moment.";
+
+    // battle pets (docs/battle-pets-design.md)
+    public static string MSG_PET_USAGE = Meta("pets", "fail") + "!pet shows your pet. !pet stable, !pet use (name), !pet away, !pet rename (name), !pet skills, !pet slot 2 howl, !pet evolve, !pet wake (pet item), !pet about (kind). !tame (creature) tames.";
+    public static string MSG_PET_NONE = Meta("pets") + "You have no battle pets yet. !tame bunny on the home island, or !pet wake to wake a pet item you have.";
+    public static string MSG_PET_NONE_OUT = Meta("pets") + "No pet is out. !pet use (name) sends one out: {pets}.";
+    public static string MSG_PET_INFO = Meta("pets") + "{name}, a level {level} {kind} ({role}, {element}, {strike}). Health {health}/{max}. Skills: {skills}. {next}";
+    public static string MSG_PET_NEXT_EVOLVE = "Evolves into {0} at level {1} (Taming {2}).";
+    public static string MSG_PET_NEXT_DONE = "Fully evolved.";
+    public static string MSG_PET_STABLE = Meta("pets") + "Your pets ({count} of {size}): {pets}.";
+    public static string MSG_PET_OUT = Meta("pets") + "{name} is out with you.";
+    public static string MSG_PET_AWAY = Meta("pets") + "Your pet is resting in the stable.";
+    public static string MSG_PET_RENAMED = Meta("pets") + "Your pet is called {name} now.";
+    public static string MSG_PET_SKILLS = Meta("pets") + "{name}'s slots: {slots}. Learned: {learned}. Later: {later}.";
+    public static string MSG_PET_SLOT = Meta("pets") + "{skill} is in slot {slot} now.";
+    public static string MSG_PET_EVOLVED = Meta("pets") + "{player}'s {old} evolved into {new}!";
+    public static string MSG_PET_CANNOT_EVOLVE = Meta("pets", "fail") + "{name} cannot evolve yet: it needs {missing}.";
+    public static string MSG_PET_WOKEN = Meta("pets") + "Your {item} woke up, ready to fight as a {kind} ({role}, {strike}). It is out with you.";
+    public static string MSG_PET_ALREADY_AWAKE = Meta("pets", "fail") + "{name} is awake already. !pet use {name} sends it out.";
+    public static string MSG_PET_NO_ITEM = Meta("pets", "fail") + "You have no pet item called {name}.";
+    public static string MSG_PET_NOT_A_PET = Meta("pets", "fail") + "{name} is not a pet that can fight.";
+    public static string MSG_PET_ITEM_MISSING = Meta("pets", "fail") + "{name} only comes out while you have its pet item.";
+    public static string MSG_PET_NOT_FOUND = Meta("pets", "fail") + "You have no pet called {name}.";
+    public static string MSG_PET_NO_SKILL = Meta("pets", "fail") + "{name} has no skill called {skill}.";
+    public static string MSG_PET_NOT_LEARNED = Meta("pets", "fail") + "{name} learns {skill} at level {level}.";
+    public static string MSG_PET_NO_SLOT = Meta("pets", "fail") + "{name} has {count} skill slots.";
+    public static string MSG_PET_BAD_NAME = Meta("pets", "fail") + "That name will not do: letters, numbers and spaces, at most 24.";
+    public static string MSG_PET_RELEASE_CONFIRM = Meta("pets", "fail") + "Letting {name} go is for good. !pet release {name} confirm, if you are sure.";
+    public static string MSG_PET_RELEASED = Meta("pets") + "{name} went back to the wild. It looked back once.";
+    public static string MSG_PET_ABOUT = Meta("pets") + "{kind} ({role}, {element}, {strike}): {blurb} {how} Stages: {stages}.";
+    public static string MSG_PET_ABOUT_TAME = "Tame it with !tame at Taming {0}.";
+    public static string MSG_PET_ABOUT_ITEM = "Wake its pet item with !pet wake.";
+    public static string MSG_PET_UNKNOWN_KIND = Meta("pets", "fail") + "There is no kind of pet called {name}.";
+    public static string MSG_PET_ERROR = Meta("pets", "fail") + "Your pet did not hear you. Try again in a moment.";
+    public static string MSG_PET_TAMED = Meta("pets") + "{player} tamed a {kind}!";
+    public static string MSG_PET_STABLE_FULL = Meta("pets", "fail") + "You could have tamed a {kind}, but your stable is full ({size}). Taming opens more room.";
+    public static string MSG_PET_KNOCKED_OUT_SHORT = "Knocked out!";
+    public static string MSG_PET_LEVEL_SHORT = "Level {0}!";
+    public static string MSG_TAME_STARTED = Meta("pets") + "Taming {kind}: each one you defeat is a try ({chance} each, Taming {level}). !tame stop ends it.";
+    public static string MSG_TAME_NOT_FIGHTING = Meta("pets") + "Taming {kind}: train a combat skill and each one you defeat is a try ({chance} each). !tame stop ends it.";
+    public static string MSG_TAME_STATUS = Meta("pets") + "You are taming {kind}: {chance} a try at Taming {level}.";
+    public static string MSG_TAME_NOTHING = Meta("pets") + "You are not taming anything. !tame bunny, !tame cow, !tame metalon... Creatures only.";
+    public static string MSG_TAME_STOPPED = Meta("pets") + "You stopped taming.";
+    public static string MSG_TAME_CANNOT = Meta("pets", "fail") + "{reason}";
     public static string UI_GEM_SOCKET = "Socket {0}";
     public static string UI_GEM_SOCKET_EMPTY = "empty";
 
@@ -2176,6 +2219,7 @@ public static class Localization
     public static string UI_SKILL_HEALING = "Healing";
     public static string UI_SKILL_GATHERING = "Gathering";
     public static string UI_SKILL_ALCHEMY = "Alchemy";
+    public static string UI_SKILL_TAMING = "Taming";
     public static string UI_SKILL_MELEE = "Melee";
     public static string UI_SKILL_ALL = "All";
     public static string UI_SKILL_ENCHANTING = "Enchanting";
@@ -2662,6 +2706,7 @@ public static class Localization
             case "Healing": return UI_SKILL_HEALING;
             case "Gathering": return UI_SKILL_GATHERING;
             case "Alchemy": return UI_SKILL_ALCHEMY;
+            case "Taming": return UI_SKILL_TAMING;
             case "Melee": return UI_SKILL_MELEE;
             default: return skill;
         }

@@ -118,6 +118,8 @@ public class FightingTask : ChunkTask
 
             float maxDist = float.MaxValue;
             EnemyController enemy = null;
+            // taming: the creatures being tamed come first, the others only when none is left
+            var taming = player.BattlePets.Taming != null;
             for (var i = 0; i < enemies.Length; ++i)
             {
                 try
@@ -127,6 +129,7 @@ public class FightingTask : ChunkTask
                         continue;
 
                     var dist = Vector3.Distance(x.Position, player.Position) + UnityEngine.Random.value;
+                    if (taming && !player.BattlePets.IsTamingTarget(x)) dist += 1000f;
                     if (dist < maxDist)
                     {
                         maxDist = dist;

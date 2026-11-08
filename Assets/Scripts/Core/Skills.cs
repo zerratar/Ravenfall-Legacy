@@ -33,6 +33,8 @@ public class Skills : IComparable
     public SkillStat Sailing;
     public SkillStat Gathering;
     public SkillStat Alchemy;
+    /// <summary>Battle pets (docs/battle-pets-design.md): trained by taming, and a share of everything while a pet is out.</summary>
+    public SkillStat Taming;
     public static readonly Skills Zero = new Skills();
 
     public Skills()
@@ -54,6 +56,7 @@ public class Skills : IComparable
         Healing = new SkillStat(Skill.Healing, nameof(Healing), 1, 0);
         Gathering = new SkillStat(Skill.Gathering, nameof(Gathering), 1, 0);
         Alchemy = new SkillStat(Skill.Alchemy, nameof(Alchemy), 1, 0);
+        Taming = new SkillStat(Skill.Taming, nameof(Taming), 1, 0);
 
         this.skills = new ConcurrentDictionary<string, SkillStat>();
         SetupSkillLookup();
@@ -78,6 +81,7 @@ public class Skills : IComparable
         Healing = new SkillStat(Skill.Healing, nameof(Healing), skills.HealingLevel, skills.Healing);
         Gathering = new SkillStat(Skill.Gathering, nameof(Gathering), skills.GatheringLevel, skills.Gathering);
         Alchemy = new SkillStat(Skill.Alchemy, nameof(Alchemy), skills.AlchemyLevel, skills.Alchemy);
+        Taming = new SkillStat(Skill.Taming, nameof(Taming), System.Math.Max(1, skills.TamingLevel), skills.Taming);
 
         this.skills = new ConcurrentDictionary<string, SkillStat>();
         SetupSkillLookup();
@@ -143,7 +147,8 @@ public class Skills : IComparable
             Sailing.Experience,
             Healing.Experience,
             Gathering.Experience,
-            Alchemy.Experience
+            Alchemy.Experience,
+            Taming.Experience
         };
     }
 
@@ -168,7 +173,8 @@ public class Skills : IComparable
             Sailing.Level,
             Healing.Level,
             Gathering.Level,
-            Alchemy.Level
+            Alchemy.Level,
+            Taming.Level
         };
     }
     public float HealthPercent => Health.CurrentValue / (float)Health.MaxValue;
@@ -191,7 +197,8 @@ public class Skills : IComparable
             Sailing,
             Healing,
             Gathering,
-            Alchemy
+            Alchemy,
+            Taming
         });
 
     public int CompareTo(object obj)
@@ -280,6 +287,9 @@ public class Skills : IComparable
 
             Alchemy = skills.Alchemy.Experience,
             AlchemyLevel = skills.Alchemy.Level,
+
+            Taming = skills.Taming.Experience,
+            TamingLevel = skills.Taming.Level,
         };
     }
 

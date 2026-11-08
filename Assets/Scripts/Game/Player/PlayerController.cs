@@ -86,6 +86,10 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     /// <summary>Attack and heal execution. See PlayerCombat.</summary>
     public PlayerCombat Combat { get; private set; }
 
+    /// <summary>Battle pets: the stable, the pet that is out, taming (docs/battle-pets-design.md).</summary>
+    public PlayerBattlePets BattlePets => battlePets ??= new PlayerBattlePets(this);
+    private PlayerBattlePets battlePets;
+
     /// <summary>Equip and unequip operations. See PlayerEquipmentActions.</summary>
     public PlayerEquipmentActions EquipmentActions { get; private set; }
 
@@ -746,6 +750,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             raidHandler.Poll();
             streamRaidHandler.Poll();
         }
+
+        battlePets?.Tick();
 
         // training away from the islands: the rate is learned on them, and paid in calm places (a tower town while not
         // resting, Ravebridge)
@@ -1593,6 +1599,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
         PatreonTier = player.PatreonTier;
         SkillBuild = RavenNest.Combat.SkillBuild.Parse(player.SkillBuild);
+        BattlePets.Load(player.BattlePets);
         PlayerName = player.Name;
         PlayerNameLowerCase = player.Name.ToLower();
         Stats = new Skills(player.Skills);
@@ -2900,6 +2907,9 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         }
 
         InCombat = true;
+
+        // a tank pet takes its share of the blow (all of it while it guards)
+        if (battlePets != null && damage > 0 && attacker != null && attacker.IsEnemy) damage = battlePets.Intercept(damage);
 
         // level sync on a tower floor: a blow takes the same share of the pool as it would of the synced one
         if (damage > 0 && towerHandler != null && towerHandler.SyncFloor > 0) damage = Mathf.RoundToInt(damage * towerHandler.SyncHealthScale);
