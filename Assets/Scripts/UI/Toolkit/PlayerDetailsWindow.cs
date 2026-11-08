@@ -705,15 +705,18 @@ namespace Shinobytes.UI
         {
             if (loadoutRow == null) return;
             var build = CombatRules.Enabled ? player.SkillBuild : null;
-            var actives = build != null ? new List<RavenNest.Combat.SkillNode>(build.Actives()) : null;
-            if (actives == null || actives.Count == 0)
+            var actives = build != null ? new List<RavenNest.Combat.SkillNode>(build.Actives()) : new List<RavenNest.Combat.SkillNode>();
+            var pet = player.BattlePets.Controller;
+            if (actives.Count == 0 && !pet)
             {
                 loadoutRow.style.display = DisplayStyle.None;
                 return;
             }
 
             loadoutRow.style.display = DisplayStyle.Flex;
+            RefreshPetChip(pet);
             while (loadoutChips.Count < actives.Count) loadoutChips.Add(NewLoadoutChip());
+            if (petChip != null) petChip.Root.BringToFront();
             for (var i = 0; i < loadoutChips.Count; ++i)
             {
                 var chip = loadoutChips[i];
@@ -732,6 +735,45 @@ namespace Shinobytes.UI
                 chip.Fill.style.width = new Length(share * 100f, LengthUnit.Percent);
                 chip.Root.EnableInClassList("rf-loadout__slot--ready", left <= 0f);
             }
+        }
+
+        // ---- The battle pet that is out (docs/battle-pets-design.md): its name and level over its health -----
+
+        private LoadoutChip petChip;
+
+        private void RefreshPetChip(BattlePetController pet)
+        {
+            if (!pet)
+            {
+                if (petChip != null) petChip.Root.style.display = DisplayStyle.None;
+                return;
+            }
+            if (petChip == null)
+            {
+                petChip = NewLoadoutChip();
+                petChip.Root.AddToClassList("rf-loadout__pet");
+                petChip.Fill.RemoveFromClassList("rf-loadout__cooldown");
+                petChip.Fill.AddToClassList("rf-loadout__health");
+                tooltip?.Attach(petChip.Root, t =>
+                {
+                    var c = player ? player.BattlePets.Controller : null;
+                    if (!c) return;
+                    t.SetTitle(c.Data.Name);
+                    t.SetNote(string.Format(Localization.UI_DETAILS_PET_KIND, c.Data.Level, c.Species.NameAt(c.Data.Stage),
+                        PetCommand.Role(c.Species.Role), PetCommand.Element(c.Species.Element), PetCommand.Strike(c.Species.Strike)));
+                    t.AddRow(Localization.UI_DETAILS_PET_HEALTH, c.KnockedOut ? Localization.MSG_PET_KNOCKED_OUT_SHORT : c.Health + " / " + c.MaxHealth);
+                    var skills = string.Join(", ", System.Linq.Enumerable.Select(System.Linq.Enumerable.Where(System.Linq.Enumerable.Select((c.Data.Slots ?? "").Split(','), RavenNest.Combat.BattlePets.GetSkill), s => s != null), s => s.Name));
+                    if (skills.Length > 0) t.AddRow(Localization.UI_DETAILS_PET_SKILLS, skills);
+                });
+            }
+            // the last chip in the row
+            if (loadoutRow.IndexOf(petChip.Root) != loadoutRow.childCount - 1) petChip.Root.BringToFront();
+            petChip.Root.style.display = DisplayStyle.Flex;
+            var text = pet.Data.Name + "  " + string.Format(Localization.UI_DETAILS_PET_LEVEL, pet.Data.Level);
+            if (petChip.Name.text != text) petChip.Name.text = text;
+            var share = pet.MaxHealth > 0 ? Mathf.Clamp01((float)pet.Health / pet.MaxHealth) : 0f;
+            petChip.Fill.style.width = new Length(share * 100f, LengthUnit.Percent);
+            petChip.Root.EnableInClassList("rf-loadout__pet--down", pet.KnockedOut);
         }
 
         private LoadoutChip NewLoadoutChip()

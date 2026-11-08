@@ -2615,6 +2615,10 @@ public static class Localization
     public static string UI_SETTINGS_TREE_WIND = "Wind in the trees";
     public static string UI_SETTINGS_TREE_WIND_HINT = "Trees, bushes and plants sway gently in the wind.";
     public static string UI_SETTINGS_BATTLE_PETS = "Battle pets";
+    public static string UI_DETAILS_PET_LEVEL = "Lv {0}";
+    public static string UI_DETAILS_PET_KIND = "A level {0} {1}: {2}, {3}, {4}.";
+    public static string UI_DETAILS_PET_HEALTH = "Health";
+    public static string UI_DETAILS_PET_SKILLS = "Skills";
     public static string UI_SETTINGS_BATTLE_PETS_HINT = "Battle pets beside their owners, with their leaps, bolts and rings. Off (and in potato mode) they still fight, unseen.";
     public static string UI_SETTINGS_DUNGEON_LIGHTING = "Dungeon torchlight";
     public static string UI_SETTINGS_DUNGEON_LIGHTING_HINT = "Dungeons go dark and are lit by flickering torches.";

@@ -583,6 +583,25 @@
     background-color: rgba(120, 130, 150, 0.45);
 }
 
+/* the battle pet that is out: its health fills the chip in green */
+.rf-loadout__pet {
+    flex-basis: 100%;
+    border-color: rgba(120, 220, 140, 0.55);
+}
+
+.rf-loadout__pet--down {
+    border-color: rgba(220, 90, 80, 0.7);
+}
+
+.rf-loadout__health {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 0;
+    background-color: rgba(70, 150, 90, 0.5);
+}
+
 .rf-loadout__name {
     font-size: 20px;
     -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
