@@ -62,6 +62,12 @@ var pictures = new System.Collections.Generic.List<(string Name, bool Transparen
     ("chain-fish-wide", false, "A calm lake at golden hour, a little wooden pier with an old fishing rod propped up on it, the shadow of a huge fish under the water."),
     ("chain-founder-wide", false, "A small village square at sunrise, a statue covered with a cloth on a plinth in the middle, cottages round it and bunting overhead."),
     ("chain-pumpkin-wide", false, "A pumpkin patch at dusk with glowing carved jack-o'-lanterns, a wooden fence and a lantern hanging from a post, an orange evening sky."),
+    ("chain-warden", true, "A tall warden's spear leaning on a mossy wooden gate post with a lit iron lantern hanging from it, a big rusty iron key ring and a few iron ore chunks at its foot, on a small grassy base."),
+    ("chain-bramble", true, "A cluttered herbalist's table: a stone mortar and pestle, bundles of dried herbs, a few brown mushrooms, a bubbling green potion flask and a spiral snail shell, on a small mossy base."),
+    ("chain-nibbles", true, "A tiny fluffy brown bunny with a blue ribbon round its neck nibbling a big green cabbage beside a small stone well, on a small grassy base."),
+    ("chain-warden-wide", false, "A mossy stone wall with an old wooden gate and two lit braziers at dusk, a lone warden with a spear by it, a giant ancient stone tower wrapped in vines rising into the clouds behind."),
+    ("chain-bramble-wide", false, "A crooked little herbalist's hut with a mossy roof in a lush herb garden at golden hour, drying herbs hanging under the eaves, a cauldron steaming outside, big mushrooms by the path."),
+    ("chain-nibbles-wide", false, "A cozy mossy hamlet square with a stone well in the morning, a cabbage on the well's edge and little bunny footprints leading off towards a giant vine-covered tower in the distance."),
     ("chain-shipwright-wide", false, "A shipwright's wooden slipway on a small island shore at sunset, a half built boat hull on trestles, tools and timber round it, the sea beyond."),
     // achievements with no picture of their own elsewhere (the others reuse the quest and item pictures)
     ("ach-alchemist", true, "A round glass potion flask of bubbling glowing green liquid with a cork, beside a small stone mortar and pestle and a sprig of herbs."),
@@ -71,6 +77,8 @@ var pictures = new System.Collections.Generic.List<(string Name, bool Transparen
     ("ach-quitter", true, "A small white surrender flag on a stick planted in the ground beside a dropped, crumpled parchment."),
     ("ach-storyteller", true, "A stack of three old leather-bound story books, an open one on top with a feather quill and a lit candle beside it."),
     ("ach-wrong", true, "A colourful red and yellow jester's cap with little brass bells, resting on a rolled riddle scroll."),
+    ("ach-climber", true, "A tall slender mossy stone tower wrapped in green vines rising into a few small clouds, a tiny banner flying from its top, a coil of climbing rope at its foot, on a small grassy base."),
+    ("ach-nibbled", true, "A small fluffy white bunny with big fangs and red angry eyes sitting proudly on top of a dented knight's helmet, a few tufts of grass and a nibbled carrot beside it."),
     // the website's boats page header
     ("boats-header-wide", false, "A wide view of a cozy fantasy harbour at golden hour, wooden docks with crates, barrels and ropes, a lighthouse on a rocky point, a few moored sailing ships of different sizes with cream sails, small cottages on the hill behind, calm water with reflections."),
     // the website's quest page header

@@ -327,6 +327,18 @@ In play mode on floor 4: a combat level 1,171 bot fights at level 44 (health 8,7
 blows on it times 19.8), and the bots kept fighting the floor without falling. `!tower` and `!tower info` say the sync
 level; the website explains it and shows it on every floor.
 
+## 13. Titles, icons and pictures (2026-11-08)
+
+- **Climber** (an achievement): the highest floor whose boss fell with the character there; the titles "the Climber"
+  (floor 1), "the Spire Walker" (5) and "the Bane of Viridia" (10). More tiers come with the next bands (25, 50, 75, 100).
+- **Nibbled** (hidden): knocked out during a boss attempt on floor 1, by a bunny; the title "the Bunny Snack". The game
+  sends knock-outs during an attempt with the kills report (`TowerKillReport.Falls`); the server counts only the
+  stream's own floor.
+- Icons for the Wardens Thornband, the Bramble Charm and the Holy Hand Grenade (Image Generator), pictures for the two
+  achievements and the three Mossgate chains with their banners (tools/quests/quest-ui-pictures.cs).
+- The website's quest page says where a town chain is begun ("while in Mossgate") and shows a chain's item reward, and
+  the Mossgate chains' words were added to its texts (tools/website/export-quest-texts.py).
+
 ## Open questions
 
 - Is the tower always open while a stream is live, or does the streamer open it, as with Ravebridge?

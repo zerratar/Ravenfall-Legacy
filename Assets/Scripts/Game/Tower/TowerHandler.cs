@@ -107,7 +107,11 @@ public class TowerHandler : IAwayHandler
         back.Back(player, "the tower");
     }
 
-    public void Died() => Exit();
+    public void Died()
+    {
+        if (boss && floor && floor.Definition != null && player) TowerManager.Instance?.PlayerFell(player, floor.Definition.Number);
+        Exit();
+    }
 
     public void BossFightStarted(EnemyController target)
     {

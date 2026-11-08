@@ -81,6 +81,7 @@ public sealed class TowerManager : MonoBehaviour
     private readonly HashSet<string> bossVotes = new HashSet<string>();
     private readonly Dictionary<string, int> pendingKills = new Dictionary<string, int>();
     private readonly Dictionary<(Guid Character, string Kind), int> characterKills = new Dictionary<(Guid, string), int>();
+    private readonly List<TowerCharacterFall> characterFalls = new List<TowerCharacterFall>();
     private readonly List<PlayerController> pendingTownJoins = new List<PlayerController>();
     private GameManager game;
     private bool stateRequested;
@@ -482,16 +483,25 @@ public sealed class TowerManager : MonoBehaviour
         }
     }
 
+    /// <summary>A player was knocked out during a boss attempt (reported with the kills, for a hidden achievement).</summary>
+    public void PlayerFell(PlayerController player, int floor)
+    {
+        if (player && player.UserId != Guid.Empty && Phase == TowerPhase.Fight)
+            characterFalls.Add(new TowerCharacterFall { CharacterId = player.Id, Floor = floor });
+    }
+
     private async void FlushCharacterKills()
     {
-        if (characterKills.Count == 0) return;
+        if (characterKills.Count == 0 && characterFalls.Count == 0) return;
         var g = Game;
         if (!g || g.RavenNest == null || !g.RavenNest.SessionStarted) return;
         var report = new TowerKillReport
         {
             Kills = characterKills.Select(kv => new TowerCharacterKills { CharacterId = kv.Key.Character, Kind = kv.Key.Kind, Count = kv.Value }).ToArray(),
+            Falls = characterFalls.ToArray(),
         };
         characterKills.Clear();
+        characterFalls.Clear();
         try
         {
             await g.RavenNest.Tower.KillsAsync(report);

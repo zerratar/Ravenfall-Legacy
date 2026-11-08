@@ -15,7 +15,7 @@ public class AchievementReachedEventHandler : GameEventHandler<AchievementReache
             return;
         }
 
-        var secret = data.Key == "wrong" || data.Key == "quitter";
+        var secret = data.Key == "wrong" || data.Key == "quitter" || data.Key == "nibbled";
         gameManager.RavenBot.SendReply(player, secret ? Localization.MSG_ACHIEVEMENT_SECRET : Localization.MSG_ACHIEVEMENT_REACHED,
             QuestChat.AchievementName(data.Key), QuestChat.Medal(data.Tier), QuestChat.TitleText(data.Title));
     }

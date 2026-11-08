@@ -372,6 +372,8 @@ public static class Localization
     public static string UI_ACHIEVEMENT_STORYTELLER = "Storyteller";
     public static string UI_ACHIEVEMENT_WRONG = "Confidently wrong";
     public static string UI_ACHIEVEMENT_QUITTER = "Quitter";
+    public static string UI_ACHIEVEMENT_CLIMBER = "Climber";
+    public static string UI_ACHIEVEMENT_NIBBLED = "Nibbled";
     public static string UI_TITLE_WOODCUTTER_1 = "the Woodcutter";
     public static string UI_TITLE_WOODCUTTER_2 = "the Lumberjack";
     public static string UI_TITLE_WOODCUTTER_3 = "the Forest's Bane";
@@ -424,6 +426,10 @@ public static class Localization
     public static string UI_TITLE_STORYTELLER_3 = "the Living Saga";
     public static string UI_TITLE_WRONG_1 = "the Confidently Wrong";
     public static string UI_TITLE_QUITTER_1 = "the Quitter";
+    public static string UI_TITLE_CLIMBER_1 = "the Climber";
+    public static string UI_TITLE_CLIMBER_2 = "the Spire Walker";
+    public static string UI_TITLE_CLIMBER_3 = "the Bane of Viridia";
+    public static string UI_TITLE_NIBBLED_1 = "the Bunny Snack";
     public static string UI_TITLE_CAT = "the Cat Whisperer";
     public static string UI_TITLE_FISH = "the Patient";
     public static string UI_TITLE_FOUNDER = "the Founder";
