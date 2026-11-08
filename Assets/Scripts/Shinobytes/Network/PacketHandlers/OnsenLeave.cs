@@ -15,6 +15,13 @@
                 return;
             }
 
+            // up from a tower town's campfire (training goes on there at the island's rate)
+            if (player.towerHandler != null && player.towerHandler.Resting)
+            {
+                player.towerHandler.StopResting();
+                return;
+            }
+
             if (!player.onsenHandler.InOnsen)
             {
                 return;

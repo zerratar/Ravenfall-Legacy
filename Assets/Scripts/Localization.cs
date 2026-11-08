@@ -1525,9 +1525,9 @@ public static class Localization
     public static string MSG_TOWER_CLIMB = Meta("tower", "info") + "Floor {floor}, {name}, is open: a new place. Everyone on the floor climbs up to it in {seconds} seconds.";
     public static string MSG_TOWER_BOSS_ADDS = Meta("tower", "info") + "{boss} calls for help! {count} more join the fight ({monster}). Deal with them first!";
     public static string MSG_TOWER_BOSS_ENRAGED = Meta("tower", "info") + "{boss} is enraged! It strikes faster and harder now. Finish it!";
-    public static string MSG_TOWER_TOWN_JOINED = Meta("tower", "success") + "You walk into {town}, the town at the tower's foot. You keep training here as on your island, or rest by the campfire with !tower rest. Its people: {people}.";
+    public static string MSG_TOWER_TOWN_JOINED = Meta("tower", "success") + "You walk into {town}, the town at the tower's foot. You keep training here as on your island, or rest by the campfire with !rest. Its people: {people}.";
     public static string MSG_TOWER_TOWN_HERE = Meta("tower", "info") + "You are in {town}. Its people: {people}. !tower takes you up to the floor.";
-    public static string MSG_TOWER_REST = Meta("tower", "success") + "You settle down by the campfire in {town} and rest, as in the Onsen. A new task or !tower gets you up again.";
+    public static string MSG_TOWER_REST = Meta("tower", "success") + "You settle down by the campfire in {town} and rest, as in the Onsen. A new task, !onsen leave or !tower gets you up again.";
     public static string MSG_TOWER_REST_ALREADY = Meta("tower", "info") + "You are already resting by the campfire.";
     public static string MSG_TOWER_REST_FULL = Meta("tower", "fail") + "Every spot by the campfire is taken. You keep training here as on your island.";
     public static string MSG_TOWER_TOWN_FIGHTING = Meta("tower", "fail") + "Not in the middle of a boss fight!";

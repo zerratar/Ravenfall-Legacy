@@ -20,6 +20,13 @@
                 player.ferryHandler.Cancel();
             }
 
+            // in the tower, the town's campfire is the place to rest (from a floor: down to the town first)
+            if (player.towerHandler != null && player.towerHandler.InTower && TowerManager.Instance)
+            {
+                TowerCommand.Rest(TowerManager.Instance, player, gm, client);
+                return;
+            }
+
             if (player.duelHandler.InDuel || player.arenaHandler.InArena || player.streamRaidHandler.InWar || player.InRavebridge
                 || player.IsAway || player.raidHandler.InRaid || player.onsenHandler.InOnsen)
             {

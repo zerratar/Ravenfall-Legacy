@@ -134,8 +134,11 @@ public class TowerCommand : ChatBotCommandHandler<string>
         }
     }
 
-    /// <summary>!tower rest: to the town's resting place (into the town first when not there), rested as in the Onsen.</summary>
-    private static void Rest(TowerManager tower, PlayerController player, GameMessage gm, GameClient client)
+    /// <summary>
+    ///     !tower rest, and !rest or !onsen in the tower: to the town's resting place (into the town first from a floor),
+    ///     rested as in the Onsen.
+    /// </summary>
+    internal static void Rest(TowerManager tower, PlayerController player, GameMessage gm, GameClient client)
     {
         if (!player)
         {

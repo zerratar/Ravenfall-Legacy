@@ -10,6 +10,13 @@
             player.ferryHandler.Cancel();
         }
 
+        // in a tower town: its campfire (the same rest)
+        if (player.towerHandler != null && player.towerHandler.InTown)
+        {
+            player.towerHandler.StartResting();
+            return;
+        }
+
         if (player.duelHandler.InDuel || player.arenaHandler.InArena || player.streamRaidHandler.InWar || player.InRavebridge
             || player.IsAway || player.raidHandler.InRaid || player.onsenHandler.InOnsen)
         {
