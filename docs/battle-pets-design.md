@@ -209,3 +209,71 @@ Built so the models are the only thing missing; nothing in the game or on the se
 **Still waiting:** the species list (models), the `BattlePet` table and `!pet` commands, the pet skill's column and
 attribute index (needs the name), the game's battle pet controller on top of `PetController`, the website's pets
 page, and the catch-up question above.
+
+---
+
+## 9. Every pet fights: strike styles, companions and the first build (2026-11-08)
+
+Zerratar (2026-11-08): start with the tameable creatures, do the evolved sets when their models arrive, and it would
+be great if every pet could battle, even though not every model has animations that suit a melee attack.
+
+**How a pet attacks is apart from its role.** Each species has a strike style that fits its model:
+
+| Strike | Looks like | For |
+|---|---|---|
+| **Bite** | the model's own attack clip, up close | models with an attack clip: bat, ghost, pumpkin, spider, werewolf, yeti, metalons, dragons |
+| **Pounce** | a leap done in code: crouch, jump in, squash on the hit, hop back | beasts without an attack clip: cats, foxes, wolves, bears, bunnies, cows, raccoons, the Halloween pets |
+| **Bolt** | stays about 5 m back, a little hop and a glowing bolt of its element | small and magical pets: ravens, orbs, witches, the octopus, the Tormented Soul, Lord Quackers |
+
+Heals and buffs show as a ring on the ground in green (or the element's colour), so no pet needs a cast animation either.
+Of the ~50 pet prefabs only 6 have an attack clip; with these three styles all of them fight.
+
+**Every pet item can fight (companions).** `!pets wake (pet item)` wakes a pet item the player has into a battle pet of
+its companion species (one per kind of item; the item stays in the inventory, and the pet only comes out while the
+player has it). A companion keeps its item's look and grows a little per stage (x1.12, x1.25) instead of changing
+model. 31 companion species cover every pet prefab, with silly stage names (Turd Raven, Stinky Raven, Legendary
+Stinker; Kitty, Housecat Supreme, Lord of the Sofa).
+
+**Tamed creatures** use the model of the enemy they were tamed from, copied without its scripts and scaled to the
+pet's height for its stage; the metalon's red, purple and green are its three stages. Species: bunny (Binky), cow
+(Moo), Tormented Soul (healer, Wail), metalon (Venom Sting), the five dragons (one per element, Whelp, Drake, Dragon),
+Lord Quackers (QUACK stuns everything near from sheer confusion, a tenth of the usual tame chance).
+
+### What is built
+
+- **Library** (RavenNest.Combat `PetSpeciesList.cs`, `BattlePets.cs`): 10 tameable and 31 companion species, the
+  strike styles, models and heights per stage, 12 more pet skills, taming odds (2% at the species' level, +0.04% per
+  Taming level above, 8% at most, a treat x1.5), tries per level for Taming experience. Tests.
+- **Server**: Taming is skill 17 (no enchantment attribute: index 17 is POWER's); the unused `Pet` table carries the
+  battle pets (species, stage, slots, source, the woken item); `BattlePetManager` with `pets.list/tame/wake/use/rename/
+  slot/evolve/release/exp`; players carry their pets to the game.
+- **Game** (`Assets/Scripts/Game/Pets`): `BattlePetController` (follows, fights on its owner's target, the three
+  strikes, skills by their use rules, knocked out for 30 s), `PetClipPlayer` (clips straight from any model in a
+  playable mixer, found by name; animation events off), `PetModels`, `PetFx` (bolt, ring, burst), `PlayerBattlePets`
+  (the stable, taming rolls, the experience share, reports to the server every minute). `!tame` steers the player to the
+  fighting area of their island with that creature and prefers it as a target. Taming in the details window.
+- **Chat**: `!pets` (stable, use, away, rename, skills, slot, evolve, wake, release, about) and `!tame` (creature, stop)
+  in both bots. `!pet` stays the cosmetic pet command.
+
+Seen with bots in play mode (local pets, no server): the cow, raven, red drake, bunny, purple and green metalon, wolf,
+fox, kitty, Wisp and duckling Quackers following and fighting, the Wisp's ice bolt, the drake's fire breath ring, the
+cow guarding (taking half of its owner's blows), a knocked out cow lying down, the metalon evolving into its green look,
+a bot taming a bunny (it went to the bunnies by itself) and Taming rising from the experience share.
+
+### Choices made without Zerratar (easy to change)
+
+- **Three stable places to begin with** (8 in all), so a tame and a woken pet item or two fit from the start.
+- **Tank pets take half of the blows on their owner** while near, and all of them while Guard or Moo is up; other roles
+  take none. Enemies do not target pets directly yet.
+- **The quarter share of experience goes to Taming as well as the pet** while a pet is out. This is the catch-up for
+  high level players: Taming climbs quickly towards their other levels. It may be too quick; watch it.
+- The first pet tamed or woken goes straight out; a tame is announced at most every 8 s.
+- `!pets release (name) confirm` lets a pet go for good.
+
+### Not yet done
+
+- The signed-in path (the server commands with a real character, the stable on join) is built but untested: bots
+  have no server.
+- Evolution materials, eggs, the starter pet quest, the treat item, Menagerie (the clan skill), gatherer pets'
+  bonuses while gathering, a website pets page, a Taming skill icon, the evolved model sets.
+
