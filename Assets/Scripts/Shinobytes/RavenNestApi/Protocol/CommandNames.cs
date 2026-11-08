@@ -116,6 +116,9 @@ namespace RavenNest.Protocol
         /// <summary>(Guid characterId, string species, Guid treatItemId (empty: none)) -> PetResult: a creature tamed (the game rolled the chance; the treat is eaten)</summary>
         public const string PetTame = "pets.tame";
 
+        /// <summary>(Guid characterId, string species) -> PetResult: a starter pet, for a character whose stable is empty</summary>
+        public const string PetStarter = "pets.starter";
+
         /// <summary>(Guid characterId, Guid itemId) -> PetResult: a pet item the character has, woken to fight</summary>
         public const string PetWake = "pets.wake";
 

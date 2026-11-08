@@ -1561,7 +1561,7 @@ public static class Localization
 
     // battle pets (docs/battle-pets-design.md)
     public static string MSG_PET_USAGE = Meta("pets", "fail") + "!pets shows your battle pet. !pets stable, !pets use (name), !pets away, !pets rename (name), !pets skills, !pets slot 2 howl, !pets evolve, !pets wake (pet item), !pets about (kind). !tame (creature) tames.";
-    public static string MSG_PET_NONE = Meta("pets") + "You have no battle pets yet. !tame bunny on the home island, or !pets wake to wake a pet item you have. A pet out with you shares in all the experience you earn, and so does Taming.";
+    public static string MSG_PET_NONE = Meta("pets") + "You have no battle pets yet. !pets starter fox, bear or fawn picks a first one; !tame bunny on the home island tames one, and !pets wake wakes a pet item you have. A pet out with you shares in all the experience you earn, and so does Taming.";
     public static string MSG_PET_NONE_OUT = Meta("pets") + "No pet is out. !pets use (name) sends one out: {pets}.";
     public static string MSG_PET_INFO = Meta("pets") + "{name}, a level {level} {kind} ({role}, {element}, {strike}). Health {health}/{max}. Skills: {skills}. {next}";
     public static string MSG_PET_NEXT_EVOLVE = "Evolves into {0} at level {1} (Taming {2}).";
@@ -1590,6 +1590,9 @@ public static class Localization
     public static string MSG_PET_ABOUT_TAME = "Tame it with !tame at Taming {0}; it loves {1}.";
     public static string MSG_PET_ABOUT_ITEM = "Wake its pet item with !pets wake.";
     public static string MSG_PET_UNKNOWN_KIND = Meta("pets", "fail") + "There is no kind of pet called {name}.";
+    public static string MSG_PET_STARTER = Meta("pets") + "A {kind} ({role}) is yours and out with you. It grows with everything you do; !pets tells you about it.";
+    public static string MSG_PET_STARTER_PICK = Meta("pets", "fail") + "Pick a first pet: !pets starter fox (damage), !pets starter bear (tank) or !pets starter fawn (healer).";
+    public static string MSG_PET_STARTER_HAVE = Meta("pets", "fail") + "Starter pets are for an empty stable, and yours has pets in it already. !pets stable lists them.";
     public static string MSG_PET_ERROR = Meta("pets", "fail") + "Your pet did not hear you. Try again in a moment.";
     public static string MSG_PET_TAMED = Meta("pets") + "{player} tamed a {kind}!";
     public static string MSG_PET_STABLE_FULL = Meta("pets", "fail") + "You could have tamed a {kind}, but your stable is full ({size}). Taming opens more room.";

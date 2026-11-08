@@ -73,6 +73,10 @@ public class PetCommand : ChatBotCommandHandler<string>
                 case "evolve":
                     await Evolve(player, gm, client);
                     return;
+                case "starter":
+                case "start":
+                    await Starter(player, rest, gm, client);
+                    return;
                 case "wake":
                 case "awaken":
                     await Wake(player, rest, gm, client);
@@ -195,6 +199,16 @@ public class PetCommand : ChatBotCommandHandler<string>
         {
             Game.RavenBot?.Announce(Localization.MSG_PET_EVOLVED, player.PlayerName, old, species?.NameAt(r.Pet?.Stage ?? 0) ?? r.Pet?.Name);
         });
+    }
+
+    private async Task Starter(PlayerController player, string name, GameMessage gm, GameClient client)
+    {
+        var species = BattlePets.FindStarter(name);
+        if (species == null) { client.SendReply(gm, Localization.MSG_PET_STARTER_PICK); return; }
+        if (player.BattlePets.Stable.Count > 0) { client.SendReply(gm, Localization.MSG_PET_STARTER_HAVE); return; }
+        var result = await Game.RavenNest.Players.PetStarterAsync(player.Id, species.Id);
+        if (result != null && result.Status == PetResultStatus.StableFull) { client.SendReply(gm, Localization.MSG_PET_STARTER_HAVE); return; }
+        await Result(player, gm, client, result, r => client.SendReply(gm, Localization.MSG_PET_STARTER, species.NameAt(0), Role(species.Role)));
     }
 
     private async Task Wake(PlayerController player, string name, GameMessage gm, GameClient client)

@@ -222,6 +222,9 @@ namespace RavenNest.SDK.Endpoints
         public Task<PetResult> PetTameAsync(Guid characterId, string species, Guid treatItemId) =>
             client.UseV2 ? client.V2.Commands.CallAsync<PetResult>(Commands.PetTame, CommandArgs.Pack(characterId, species, treatItemId)) : Task.FromResult<PetResult>(null);
 
+        public Task<PetResult> PetStarterAsync(Guid characterId, string species) =>
+            client.UseV2 ? client.V2.Commands.CallAsync<PetResult>(Commands.PetStarter, CommandArgs.Pack(characterId, species)) : Task.FromResult<PetResult>(null);
+
         public Task<PetResult> PetWakeAsync(Guid characterId, Guid itemId) =>
             client.UseV2 ? client.V2.Commands.CallAsync<PetResult>(Commands.PetWake, CommandArgs.Pack(characterId, itemId)) : Task.FromResult<PetResult>(null);
 
