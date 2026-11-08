@@ -2850,6 +2850,9 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         if (Stats == null || Stats.IsDead)
             return false;
 
+        // level sync on a tower floor: a heal is the same share of the pool as it would be of the synced one
+        if (amount > 0 && towerHandler != null && towerHandler.SyncFloor > 0) amount = Mathf.RoundToInt(amount * towerHandler.SyncHealthScale);
+
         // more healing received (Resilience)
         if (CombatRules.Enabled && amount > 0)
         {
@@ -2889,6 +2892,9 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         }
 
         InCombat = true;
+
+        // level sync on a tower floor: a blow takes the same share of the pool as it would of the synced one
+        if (damage > 0 && towerHandler != null && towerHandler.SyncFloor > 0) damage = Mathf.RoundToInt(damage * towerHandler.SyncHealthScale);
 
         if (attacker != null)
         {

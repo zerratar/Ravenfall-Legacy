@@ -1486,14 +1486,14 @@ public static class Localization
 
     // the tower (docs/tower-design.md)
     public static string MSG_TOWER_NOT_READY = Meta("tower", "fail") + "The tower is not ready yet. Try again in a moment.";
-    public static string MSG_TOWER_JOINED = Meta("tower", "success") + "You enter floor {floor} of the tower, {name}. Floor quests: {quests}.";
+    public static string MSG_TOWER_JOINED = Meta("tower", "success") + "You enter floor {floor} of the tower, {name}. Everyone fights at combat level {level} at most here. Floor quests: {quests}.";
     public static string MSG_TOWER_JOINED_ATTEMPT = Meta("tower", "success") + "You enter floor {floor} of the tower and join the boss attempt. It starts in {seconds} seconds.";
     public static string MSG_TOWER_LOADING = Meta("tower", "success") + "The tower opens. You will be taken to floor {floor}, {name}, in a moment.";
     public static string MSG_TOWER_CANNOT_JOIN = Meta("tower", "fail") + "You cannot enter the tower right now: not from a raid, dungeon, duel, arena, war or Ravebridge, or while knocked out.";
     public static string MSG_TOWER_FIGHT_UNDER_WAY = Meta("tower", "fail") + "A boss fight is under way in the tower. Wait for it to end (at most {seconds} seconds) before entering.";
     public static string MSG_TOWER_NOT_IN = Meta("tower", "fail") + "You are not in the tower. Use !tower to enter it.";
     public static string MSG_TOWER_LEFT = Meta("tower", "success") + "You leave the tower and go back to what you were doing.";
-    public static string MSG_TOWER_INFO = Meta("tower", "info") + "Tower floor {floor} of {top}, {name} (made for combat level {level}). Quests: {quests}. {boss} Players in the tower: {players}. !tower to enter.";
+    public static string MSG_TOWER_INFO = Meta("tower", "info") + "Tower floor {floor} of {top}, {name} (made for combat level {level}, everyone synced to {sync} at most). Quests: {quests}. {boss} Players in the tower: {players}. !tower to enter.";
     public static string MSG_TOWER_INFO_BOSS_OPEN = "The boss, {0}, can be challenged: !tower boss.";
     public static string MSG_TOWER_INFO_BOSS_LOCKED = "The boss, {0}, waits until the quests are done.";
     public static string MSG_TOWER_INFO_ALL_CLEARED = "Every floor is cleared for now.";

@@ -121,6 +121,8 @@ public sealed class TowerManager : MonoBehaviour
         var go = new GameObject("Tower Manager");
         DontDestroyOnLoad(go);
         Instance = go.AddComponent<TowerManager>();
+        // level sync on the floors (docs/tower-design.md section 12)
+        CombatRules.SyncFloor = f => f is PlayerController p && p.towerHandler != null ? p.towerHandler.SyncFloor : 0;
     }
 
     private void OnDestroy()

@@ -84,7 +84,7 @@ public class TowerCommand : ChatBotCommandHandler<string>
                 if (tower.Phase == TowerManager.TowerPhase.Countdown)
                     client.SendReply(gm, Localization.MSG_TOWER_JOINED_ATTEMPT, tower.CurrentFloor, ((int)tower.PhaseSecondsLeft).ToString(CultureInfo.InvariantCulture));
                 else
-                    client.SendReply(gm, Localization.MSG_TOWER_JOINED, tower.CurrentFloor, current != null ? current.Name : "", tower.QuestText());
+                    client.SendReply(gm, Localization.MSG_TOWER_JOINED, tower.CurrentFloor, current != null ? current.Name : "", Tower.SyncLevel(tower.CurrentFloor), tower.QuestText());
                 return;
             case TowerManager.JoinResult.Loading:
                 client.SendReply(gm, Localization.MSG_TOWER_LOADING, tower.StreamFloor, floor != null ? floor.Name : "");
@@ -234,6 +234,6 @@ public class TowerCommand : ChatBotCommandHandler<string>
         var boss = tower.AllCleared ? Localization.MSG_TOWER_INFO_ALL_CLEARED
             : tower.State.BossOpen ? string.Format(Localization.MSG_TOWER_INFO_BOSS_OPEN, floor.Boss.Name)
             : string.Format(Localization.MSG_TOWER_INFO_BOSS_LOCKED, floor.Boss.Name);
-        client.SendReply(gm, Localization.MSG_TOWER_INFO, floor.Number, Tower.TopFloor, floor.Name, floor.Level, tower.QuestText(), boss, tower.Players().Count);
+        client.SendReply(gm, Localization.MSG_TOWER_INFO, floor.Number, Tower.TopFloor, floor.Name, floor.Level, Tower.SyncLevel(floor.Number), tower.QuestText(), boss, tower.Players().Count);
     }
 }

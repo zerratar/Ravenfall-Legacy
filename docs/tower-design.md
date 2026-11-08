@@ -308,6 +308,25 @@ helpers within a second). Two ways to keep it a climb, for Zerratar to choose:
   count. Fixed bosses then stay fixed and mean the same for every stream.
 - **Group size**: a boss attempt takes at most a set number of players (for example 10), the rest train on the floor.
 
+## 12. Level sync (decided 2026-11-08)
+
+Zerratar chose level sync over a group cap. On a floor (not in a town), every player fights as if at most at the floor's
+sync level, a tenth above the floor's level (`Tower.SyncLevel`: 11 on floor 1, 44 on floor 4, 110 on floor 10):
+- **Skill levels** (attack, strength, defence, ranged, magic, healing) and the combat level count only up to it.
+- **The health pool** shrinks to the sync level's, keeping what gear adds. The real health bar stays as it is: blows and
+  heals taken on a floor are multiplied by how much bigger it is (`TowerHandler.SyncHealthScale`), so it loses the same
+  share as the synced pool would.
+- **Gear** counts up to the best gear wearable at the sync level (`Tower.CapGear`, a table from the item list):
+  power, accuracy and armour above it give nothing more on the floor; worse gear counts as it is. Skill trees, gems,
+  crits, elements, attack speed and enchantments count in full.
+Levels alone were not enough: in the simulator, players at ten times a floor's level with levels synced but their own
+gear still won every floor with three players. With gear capped too, they do about as well as players at the floor's
+level (five players win most middle floors; floor 10 wants eight).
+
+In play mode on floor 4: a combat level 1,171 bot fights at level 44 (health 8,720 down to 440, armour 2,149 to 179,
+blows on it times 19.8), and the bots kept fighting the floor without falling. `!tower` and `!tower info` say the sync
+level; the website explains it and shows it on every floor.
+
 ## Open questions
 
 - Is the tower always open while a stream is live, or does the streamer open it, as with Ravebridge?

@@ -46,6 +46,12 @@ public static class CombatRules
         return eq == null ? 1f : Mathf.Clamp((float)(1 + eq.Gear(GearStat.CastSpeed)), 0.2f, (float)CombatMath.MaxAttackSpeed);
     }
 
+    /// <summary>
+    ///     Level sync (the tower, docs/tower-design.md section 12): the floor a fighter is synced to, or 0. On a floor a
+    ///     player's skill levels, health pool and gear count only up to the floor's sync level (TowerManager sets it).
+    /// </summary>
+    public static System.Func<IAttackable, int> SyncFloor;
+
     /// <summary>Timed changes to a fighter's sheet (skills' buffs and debuffs; the game's CombatEffects sets it).</summary>
     public static System.Action<IAttackable, CombatSheet> SheetModifiers;
 
@@ -186,6 +192,13 @@ public static class CombatRules
         // an enemy's element, resistances and boss flag come from its definition
         if (fighter is IHasEnemyDefinition defined && defined.CombatDefinition != null)
             defined.CombatDefinition.ApplyElement(sheet);
+
+        // level sync on a tower floor: levels, health pool and gear capped at the floor's sync level
+        if (SyncFloor != null && !fighter.IsEnemy)
+        {
+            var synced = SyncFloor(fighter);
+            if (synced > 0) Tower.Sync(sheet, synced, stats.Health.GearHealth);
+        }
 
         SheetModifiers?.Invoke(fighter, sheet); // Shield Wall, Expose Weakness, Disarm, Rally, Rapid Fire
 

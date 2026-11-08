@@ -26,6 +26,27 @@ public class TowerHandler : IAwayHandler
     public TowerFloor Floor => floor;
     public TowerTown Town => town;
 
+    /// <summary>
+    ///     The floor this player is level synced to (docs/tower-design.md section 12), or 0 off the floors (towns too).
+    /// </summary>
+    public int SyncFloor => InTower && floor && floor.Definition != null ? floor.Definition.Number : 0;
+
+    /// <summary>
+    ///     How much of the real health pool one point of synced health is: damage and healing taken on a floor are
+    ///     multiplied by it, so a big health bar loses the same share as the synced pool would. 1 off the floors.
+    /// </summary>
+    public float SyncHealthScale
+    {
+        get
+        {
+            var synced = SyncFloor;
+            if (synced <= 0 || player.Stats?.Health == null) return 1f;
+            var real = player.Stats.Health.MaxValue;
+            var pool = Mathf.Min(real, CombatRules.MaxHealth(RavenNest.Combat.Tower.SyncLevel(synced)) + player.Stats.Health.GearHealth);
+            return pool > 0 ? Mathf.Max(1f, real / (float)pool) : 1f;
+        }
+    }
+
     /// <summary>In a tower town (not on a floor).</summary>
     public bool InTown => InTower && town;
 
