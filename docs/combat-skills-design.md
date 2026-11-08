@@ -203,6 +203,14 @@ Done since (2026-11-07):
   on a phone the planner's tools fold behind Tools and the panel sits above the loadout. Icons: 32 actives and specials,
   the eight trees' emblems and the skill point from three Image Generator sheets (`tools/website/skill-icon-sheets.py`,
   sources in `tools/website/skill-icon-sheets`), and a painted raven medallion for the centre. Not yet seen signed in.
+- **Real paths and the numbers** (2026-11-08, Zerratar: Iron Skin could be learned without the Battle Rhythm it hangs
+  from; the descriptions gave no figures): a node now needs one of the nodes linked to it in the tier below
+  (`SkillNode.Requires`, the paths in `SkillTrees`; the first tier is open), on top of its tree's level. Ranks learned
+  before the paths stay (Zerratar's choice, it is only the dev server so far). The planner cannot take back a node
+  that holds up another's path. The map draws exactly these links (walked bright, open half, closed faint) and places
+  each node under the ones its path comes from. Every node says its numbers (`SkillNode.EffectText`: "1% less damage
+  taken a rank", "80% of a hit (up to 3 enemies in front)", and for ranked passives "2% now, 5% at 5/5"), on the
+  map's panel, in the list and in `!tree <skill>`, which also says what to learn first.
 - **A combat guide** at `/combat`: how a blow lands, a calculator (hit chance, max hit, armour), elements,
   resistances, every magical attribute with its cap, threat, crowd control and the trees. Its numbers come from
   RavenNest.Combat, so it follows balance changes.

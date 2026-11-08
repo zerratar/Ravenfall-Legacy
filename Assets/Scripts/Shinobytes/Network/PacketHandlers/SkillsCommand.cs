@@ -163,7 +163,14 @@ public class SkillsCommand : ChatBotCommandHandler<string>
         }
 
         var kind = node.IsActive ? string.Format(Localization.MSG_SKILLS_KIND_ACTIVE, node.Active.Cooldown) : node.MaxRank > 1 ? string.Format(Localization.MSG_SKILLS_KIND_RANKS, node.MaxRank) : Localization.MSG_SKILLS_KIND_PASSIVE;
-        client.SendReply(gm, Localization.MSG_SKILLS_INFO, node.Name, node.Tree, kind, node.Description, SkillTrees.SkillOf(node.Tree), node.RequiredLevel, node.Cost);
+        // the path: one of the skills linked below it (none on the first tier)
+        var path = node.Requires.Length > 0 ? string.Format(Localization.MSG_SKILLS_PATH, string.Join(" or ", node.Requires.Select(r => SkillTrees.Get(r)?.Name ?? r))) : "";
+        // the numbers: a passive's per rank and its total (yours now and at the last rank), an active's effects
+        var effect = node.EffectText();
+        var total = node.TotalText(player.SkillBuild?.Rank(node.Id) ?? 0);
+        if (!string.IsNullOrEmpty(total)) effect += " (" + total + ")";
+        if (effect.Length > 0) effect = char.ToUpperInvariant(effect[0]) + effect.Substring(1);
+        client.SendReply(gm, Localization.MSG_SKILLS_INFO, node.Name, node.Tree, kind, node.Description, effect, SkillTrees.SkillOf(node.Tree), node.RequiredLevel, node.Cost, path);
     }
 
     private static bool Answered(PlayerController player, SkillBuildResult result, GameMessage gm, GameClient client)
