@@ -191,6 +191,18 @@ Done since (2026-11-07):
   what the build gives, and share it as a link (the address carries the build and the levels). Checked in a browser
   in WebGL and 2D, desktop and phone sized. Local testing: `RAVENNEST_HTTP=1` with the Development environment
   keeps the site on plain http, for browsers that refuse the development certificate.
+- **Everything on the map** (2026-11-08, Zerratar: the Learn button as a tooltip by the selection, the points and the
+  respec inside the canvas, the planner as a mode instead of a page, the confusing loadout dropdowns gone, painted
+  icons): `SkillTreeStage.razor` puts the points left and the respec (its price on the button, a confirm on press) in
+  the map's corner; a tapped star gets its panel beside it (Learn, Take back in the planner, loadout slot buttons and
+  when it is used), kept beside it as the map moves, closed by a press anywhere else or Escape; the loadout is a bar
+  along the bottom with the actives' icons (a slot opens a list of the learned actives and its "used when"). On the
+  character page "My build | Planner" switches to the planner on a copy of the build with the character's levels:
+  levels, start over, copy link, and saved plans (a dropdown, kept in the browser). The `/skill-trees` page is the same
+  planner for anyone. The map fills the window's height and keeps itself fitted while resized until it is moved;
+  on a phone the planner's tools fold behind Tools and the panel sits above the loadout. Icons: 32 actives and specials,
+  the eight trees' emblems and the skill point from three Image Generator sheets (`tools/website/skill-icon-sheets.py`,
+  sources in `tools/website/skill-icon-sheets`), and a painted raven medallion for the centre. Not yet seen signed in.
 - **A combat guide** at `/combat`: how a blow lands, a calculator (hit chance, max hit, armour), elements,
   resistances, every magical attribute with its cap, threat, crowd control and the trees. Its numbers come from
   RavenNest.Combat, so it follows balance changes.
