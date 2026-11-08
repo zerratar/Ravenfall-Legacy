@@ -488,6 +488,7 @@ public class RavebridgeManager : MonoBehaviour, IEvent
     {
         if (Time.time < nextUprisingRoll) return;
         nextUprisingRoll = Time.time + UprisingRollInterval;
+        if (!SettingsApplier.RavebridgeUprisings) return; // the streamer turned them off (Settings > Game > World)
         if (game.Events.IsActive || game.Players.GetPlayerCount() < 3) return;
         if (UnityEngine.Random.Range(0, UprisingChance) != 0) return;
         Begin(true, Localization.MSG_RAVEBRIDGE_UPRISING);

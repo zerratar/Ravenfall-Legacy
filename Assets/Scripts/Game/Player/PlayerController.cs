@@ -747,6 +747,11 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             streamRaidHandler.Poll();
         }
 
+        // training away from the islands: the rate is learned on them, and paid in calm places (a tower town while not
+        // resting, Ravebridge)
+        Progression.TrackTraining(GameTime.deltaTime);
+        if (InRavebridge || (towerHandler != null && towerHandler.InTown && !towerHandler.Resting)) Progression.TrainAway(GameTime.deltaTime);
+
         using (EffectsMarker.Auto()) UpdateActiveEffects();
 
         var schedule = activeScheduledAction;
@@ -1886,6 +1891,9 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         {
             this.onsenHandler.Exit();
         }
+
+        // resting in a tower town ends with a new task (training there goes on at the island's rate)
+        if (towerHandler != null && towerHandler.Resting) towerHandler.StopResting();
 
         if (Game.Arena.HasJoined(this))
         {
@@ -3504,7 +3512,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
                 flags |= CharacterFlags.InArena;
             }
 
-            if (onsenHandler.InOnsen && !InCombat)
+            if (onsenHandler.Resting && !InCombat)
             {
                 flags |= CharacterFlags.InOnsen;
             }

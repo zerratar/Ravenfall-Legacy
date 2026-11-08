@@ -50,6 +50,81 @@ public class TowerHandler : IAwayHandler
     /// <summary>In a tower town (not on a floor).</summary>
     public bool InTown => InTower && town;
 
+    /// <summary>Resting at the town's resting place (!tower rest): rested as in the Onsen, no training meanwhile.</summary>
+    public bool Resting { get; private set; }
+
+    /// <summary>Rest as soon as the town is reached (!tower rest from outside it, while the town loads).</summary>
+    public bool RestOnArrival;
+
+    private Transform restSpot;
+    private bool seated;
+    private float seatBy;
+
+    public enum RestResult { Resting, AlreadyResting, NotInTown, Full }
+
+    /// <summary>!tower rest in a town: off to a free spot at the resting place, to sit, meditate or sleep there.</summary>
+    public RestResult StartResting()
+    {
+        if (!InTown) return RestResult.NotInTown;
+        if (Resting) return RestResult.AlreadyResting;
+        var spot = town.TakeRestSpot(player);
+        if (!spot) return RestResult.Full;
+        restSpot = spot;
+        Resting = true;
+        seated = false;
+        seatBy = Time.time + 25f;
+        player.InterruptAction();
+        player.taskTarget = null;
+        player.SetDestination(spot.position);
+        return RestResult.Resting;
+    }
+
+    /// <summary>Up again: a new task, the floor, or leaving the tower.</summary>
+    public void StopResting() => StopResting(true);
+
+    private void StopResting(bool standUp)
+    {
+        if (!Resting) return;
+        Resting = false;
+        RestOnArrival = false;
+        var spot = restSpot;
+        restSpot = null;
+        if (town && spot) town.ReleaseRestSpot(spot, player);
+        if (!seated || !player) return;
+        seated = false;
+        player.Animations.ClearOnsenAnimations();
+        if (standUp && spot)
+        {
+            var at = spot.position - spot.forward * 1.2f;
+            if (UnityEngine.AI.NavMesh.SamplePosition(at, out var hit, 3f, UnityEngine.AI.NavMesh.AllAreas)) at = hit.position;
+            player.teleportHandler.Teleport(at, true);
+        }
+        player.Movement.Unlock();
+    }
+
+    private void UpdateResting()
+    {
+        if (seated || !restSpot) return;
+        var flat = restSpot.position - player.Position;
+        flat.y = 0f;
+        if (flat.sqrMagnitude > 1.2f * 1.2f && Time.time < seatBy)
+        {
+            if (!player.Movement.IsMoving) player.SetDestination(restSpot.position);
+            return;
+        }
+
+        // seated as in the Onsen: locked in place, the spot's pose
+        player.Movement.Lock();
+        player.transform.SetPositionAndRotation(restSpot.position, restSpot.rotation);
+        player.InCombat = false;
+        player.ClearTarget();
+        var name = restSpot.name;
+        if (name.StartsWith("Sleep")) player.Animations.Sleep();
+        else if (name.StartsWith("Meditate")) player.Animations.Meditate();
+        else player.Animations.Sit();
+        seated = true;
+    }
+
     public TowerHandler(PlayerController player)
     {
         this.player = player;
@@ -80,6 +155,9 @@ public class TowerHandler : IAwayHandler
         if (moving && (place == floor || place == town)) return false;
 
         if (!moving) back.Leave(player);
+        var restAfter = RestOnArrival && targetTown;
+        RestOnArrival = false;
+        StopResting(false);
         enemyTarget = null;
         healTarget = null;
         player.attackTarget = null;
@@ -96,6 +174,7 @@ public class TowerHandler : IAwayHandler
         player.Stats.Health.Reset();
         player.Island = null;
         player.taskTarget = null;
+        if (restAfter) StartResting();
         return true;
     }
 
@@ -137,6 +216,7 @@ public class TowerHandler : IAwayHandler
 
     private void Clear()
     {
+        StopResting(false);
         enemyTarget = null;
         healTarget = null;
         boss = null;
@@ -228,6 +308,7 @@ public class TowerHandler : IAwayHandler
     /// <summary>In a town: wander to a spot now and then and linger there.</summary>
     private void UpdateTown()
     {
+        if (Resting) { UpdateResting(); return; }
         if (Time.time < nextStroll) return;
         nextStroll = Time.time + Random.Range(12f, 30f);
         var spot = town.RandomStroll();

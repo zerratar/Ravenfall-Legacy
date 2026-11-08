@@ -20,6 +20,14 @@ public class OnsenHandler : MonoBehaviour
 
     public bool IsAutoResting { get; set; }
 
+    /// <summary>
+    ///     Resting in the Onsen or at a tower town's resting place (Mossgate's campfire, !tower rest): the same rest. The
+    ///     server counts it by the InOnsen flag.
+    /// </summary>
+    public bool Resting => InOnsen || TowerResting;
+
+    private bool TowerResting => player && player.towerHandler != null && player.towerHandler.Resting;
+
     //public int AutoRestCost { get; set; } = 500;
 
     public bool AutoRestAvailable
@@ -89,6 +97,13 @@ public class OnsenHandler : MonoBehaviour
 
         if (!InOnsen)
         {
+            if (TowerResting)
+            {
+                rested.AutoRestTime = 0;
+                rested.RestedTime = System.Math.Min(CharacterRestedState.RestedTimeMax, rested.RestedTime + GameTime.deltaTime * RestedGainFactor);
+                return;
+            }
+
             if (rested.RestedTime > 0)
             {
                 rested.RestedTime -= GameTime.deltaTime * RestedDrainFactor;

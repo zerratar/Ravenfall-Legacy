@@ -49,8 +49,11 @@ public class TowerCommand : ChatBotCommandHandler<string>
                     return;
                 case "town":
                 case "mossgate":
-                case "rest":
                     Town(tower, player, gm, client);
+                    return;
+                case "rest":
+                case "sleep":
+                    Rest(tower, player, gm, client);
                     return;
                 case "talk":
                 case "speak":
@@ -127,6 +130,54 @@ public class TowerCommand : ChatBotCommandHandler<string>
                 return;
             default:
                 client.SendReply(gm, player.towerHandler != null && player.towerHandler.InBossFight ? Localization.MSG_TOWER_TOWN_FIGHTING : Localization.MSG_TOWER_CANNOT_JOIN);
+                return;
+        }
+    }
+
+    /// <summary>!tower rest: to the town's resting place (into the town first when not there), rested as in the Onsen.</summary>
+    private static void Rest(TowerManager tower, PlayerController player, GameMessage gm, GameClient client)
+    {
+        if (!player)
+        {
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
+            return;
+        }
+
+        var handler = player.towerHandler;
+        var town = tower.StreamTown;
+        if (handler != null && handler.InTown)
+        {
+            switch (handler.StartResting())
+            {
+                case TowerHandler.RestResult.Resting:
+                    client.SendReply(gm, Localization.MSG_TOWER_REST, town != null ? town.Name : "");
+                    return;
+                case TowerHandler.RestResult.AlreadyResting:
+                    client.SendReply(gm, Localization.MSG_TOWER_REST_ALREADY);
+                    return;
+                default:
+                    client.SendReply(gm, Localization.MSG_TOWER_REST_FULL);
+                    return;
+            }
+        }
+
+        switch (tower.JoinTown(player))
+        {
+            case TowerManager.TownJoinResult.Joined:
+            case TowerManager.TownJoinResult.Loading:
+                if (handler != null)
+                {
+                    // into the town (now, or once it has loaded), then to the resting place
+                    if (handler.InTown) handler.StartResting();
+                    else handler.RestOnArrival = true;
+                }
+                client.SendReply(gm, Localization.MSG_TOWER_REST, town != null ? town.Name : "");
+                return;
+            case TowerManager.TownJoinResult.NoTown:
+                client.SendReply(gm, Localization.MSG_TOWER_NOT_READY);
+                return;
+            default:
+                client.SendReply(gm, handler != null && handler.InBossFight ? Localization.MSG_TOWER_TOWN_FIGHTING : Localization.MSG_TOWER_CANNOT_JOIN);
                 return;
         }
     }

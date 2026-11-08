@@ -75,6 +75,117 @@ public class PlayerProgression
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public double GetMultiplierFactor() => 1;
 
+    // ---- Training away from the islands -------------------------------------------------------------------------
+    //
+    // In a calm place (a tower town, Ravebridge) a player keeps training their skill at the rate they had on their
+    // island, so waiting there costs nothing (Zerratar 2026-11-08). The rate is learned from the experience the player
+    // really earned per second while training on an island (the sum of the exp factors, so level, boosts and multipliers
+    // apply as usual when it is paid); until a few minutes are known, a typical island rate per skill is used.
+
+    private sealed class TrainingRate
+    {
+        public double Factor;
+        public float Seconds;
+    }
+
+    private readonly System.Collections.Generic.Dictionary<Skill, TrainingRate> rates = new System.Collections.Generic.Dictionary<Skill, TrainingRate>();
+    private double awayPending;
+    private double awayEarned;
+    private float awayWindow;
+    private bool applyingAway;
+
+    /// <summary>The seconds of history after which the learned rate halves (so it follows the player's current spot).</summary>
+    private const float RateMemorySeconds = 600f;
+    /// <summary>The seconds of history needed before the learned rate is used instead of the typical one.</summary>
+    private const float RateTrustSeconds = 90f;
+    /// <summary>How often the calm place pays what the island would have.</summary>
+    private const float AwayPayInterval = 5f;
+
+    private TrainingRate Rate(Skill skill)
+    {
+        if (!rates.TryGetValue(skill, out var rate)) rates[skill] = rate = new TrainingRate();
+        return rate;
+    }
+
+    /// <summary>Training on an island as usual (or sailing on the ferry): the rate is learned from it.</summary>
+    public bool TrainingNormally
+    {
+        get
+        {
+            var p = player;
+            if (!p || p.IsAway || p.InRavebridge || p.raidHandler.InRaid || p.onsenHandler.InOnsen || p.duelHandler.InDuel
+                || p.arenaHandler.InArena || p.streamRaidHandler.InWar || p.Stats.IsDead) return false;
+            if (p.ferryHandler.OnFerry) return p.ActiveSkill == Skill.Sailing;
+            return p.Island != null;
+        }
+    }
+
+    /// <summary>Called every frame: time spent training on an island counts toward the rate of the trained skill.</summary>
+    public void TrackTraining(float deltaTime)
+    {
+        var skill = player.ActiveSkill;
+        if (skill == Skill.None || !TrainingNormally) return;
+        var rate = Rate(skill);
+        rate.Seconds += deltaTime;
+        if (rate.Seconds > RateMemorySeconds)
+        {
+            rate.Seconds *= 0.5f;
+            rate.Factor *= 0.5;
+        }
+    }
+
+    /// <summary>Exp factors per second the player earns training this skill on their island.</summary>
+    public double IslandRate(Skill skill)
+    {
+        if (rates.TryGetValue(skill, out var rate) && rate.Seconds >= RateTrustSeconds) return rate.Factor / rate.Seconds;
+        return TypicalRate(skill);
+    }
+
+    /// <summary>
+    ///     Exp factors per second on an island at a fitting spot, measured with bots (2026-11-08): an action every 2 to 3
+    ///     seconds, not every one paying, and the chunk's factor.
+    /// </summary>
+    public static double TypicalRate(Skill skill)
+    {
+        switch (skill)
+        {
+            case Skill.Woodcutting: return 0.17; // a share of every tree felled
+            case Skill.Mining: return 0.45;
+            case Skill.Fishing: return 0.30;
+            case Skill.Farming: return 0.30;
+            case Skill.Gathering: return 0.30;
+            case Skill.Crafting:
+            case Skill.Cooking:
+            case Skill.Alchemy: return 0.30;
+            case Skill.Sailing: return 0.30;
+            case Skill.Healing: return 0.30;
+            default: return 0.20; // the combat skills: a share of every kill
+        }
+    }
+
+    /// <summary>
+    ///     Called every frame in a calm place: every few seconds the experience the island would have given is paid, less
+    ///     what the player earned in that skill there anyway (Ravebridge has its own fights), never less than nothing.
+    /// </summary>
+    public void TrainAway(float deltaTime)
+    {
+        var skill = player.ActiveSkill;
+        if (skill == Skill.None) { awayPending = awayEarned = 0; awayWindow = 0; return; }
+        awayPending += IslandRate(skill) * deltaTime;
+        awayWindow += deltaTime;
+        if (awayWindow < AwayPayInterval) return;
+
+        var give = awayPending - awayEarned;
+        awayPending = awayEarned = 0;
+        awayWindow = 0;
+        if (give <= 0) return;
+        var target = player.AutoTrainTargetLevel;
+        if (target > 0 && skill != Skill.Health && skill != Skill.Melee && target <= player.GetSkill(skill).Level) return;
+        applyingAway = true;
+        try { AddExp(skill, give); }
+        finally { applyingAway = false; }
+    }
+
     /// <summary>
     /// Per-chunk scaling, which is how crowding on a training spot reduces gain.
     /// </summary>
@@ -138,6 +249,13 @@ public class PlayerProgression
             if (factor == 0)
             {
                 return;
+            }
+
+            // the training rate on the island, and what a calm place already gave (see TrainAway)
+            if (!applyingAway)
+            {
+                if (TrainingNormally) Rate(skill).Factor += factor;
+                else if (skill == player.ActiveSkill) awayEarned += factor;
             }
 
             var stats = player.Stats;

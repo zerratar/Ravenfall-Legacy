@@ -915,7 +915,7 @@ namespace RavenNest.SDK
                     flags |= CharacterFlags.InArena;
                 }
 
-                if (player.onsenHandler.InOnsen && !player.InCombat)
+                if (player.onsenHandler.Resting && !player.InCombat)
                 {
                     flags |= CharacterFlags.InOnsen;
                 }

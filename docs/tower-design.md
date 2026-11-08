@@ -339,6 +339,22 @@ level; the website explains it and shows it on every floor.
 - The website's quest page says where a town chain is begun ("while in Mossgate") and shows a chain's item reward, and
   the Mossgate chains' words were added to its texts (tools/website/export-quest-texts.py).
 
+## 14. Training and resting in the towns (2026-11-08)
+
+Zerratar: in the calm floor villages players should keep training every skill and gain exp as if they were on their own
+island, so waiting for the next floor costs nothing (the same complaint came from Ravebridge); and add a resting place.
+- **Training away**: each player's real training rate is learned while they train on an island (the sum of the exp
+  factors per second, per skill, halving every ten minutes so it follows their current spot; `PlayerProgression`). In a
+  tower town, and on Ravebridge, every five seconds they get what the island would have given, less what they earned in
+  that skill there anyway (Ravebridge's fights), never less than nothing. Level, boosts, rested and the village's bonus
+  apply as usual. Until 90 seconds on an island are known, a typical island rate per skill is used. The server keeps
+  giving resources as before (it sees the island they came from).
+- **Resting place**: Mossgate has a campfire beside the inn with six cushions (meditating) and five rugs (sleeping).
+  `!tower rest` (from anywhere: into the town first) takes a free spot; resting there is the Onsen's rest (the server
+  counts it by the same flag, so no training meanwhile). A new task or `!tower` gets them up; leaving ends it.
+- **Ravebridge uprisings** can be turned off (Settings > Game > World): Ravebridge then only opens when the streamer
+  starts it, for streams left running (AFK streamers found the random uprisings disruptive for their viewers).
+
 ## Open questions
 
 - Is the tower always open while a stream is live, or does the streamer open it, as with Ravebridge?

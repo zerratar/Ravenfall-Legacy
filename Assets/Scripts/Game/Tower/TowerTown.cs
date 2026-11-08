@@ -19,6 +19,14 @@ public sealed class TowerTown : TowerPlace
     /// <summary>Spots players stroll to and linger at: every child is one.</summary>
     public Transform Strolls;
 
+    /// <summary>
+    ///     The resting place's spots (!tower rest, as in the Onsen): every child is one, its name saying how the player
+    ///     rests there ("Sit", "Meditate" or "Sleep" at the start), placed and turned as the player will be.
+    /// </summary>
+    public Transform RestSpots;
+
+    private readonly Dictionary<Transform, PlayerController> restTaken = new Dictionary<Transform, PlayerController>();
+
     private readonly List<IslandNpc> people = new List<IslandNpc>();
 
     public TowerTownDefinition Town => Tower.Town(Key);
@@ -58,6 +66,27 @@ public sealed class TowerTown : TowerPlace
     {
         foreach (var p in people) if (p && p.Key == key) return p;
         return null;
+    }
+
+    /// <summary>A free resting spot for the player (the nearest free one), or null when every spot is taken.</summary>
+    public Transform TakeRestSpot(PlayerController player)
+    {
+        if (!RestSpots || !player) return null;
+        Transform best = null;
+        var bestDistance = float.MaxValue;
+        foreach (Transform spot in RestSpots)
+        {
+            if (restTaken.TryGetValue(spot, out var who) && who && !who.isDestroyed && who.towerHandler != null && who.towerHandler.Resting && who != player) continue;
+            var d = (spot.position - player.Position).sqrMagnitude;
+            if (d < bestDistance) { bestDistance = d; best = spot; }
+        }
+        if (best) restTaken[best] = player;
+        return best;
+    }
+
+    public void ReleaseRestSpot(Transform spot, PlayerController player)
+    {
+        if (spot && restTaken.TryGetValue(spot, out var who) && who == player) restTaken.Remove(spot);
     }
 
     /// <summary>A spot to stroll to, picked at random, near the town's spawn when it has none.</summary>

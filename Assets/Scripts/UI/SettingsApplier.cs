@@ -111,6 +111,7 @@ public static class SettingsApplier
         public const float IslandObserveSeconds = 10f;
         public const bool ObserveEmptyIslands = true;
         public const bool RaceCamera = true;
+        public const bool RavebridgeUprisings = true;
         public const bool ScreenShake = true;
         public const bool DownloadUpdatesEarly = true;
         public const bool InstallUpdatesAutomatically = false;
@@ -989,6 +990,11 @@ public static class SettingsApplier
     public static bool DisableDungeons => PlayerSettings.Instance.DisableDungeons.GetValueOrDefault();
 
     public static void SetDisableDungeons(bool value) => PlayerSettings.Instance.DisableDungeons = value;
+
+    /// <summary>Ravebridge's uprisings start by themselves (about every six hours of streaming); off for streams left running.</summary>
+    public static bool RavebridgeUprisings => PlayerSettings.Instance.RavebridgeUprisings.GetValueOrDefault(Defaults.RavebridgeUprisings);
+
+    public static void SetRavebridgeUprisings(bool value) => PlayerSettings.Instance.RavebridgeUprisings = value;
 
     public static bool RequireJoinCode => PlayerSettings.Instance.RequireJoinCode.GetValueOrDefault();
 

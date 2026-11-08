@@ -22,6 +22,8 @@ public class PlayerSettings
     public bool? CanObserveEmptyIslands;
     /// <summary>The regatta's own camera (RaceCamera) while a race runs.</summary>
     public bool? RegattaCamera;
+    /// <summary>Ravebridge's goblin uprisings start by themselves now and then (off: only the streamer starts Ravebridge).</summary>
+    public bool? RavebridgeUprisings;
     /// <summary>Hero mode's hits and the Kraken's roar shake the camera.</summary>
     public bool? ScreenShake;
     public bool? DownloadUpdatesEarly;
@@ -432,6 +434,7 @@ public class PlayerSettings
             Serialize(sw, "islandObserveSeconds", obj.IslandObserveSeconds);
             Serialize(sw, "canObserveEmptyIslands", obj.CanObserveEmptyIslands);
             Serialize(sw, "regattaCamera", obj.RegattaCamera);
+            Serialize(sw, "ravebridgeUprisings", obj.RavebridgeUprisings);
             Serialize(sw, "screenShake", obj.ScreenShake);
             Serialize(sw, "downloadUpdatesEarly", obj.DownloadUpdatesEarly);
             Serialize(sw, "installUpdatesAutomatically", obj.InstallUpdatesAutomatically);
