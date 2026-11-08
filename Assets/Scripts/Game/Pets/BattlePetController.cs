@@ -101,7 +101,8 @@ public sealed class BattlePetController : MonoBehaviour
     {
         var stageChanged = Data != null && data != null && Data.Stage != data.Stage;
         Data = data ?? Data;
-        sheet = Species.Sheet(Mathf.Max(1, Data.Level), Data.Stage);
+        syncedTo = SyncLevel();
+        sheet = Species.Sheet(EffectiveLevel(syncedTo), Data.Stage);
         var share = MaxHealth > 0 ? (float)Health / MaxHealth : 1f;
         MaxHealth = Mathf.Max(1, sheet.MaxHealth);
         Health = Mathf.Clamp(Mathf.RoundToInt(MaxHealth * share), 1, MaxHealth);
@@ -239,8 +240,15 @@ public sealed class BattlePetController : MonoBehaviour
         return (float)Species.Stats.AttackInterval / (1f + faster);
     }
 
+    // level sync on a tower floor (docs/tower-design.md): a pet fights at most at its owner's synced level, as the owner does
+    private int syncedTo;
+    private int SyncLevel() => Owner && CombatRules.SyncFloor != null ? Mathf.Max(0, CombatRules.SyncFloor(Owner)) : 0;
+    private int EffectiveLevel(int synced) => synced > 0 ? Mathf.Clamp(Data.Level, 1, synced) : Mathf.Max(1, Data.Level);
+
     private void Attack(EnemyController target)
     {
+        var synced = SyncLevel();
+        if (synced != syncedTo) Refresh(Data);
         nextAttack = Time.time + AttackInterval();
         if (Time.time >= skillPauseUntil && UseSkill(target)) return;
         Play(target, () => Hit(target, 1, null));

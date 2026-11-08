@@ -553,6 +553,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     public void OnRemoved()
     {
         Removed = true;
+        battlePets?.Leave(); // what the pet earned since its last report goes to the server, and the pet goes
         if (healthBarManager) healthBarManager.Remove(this);
 
         GameManager.NameTags.Remove(this);

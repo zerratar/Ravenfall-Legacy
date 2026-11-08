@@ -96,6 +96,21 @@ public sealed class PlayerBattlePets
         Controller = BattlePetController.Spawn(owner, active);
     }
 
+    /// <summary>The owner leaves the game: the pet's unsent experience is sent (the owner is gone by the answer), and the pet goes.</summary>
+    public void Leave()
+    {
+        var pet = Active;
+        var amount = pendingExperience;
+        pendingExperience = 0;
+        var game = owner ? owner.GameManager : null;
+        if (pet != null && amount > 0 && game && !owner.IsBot)
+        {
+            var characterId = owner.Id;
+            _ = game.RavenNest.Players.PetExperienceAsync(characterId, pet.Id, amount);
+        }
+        Remove();
+    }
+
     public void Remove()
     {
         if (Controller) UnityEngine.Object.Destroy(Controller.gameObject);
