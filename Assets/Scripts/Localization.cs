@@ -1576,6 +1576,7 @@ public static class Localization
     public static string MSG_PET_NO_EGGS = Meta("pets", "fail") + "You have no pet eggs. They turn up in dungeon, raid and tower rewards now and then.";
     public static string MSG_PET_NO_SUCH_EGG = Meta("pets", "fail") + "You have no egg called {name}.";
     public static string MSG_PET_HATCHING = Meta("pets") + "Your {egg} is in your stable, warming. It hatches into a {kind} after {minutes} minutes of play.";
+    public static string MSG_PET_STREAK_EGG = Meta("pets", "egg") + "{player} has played {days} days in a row and found a {egg}! !pets hatch puts it in the stable to warm.";
     public static string MSG_PET_EGG_FOUND = Meta("pets", "egg") + "{player} found a {egg}! !pets hatch puts it in the stable to warm.";
     public static string MSG_STREAM_QUEST_EGG = Meta("quests", "egg") + "{player} added the most to the stream's quest and found a {egg}!";
     public static string MSG_PET_HATCHED = Meta("pets") + "{player}'s {egg} hatched into a {kind}!";

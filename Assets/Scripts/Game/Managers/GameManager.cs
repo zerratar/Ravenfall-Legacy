@@ -510,6 +510,7 @@ public class GameManager : MonoBehaviour, IGameManager
         RegisterGameEventHandler<RavebridgeForcedEventHandler>((GameEventType)56);
         RegisterGameEventHandler<UpdateHonourEventHandler>((GameEventType)57);
         RegisterGameEventHandler<SkillBuildChangedEventHandler>((GameEventType)58);
+        RegisterGameEventHandler<PlayStreakEggEventHandler>((GameEventType)59);
         RegisterGameEventHandler<ItemRemoveByCategoryHandler>(GameEventType.ItemRemoveByCategory);
 
         RegisterGameEventHandler<ItemUnequipEventHandler>(GameEventType.ItemUnEquip);

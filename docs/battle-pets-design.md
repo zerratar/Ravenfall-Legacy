@@ -444,7 +444,7 @@ tables live in `RavenNest.Combat.PetEggs` (sources Quest, PirateRaid, Regatta, R
 |---|---|---|
 | A finished weekly quest | 15% | any egg, the dragon least often |
 | A finished seasonal quest (Halloween, Christmas) | 6% | the same |
-| Every 7th day of a daily quest streak (7, 14, 21, ...) | always | the same |
+| Days played in a row: day 7, then every 14 days (21, 35, ...) | always | the same |
 | A finished stream quest: the helper who added the most | 15% | the same |
 | The pirates' raid held, each defender | 3% (9% for the one who held longest) | mostly the Bomb Egg (their powder kegs), Shell, Snakelet |
 | The regatta, a real race: the winner / the rest of the podium | 10% / 4% | mostly the Shell Egg, Sun Blossom Seed |
@@ -453,6 +453,13 @@ tables live in `RavenNest.Combat.PetEggs` (sources Quest, PirateRaid, Regatta, R
 The chances were lowered on 2026-11-09 (user: "a bit lower"), by about a third to a half from the first numbers
 (weekly 25%, seasonal 10%, stream quest 25%, pirates 5%/15%, regatta 15%/6%, Ravebridge 15%); the streak egg is
 unchanged.
+
+**Days played in a row** (2026-11-09, user): the streak egg follows days played, not daily quests, so a viewer who
+stays in a long stream for a week counts as one who leaves and joins every day. The server counts it for every
+character in a running session on every tick (`QuestProcessor.PlayStreak`, stored as CharacterQuestStats.PlayStreak
+and LastPlayDay, UTC days; the columns are added at startup): a new day adds one, a day without play starts again at
+1. The first egg comes on day 7, then one every 14 days; the game says it in chat (event PlayStreakEgg, 59). Tested
+with the dev character: a streak of 6 ending yesterday became 7 on joining and gave a Bud Seed.
 
 - **The speckled egg**, a new chain (`!quest begin speckled`, the barkeep's): a dozen hen's eggs, a harvest, keeping
   the sniffers away, the chicken-or-egg riddle (every answer is right), a nest of wheat and a trip to Ironhill's

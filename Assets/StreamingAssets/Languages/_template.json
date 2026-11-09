@@ -608,6 +608,7 @@
     "MSG_PET_STARTER": "A {kind} ({role}) is yours and out with you. It grows with everything you do; !pets tells you about it.",
     "MSG_PET_STARTER_HAVE": "Starter pets are for an empty stable, and yours has pets in it already. !pets stable lists them.",
     "MSG_PET_STARTER_PICK": "Pick a first pet: !pets starter fox (damage), !pets starter bear (tank) or !pets starter fawn (healer).",
+    "MSG_PET_STREAK_EGG": "{player} has played {days} days in a row and found a {egg}! !pets hatch puts it in the stable to warm.",
     "MSG_PET_TAMED": "{player} tamed a {kind}!",
     "MSG_PET_UNKNOWN_KIND": "There is no kind of pet called {name}.",
     "MSG_PET_USAGE": "!pets shows your battle pet. !pets stable, !pets use (name), !pets away, !pets rename (name), !pets skills, !pets slot 2 howl, !pets evolve, !pets wake (pet item), !pets hatch (egg), !pets about (kind). !tame (creature) tames.",
