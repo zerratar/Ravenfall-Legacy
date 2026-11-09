@@ -326,11 +326,11 @@ public static class Localization
     public static string UI_CHAIN_BRAMBLE_4 = "'Now we brew! Make some potions, any kind, and I will show you a trick or two.'";
     public static string UI_CHAIN_BRAMBLE_5 = "'Come and see what I made from all that.' (!tower talk bramble in Mossgate)";
     public static string UI_CHAIN_BRAMBLE_END = "Bramble ties a charm of herbs, a snail shell and a lot of string around your neck. 'It keeps the poison off. Mostly.'";
-    public static string UI_CHAIN_BRAMBLE_WRONG = "Bramble snatches it out of your hand. 'Do you WANT to see colours that do not exist?'";
+    public static string UI_CHAIN_BRAMBLE_WRONG = "Bramble snatches it out of your hand. 'Do you WANT to see colors that do not exist?'";
     public static string UI_CHAIN_BRAMBLE_THANKS = "Still alive? Then the charm works. Wonderful.";
     public static string UI_CHAIN_NIBBLES = "Where is Nibbles?";
     public static string UI_CHAIN_NIBBLES_1 = "A small boy sniffs by the well. 'My bunny Nibbles ran up the tower! He is tiny and soft and would never hurt anyone. Can you look for him among the bunnies up there?'";
-    public static string UI_CHAIN_NIBBLES_2 = "An old man guards the stairs. 'Answer me this, or go back down: what is the airspeed of an unladen swallow? 1) About 11 metres a second 2) African or European? 3) Blue. No, yellow!'";
+    public static string UI_CHAIN_NIBBLES_2 = "An old man guards the stairs. 'Answer me this, or go back down: what is the airspeed of an unladen swallow? 1) About 11 meters a second 2) African or European? 3) Blue. No, yellow!'";
     public static string UI_CHAIN_NIBBLES_3 = "Pip says Nibbles loves cabbage. Bring some, and maybe he will come home by himself.";
     public static string UI_CHAIN_NIBBLES_4 = "People say a giant bunny guards the first floor. Surely not Nibbles. Be there when a floor's boss falls, just to make sure.";
     public static string UI_CHAIN_NIBBLES_5 = "Go and tell Pip what you found. Gently. (!tower talk pip in Mossgate)";
@@ -1396,9 +1396,9 @@ public static class Localization
     public static string MSG_BREW_FAILED_STATION = Meta("alchemy", "fail") + "You have to be at the alchemy table to brew anything. Type !train alchemy before using the !brew command.";
     //public static string MSG_BREW_FAILED_STATION = Meta("alchemy", "fail") + "You have to be at the alchemy table to brew anything. Type !train alchemy before using the !brew command.";
 
-    public static string MSG_CRAFT_CANCEL = Meta("crafting", "cancel") + "Your ongoing crafting has been cancelled.";
-    public static string MSG_BREW_CANCEL = Meta("alchemy", "cancel") + "Your ongoing brewing has been cancelled.";
-    public static string MSG_COOK_CANCEL = Meta("cooking", "cancel") + "Your ongoing cooking has been cancelled.";
+    public static string MSG_CRAFT_CANCEL = Meta("crafting", "cancel") + "Your ongoing crafting has been canceled.";
+    public static string MSG_BREW_CANCEL = Meta("alchemy", "cancel") + "Your ongoing brewing has been canceled.";
+    public static string MSG_COOK_CANCEL = Meta("cooking", "cancel") + "Your ongoing cooking has been canceled.";
 
     public static string MSG_CRAFT_FAILED_LEVEL = Meta("crafting", "fail") + "You can't craft this item, it requires level {reqCraftingLevel} crafting.";
     public static string MSG_CRAFT_FAILED_NOT_CRAFTABLE = Meta("crafting", "fail") + "{itemName} is not a craftable item.";
@@ -1532,7 +1532,7 @@ public static class Localization
     public static string MSG_TOWER_REST_ALREADY = Meta("tower", "info") + "You are already resting by the campfire.";
     // gems (docs/gems-design.md)
     public static string MSG_GEM_USAGE = Meta("gems", "fail") + "!gems lists your gems. !gems enchant ruby 5, !gems combine ruby flawed, !socket (item) (gem) and !unsocket (item). !gems ruby says what a ruby does.";
-    public static string MSG_GEM_INFO = Meta("gems") + "{gem}: in a weapon {weapon}, in armour {armour}, in a ring or amulet {jewellery} (Chipped; a Perfect one gives ten times as much, {perfect} in a weapon).";
+    public static string MSG_GEM_INFO = Meta("gems") + "{gem}: in a weapon {weapon}, in armor {armour}, in a ring or amulet {jewellery} (Chipped; a Perfect one gives ten times as much, {perfect} in a weapon).";
     public static string MSG_GEM_NONE = Meta("gems") + "You have no enchanted gems. Mine raw ones (Sapphire, Emerald, Ruby, Topaz, Amethyst, Onyx, Diamond) and have your clan enchant them: !gems enchant ruby.";
     public static string MSG_GEM_LIST = Meta("gems") + "Your gems: {gems}.";
     public static string MSG_GEM_ENCHANT_USAGE = Meta("gems", "fail") + "Name the raw gem and how many: !gems enchant ruby 5.";
@@ -1552,7 +1552,7 @@ public static class Localization
     public static string MSG_GEM_NOT_ENOUGH = Meta("gems", "fail") + "Combining takes three {gem}.";
     public static string MSG_GEM_NO_COINS = Meta("gems", "fail") + "Combining these costs {coins} coins.";
     public static string MSG_GEM_HIGHEST = Meta("gems", "fail") + "Perfect gems are as good as gems get.";
-    public static string MSG_GEM_NO_SOCKETS = Meta("gems", "fail") + "{itemName} has no sockets. Weapons, armour, rings and amulets from item level 25 have them (2 from 150, 3 from 400; rings and amulets 1).";
+    public static string MSG_GEM_NO_SOCKETS = Meta("gems", "fail") + "{itemName} has no sockets. Weapons, armor, rings and amulets from item level 25 have them (2 from 150, 3 from 400; rings and amulets 1).";
     public static string MSG_GEM_FULL = Meta("gems", "fail") + "Every socket of {itemName} is filled ({count}). Add a socket number to replace a gem: the old one crumbles unless you are lucky.";
     public static string MSG_GEM_NO_SUCH_SOCKET = Meta("gems", "fail") + "{itemName} has {count} socket(s).";
     public static string MSG_GEM_EMPTY_SOCKET = Meta("gems", "fail") + "Socket {socket} of {itemName} is empty.";
@@ -1815,7 +1815,7 @@ public static class Localization
     public static string UI_ROAD_COBBLES = "Cobbles";
     public static string UI_ROAD_PAVING = "Paved road";
     public static string UI_ROAD_DRAW = "Draw";
-    public static string UI_ROAD_PER_METRE = "{0} a metre";
+    public static string UI_ROAD_PER_METRE = "{0} a meter";
     public static string UI_ROAD_LOCKED = "Needs town hall tier {0}";
     public static string UI_ROAD_LENGTH = "{0} m long";
     public static string UI_ROAD_TYPE = "TYPE";
@@ -2295,17 +2295,17 @@ public static class Localization
     public static string UI_DETAILS_HEALTH = "HEALTH";
     public static string UI_DETAILS_ARMOR_HEALTH = "+{0} health";
     public static string UI_STATS_GROUP_HEALTH = "HEALTH";
-    public static string UI_STATS_GROUP_DEFENCE = "DEFENCE";
-    public static string UI_STATS_GROUP_OFFENCE = "OFFENCE";
+    public static string UI_STATS_GROUP_DEFENCE = "DEFENSE";
+    public static string UI_STATS_GROUP_OFFENCE = "OFFENSE";
     public static string UI_STATS_GROUP_ELEMENTS = "ELEMENTS";
     public static string UI_STATS_HEALTH = "Health";
     public static string UI_STATS_MAX_HEALTH = "Max health";
     public static string UI_STATS_FROM_VITALITY = "From Vitality";
-    public static string UI_STATS_FROM_ARMOUR = "From armour";
+    public static string UI_STATS_FROM_ARMOUR = "From armor";
     public static string UI_STATS_FROM_GEAR = "From gear";
     public static string UI_STATS_HEALTH_BONUS = "Health bonus";
-    public static string UI_STATS_HEALTH_NOTE = "Vitality gives {0} health a level; every point of armour on armour pieces adds {1}.";
-    public static string UI_STATS_ARMOUR = "Armour";
+    public static string UI_STATS_HEALTH_NOTE = "Vitality gives {0} health a level; every point of armor on armor pieces adds {1}.";
+    public static string UI_STATS_ARMOUR = "Armor";
     public static string UI_STATS_ARMOUR_CUT = "Physical damage cut";
     public static string UI_STATS_POWER = "Power";
     public static string UI_STATS_ACCURACY = "Accuracy";
@@ -2536,7 +2536,7 @@ public static class Localization
     public static string UI_LOGIN_WAITING = "Waiting for you to approve...";
     public static string UI_LOGIN_WAIT_REOPEN = "Open the page again";
     public static string UI_LOGIN_WAIT_CANCEL = "Cancel";
-    public static string UI_LOGIN_TWITCH_DENIED_TITLE = "Sign in cancelled";
+    public static string UI_LOGIN_TWITCH_DENIED_TITLE = "Sign in canceled";
     public static string UI_LOGIN_TWITCH_DENIED = "The sign in was turned down on the website.";
     public static string UI_LOGIN_TWITCH_EXPIRED_TITLE = "The sign in ran out";
     public static string UI_LOGIN_TWITCH_EXPIRED = "It was not approved within ten minutes. Try again.";
@@ -2623,7 +2623,7 @@ public static class Localization
     public static string UI_SETTINGS_AUTO_POTATO = "Potato mode while in the background";
     public static string UI_SETTINGS_AUTO_POTATO_HINT = "Saves power when another window has focus.";
     public static string UI_SETTINGS_POST = "Post processing";
-    public static string UI_SETTINGS_POST_HINT = "Colour grading and a soft vignette.";
+    public static string UI_SETTINGS_POST_HINT = "Color grading and a soft vignette.";
     public static string UI_SETTINGS_BLOOM = "Bloom";
     public static string UI_SETTINGS_BLOOM_HINT = "What is brighter than white glows softly: fires and lit windows after dark, lightning, the sun on the sea.";
     public static string UI_SETTINGS_GRASS = "Grass";
@@ -3427,7 +3427,7 @@ public static class Localization
 
     // The regatta round the Mangrove island
     public static string MSG_REGATTA_OPEN = Meta("mangrove", "regatta") + "The banana island regatta is open! Own a boat? Type !regatta to race round the island. The start is in {seconds} seconds.";
-    public static string MSG_REGATTA_START = Meta("mangrove", "regatta") + "The regatta boats are at the start line of the banana island! Boats: {count}. Meddle from chat: !regatta keg throws a powder keg in a racer's way, !regatta wind <name> fills a favourite's sails.";
+    public static string MSG_REGATTA_START = Meta("mangrove", "regatta") + "The regatta boats are at the start line of the banana island! Boats: {count}. Meddle from chat: !regatta keg throws a powder keg in a racer's way, !regatta wind <name> fills a favorite's sails.";
     public static string MSG_REGATTA_WON = Meta("mangrove", "regatta") + "{player} wins the banana island regatta in {time} s! {others}";
     public static string MSG_REGATTA_POT = Meta("mangrove", "regatta") + "Chat's meddling put {coins} coins in the prize pot, shared by the podium!";
     public static string MSG_REGATTA_JOINED = Meta("mangrove", "regatta") + "You are in the regatta. Your boat will be at the start line.";
@@ -3532,7 +3532,7 @@ public static class Localization
     // The pirates' raid on the Mangrove island
     public static string MSG_PIRATES_COMING = Meta("mangrove", "pirates") + "Pirates are coming for the banana island's bananas! Defend the island: !sail mangrove";
     public static string MSG_PIRATES_HELD = Meta("mangrove", "pirates") + "The pirates are beaten back from the banana island! {kills} pirates fell. The defenders share the pirates' chest.";
-    public static string MSG_PIRATES_LOST = Meta("mangrove", "pirates") + "The pirates got away with {bananas} of the banana island's bananas! INSUFFICIENT DEFENCE.";
+    public static string MSG_PIRATES_LOST = Meta("mangrove", "pirates") + "The pirates got away with {bananas} of the banana island's bananas! INSUFFICIENT DEFENSE.";
     public static string MSG_PIRATES_STARTED = Meta("mangrove", "pirates") + "You call the pirates. They are coming.";
     public static string MSG_PIRATES_NOT_OPEN = Meta("mangrove", "pirates", "fail") + "The pirates only raid the banana island, which this stream has not opened yet.";
     public static string MSG_PIRATES_RUNNING = Meta("mangrove", "pirates", "fail") + "The pirates are already here!";
