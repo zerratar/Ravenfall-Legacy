@@ -45,7 +45,7 @@ public class PetCommand : ChatBotCommandHandler<string>
                 case "stable":
                 case "list":
                 case "all":
-                    // the places come from the server (Taming and the clan's Menagerie): asked once, then known
+                    // the places come from the server (Taming and the clan's Rookery): asked once, then known
                     if (pets.ServerStableSize == 0 && pets.Stable.Count > 0) pets.Apply(await Game.RavenNest.Players.PetListAsync(player.Id));
                     Stable(player, gm, client);
                     return;

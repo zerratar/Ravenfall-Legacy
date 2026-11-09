@@ -15,13 +15,13 @@ Decided with Zerratar (2026-11-06):
 
 ## 1. The skill
 
-**Name: Taming** (chosen 2026-11-07; the clan skill's recommended name is *Menagerie*). The candidates were
+**Name: Taming** (chosen 2026-11-07; the clan skill became *Rookery*). The candidates were
 (Ravenfall's skills are one plain word each: Attack, Woodcutting, Sailing, Slayer,
 Enchanting, so the name should be too):
 
 | Name | For | Against |
 |---|---|---|
-| **Taming** (recommended) | Short, plain, reads like the other skills, easy in chat (`!taming`, "Taming 120"). Pairs well with the clan skill *Menagerie* | Pets also come from eggs, which you hatch rather than tame (players will not mind) |
+| **Taming** (recommended) | Short, plain, reads like the other skills, easy in chat (`!taming`, "Taming 120"). Pairs well with the clan skill *Rookery* | Pets also come from eggs, which you hatch rather than tame (players will not mind) |
 | *Beastmastery* | Evocative, says "pets that fight" | Long on name tags and in the stats list; strongly tied to another game's hunter class |
 | *Kinship* | Warm, the bond with your pet is what grows | Not obvious what it does from the name alone |
 | *Husbandry* | Accurate | Dull, and it reads as farming |
@@ -131,7 +131,7 @@ Examples by role:
 
 ## 6. The clan skill that goes with it
 
-**Name candidates:** *Menagerie* (recommended), *Kennels*, *Pet Lore*.
+**Name:** *Rookery* (2026-11-09; first *Menagerie*). Other candidates were *Kennels* and *Pet Lore*.
 
 - Unlocks at a clan level (for example 20), the way clan skills already unlock (`Skill.RequiredClanLevel`).
 - **Experience:** from members raising their pets, the way Enchanting fills from members enchanting.
@@ -203,7 +203,7 @@ Built so the models are the only thing missing; nothing in the game or on the se
 
 - **Clan skills** no longer assume Enchanting is the only one (`ClanProcessor`): every clan skill is sent to the
   game, a level up goes out at once (the old check compared a level with itself), and a clan gets a clan skill its
-  level opens even when it already has another (it only checked clans with none). So *Menagerie* can be added as a
+  level opens even when it already has another (it only checked clans with none). So *Rookery* can be added as a
   row in the `Skill` table with its `RequiredClanLevel`.
 
 **Still waiting:** the species list (models), the `BattlePet` table and `!pet` commands, the pet skill's column and
@@ -283,9 +283,9 @@ a bot taming a bunny (it went to the bunnies by itself) and Taming rising from t
   half as likely again; one is eaten when it works. `!tame` and `!pets about` name them.
 - **Starter pets**: `!pets starter fox` (damage), `bear` (tank) or `fawn` (healer) for an empty stable, on the HD animal
   models. This stands in for the starter quest.
-- **Menagerie**, the clan skill: opens at clan level 20 and grows while members have pets out (see "Menagerie grows from
-  time" below; it first took a tenth of the pets' experience, far too fast); members' pets earn 0.1% more a level (50%
-  at most) and their stables hold one more pet at 100, two at 300. The skill row is
+- **Rookery** (first called Menagerie), the clan skill: opens at clan level 20 and grows while members have pets out
+  (see "Rookery grows from time" below; it first took a tenth of the pets' experience, far too fast); members' pets
+  earn 0.05% more a level (50% at 999) and their stables hold one more pet at 100, two at 300. The skill row is
   made at startup with a fixed id. Clan pages show it at once.
 - **Taming's icon** in the details window: the icon pack's bear paw. No name tags over pets (they would crowd the
   player tags at overview zoom).
@@ -324,28 +324,39 @@ independent review of the same path ran alongside. Fixed:
   level 50", `!train taming` says how Taming trains instead of starting farming (two letters away), Discord's `!pets`
   offers starter.
 
-Still unseen: gatherer bonuses in real drops, the Menagerie growing on a clan of level 20, a real evolution (needs
+Still unseen: gatherer bonuses in real drops, the Rookery growing on a clan of level 20, a real evolution (needs
 pet level 30 and Taming 50), the website Pets tab signed in.
 
-### Menagerie grows from time (2026-11-08)
+### Rookery grows from time (2026-11-08, retuned 2026-11-09)
 
-Zerratar: the first test put a clan's Menagerie from 1 to 33 off one player's report; clans with hundreds of players
-would max it in days, and Enchanting, the other clan skill, only grows when members use its command on a cooldown
-(after five years the best clan, 655 members, is 412; the average is 54). An idle skill must grow slower than that.
+Zerratar: the first test put the clan skill from 1 to 33 off one player's report; clans with hundreds of players
+would max it in days. Enchanting, the other clan skill, only grows when members use its command on a cooldown (after
+five years the best clan, 655 members, is 412; the average is 54). The first fix made it slower than that, which was
+too slow: a really big clan should reach 999 in about a year and a half.
 
-Now Menagerie grows from the **minutes members have a pet out**, not from what the pets earn (which grows with levels).
-Each level takes 60 minutes times the level of one member's pet time (an hour for level 2, 100 hours for level 101),
-and n members out at once count as 1 + log2(n) members: 2 count as 2, 20 as 5.3, 300 as 9.2. Every pet report (once a
-minute while a pet earns) adds the minutes since that member's last one, at most 1.5. Days to a level:
+It grows from the **minutes members have a pet out**, not from what the pets earn (which grows with levels). Each
+level takes 12 minutes times the level of one member's pet time (12 minutes for level 2, 20 hours for level 101), and
+n members out at once count as 1 + log2(n) members: 2 count as 2, 20 as 5.3, 100 as 7.6, 300 as 9.2. Every pet report
+(once a minute while a pet earns) adds the minutes since that member's last one, at most 1.5. Days to a level:
 
-| Clan | 20 | 100 | 250 | 412 | 500 |
-|---|---|---|---|---|---|
-| 300 members out at once, all day and night | 1 | 22 | 141 | 382 | 563 |
-| 20 out at once, 16 hours a day | 2 | 58 | 366 | 994 | 1465 |
-| 3 out at once, 4 hours a day | 18 | 479 | 3010 | | |
+| Clan | 100 | 250 | 500 | 999 |
+|---|---|---|---|---|
+| 300 members out at once, all day and night | 4 | 28 | 113 | 450 |
+| 100 out at once, all day and night | 5 | 34 | 136 | 543 |
+| 20 out at once, 16 hours a day | 12 | 73 | 293 | 1171 |
+| 3 out at once, 4 hours a day | 96 | 602 | 2413 | |
 
-The numbers live in RavenNest.Combat `Menagerie` (MinutesPerLevel, Pace, ShareOfLevel), with a test that a big clan
-stays well behind Enchanting's best. The dev clan's test level was set back to 1.
+Members' pets earn 0.05% more a level, 50% at 999, so every level counts up to the top (it was 0.1% a level, capped
+at 500, when 500 was out of reach). The numbers live in RavenNest.Combat `Rookery` (MinutesPerLevel, Pace,
+ShareOfLevel, ExperienceBonus), with a test for the table's pace.
+
+**Name:** first *Menagerie*; renamed *Rookery* (where rooks and ravens nest) on 2026-11-09, since Menagerie is hard
+to say and spell. The skill row keeps its fixed id; a row made under the old name is renamed at startup.
+
+**Changing clan:** a stable over its places keeps every pet. The extra places only gate adding: a player who filled
+the places a big clan's Rookery gave and then leaves (or whose new clan's Rookery is lower) keeps all their pets and
+can send any of them out, but cannot tame or wake another until they are under the new size (`!pets stable` shows
+6/5). Nothing is ever taken away by a clan change.
 
 ### Not yet done
 

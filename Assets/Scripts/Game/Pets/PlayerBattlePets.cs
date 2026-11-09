@@ -45,7 +45,7 @@ public sealed class PlayerBattlePets
     }
 
     /// <summary>A command's answer: the stable after the change.</summary>
-    /// <summary>The stable's places as the server last said (Taming and the clan's Menagerie); 0 before it said.</summary>
+    /// <summary>The stable's places as the server last said (Taming and the clan's Rookery); 0 before it said.</summary>
     public int ServerStableSize { get; private set; }
 
     /// <summary>
