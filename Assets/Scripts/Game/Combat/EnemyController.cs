@@ -62,9 +62,17 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
     /// <summary>
     ///     Combat v2's threat (docs/combat-v2-design.md, section 4): damage adds threat (a one handed sword 2.5 times),
     ///     healing someone it fights adds half the heal shared over the enemies fighting them, and it switches only to
-    ///     someone with 10% more threat (30% for ranged and magic enemies), so targets do not flicker.
+    ///     someone with 10% more threat (30% for ranged and magic enemies), so targets do not flicker. Battle pets have
+    ///     threat of their own (their blows times their species' threat multiplier, their heals, Guard and Moo taunt),
+    ///     so an enemy goes for a pet with more threat than its owner (docs/battle-pets-design.md, "Enemies and pets").
     /// </summary>
-    private readonly RavenNest.Combat.ThreatTable<PlayerController> threat = new RavenNest.Combat.ThreatTable<PlayerController>();
+    private readonly RavenNest.Combat.ThreatTable<UnityEngine.Object> threat = new RavenNest.Combat.ThreatTable<UnityEngine.Object>();
+
+    /// <summary>The battle pet it is attacking, or null; <see cref="TargetPlayer"/> is then the pet's owner (whose fight it is).</summary>
+    public BattlePetController TargetPet { get; private set; }
+
+    /// <summary>A pet's blow in progress: its threat goes to the pet, the kill and the rest to its owner.</summary>
+    private BattlePetController petBlow;
 
     /// <summary>The enemies awake in the scene (lightning jumps between them).</summary>
     internal static readonly HashSet<EnemyController> Active = new HashSet<EnemyController>();
@@ -80,6 +88,60 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
     private bool RangedStyle => CombatDefinition != null && CombatDefinition.Style != RavenNest.Combat.AttackStyle.Melee;
 
     private bool ThreatAlive(PlayerController p) => p && !p.Stats.IsDead && !p.isDestroyed && !p.Removed && (Island == p.Island || !IsDungeonEnemy);
+
+    /// <summary>A player who can be attacked, or a battle pet that is out, drawn and standing with its owner able to fight.</summary>
+    private bool ThreatAlive(UnityEngine.Object o)
+    {
+        if (o is PlayerController p) return ThreatAlive(p);
+        if (o is BattlePetController pet) return pet && pet.Targetable && !IsDungeonBoss && ThreatAlive(pet.Owner);
+        return false;
+    }
+
+    /// <summary>Whoever has the most threat now (with the switch margin): a player or a battle pet.</summary>
+    private void ChooseByThreat()
+    {
+        var current = TargetPet ? (UnityEngine.Object)TargetPet : TargetPlayer;
+        var next = threat.ChooseTarget(current, RangedStyle, ThreatAlive);
+        if (!next || next == current) return;
+        if (next is BattlePetController pet) SetPetTarget(pet);
+        else if (next is PlayerController p) SetTarget(p);
+    }
+
+    private void SetPetTarget(BattlePetController pet)
+    {
+        TargetPet = pet;
+        TargetPlayer = pet.Owner;
+        Target = pet.transform;
+    }
+
+    /// <summary>A battle pet's blow: the owner gets the kill and the rest, the pet the threat (its species' multiplier).</summary>
+    public bool TakeDamageFromPet(BattlePetController pet, int damage)
+    {
+        if (!pet || !pet.Owner) return false;
+        petBlow = pet;
+        try { return TakeDamage(pet.Owner, damage); }
+        finally { petBlow = null; }
+    }
+
+    /// <summary>A battle pet healed someone this enemy fights: half the heal, shared, as the pet's threat.</summary>
+    public void AddPetHealingThreat(BattlePetController pet, double amount)
+    {
+        if (!CombatRules.Enabled || !pet || Stats.IsDead || amount <= 0) return;
+        threat.Add(pet, amount * pet.ThreatMultiplier);
+        noDamageDropTargetTimer = 0f; // in a fight, though nobody hit it just now
+        ChooseByThreat();
+    }
+
+    /// <summary>A battle pet's taunt (Guard, Moo): it attacks the pet for a while, whatever the threat says.</summary>
+    public void TauntByPet(BattlePetController pet, float seconds)
+    {
+        if (!CombatRules.Enabled || !pet || !pet.Targetable || Stats.IsDead || IsDungeonBoss) return;
+        threat.Add(pet, 1);
+        threat.Taunt(pet, seconds);
+        SetPetTarget(pet);
+        noDamageDropTargetTimer = 0f;
+        InCombat = true;
+    }
 
     /// <summary>Taunt (Bulwark): it attacks <paramref name="player"/> for a while, whatever the threat says.</summary>
     public void Taunt(PlayerController player, float seconds)
@@ -98,8 +160,7 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
         if (!CombatRules.Enabled || !healer || Stats.IsDead) return;
         threat.Add(healer, amount * CombatRules.ThreatBonus(healer));
         if (AttackerNames.Add(healer.Name)) Attackers.Add(healer);
-        var next = threat.ChooseTarget(TargetPlayer, RangedStyle, ThreatAlive);
-        if (next && next != TargetPlayer) SetTarget(next);
+        ChooseByThreat();
     }
     private static RuntimeAnimatorController humanoidEnemy;
 
@@ -546,6 +607,21 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
             }
             //dungeonBossController.UpdateHealthBar();
         }
+        else if (TargetPet && !ThreatAlive(TargetPet))
+        {
+            // the pet it fought went down (or out of sight): the next with the most threat, else its owner
+            var owner = TargetPlayer;
+            TargetPet = null;
+            Target = owner ? owner.transform : null;
+            ChooseByThreat();
+            if (!HasValidTarget)
+            {
+                ClearTarget();
+                InCombat = false;
+                Lock();
+                return;
+            }
+        }
         else if (!HasValidTarget)
         {
             ClearTarget();
@@ -554,6 +630,7 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
             return;
         }
 
+        if (!Target) return;
         var dist = Vector3.Distance(Position, Target.position);
         //if (dist >= (attackRange + TargetPlayer.GetAttackRange()) && !IsDungeonEnemy)
         //{
@@ -683,6 +760,23 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
         attackTimer -= GameTime.deltaTime * CombatEffects.AttackSpeedFactor(this); // chilled: slower
         if (attackTimer <= 0f)
         {
+            var pet = TargetPet && ThreatAlive(TargetPet) ? TargetPet : null;
+            if (pet)
+            {
+                movement.Attack(() =>
+                {
+                    if (this == null || Stats.IsDead || !pet || !pet.Targetable) return;
+                    // as with players: a pet that moved out of reach while it wound up is missed
+                    if (Vector3.Distance(Position, pet.transform.position) > attackRange * 1.25f + 0.6f) return;
+                    var mine = CombatRules.Sheet(this);
+                    if (mine == null || pet.Sheet == null) return;
+                    var style = CombatDefinition != null ? CombatDefinition.Style : RavenNest.Combat.AttackStyle.Melee;
+                    pet.TakeBlow(CombatRules.PetBlow(mine, style, pet.Sheet));
+                });
+                attackTimer = attackInterval;
+                return;
+            }
+
             var atHero = HeroController.Active && HeroController.Active.Player == targetPlayer;
             if (atHero && UnityEngine.Random.value < 0.4f) GameSounds.Play(SoundKind.GoblinAttack, Position + Vector3.up, 0.55f, 0f, targetPlayer);
             movement.Attack(() =>
@@ -728,6 +822,7 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
 
     public void SetTarget(PlayerController targetPlayer)
     {
+        TargetPet = null;
         TargetPlayer = targetPlayer;
         if (targetPlayer)
         {
@@ -738,6 +833,7 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void ClearTarget()
     {
+        TargetPet = null;
         TargetPlayer = null;
         Target = null;
         InCombat = false;
@@ -980,9 +1076,10 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
 
                 if (CombatRules.Enabled)
                 {
-                    threat.AddDamage(player, damage, aggroMultiplier * CombatRules.ThreatBonus(player));
-                    var next = threat.ChooseTarget(TargetPlayer, RangedStyle, ThreatAlive);
-                    if (next && next != TargetPlayer) SetTarget(next);
+                    // a pet's blow is the pet's threat (its species' multiplier); the owner's own blows are the owner's
+                    if (petBlow) threat.AddDamage(petBlow, damage, petBlow.ThreatMultiplier);
+                    else threat.AddDamage(player, damage, aggroMultiplier * CombatRules.ThreatBonus(player));
+                    ChooseByThreat();
                 }
                 else if (highestAttackerAggroValue <= totalAggro || Target == null)
                 {
@@ -1155,6 +1252,9 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
         {
             Attackers.Remove(player);
             threat.Remove(player);
+            var pet = player.BattlePets != null ? player.BattlePets.Controller : null;
+            if (pet) threat.Remove(pet);
+            if (TargetPet && TargetPet.Owner == player) TargetPet = null;
 
             if (Attackers.Count == 0 || TargetPlayer == player)
             {

@@ -26,6 +26,19 @@ public sealed class BattlePetController : MonoBehaviour
     public int Health { get; private set; }
     public int MaxHealth { get; private set; }
     public bool KnockedOut => Time.time < knockedUntil;
+
+    /// <summary>
+    ///     Enemies can go for it (docs/battle-pets-design.md, "Enemies and pets"): out, drawn and standing with its
+    ///     owner. Unseen pets (the setting off, potato mode) still fight but are never attacked, so no enemy swings
+    ///     at nothing; their tank share of the owner's blows stays.
+    /// </summary>
+    public bool Targetable => this && !KnockedOut && placed && Shown && Owner && !Owner.isDestroyed && Owner.Stats != null && !Owner.Stats.IsDead;
+
+    /// <summary>How much threat its blows and heals make: its species' multiplier (tanks 2.5).</summary>
+    public double ThreatMultiplier => sheet != null && sheet.ThreatMultiplier > 0 ? sheet.ThreatMultiplier : 1;
+
+    /// <summary>Its combat sheet, for enemies working out a blow on it.</summary>
+    public CombatSheet Sheet => sheet;
     public float Height => model != null ? model.Height : 0.6f;
 
     /// <summary>Whether battle pets are drawn (Settings > Battle pets, never in potato mode). Unseen, they still fight.</summary>
@@ -402,7 +415,7 @@ public sealed class BattlePetController : MonoBehaviour
         var result = CombatMath.Attack(sheet, Species.Stats.Style, defender, random, new AttackOptions { Multiplier = multiplier, Element = element, ArmorIgnored = armorIgnored });
         CombatRules.BlowLanded?.Invoke(Owner, e, result, defender);
         Owner.SessionStats.AddDamageDealt(result.Total);
-        if (e.TakeDamage(Owner, result.Total)) Owner.Combat.Defeated(e);
+        if (e.TakeDamageFromPet(this, result.Total)) Owner.Combat.Defeated(e);
     }
 
     // ---------------------------------------------------------------- skills
@@ -453,7 +466,7 @@ public sealed class BattlePetController : MonoBehaviour
                 return false;
             case SkillUse.EnemyOnAlly:
                 foreach (var e in EnemyController.Active)
-                    if (Near(e, position, radius) && e.TargetPlayer == Owner) return true;
+                    if (Near(e, position, radius) && e.TargetPlayer == Owner && e.TargetPet != this) return true;
                 return false;
             default: return false;
         }
@@ -583,7 +596,7 @@ public sealed class BattlePetController : MonoBehaviour
                         CombatEffects.AddDamageOverTime(Owner, t, effect.Element, TypicalHit() * effect.Amount, seconds);
                         break;
                     case SkillEffectKind.Heal:
-                        t.Heal(HealAmount(effect.Amount));
+                        { var amount = HealAmount(effect.Amount); t.Heal(amount); HealingThreat(t, amount); }
                         break;
                     case SkillEffectKind.HealOverTime:
                         CombatEffects.AddHealOverTime(Owner, t, HealAmount(effect.Amount), seconds);
@@ -604,8 +617,10 @@ public sealed class BattlePetController : MonoBehaviour
                         CombatEffects.AddModifier(t, CombatEffects.ModifierKind.AttackSpeed, effect.Amount, seconds);
                         break;
                     case SkillEffectKind.Taunt:
-                        // a pet's taunt is its guard: it takes every blow aimed at its owner for the time
+                        // a pet's taunt: the enemies on its owner turn on it for the time (a drawn pet), and it takes
+                        // every blow still aimed at its owner (its guard, also when unseen)
                         guardUntil = Mathf.Max(guardUntil, Time.time + seconds);
+                        if (t is EnemyController taunted) taunted.TauntByPet(this, seconds);
                         break;
                     case SkillEffectKind.Stun:
                         CombatEffects.CrowdControl(Owner, t, StatusEffectKind.Stun, seconds);
@@ -635,6 +650,17 @@ public sealed class BattlePetController : MonoBehaviour
 
     private int HealAmount(double multiplier) => Mathf.Max(1, CombatMath.Heal(sheet, random, multiplier).Amount);
 
+    /// <summary>Enemies fighting the one it healed take note of the pet: half the heal, shared, as a player healer's.</summary>
+    private void HealingThreat(IAttackable healed, int amount)
+    {
+        if (!CombatRules.Enabled || amount <= 0 || !(healed is PlayerController p) || !p) return;
+        var fighting = new List<EnemyController>();
+        foreach (var e in EnemyController.Active) if (e && e.TargetPlayer == p && !e.Stats.IsDead) fighting.Add(e);
+        if (fighting.Count == 0) return;
+        var share = ThreatTable<Object>.HealingThreat(amount, fighting.Count);
+        foreach (var e in fighting) e.AddPetHealingThreat(this, share);
+    }
+
     // ---------------------------------------------------------------- taking blows for its owner
 
     /// <summary>The share of a blow on its owner this pet takes: a tank takes half, all while it guards; others none.</summary>
@@ -645,12 +671,18 @@ public sealed class BattlePetController : MonoBehaviour
         return Time.time < guardUntil ? 1f : 0.5f;
     }
 
+    /// <summary>Its share of a blow meant for its owner (worked out against the owner): its own armour takes its cut.</summary>
     public void TakeHit(int damage)
     {
         if (KnockedOut || damage <= 0) return;
+        TakeBlow(Mathf.Max(0, Mathf.RoundToInt(damage * (float)CombatMath.ArmorReduction(sheet.Armor))));
+    }
+
+    /// <summary>An enemy's blow on the pet itself, worked out against its sheet (armour already counted).</summary>
+    public void TakeBlow(int damage)
+    {
+        if (KnockedOut || damage <= 0) return;
         if (Time.time < hardenUntil) damage = Mathf.Max(0, Mathf.RoundToInt(damage * (1f + hardenAmount)));
-        // its armour takes its share, as a player's would
-        damage = Mathf.Max(0, Mathf.RoundToInt(damage * (float)CombatMath.ArmorReduction(sheet.Armor)));
         lastFight = Time.time;
         Health -= damage;
         if (GraphicsToggler.GraphicsEnabled)

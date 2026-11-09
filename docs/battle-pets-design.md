@@ -411,7 +411,30 @@ releasing an egg back to the bag, `!pets about` for an egg species, evolving the
 join (the egg set to 59 minutes in the dev database). Not seen yet: an egg from a real dungeon, raid or tower reward,
 a hatched pet fighting, the evolved models' look in a real fight, the website pages in a browser.
 
+### Enemies and pets (2026-11-09)
+
+Enemies go for a battle pet when it has more threat than its owner, as they would for any fighter:
+
+- **Threat of its own.** A pet's blows are its own threat, times its species' threat multiplier (tanks 2.5, damage
+  0.9, healers 0.8, support 1.0, gatherers 0.5); the kill, experience and everything else stay its owner's. Its heals
+  add half the heal, shared over the enemies fighting the one healed, as a player healer's do.
+- **Taunts.** Guard and Moo make the enemies on its owner attack the pet for their 5 s (`EnemyController.TauntByPet`);
+  the old guard (every blow still aimed at the owner lands on the pet) stays for that time too.
+- **Choosing.** The enemy's threat table holds players and pets together and picks the same way (10% more threat to
+  switch, 30% for ranged and magic enemies). A knocked out pet drops out and the enemy turns to the next with the
+  most threat, usually the owner, at once.
+- **Only drawn pets.** Pets that are not drawn (the Battle pets setting off, potato mode, the owner on the ferry or in
+  the onsen) are never attacked, so no enemy swings at nothing; a tank's share of its owner's blows stays.
+  Dungeon bosses keep their own targeting.
+- An enemy's blow on a pet is worked out from the two combat sheets (`CombatRules.PetBlow`): armour, evasion and crits
+  as for anyone; Harden still takes its 40% off.
+
+Seen in play mode with bots: a combat level 25 owner's level 60 Calf held every enemy; a combat level 368 owner
+out-threatened its level 60 Wolf Pup; a combat level 521 owner kept the enemies except while its Practice Dummy's
+Guard taunted. A pet whose bolts land before its owner reaches the enemy draws it first (a level 999 owner
+then ends the fight in one blow). A pet knocked out under attack sent the enemy back to its owner within 0.25 s.
+
 ### Not yet done
 
-- Enemies targeting pets directly; eggs from quests and events.
+- Eggs from quests and events.
 

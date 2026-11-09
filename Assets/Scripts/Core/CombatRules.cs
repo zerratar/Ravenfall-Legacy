@@ -27,6 +27,10 @@ public static class CombatRules
     /// <summary>The share of a player's health pool their Vitality level (with its bonus) gives.</summary>
     public static int PlayerMaxHealth(int vitalityLevel) => Mathf.Max(1, vitalityLevel * PlayerHealthPerLevel);
 
+    /// <summary>An enemy's blow on a battle pet, from the two sheets (armour, evasion and crits as for anyone).</summary>
+    public static int PetBlow(CombatSheet attacker, AttackStyle style, CombatSheet pet) =>
+        attacker == null || pet == null ? 0 : CombatMath.Attack(attacker, style, pet, random).Total;
+
     /// <summary>The biggest normal hit or heal, on the scale in use (times ten with the new combat).</summary>
     public static int MaxHit(int level, int power) => Enabled ? (int)CombatMath.MaxHit(level, power) : GameMath.MaxHit(level, power);
 
