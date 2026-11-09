@@ -376,8 +376,8 @@ into chains by folder. All 24 are used, each once, as eight species that hatch f
 | dragon-spark | Dragon Spark, Dragon Fire, Dragon Inferno | damage, bites | fire | Dragon Spark Egg | 100 | 240 | raids, epic and legendary dungeons (rare) |
 
 - **Eggs** (`PetEggs`) are items with fixed ids (like the gems), made at server start (`GameData.EnsurePetEggs`),
-  tradeable. Each character a dungeon, raid or tower chest rewards has a chance at one: dungeons 3% plus 1% a tier,
-  raids 3%, tower chests 4%; then an egg from that source's table by weight (the dragon is about 2% of a raid's eggs).
+  tradeable. Each character a dungeon, raid or tower chest rewards has a chance at one: dungeons 2% plus 0.5% a tier,
+  raids 2%, tower chests 2.5% (lowered 2026-11-09 from 3% + 1%, 3% and 4%); then an egg from that source's table by weight (the dragon is about 2% of a raid's eggs).
 - **`!pets hatch (egg)`** puts one in the stable: it takes a place, cannot go out, and warms while its owner plays.
   `!pets hatch` alone lists the eggs in the bag. In the Pet table an egg is a pet at level 0 whose `PlayTime` is its
   minutes so far. The game reports once a minute while a character has eggs (`pets.incubate`); every egg gets the
@@ -442,13 +442,17 @@ tables live in `RavenNest.Combat.PetEggs` (sources Quest, PirateRaid, Regatta, R
 
 | Where | Chance | Which eggs |
 |---|---|---|
-| A finished weekly quest | 25% | any egg, the dragon least often |
-| A finished seasonal quest (Halloween, Christmas) | 10% | the same |
+| A finished weekly quest | 15% | any egg, the dragon least often |
+| A finished seasonal quest (Halloween, Christmas) | 6% | the same |
 | Every 7th day of a daily quest streak (7, 14, 21, ...) | always | the same |
-| A finished stream quest: the helper who added the most | 25% | the same |
-| The pirates' raid held, each defender | 5% (15% for the one who held longest) | mostly the Bomb Egg (their powder kegs), Shell, Snakelet |
-| The regatta, a real race: the winner / the rest of the podium | 15% / 6% | mostly the Shell Egg, Sun Blossom Seed |
-| A Ravebridge story quest (paid once each) | 15% | mostly the Practice Dummy Egg (Lumbridge's training dummies), Wolf Pup |
+| A finished stream quest: the helper who added the most | 15% | the same |
+| The pirates' raid held, each defender | 3% (9% for the one who held longest) | mostly the Bomb Egg (their powder kegs), Shell, Snakelet |
+| The regatta, a real race: the winner / the rest of the podium | 10% / 4% | mostly the Shell Egg, Sun Blossom Seed |
+| A Ravebridge story quest (paid once each) | 10% | mostly the Practice Dummy Egg (Lumbridge's training dummies), Wolf Pup |
+
+The chances were lowered on 2026-11-09 (user: "a bit lower"), by about a third to a half from the first numbers
+(weekly 25%, seasonal 10%, stream quest 25%, pirates 5%/15%, regatta 15%/6%, Ravebridge 15%); the streak egg is
+unchanged.
 
 - **The speckled egg**, a new chain (`!quest begin speckled`, the barkeep's): a dozen hen's eggs, a harvest, keeping
   the sniffers away, the chicken-or-egg riddle (every answer is right), a nest of wheat and a trip to Ironhill's
