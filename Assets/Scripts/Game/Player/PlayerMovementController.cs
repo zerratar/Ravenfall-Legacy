@@ -34,6 +34,7 @@ public class PlayerMovementController : MonoBehaviour
     private Transform internalTransform;
     private bool hasInternalTransform;
     private int navmeshErrorCount;
+    private float nextNavmeshError;
     private NavMeshPath strandedPath;
     private float strandedCheckTime = float.MinValue;
     private bool stranded;
@@ -234,6 +235,14 @@ public class PlayerMovementController : MonoBehaviour
         }
 
         navMeshAgent.enabled = true;
+
+        // a spot the enabled agent would not take (beside the polygon's height on a slope): placed again, now with
+        // the agent to warp, or it stands there trying every frame
+        if (!navMeshAgent.isOnNavMesh)
+        {
+            AdjustPlayerPositionToNavmesh(0.5f);
+        }
+
         movementLockState = MovementLockState.Unlocked;
     }
 
@@ -312,23 +321,35 @@ public class PlayerMovementController : MonoBehaviour
         if (navMeshAgent.isOnNavMesh) return;
         var currentPosition = gameObject.transform.position;
 
-        if (NavMeshHelper.SamplePosition(currentPosition, maxDistance, out var pos))
+        // the navmesh's polygons are coarser than the ground: on a slope (Away's beach) the walkable surface can sit
+        // half a metre above the terrain a player stands on, and a search from the feet misses it. Look from a
+        // little higher too, then rings around at the same height.
+        if (!NavMeshHelper.SamplePosition(currentPosition, maxDistance, out var pos)
+            && !NavMeshHelper.SampleNearHeight(currentPosition + Vector3.up * 0.5f, Mathf.Max(1f, maxDistance), 3f, out pos))
         {
-            if (!SetPositionImpl(pos))
-            {
-#if DEBUG
-                Shinobytes.Debug.LogError(name + " could not be placed on the navmesh. Perhaps try nudging the player slightly.");
-#endif
-                var nudge = UnityEngine.Random.insideUnitSphere * 1f;
-                nudge.y = 0;
-                SetPositionImpl(currentPosition + nudge);
-            }
+            NavmeshError("Could not find a valid position on the navmesh for " + name + " at " + currentPosition);
+            return;
         }
+
+        if (SetPositionImpl(pos)) return;
+
+        // the agent only takes a spot within its small reach of the polygon's own height, which a point on the
+        // detailed surface can be outside of: lifted a little it is inside
+        if (SetPositionImpl(pos + Vector3.up * 0.3f) || SetPositionImpl(pos + Vector3.up * 0.6f) || SetPositionImpl(pos - Vector3.up * 0.3f)) return;
+
+        NavmeshError(name + " could not be placed on the navmesh at " + pos + ". Perhaps try nudging the player slightly.");
+        var nudge = UnityEngine.Random.insideUnitSphere * 1f;
+        nudge.y = 0;
+        SetPositionImpl(currentPosition + nudge);
+    }
+
+    /// <summary>A placement failure, at most every few seconds: a player stuck off the navmesh tries every frame.</summary>
+    private void NavmeshError(string message)
+    {
 #if DEBUG
-        else
-        {
-            Shinobytes.Debug.LogError("Could not find a valid position on the navmesh for " + name + " at " + currentPosition);
-        }
+        if (GameTime.time < nextNavmeshError) return;
+        nextNavmeshError = GameTime.time + 5f;
+        Shinobytes.Debug.LogError(message);
 #endif
     }
 
