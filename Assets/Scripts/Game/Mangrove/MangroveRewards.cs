@@ -46,11 +46,14 @@ public static class MangroveRewards
         foreach (var item in items)
         {
             var known = game.Items.Get(item.ItemId);
-            if (known == null || !Rare.Contains(known.Name)) continue;
+            // a pet egg (the pirates' kegs, the regatta's sea) is as rare as a Golden Banana
+            var egg = RavenNest.Combat.PetEggs.IsEgg(item.ItemId);
+            if (known == null || (!egg && !Rare.Contains(known.Name))) continue;
             var player = game.Players.GetPlayerById(item.CharacterId);
             if (!player) continue;
             MangroveFeed.Say(string.Format(CultureInfo.InvariantCulture, Localization.UI_MANGROVE_RARE, player.Name, known.Name), "");
-            if (!string.IsNullOrEmpty(rareChatLine)) game.RavenBot?.Announce(rareChatLine, player.Name, known.Name);
+            if (egg) game.RavenBot?.Announce(Localization.MSG_PET_EGG_FOUND, player.Name, known.Name);
+            else if (!string.IsNullOrEmpty(rareChatLine)) game.RavenBot?.Announce(rareChatLine, player.Name, known.Name);
         }
     }
 }

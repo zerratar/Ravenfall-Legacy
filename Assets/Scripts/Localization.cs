@@ -309,6 +309,15 @@ public static class Localization
     public static string UI_CHAIN_PUMPKIN_5 = "He says the old runestone in Ironhill glows tonight. Go there.";
     public static string UI_CHAIN_PUMPKIN_END = "The Pumpkin King bows and gives your village a lantern that never goes out.";
     public static string UI_CHAIN_PUMPKIN_WRONG = "The whole patch laughs at you.";
+    public static string UI_CHAIN_SPECKLED = "The speckled egg";
+    public static string UI_CHAIN_SPECKLED_1 = "The barkeep found a speckled egg in the pantry, warm as fresh bread. It is not a hen's. 'It looks lonely,' she says. Bring a dozen hen's eggs to keep it company.";
+    public static string UI_CHAIN_SPECKLED_2 = "The hen's eggs are fine. The speckled one rolled out of the door and into the fields. Search them, and bring the harvest in while you are at it.";
+    public static string UI_CHAIN_SPECKLED_3 = "Something keeps sniffing after the egg. Several somethings. Keep them away.";
+    public static string UI_CHAIN_SPECKLED_4 = "An old woman at the well stops you: 'Which came first? 1) The chicken 2) The egg 3) The bard who keeps asking'";
+    public static string UI_CHAIN_SPECKLED_5 = "She shrugs. 'Nobody knows. That was the right answer.' Back to the egg: it needs a nest, a warm one. Thirty sheaves of wheat should do.";
+    public static string UI_CHAIN_SPECKLED_6 = "It is getting hot. Smoke curls from its speckles. The dwarves of Ironhill know about things that hatch in fire. Take it there.";
+    public static string UI_CHAIN_SPECKLED_END = "The forge-master turns it over with his tongs and laughs. 'That is a dragon's egg, little one. It will hatch for a tamer of a hundred.' The Dragon Spark Egg is yours.";
+    public static string UI_CHAIN_SPECKLED_WRONG = "She shrugs. 'Nobody knows. That was the right answer.'";
 
     // Mossgate, the tower's first town (docs/tower-design.md): its people's chains, lines and rumours
     public static string UI_CHAIN_WARDEN = "The warden's watch";
@@ -438,6 +447,7 @@ public static class Localization
     public static string UI_TITLE_WARDEN = "the Gatewarden";
     public static string UI_TITLE_BRAMBLE = "the Herbwise";
     public static string UI_TITLE_NIBBLES = "the Bunny Finder";
+    public static string UI_TITLE_SPECKLED = "the Egg Sitter";
     public static string UI_STREAM_QUEST_GOAL_RUNNING = "The streamer's own stream goal is running. A stream has one goal at a time.";
     public static string UI_STREAM_QUEST_TAB = "Stream quest";
     public static string UI_STREAMER_QUEST_TAB = "Your quests";
@@ -1566,6 +1576,8 @@ public static class Localization
     public static string MSG_PET_NO_EGGS = Meta("pets", "fail") + "You have no pet eggs. They turn up in dungeon, raid and tower rewards now and then.";
     public static string MSG_PET_NO_SUCH_EGG = Meta("pets", "fail") + "You have no egg called {name}.";
     public static string MSG_PET_HATCHING = Meta("pets") + "Your {egg} is in your stable, warming. It hatches into a {kind} after {minutes} minutes of play.";
+    public static string MSG_PET_EGG_FOUND = Meta("pets", "egg") + "{player} found a {egg}! !pets hatch puts it in the stable to warm.";
+    public static string MSG_STREAM_QUEST_EGG = Meta("quests", "egg") + "{player} added the most to the stream's quest and found a {egg}!";
     public static string MSG_PET_HATCHED = Meta("pets") + "{player}'s {egg} hatched into a {kind}!";
     public static string MSG_PET_HATCH_TAMING = Meta("pets", "fail") + "A {egg} needs Taming {level} to hatch.";
     public static string MSG_PET_HATCH_FULL = Meta("pets", "fail") + "Your stable is full ({size}), and an egg takes a place too. Taming opens more room.";

@@ -434,7 +434,35 @@ out-threatened its level 60 Wolf Pup; a combat level 521 owner kept the enemies 
 Guard taunted. A pet whose bolts land before its owner reaches the enemy draws it first (a level 999 owner
 then ends the fight in one blow). A pet knocked out under attack sent the enemy back to its owner within 0.25 s.
 
+### Eggs from quests and events (2026-11-09)
+
+On top of dungeons, raids and tower chests, eggs now come from quests and the island events. The chances and the
+tables live in `RavenNest.Combat.PetEggs` (sources Quest, PirateRaid, Regatta, Ravebridge); the server rolls them
+(`PetEggRewards`) and the inventory feed brings the egg.
+
+| Where | Chance | Which eggs |
+|---|---|---|
+| A finished weekly quest | 25% | any egg, the dragon least often |
+| A finished seasonal quest (Halloween, Christmas) | 10% | the same |
+| Every 7th day of a daily quest streak (7, 14, 21, ...) | always | the same |
+| A finished stream quest: the helper who added the most | 25% | the same |
+| The pirates' raid held, each defender | 5% (15% for the one who held longest) | mostly the Bomb Egg (their powder kegs), Shell, Snakelet |
+| The regatta, a real race: the winner / the rest of the podium | 15% / 6% | mostly the Shell Egg, Sun Blossom Seed |
+| A Ravebridge story quest (paid once each) | 15% | mostly the Practice Dummy Egg (Lumbridge's training dummies), Wolf Pup |
+
+- **The speckled egg**, a new chain (`!quest begin speckled`, the barkeep's): a dozen hen's eggs, a harvest, keeping
+  the sniffers away, the chicken-or-egg riddle (every answer is right), a nest of wheat and a trip to Ironhill's
+  dwarves, who say what it is. It ends with a soulbound Dragon Spark Egg (given even to someone who has one), Taming
+  experience and the title "the Egg Sitter".
+- Quest replies name the egg with the reward ("... and a Tome of Forgetting and a Wolf Pup Egg"); a stream quest's,
+  the pirates' and the regatta's eggs and Ravebridge's get a chat line ("zerratar found a Shell Egg! !pets hatch puts it
+  in the stable to warm."); on the banana island an egg counts as a rare find in the feed.
+- Each species' "where to find" line (`!pets about`, the website) names the new places.
+
+Tested: the chain begins, names its reward and goes on from delivering the eggs. Not seen yet: a weekly, a streak,
+the events or a stream quest actually giving one (chance-based, and their messages would have reached the live chat).
+
 ### Not yet done
 
-- Eggs from quests and events.
+- Nothing on the list; see the open questions.
 

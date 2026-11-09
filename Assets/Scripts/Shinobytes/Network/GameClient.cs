@@ -367,6 +367,13 @@ public class GameClient : IDisposable
 
     public void Write(GameMessageResponse cmd)
     {
+        // the admin panel's "Chat Notifications OFF": no chat messages (replies, announcements) reach the bot; pings,
+        // the session and the rest still do. The button was there but nothing read it (2026-11-09)
+        if (AdminControlData.NoChatBotMessages && cmd != null && cmd.Identifier == "message")
+        {
+            return;
+        }
+
         if (disposed)
         {
             // a reply to a command that came in on a connection that has since been replaced: it goes to the live

@@ -34,6 +34,9 @@ public class StreamQuestEndedEventHandler : GameEventHandler<StreamQuestEnded>
 
                     bot.Announce(Localization.MSG_STREAM_QUEST_DONE, StreamQuests.Text(quest), StreamQuests.VillageReward(quest),
                         helpers.Length, StreamQuests.Number(coins), StreamQuests.Helpers(helpers, TopHelpersNamed));
+                    // the one who added the most may have found a pet egg
+                    foreach (var helper in helpers)
+                        if (!string.IsNullOrEmpty(helper.Egg)) bot.Announce(Localization.MSG_STREAM_QUEST_EGG, helper.Name, helper.Egg);
                     break;
                 }
 

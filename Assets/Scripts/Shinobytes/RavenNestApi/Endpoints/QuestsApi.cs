@@ -11,6 +11,9 @@ namespace RavenNest.SDK.Endpoints
     /// <summary>What a Ravebridge quest paid (the server's RavebridgeQuestReward, by its JSON).</summary>
     public class RavebridgeQuestReward
     {
+        /// <summary>A pet egg that came with it (its name), or null.</summary>
+        public string Egg { get; set; }
+
         public bool Ok { get; set; }
         /// <summary>notinsession, unknown, done (paid already), cooldown (a bounty too soon).</summary>
         public string Error { get; set; }

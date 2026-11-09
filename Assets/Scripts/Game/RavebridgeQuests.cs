@@ -690,6 +690,8 @@ public static class RavebridgeQuests
             // the coins: the server's coin update (ResourceUpdate) brings the new amount; changing it here too raced that update
             if (result.Exp != null)
                 foreach (var e in result.Exp) player.Stats.GetSkill((Skill)e.Key)?.AddExp(e.Value, out _);
+            // a story quest now and then comes with a pet egg (the island's training dummies); the inventory feed brings it
+            if (!string.IsNullOrEmpty(result.Egg)) game.RavenBot?.Announce(Localization.MSG_PET_EGG_FOUND, player.PlayerName, result.Egg);
         }
         catch (Exception exc)
         {
