@@ -459,7 +459,10 @@ tables live in `RavenNest.Combat.PetEggs` (sources Quest, PirateRaid, Regatta, R
   in the stable to warm."); on the banana island an egg counts as a rare find in the feed.
 - Each species' "where to find" line (`!pets about`, the website) names the new places.
 
-Tested: the chain begins, names its reward and goes on from delivering the eggs. Not seen yet: a weekly, a streak,
+Tested: the chain played to the end on zerratar's dev character (12 Eggs, 50 harvested, 40 kills, any answer, 30
+Wheat, Ironhill): it finished and paid the Dragon Spark Egg and the Taming experience. The egg merged into a tradeable
+Dragon Spark Egg stack the character had, because the server's stacks do not look at soulbound (StackKey); a separate
+fix for every soulbound reward. Not seen yet: a weekly, a streak,
 the events or a stream quest actually giving one (chance-based, and their messages would have reached the live chat).
 
 ### Not yet done
