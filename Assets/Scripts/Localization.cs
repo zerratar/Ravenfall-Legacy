@@ -1560,7 +1560,20 @@ public static class Localization
     public static string MSG_GEM_ERROR = Meta("gems", "fail") + "The gem did not take. Try again in a moment.";
 
     // battle pets (docs/battle-pets-design.md)
-    public static string MSG_PET_USAGE = Meta("pets", "fail") + "!pets shows your battle pet. !pets stable, !pets use (name), !pets away, !pets rename (name), !pets skills, !pets slot 2 howl, !pets evolve, !pets wake (pet item), !pets about (kind). !tame (creature) tames.";
+    public static string MSG_PET_USAGE = Meta("pets", "fail") + "!pets shows your battle pet. !pets stable, !pets use (name), !pets away, !pets rename (name), !pets skills, !pets slot 2 howl, !pets evolve, !pets wake (pet item), !pets hatch (egg), !pets about (kind). !tame (creature) tames.";
+    public static string MSG_PET_NEXT_EVOLVE_GEMS = "Evolves into {0} at level {1} (Taming {2}) for {3}.";
+    public static string MSG_PET_EGGS = Meta("pets") + "Eggs in your bag: {eggs}. !pets hatch (egg) puts one in your stable to warm while you play.";
+    public static string MSG_PET_NO_EGGS = Meta("pets", "fail") + "You have no pet eggs. They turn up in dungeon, raid and tower rewards now and then.";
+    public static string MSG_PET_NO_SUCH_EGG = Meta("pets", "fail") + "You have no egg called {name}.";
+    public static string MSG_PET_HATCHING = Meta("pets") + "Your {egg} is in your stable, warming. It hatches into a {kind} after {minutes} minutes of play.";
+    public static string MSG_PET_HATCHED = Meta("pets") + "{player}'s {egg} hatched into a {kind}!";
+    public static string MSG_PET_HATCH_TAMING = Meta("pets", "fail") + "A {egg} needs Taming {level} to hatch.";
+    public static string MSG_PET_HATCH_FULL = Meta("pets", "fail") + "Your stable is full ({size}), and an egg takes a place too. Taming opens more room.";
+    public static string MSG_PET_NOT_HATCHED = Meta("pets", "fail") + "{name} has not hatched yet: {minutes} more minutes of play.";
+    public static string MSG_PET_EGG_LEFT = "warming, {0} min left";
+    public static string MSG_PET_RELEASE_EGG = Meta("pets") + "{name} is back in your bag.";
+    public static string MSG_PET_ABOUT_EGG = "It hatches from a {0} ({1}) after {2} minutes of play, at Taming {3}.";
+    public static string MSG_PET_ABOUT_GEMS = "Evolving takes {0} and {1} {2}.";
     public static string MSG_PET_NONE = Meta("pets") + "You have no battle pets yet. !pets starter fox, bear or fawn picks a first one; !tame bunny on the home island tames one, and !pets wake wakes a pet item you have. A pet out with you shares in all the experience you earn, and so does Taming.";
     public static string MSG_PET_NONE_OUT = Meta("pets") + "No pet is out. !pets use (name) sends one out: {pets}.";
     public static string MSG_PET_INFO = Meta("pets") + "{name}, a level {level} {kind} ({role}, {element}, {strike}). Health {health}/{max}. Skills: {skills}. {next}";

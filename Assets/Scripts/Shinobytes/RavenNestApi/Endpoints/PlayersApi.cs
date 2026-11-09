@@ -246,6 +246,14 @@ namespace RavenNest.SDK.Endpoints
         public Task<PetResult> PetExperienceAsync(Guid characterId, Guid petId, double experience) =>
             client.UseV2 ? client.V2.Commands.CallAsync<PetResult>(Commands.PetExperience, CommandArgs.Pack(characterId, petId, experience)) : Task.FromResult<PetResult>(null);
 
+        /// <summary>An egg from the bag into the stable, to warm while the character plays.</summary>
+        public Task<PetResult> PetHatchAsync(Guid characterId, Guid itemId) =>
+            client.UseV2 ? client.V2.Commands.CallAsync<PetResult>(Commands.PetHatch, CommandArgs.Pack(characterId, itemId)) : Task.FromResult<PetResult>(null);
+
+        /// <summary>The eggs' minute of warmth; the answer's stable has the hatched ones.</summary>
+        public Task<PetResult> PetIncubateAsync(Guid characterId) =>
+            client.UseV2 ? client.V2.Commands.CallAsync<PetResult>(Commands.PetIncubate, CommandArgs.Pack(characterId)) : Task.FromResult<PetResult>(null);
+
         public Task<ItemEnchantmentResult> EnchantInventoryItemAsync(Guid characterId, Guid inventoryItem)
         {
             if (client.UseV2)

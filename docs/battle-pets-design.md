@@ -358,7 +358,60 @@ the places a big clan's Rookery gave and then leaves (or whose new clan's Rooker
 can send any of them out, but cannot tame or wake another until they are under the new size (`!pets stable` shows
 6/5). Nothing is ever taken away by a clan change.
 
+### Eggs and evolution materials (2026-11-09)
+
+Zerratar imported *Monsters Ultimate Pack 02 Cute Series*: 24 monsters that are eight chains of three stages, not sorted
+into chains by folder. All 24 are used, each once, as eight species that hatch from eggs (RavenNest.Combat
+`PetSpeciesList`, `Hatched`). The order of the three less obvious chains comes from the models' detail (triangles):
+
+| Species | Stages | Role | Element | Egg | Taming to hatch | Minutes | Found in |
+|---|---|---|---|---|---|---|---|
+| wolf-pup | Wolf Pup, Wolf, Werewolf | damage, bites | none | Wolf Pup Egg | 1 | 60 | dungeons, raids |
+| bud | Bud, Bloom, Blossom | healer, bolts | poison | Bud Seed | 1 | 60 | dungeons, raids |
+| practice-dummy | Practice Dummy, Target Dummy, Training Dummy | tank, bites | none | Practice Dummy Egg | 1 | 45 | tower floors |
+| sun-blossom | Sun Blossom, Sunflower Fairy, Sunflora Pixie | support, bolts | fire | Sun Blossom Seed | 10 | 90 | dungeons, tower |
+| shell | Shell, Spike, Hermit King | tank, bites | ice | Shell Egg | 20 | 120 | uncommon and harder dungeons, raids |
+| snakelet | Snakelet, Snake, Snake Naga | damage, bites | poison | Snakelet Egg | 40 | 150 | rare and harder dungeons, raids |
+| bomb | Bomb, Snow Bomb, Poison Bomb | damage, bolts | fire | Bomb Egg | 60 | 180 | raids, higher tower floors |
+| dragon-spark | Dragon Spark, Dragon Fire, Dragon Inferno | damage, bites | fire | Dragon Spark Egg | 100 | 240 | raids, epic and legendary dungeons (rare) |
+
+- **Eggs** (`PetEggs`) are items with fixed ids (like the gems), made at server start (`GameData.EnsurePetEggs`),
+  tradeable. Each character a dungeon, raid or tower chest rewards has a chance at one: dungeons 3% plus 1% a tier,
+  raids 3%, tower chests 4%; then an egg from that source's table by weight (the dragon is about 2% of a raid's eggs).
+- **`!pets hatch (egg)`** puts one in the stable: it takes a place, cannot go out, and warms while its owner plays.
+  `!pets hatch` alone lists the eggs in the bag. In the Pet table an egg is a pet at level 0 whose `PlayTime` is its
+  minutes so far. The game reports once a minute while a character has eggs (`pets.incubate`); every egg gets the
+  minutes since the last report (at most 1.5) and hatches into a level 1 pet once it has its minutes. A hatched pet
+  goes straight out when none is, and the hatch is a burst on the pet and a throttled chat line. `!pets release` on an
+  egg gives it back to the bag, no confirm.
+- **Evolving costs raw gems** of the pet's kind (`PetEvolution`): 10 for the first evolution, 30 for the second. Ruby
+  for fire, Sapphire for ice, Topaz for lightning, Emerald for poison; a pet with no element takes its role's gem
+  (Diamond for damage, Onyx for tanks and gatherers, Amethyst for healers and support). Raw gems are mined and traded,
+  so nobody needs a clan for them. Every pet pays, tamed, woken or hatched; the answer says what is missing
+  ("10 Amethyst (you have 3)").
+- **The Rookery** now also makes evolutions cheaper (40% fewer gems at 999) and eggs hatch faster (a quarter at 999).
+- **Models**: the 24 prefabs moved to `Assets/Resources/Pets/Cute/` (the model key is `pet:Pets/Cute/Wolf Pup`), their
+  35 materials turned from Standard to URP Lit (hand painted, no shine: smoothness 0, no highlights) and the sparks to
+  URP Particles Unlit. The pack and Resources are gitignored, so these changes live on the dev PC like the other paid
+  assets; reimporting the pack would bring the prefabs back at their old place with Standard materials.
+- **Clips**: the pet clip player now prefers "In Place" clips (the pack has "W Root" ones too), skips the moves between
+  states ("Rest to Idle"), knows Fly Forward, Slither (and the pack's "Slither Foward") and Roll, and a bolt pet prefers
+  a projectile or spell clip to a bite. Every one of the 24 gets an idle, a move, an attack, a hit and a knock out clip.
+- **Pictures**: `tools/items/egg-renders.cs` (play mode) renders each species at each stage against black and white,
+  framed on the posed model (flying idles lift Bud and the fairies out of their rest bounds, which
+  `tools/website/pet-renders.cs` misses); `tools/items/egg-icons.py` makes the egg icons (the baby pet climbing out of a
+  cracked egg, a striped husk for the two seeds, the resource icons' dark outline) and the website's pet pictures.
+- **Website**: /pets has a "Hatched from eggs" section, the gems and the Rookery's new effects; the character's Pets
+  tab shows eggs warming with their minutes left, and the gems an evolution takes.
+
+Tested on the local server with the dev character: `!pets hatch` (the list, Taming too low for the dragon, a wolf
+pup egg into the stable), the stable showing "warming, 60 min left", sending an egg out refused, the minute report,
+releasing an egg back to the bag, `!pets about` for an egg species, evolving the Bunny into a Jackalope for 10 of its
+12 Amethyst (the inventory feed showed 2 left), an egg saved and loaded again over a server restart, and the hatch on
+join (the egg set to 59 minutes in the dev database). Not seen yet: an egg from a real dungeon, raid or tower reward,
+a hatched pet fighting, the evolved models' look in a real fight, the website pages in a browser.
+
 ### Not yet done
 
-- Evolution materials, eggs and the evolved model sets, enemies targeting pets directly.
+- Enemies targeting pets directly; eggs from quests and events.
 

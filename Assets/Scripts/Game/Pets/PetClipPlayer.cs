@@ -29,13 +29,19 @@ public sealed class PetClipPlayer
     public bool Has(Kind kind) => clips.ContainsKey(kind);
     public float Length(Kind kind) => clips.TryGetValue(kind, out var c) && c ? c.length : 0f;
 
-    public PetClipPlayer(Animator animator, AnimationClip[] available)
+    /// <param name="bolt">A pet that fires bolts from afar: a projectile or spell clip suits it better than a bite.</param>
+    public PetClipPlayer(Animator animator, AnimationClip[] available, bool bolt = false)
     {
         if (!animator || available == null || available.Length == 0) return;
 
-        Pick(Kind.Idle, available, new[] { "idle_a", "idle01", "idle_1", "idle" }, new[] { "sit", "eat", "lie" });
-        Pick(Kind.Move, available, new[] { "run forward", "run_forward", "run", "walk forward", "walk_forward", "walk", "move", "jump_walk" }, new[] { "left", "right", "back" });
-        Pick(Kind.Attack, available, new[] { "bite", "stab", "attack_01", "attack-r1", "attack", "fireball" }, new string[0]);
+        // "W Root" clips move the model themselves (the cute series has both); "In Place" ones are what code moves.
+        // " to " clips are the moves between two states ("Rest to Idle"), not the states.
+        Pick(Kind.Idle, available, new[] { "idle_a", "idle01", "idle_1", "idle" }, new[] { "sit", "eat", "lie", " to ", "happy" });
+        Pick(Kind.Move, available, new[] { "run forward", "run_forward", "run", "walk forward", "walk_forward", "walk", "move", "jump_walk",
+            "fly forward", "slither", "roll forward", "forward" }, new[] { "left", "right", "back", "w root", "attack", "dash" });
+        if (bolt) Pick(Kind.Attack, available, new[] { "projectile attack", "projectile", "fireball", "cast spell", "spell" }, new[] { "w root", "upward", "trajectory", "low" });
+        if (!clips.ContainsKey(Kind.Attack))
+            Pick(Kind.Attack, available, new[] { "bite", "stab", "attack_01", "attack-r1", "attack", "fireball" }, new[] { "w root", "long range" });
         Pick(Kind.Hit, available, new[] { "damage_01", "damage", "gethit", "hit" }, new string[0]);
         Pick(Kind.Down, available, new[] { "die", "death" }, new string[0]);
         Pick(Kind.Sleep, available, new[] { "sleep" }, new[] { "begin", "end", "eyes" });

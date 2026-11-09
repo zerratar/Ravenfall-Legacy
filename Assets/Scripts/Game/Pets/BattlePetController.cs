@@ -90,7 +90,7 @@ public sealed class BattlePetController : MonoBehaviour
             model.Root.transform.localPosition = Vector3.zero;
             model.Root.transform.localRotation = Quaternion.identity;
             baseScale = model.Root.transform.localScale;
-            clips = new PetClipPlayer(model.Animator, model.Clips);
+            clips = new PetClipPlayer(model.Animator, model.Clips, Species.Strike == PetStrike.Bolt);
         }
         Refresh(data);
         Health = MaxHealth;
@@ -116,7 +116,7 @@ public sealed class BattlePetController : MonoBehaviour
             {
                 model.Root.transform.SetParent(transform, false);
                 baseScale = model.Root.transform.localScale;
-                clips = new PetClipPlayer(model.Animator, model.Clips);
+                clips = new PetClipPlayer(model.Animator, model.Clips, Species.Strike == PetStrike.Bolt);
             }
             PetFx.Burst(transform.position, Mathf.Max(0.6f, Height), PetFx.ElementColor(Species.Element));
         }

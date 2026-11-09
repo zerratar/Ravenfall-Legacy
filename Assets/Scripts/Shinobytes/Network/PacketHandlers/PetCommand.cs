@@ -9,8 +9,8 @@ using RavenNest.Models;
 ///     Battle pets from chat (docs/battle-pets-design.md). !pet stays the cosmetic pet; the bot sends "pet_command" for
 ///     !pets with the action first: !pets (the pet that is out), !pets stable, !pets use (name or number), !pets away,
 ///     !pets rename (name), !pets skills, !pets slot 2 howl, !pets evolve, !pets wake (a pet item you have; the one you
-///     wear when left out), !pets release (name) confirm, !pets about (kind). The server keeps the stable; the answer
-///     brings it back and the pet in the world follows.
+///     wear when left out), !pets hatch (egg), !pets release (name) confirm, !pets about (kind). The server keeps the
+///     stable; the answer brings it back and the pet in the world follows.
 /// </summary>
 public class PetCommand : ChatBotCommandHandler<string>
 {
@@ -87,6 +87,11 @@ public class PetCommand : ChatBotCommandHandler<string>
                 case "free":
                     await Release(player, rest, gm, client);
                     return;
+                case "hatch":
+                case "egg":
+                case "eggs":
+                    await Hatch(player, rest, gm, client);
+                    return;
                 case "about":
                 case "kind":
                 case "species":
@@ -125,7 +130,15 @@ public class PetCommand : ChatBotCommandHandler<string>
     }
 
     private static string List(PlayerController player) =>
-        string.Join(", ", player.BattlePets.Stable.Select((p, i) => (i + 1) + ". " + p.Name + " (" + (BattlePets.GetSpecies(p.Species)?.NameAt(p.Stage) ?? p.Species) + " " + p.Level + (p.Active ? ", out" : "") + ")"));
+        string.Join(", ", player.BattlePets.Stable.Select((p, i) => (i + 1) + ". " + p.Name + " (" + (PetEggs.IsUnhatched(p.Level)
+            ? string.Format(Localization.MSG_PET_EGG_LEFT, player.BattlePets.MinutesLeft(p))
+            : (BattlePets.GetSpecies(p.Species)?.NameAt(p.Stage) ?? p.Species) + " " + p.Level + (p.Active ? ", out" : "")) + ")"));
+
+    /// <summary>What the next evolution needs, gems included.</summary>
+    private static string NextEvolve(PlayerController player, BattlePet pet, PetSpecies species) =>
+        pet.Stage >= BattlePets.MaxStage ? Localization.MSG_PET_NEXT_DONE
+            : string.Format(Localization.MSG_PET_NEXT_EVOLVE_GEMS, species.NameAt(pet.Stage + 1), BattlePets.EvolveLevels[pet.Stage], BattlePets.EvolveSkillLevels[pet.Stage],
+                PetEvolution.Describe(species, pet.Stage, player.BattlePets.RookeryLevel));
 
     private void Info(PlayerController player, GameMessage gm, GameClient client)
     {
@@ -137,8 +150,7 @@ public class PetCommand : ChatBotCommandHandler<string>
         if (species == null) { client.SendReply(gm, Localization.MSG_PET_ERROR); return; }
         var skills = string.Join(", ", (pet.Slots ?? "").Split(',').Select(BattlePets.GetSkill).Where(s => s != null).Select(s => s.Name));
         var taming = player.Stats.Taming.Level;
-        var next = pet.Stage >= BattlePets.MaxStage ? Localization.MSG_PET_NEXT_DONE
-            : string.Format(Localization.MSG_PET_NEXT_EVOLVE, species.NameAt(pet.Stage + 1), BattlePets.EvolveLevels[pet.Stage], BattlePets.EvolveSkillLevels[pet.Stage]);
+        var next = NextEvolve(player, pet, species);
         var c = pets.Controller;
         var max = c ? c.MaxHealth : species.Sheet(pet.Level, pet.Stage).MaxHealth;
         var health = c ? c.Health : max;
@@ -158,6 +170,7 @@ public class PetCommand : ChatBotCommandHandler<string>
     {
         var pet = Find(player, name);
         if (pet == null) { client.SendReply(gm, Localization.MSG_PET_NOT_FOUND, name); return; }
+        if (PetEggs.IsUnhatched(pet.Level)) { client.SendReply(gm, Localization.MSG_PET_NOT_HATCHED, pet.Name, player.BattlePets.MinutesLeft(pet)); return; }
         var result = await Game.RavenNest.Players.PetUseAsync(player.Id, pet.Id);
         await Result(player, gm, client, result, r => client.SendReply(gm, Localization.MSG_PET_OUT, r.Pet?.Name ?? pet.Name));
     }
@@ -250,19 +263,51 @@ public class PetCommand : ChatBotCommandHandler<string>
         var name = confirm ? rest.Substring(0, rest.Length - 8).Trim() : rest;
         var pet = Find(player, name);
         if (pet == null) { client.SendReply(gm, Localization.MSG_PET_NOT_FOUND, name); return; }
-        if (!confirm) { client.SendReply(gm, Localization.MSG_PET_RELEASE_CONFIRM, pet.Name); return; }
+        var egg = PetEggs.IsUnhatched(pet.Level);
+        if (!confirm && !egg) { client.SendReply(gm, Localization.MSG_PET_RELEASE_CONFIRM, pet.Name); return; }
         var result = await Game.RavenNest.Players.PetReleaseAsync(player.Id, pet.Id);
-        await Result(player, gm, client, result, r => client.SendReply(gm, Localization.MSG_PET_RELEASED, pet.Name));
+        await Result(player, gm, client, result, r => client.SendReply(gm, egg ? Localization.MSG_PET_RELEASE_EGG : Localization.MSG_PET_RELEASED, pet.Name));
+    }
+
+    /// <summary>!pets hatch (egg): one from the bag into the stable; alone, the eggs in the bag.</summary>
+    private async Task Hatch(PlayerController player, string name, GameMessage gm, GameClient client)
+    {
+        var eggs = player.Inventory.GetAllItems()
+            .Where(x => x?.Item != null && x.Amount > 0 && (x.InventoryItem == null || !x.InventoryItem.Equipped) && PetEggs.IsEgg(x.Item.Id))
+            .ToList();
+        if (eggs.Count == 0) { client.SendReply(gm, Localization.MSG_PET_NO_EGGS); return; }
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            client.SendReply(gm, Localization.MSG_PET_EGGS, string.Join(", ", eggs.Select(x => x.Amount > 1 ? x.Amount + "x " + x.Item.Name : x.Item.Name)));
+            return;
+        }
+        var wanted = PetEggs.FindEgg(name);
+        var item = eggs.FirstOrDefault(x => string.Equals(x.Item.Name, name, StringComparison.OrdinalIgnoreCase))
+            ?? (wanted != null ? eggs.FirstOrDefault(x => PetEggs.SpeciesForEgg(x.Item.Id) == wanted) : null)
+            ?? eggs.FirstOrDefault(x => x.Item.Name.IndexOf(name, StringComparison.OrdinalIgnoreCase) >= 0);
+        if (item == null) { client.SendReply(gm, Localization.MSG_PET_NO_SUCH_EGG, name); return; }
+        var species = PetEggs.SpeciesForEgg(item.Item.Id);
+        var result = await Game.RavenNest.Players.PetHatchAsync(player.Id, item.Item.Id);
+        if (result != null && result.Status == PetResultStatus.TamingTooLow) { client.SendReply(gm, Localization.MSG_PET_HATCH_TAMING, species.EggName, species.TameLevel); return; }
+        if (result != null && result.Status == PetResultStatus.StableFull) { client.SendReply(gm, Localization.MSG_PET_HATCH_FULL, result.Missing); return; }
+        if (result != null && result.Status == PetResultStatus.NoEgg) { client.SendReply(gm, Localization.MSG_PET_NO_SUCH_EGG, item.Item.Name); return; }
+        await Result(player, gm, client, result, r => client.SendReply(gm, Localization.MSG_PET_HATCHING, species.EggName, species.NameAt(0),
+            (int)Math.Ceiling(PetEggs.HatchMinutes(species, player.BattlePets.RookeryLevel))));
     }
 
     private static void About(string name, GameMessage gm, GameClient client)
     {
         var s = BattlePets.Species.FirstOrDefault(x => x.StageNames.Any(n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase)) || string.Equals(x.Id, name, StringComparison.OrdinalIgnoreCase))
             ?? BattlePets.SpeciesForCreature(null, name)
+            ?? PetEggs.FindEgg(name)
             ?? BattlePets.Species.FirstOrDefault(x => x.StageNames.Any(n => n.IndexOf(name ?? "", StringComparison.OrdinalIgnoreCase) >= 0) && !string.IsNullOrWhiteSpace(name));
         if (s == null) { client.SendReply(gm, Localization.MSG_PET_UNKNOWN_KIND, name); return; }
-        var how = s.Source == PetSource.Tamed ? string.Format(Localization.MSG_PET_ABOUT_TAME, s.TameLevel, string.Join(" or ", s.Treats)) : Localization.MSG_PET_ABOUT_ITEM;
-        client.SendReply(gm, Localization.MSG_PET_ABOUT, s.NameAt(0), Role(s.Role), Element(s.Element), Strike(s.Strike), s.Blurb, how, string.Join(", ", s.StageNames));
+        var how = s.Source == PetSource.Tamed ? string.Format(Localization.MSG_PET_ABOUT_TAME, s.TameLevel, string.Join(" or ", s.Treats))
+            : s.Hatches ? string.Format(Localization.MSG_PET_ABOUT_EGG, s.EggName, s.EggFrom.ToLowerInvariant(), (int)s.HatchMinutes, s.TameLevel)
+            : s.Source == PetSource.Companion ? Localization.MSG_PET_ABOUT_ITEM : "";
+        var gem = Gems.RawName(PetEvolution.GemFor(s));
+        how += " " + string.Format(Localization.MSG_PET_ABOUT_GEMS, PetEvolution.GemsFor(0, 0) + " " + gem, PetEvolution.GemsFor(1, 0), gem);
+        client.SendReply(gm, Localization.MSG_PET_ABOUT, s.NameAt(0), Role(s.Role), Element(s.Element), Strike(s.Strike), s.Blurb, how.Trim(), string.Join(", ", s.StageNames));
     }
 
     /// <summary>Applies a command's answer to the stable and replies: <paramref name="ok"/> on success, the reason otherwise.</summary>
@@ -290,6 +335,8 @@ public class PetCommand : ChatBotCommandHandler<string>
                     break;
                 }
             case PetResultStatus.NoSuchSlot: client.SendReply(gm, Localization.MSG_PET_NO_SLOT, player.BattlePets.Active?.Name ?? "Your pet", result.Missing); break;
+            case PetResultStatus.NotHatched: client.SendReply(gm, Localization.MSG_PET_NOT_HATCHED, name, result.Pet != null ? player.BattlePets.MinutesLeft(result.Pet) : 0); break;
+            case PetResultStatus.NoEgg: client.SendReply(gm, Localization.MSG_PET_NO_EGGS); break;
             default: client.SendReply(gm, Localization.MSG_PET_ERROR); break;
         }
         return Task.CompletedTask;

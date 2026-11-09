@@ -139,6 +139,8 @@ namespace RavenNest.Protocol
 
         /// <summary>(Guid characterId, Guid petId, double experience) -> PetResult: what the pet earned while out</summary>
         public const string PetExperience = "pets.exp";
+        public const string PetHatch = "pets.hatch";
+        public const string PetIncubate = "pets.incubate";
 
         // Raids and dungeons
 

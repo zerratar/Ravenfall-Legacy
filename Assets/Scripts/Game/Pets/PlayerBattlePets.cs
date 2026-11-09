@@ -10,7 +10,8 @@ using UnityEngine;
 ///     that is out (a <see cref="BattlePetController"/> in the world), taming (!tame: each defeat of that kind of
 ///     creature is a try, Taming experience every time, the chance from the library, the pet made by the server), the
 ///     share of experience a pet and Taming get while a pet is out, and the blows a tank pet takes for its owner. The
-///     cosmetic pet stays hidden while a battle pet is out, so there is one animal at the owner's heels.
+///     cosmetic pet stays hidden while a battle pet is out, so there is one animal at the owner's heels. Eggs in the
+///     stable (pets at level 0) are reported once a minute while their owner plays, and hatch on the server.
 /// </summary>
 public sealed class PlayerBattlePets
 {
@@ -25,13 +26,25 @@ public sealed class PlayerBattlePets
     private readonly List<BattlePet> stable = new List<BattlePet>();
     private double pendingExperience;
     private Guid pendingPet; // the pet that earned the pending experience
-    private float nextReport, nextSteer, nextHide;
+    private float nextReport, nextSteer, nextHide, nextIncubate;
     private bool cosmeticHidden;
 
     public PlayerBattlePets(PlayerController owner) => this.owner = owner;
 
     public IReadOnlyList<BattlePet> Stable => stable;
-    public BattlePet Active => stable.FirstOrDefault(p => p.Active);
+    public BattlePet Active => stable.FirstOrDefault(p => p.Active && !PetEggs.IsUnhatched(p.Level));
+
+    /// <summary>The owner's clan's Rookery level as the game knows it (0 without a clan or the skill).</summary>
+    public int RookeryLevel => owner && owner.clanHandler && owner.clanHandler.InClan
+        ? owner.clanHandler.ClanInfo?.ClanSkills?.FirstOrDefault(s => s != null && s.Name == Rookery.Name)?.Level ?? 0 : 0;
+
+    /// <summary>The minutes of play an egg in the stable still needs (as the game knows the Rookery).</summary>
+    public int MinutesLeft(BattlePet egg)
+    {
+        var species = egg != null ? BattlePets.GetSpecies(egg.Species) : null;
+        if (species == null) return 0;
+        return Math.Max(1, (int)Math.Ceiling(PetEggs.HatchMinutes(species, RookeryLevel) - egg.PlayTime.TotalMinutes));
+    }
     public BattlePetController Controller { get; private set; }
 
     /// <summary>The kind being tamed (!tame), or null.</summary>
@@ -152,6 +165,12 @@ public sealed class PlayerBattlePets
 
         if (pendingExperience > 0 && now >= nextReport && Controller && !owner.IsBot) Report();
 
+        if (now >= nextIncubate)
+        {
+            nextIncubate = now + ReportEvery;
+            if (!owner.IsBot && stable.Any(p => PetEggs.IsUnhatched(p.Level))) Incubate();
+        }
+
         if (Taming != null && now >= nextSteer)
         {
             nextSteer = now + 10f;
@@ -212,6 +231,41 @@ public sealed class PlayerBattlePets
             if (pet == pendingPet) pendingExperience += amount;
             Shinobytes.Debug.LogError("Pet experience for " + owner.PlayerName + ": " + exc.Message);
         }
+    }
+
+    // ---------------------------------------------------------------- eggs
+
+    /// <summary>The eggs' minute: the server warms them and hatches the ready ones; a hatch is a little moment.</summary>
+    private async void Incubate()
+    {
+        try
+        {
+            var eggs = stable.Where(p => PetEggs.IsUnhatched(p.Level)).Select(p => p.Id).ToList();
+            var result = await owner.GameManager.RavenNest.Players.PetIncubateAsync(owner.Id);
+            if (!owner || owner.Removed || result == null || result.Status != PetResultStatus.Ok) return;
+            Apply(result);
+            foreach (var id in eggs)
+            {
+                var pet = stable.FirstOrDefault(p => p.Id == id);
+                if (pet == null || PetEggs.IsUnhatched(pet.Level)) continue;
+                Hatched(pet);
+            }
+        }
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogError("Pet eggs for " + owner.PlayerName + ": " + exc.Message);
+        }
+    }
+
+    private void Hatched(BattlePet pet)
+    {
+        var species = BattlePets.GetSpecies(pet.Species);
+        if (species == null) return;
+        var where = Controller && Controller.Data != null && Controller.Data.Id == pet.Id ? Controller.transform.position : owner.Position;
+        PetFx.Burst(where, 1.2f, PetFx.ElementColor(species.Element));
+        if (Time.time < nextAnnounce || owner.GameManager?.RavenBot == null) return;
+        nextAnnounce = Time.time + AnnounceEvery;
+        owner.GameManager.RavenBot.Announce(Localization.MSG_PET_HATCHED, owner.PlayerName, species.EggName, species.NameAt(0));
     }
 
     // ---------------------------------------------------------------- taming
