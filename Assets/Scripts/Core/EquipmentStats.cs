@@ -3,6 +3,13 @@
 [Serializable]
 public class EquipmentStats : IComparable
 {
+    /// <summary>Health from the armour pieces' armour (CombatMath.HealthPerArmor), for the details window.</summary>
+    [NonSerialized] public int ArmorHealth;
+    /// <summary>Health from the MAX_HEALTH gear stat (jewellery, gems, the trees' flat health).</summary>
+    [NonSerialized] public int FlatGearHealth;
+    /// <summary>Health from "more health" shares (Hardy, Titan, gems in armour).</summary>
+    [NonSerialized] public int BonusHealth;
+
     public int BaseArmorPower;
     public int BaseWeaponAim;
     public int BaseWeaponPower;

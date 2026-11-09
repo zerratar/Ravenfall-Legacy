@@ -72,6 +72,17 @@
                     <engine:Label name="details-rested" class="rf-details__rested" />
                 </engine:VisualElement>
 
+                <!-- Health, its own bar (2026-11-09): the skill behind it is Vitality, and a Health tile showing
+                     the pool read as a boosted level. Hover for where the health comes from. -->
+                <engine:VisualElement name="details-health" class="rf-health">
+                    <engine:VisualElement name="health-icon" class="rf-health__icon" picking-mode="Ignore" />
+                    <engine:Label name="health-caption" text="HEALTH" class="rf-health__caption" picking-mode="Ignore" />
+                    <engine:VisualElement class="rf-health__bar" picking-mode="Ignore">
+                        <engine:VisualElement name="health-fill" class="rf-health__fill" picking-mode="Ignore" />
+                    </engine:VisualElement>
+                    <engine:Label name="health-value" class="rf-health__value" picking-mode="Ignore" />
+                </engine:VisualElement>
+
                 <!-- What they are doing right now. -->
                 <engine:VisualElement name="details-training" class="rf-training">
                     <engine:VisualElement name="training-icon" class="rf-training__icon" picking-mode="Ignore" />
@@ -101,9 +112,13 @@
                 <!-- The skill tree loadout (combat v2): each active with its cooldown. Hidden without one. -->
                 <engine:VisualElement name="details-loadout" class="rf-loadout" />
 
-                <!-- Gear, folded away by default. -->
+                <!-- Gear, folded away by default. The two buttons switch between the equipment and the list of
+                     every stat (docs/mockups/details-vitality-*.webp); either opens the section. -->
                 <engine:VisualElement name="details-gear-header" class="rf-gear-header">
-                    <engine:Label name="gear-title" text="EQUIPMENT" class="rf-gear-header__title" picking-mode="Ignore" />
+                    <engine:VisualElement class="rf-segment">
+                        <engine:Button name="gear-view-equipment" text="EQUIPMENT" class="rf-segment__button" />
+                        <engine:Button name="gear-view-stats" text="STATS" class="rf-segment__button" />
+                    </engine:VisualElement>
                     <engine:VisualElement name="details-scrolls" class="rf-gear-header__scrolls" />
                     <engine:VisualElement class="rf-details__spacer" picking-mode="Ignore" />
                     <engine:Button name="details-gear-toggle" text="" class="rf-window__button" tooltip="Show or hide equipment">
@@ -124,6 +139,11 @@
                         <engine:VisualElement name="details-slots" class="rf-slots" />
                     </engine:VisualElement>
                     <engine:VisualElement name="details-stats" class="rf-stats" />
+                    <!-- Every stat, filled in code: health and defence on the left, offence and elements on the right. -->
+                    <engine:VisualElement name="details-attrs" class="rf-attrs">
+                        <engine:VisualElement name="attrs-left" class="rf-attrs__column" />
+                        <engine:VisualElement name="attrs-right" class="rf-attrs__column rf-attrs__column--right" />
+                    </engine:VisualElement>
                 </engine:VisualElement>
 
             </engine:VisualElement>

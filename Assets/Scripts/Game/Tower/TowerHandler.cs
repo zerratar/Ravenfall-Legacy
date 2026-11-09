@@ -42,7 +42,8 @@ public class TowerHandler : IAwayHandler
             var synced = SyncFloor;
             if (synced <= 0 || player.Stats?.Health == null) return 1f;
             var real = player.Stats.Health.MaxValue;
-            var pool = Mathf.Min(real, CombatRules.MaxHealth(RavenNest.Combat.Tower.SyncLevel(synced)) + player.Stats.Health.GearHealth);
+            var level = RavenNest.Combat.Tower.SyncLevel(synced);
+            var pool = Mathf.Min(real, CombatRules.PlayerMaxHealth(level) + RavenNest.Combat.Tower.SyncGearHealth(player.Stats.Health.GearHealth, player.Stats.Health.ArmorHealth, level));
             return pool > 0 ? Mathf.Max(1f, real / (float)pool) : 1f;
         }
     }

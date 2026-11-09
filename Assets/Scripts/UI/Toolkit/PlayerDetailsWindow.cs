@@ -193,6 +193,7 @@ namespace Shinobytes.UI
         private PlayerController player;
         private bool visible = true;
         private bool gearOpen;
+        private bool statsView;
         private float nextRefresh;
         private float nextSlowRefresh;
         private SkillStat clanEnchanting;
@@ -209,6 +210,19 @@ namespace Shinobytes.UI
         private float shownTrainingFill = -1f;
         private float shownObserve = -1f;
 
+        // The health bar and the stats view (2026-11-09).
+        private const string GearViewKey = "details.gearView";
+        private VisualElement healthRow;
+        private VisualElement healthFill;
+        private Label healthValue;
+        private int shownHealth = int.MinValue;
+        private int shownMaxHealth = int.MinValue;
+        private Button viewEquipment;
+        private Button viewStats;
+        private VisualElement attrsLeft;
+        private VisualElement attrsRight;
+        private string shownAttrs;
+
         // ---- Lifecycle -------------------------------------------------------------------
 
         private void Awake()
@@ -219,6 +233,7 @@ namespace Shinobytes.UI
             }
 
             gearOpen = PlayerPrefs.GetInt(GearOpenKey, 0) == 1;
+            statsView = PlayerPrefs.GetInt(GearViewKey, 0) == 1;
         }
 
         private void OnEnable()
@@ -290,8 +305,6 @@ namespace Shinobytes.UI
 
             var levelCaption = root.Q<Label>("details-level-caption");
             if (levelCaption != null) levelCaption.text = Localization.UI_DETAILS_LEVEL_CAPTION;
-            var gearTitle = root.Q<Label>("gear-title");
-            if (gearTitle != null) gearTitle.text = Localization.UI_DETAILS_EQUIPMENT;
 
             header = root.Q<VisualElement>("details-header");
             nameLabel = root.Q<Label>("details-name");
@@ -334,6 +347,31 @@ namespace Shinobytes.UI
             turnRight = root.Q<Button>("details-turn-right");
 
             tooltip = HudTooltip.Create(root.Q<VisualElement>("details-root") ?? root);
+
+            healthRow = root.Q<VisualElement>("details-health");
+            healthFill = root.Q<VisualElement>("health-fill");
+            healthValue = root.Q<Label>("health-value");
+            var healthCaption = root.Q<Label>("health-caption");
+            if (healthCaption != null) healthCaption.text = Localization.UI_DETAILS_HEALTH;
+            var healthIcon = root.Q<VisualElement>("health-icon");
+            if (healthIcon != null && iconBySkill.TryGetValue(Skill.Health, out var heart) && heart != null)
+                healthIcon.style.backgroundImage = new StyleBackground(heart);
+            if (healthRow != null) tooltip?.Attach(healthRow, FillHealthTooltip);
+
+            viewEquipment = root.Q<Button>("gear-view-equipment");
+            viewStats = root.Q<Button>("gear-view-stats");
+            if (viewEquipment != null)
+            {
+                viewEquipment.text = Localization.UI_DETAILS_EQUIPMENT;
+                viewEquipment.clicked += () => SetGearView(false);
+            }
+            if (viewStats != null)
+            {
+                viewStats.text = Localization.UI_DETAILS_STATS;
+                viewStats.clicked += () => SetGearView(true);
+            }
+            attrsLeft = root.Q<VisualElement>("attrs-left");
+            attrsRight = root.Q<VisualElement>("attrs-right");
 
             if (coinIconElement != null && coinIcon != null)
             {
@@ -436,9 +474,34 @@ namespace Shinobytes.UI
             {
                 RefreshSlots();
                 RefreshStats();
+                shownAttrs = null;
+                RefreshAttrs();
             }
 
             return gearOpen;
+        }
+
+        /// <summary>Equipment or the list of every stat; either button opens the section if it was folded.</summary>
+        private void SetGearView(bool stats)
+        {
+            tooltip?.Hide();
+            statsView = stats;
+            PlayerPrefs.SetInt(GearViewKey, stats ? 1 : 0);
+            PlayerPrefs.Save();
+            shownAttrs = null;
+            if (!gearOpen)
+            {
+                ToggleGear();
+                return;
+            }
+
+            ApplyGearOpen();
+            if (bound && IsShowing)
+            {
+                RefreshSlots();
+                RefreshStats();
+                RefreshAttrs();
+            }
         }
 
         public bool IsGearOpen => gearOpen;
@@ -602,7 +665,8 @@ namespace Shinobytes.UI
             tile.Aim.AddToClassList("rf-stat__aim");
             if (kind == StatKind.Armor)
             {
-                tile.Aim.style.display = DisplayStyle.None;
+                // the armour tile's second line is the health its armour gives, in the health colour
+                tile.Aim.AddToClassList("rf-stat__aim--health");
             }
 
             text.Add(captionLabel);
@@ -682,6 +746,7 @@ namespace Shinobytes.UI
             }
 
             RefreshHeader();
+            RefreshHealth();
             RefreshTraining();
             RefreshSkills();
             RefreshLoadout();
@@ -810,6 +875,7 @@ namespace Shinobytes.UI
             RefreshClanSkill();
             RefreshScrolls();
             RefreshStats();
+            RefreshAttrs();
         }
 
         private void RefreshHeader()
@@ -1151,7 +1217,9 @@ namespace Shinobytes.UI
                 }
 
                 int level = stat.Level;
-                int current = stat.CurrentValue;
+                // Vitality (stored as Health) shows its level like every skill; its current value is the health
+                // pool, which has its own bar now
+                int current = stat.Type == Skill.Health ? Mathf.FloorToInt(stat.Level + stat.Bonus) : stat.CurrentValue;
                 if (level != tile.LastLevel || current != tile.LastCurrent)
                 {
                     tile.LastLevel = level;
@@ -1260,7 +1328,7 @@ namespace Shinobytes.UI
                     case StatKind.Melee: power = eq.WeaponPower; aim = eq.WeaponAim; bonus = eq.WeaponBonus; break;
                     case StatKind.Ranged: power = eq.RangedPower; aim = eq.RangedAim; bonus = eq.RangedBonus; break;
                     case StatKind.Magic: power = eq.MagicPower; aim = eq.MagicAim; bonus = eq.MagicBonus; break;
-                    default: power = eq.ArmorPower; aim = 0; bonus = eq.ArmorPowerBonus; break;
+                    default: power = eq.ArmorPower; aim = eq.ArmorHealth; bonus = eq.ArmorPowerBonus; break;
                 }
 
                 if (power != tile.LastPower || bonus != tile.LastBonus)
@@ -1274,7 +1342,10 @@ namespace Shinobytes.UI
                 if (aim != tile.LastAim)
                 {
                     tile.LastAim = aim;
-                    tile.Aim.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_DETAILS_AIM, HudFormat.Grouped(aim));
+                    // the armour tile's second line is the health its armour gives (eight a Vitality level, the rest from armour)
+                    tile.Aim.text = tile.Kind == StatKind.Armor
+                        ? (aim > 0 ? string.Format(CultureInfo.InvariantCulture, Localization.UI_DETAILS_ARMOR_HEALTH, HudFormat.Grouped(aim)) : string.Empty)
+                        : string.Format(CultureInfo.InvariantCulture, Localization.UI_DETAILS_AIM, HudFormat.Grouped(aim));
                 }
 
                 // 0 neutral, 1 the style in use, 2 a style not in use. Armor always counts, and while
@@ -1341,6 +1412,207 @@ namespace Shinobytes.UI
             }
         }
 
+        // ---- Health and the stats view (2026-11-09) ------------------------------------------
+
+        private void RefreshHealth()
+        {
+            var h = player.Stats?.Health;
+            if (h == null || healthFill == null)
+            {
+                return;
+            }
+
+            var max = Mathf.Max(1, h.MaxValue);
+            var current = Mathf.Clamp(h.CurrentValue, 0, max);
+            if (current == shownHealth && max == shownMaxHealth)
+            {
+                return;
+            }
+
+            shownHealth = current;
+            shownMaxHealth = max;
+            healthFill.style.width = new Length(current * 100f / max, LengthUnit.Percent);
+            if (healthValue != null) healthValue.text = HudFormat.Grouped(current) + " / " + HudFormat.Grouped(max);
+            healthRow?.EnableInClassList("rf-health--low", current < max * 0.3f);
+        }
+
+        private void FillHealthTooltip(HudTooltip t)
+        {
+            if (!player || player.Stats?.Health == null)
+            {
+                return;
+            }
+
+            var h = player.Stats.Health;
+            var eq = player.EquipmentStats ?? EquipmentStats.Zero;
+            t.SetTitle(Localization.UI_STATS_HEALTH);
+            t.AddRow(Localization.UI_STATS_HEALTH, HudFormat.Grouped(Mathf.Max(0, h.CurrentValue)) + " / " + HudFormat.Grouped(h.MaxValue));
+            foreach (var row in HealthRows(h, eq))
+            {
+                t.AddRow(row.Label, row.Value, row.Good ? "rf-tooltip__value--good" : null);
+            }
+            t.SetNote(string.Format(CultureInfo.InvariantCulture, Localization.UI_STATS_HEALTH_NOTE,
+                CombatRules.PlayerHealthPerLevel, RavenNest.Combat.CombatMath.HealthPerArmor.ToString("0.#", CultureInfo.InvariantCulture)));
+        }
+
+        private struct AttrRow
+        {
+            public string Label;
+            public string Value;
+            public bool Good;
+            public bool Bad;
+            public AttrRow(string label, string value, bool good = false, bool bad = false) { Label = label; Value = value; Good = good; Bad = bad; }
+        }
+
+        /// <summary>Where the health comes from: Vitality, the armour pieces, flat health on gear, "more health" shares.</summary>
+        private static List<AttrRow> HealthRows(SkillStat h, EquipmentStats eq)
+        {
+            var rows = new List<AttrRow>();
+            rows.Add(new AttrRow(Localization.UI_STATS_FROM_VITALITY, HudFormat.Grouped(CombatRules.PlayerMaxHealth(Mathf.FloorToInt(h.Level + h.Bonus)))));
+            if (eq.ArmorHealth > 0) rows.Add(new AttrRow(Localization.UI_STATS_FROM_ARMOUR, "+" + HudFormat.Grouped(eq.ArmorHealth), true));
+            if (eq.FlatGearHealth != 0) rows.Add(new AttrRow(Localization.UI_STATS_FROM_GEAR, Signed(eq.FlatGearHealth), eq.FlatGearHealth > 0, eq.FlatGearHealth < 0));
+            if (eq.BonusHealth != 0) rows.Add(new AttrRow(Localization.UI_STATS_HEALTH_BONUS, Signed(eq.BonusHealth), eq.BonusHealth > 0, eq.BonusHealth < 0));
+            return rows;
+        }
+
+        private static string Signed(int value) => (value > 0 ? "+" : "") + HudFormat.Grouped(value);
+
+        private static string Percent(double share) => (share * 100).ToString("0.#", CultureInfo.InvariantCulture) + "%";
+
+        private static string SignedPercent(double share) => (share > 0 ? "+" : "") + Percent(share);
+
+        /// <summary>
+        ///     Every stat, from the same combat sheet a fight reads (gear, enchantments, gems, skill tree passives and
+        ///     their caps), so what the list says is what applies. Rebuilt only when a value changes.
+        /// </summary>
+        private void RefreshAttrs()
+        {
+            if (!gearOpen || !statsView || attrsLeft == null || attrsRight == null || !player || player.Stats?.Health == null)
+            {
+                return;
+            }
+
+            RavenNest.Combat.CombatSheet sheet;
+            try { sheet = CombatRules.Sheet(player); }
+            catch { sheet = null; }
+            if (sheet == null)
+            {
+                return;
+            }
+
+            var eq = player.EquipmentStats ?? EquipmentStats.Zero;
+            var h = player.Stats.Health;
+            var left = new List<(string Heading, List<AttrRow> Rows)>();
+            var right = new List<(string Heading, List<AttrRow> Rows)>();
+
+            // health
+            var health = new List<AttrRow> { new AttrRow(Localization.UI_STATS_MAX_HEALTH, HudFormat.Grouped(h.MaxValue)) };
+            health.AddRange(HealthRows(h, eq));
+            if (sheet.LifeSteal > 0) health.Add(new AttrRow(RavenNest.Combat.GearStats.Label(RavenNest.Combat.GearStat.LifeSteal), Percent(sheet.LifeSteal), true));
+            if (sheet.HealingReceived != 0) health.Add(new AttrRow(RavenNest.Combat.GearStats.Label(RavenNest.Combat.GearStat.HealingReceived), SignedPercent(sheet.HealingReceived), sheet.HealingReceived > 0, sheet.HealingReceived < 0));
+            if (sheet.CombatRegen > 0) health.Add(new AttrRow(RavenNest.Combat.GearStats.Label(RavenNest.Combat.GearStat.CombatRegen), Percent(sheet.CombatRegen), true));
+            left.Add((Localization.UI_STATS_GROUP_HEALTH, health));
+
+            // defence
+            var armour = sheet.EffectiveArmor;
+            var defence = new List<AttrRow>
+            {
+                new AttrRow(Localization.UI_STATS_ARMOUR, HudFormat.Grouped(armour)),
+                new AttrRow(Localization.UI_STATS_ARMOUR_CUT, Percent(RavenNest.Combat.CombatMath.ArmorReduction(armour))),
+            };
+            if (sheet.GearEvasion > 0) defence.Add(new AttrRow(RavenNest.Combat.GearStats.Label(RavenNest.Combat.GearStat.Evasion), HudFormat.Grouped(sheet.GearEvasion)));
+            if (sheet.BlockChance > 0) defence.Add(new AttrRow(RavenNest.Combat.GearStats.Label(RavenNest.Combat.GearStat.BlockChance), Percent(sheet.BlockChance)));
+            if (sheet.DamageTakenMultiplier < 1) defence.Add(new AttrRow(Localization.UI_STATS_DAMAGE_REDUCTION, Percent(1 - sheet.DamageTakenMultiplier), true));
+            if (sheet.Thorns > 0) defence.Add(new AttrRow(RavenNest.Combat.GearStats.Label(RavenNest.Combat.GearStat.Thorns), Percent(sheet.Thorns)));
+            if (sheet.LowHealthReduction > 0) defence.Add(new AttrRow(RavenNest.Combat.GearStats.Label(RavenNest.Combat.GearStat.LowHealthReduction), Percent(sheet.LowHealthReduction)));
+            left.Add((Localization.UI_STATS_GROUP_DEFENCE, defence));
+
+            // offence, for the style in use (melee when not fighting)
+            var style = player.TrainingRanged ? RavenNest.Combat.AttackStyle.Ranged
+                : player.TrainingMagic ? RavenNest.Combat.AttackStyle.Magic
+                : player.TrainingHealing ? RavenNest.Combat.AttackStyle.Healing
+                : RavenNest.Combat.AttackStyle.Melee;
+            var s = sheet.Style(style);
+            var styleName = style == RavenNest.Combat.AttackStyle.Ranged ? Localization.UI_DETAILS_STAT_RANGED
+                : style == RavenNest.Combat.AttackStyle.Magic ? Localization.UI_DETAILS_STAT_MAGIC
+                : style == RavenNest.Combat.AttackStyle.Healing ? Localization.SkillName(Skill.Healing).ToUpperInvariant()
+                : Localization.UI_DETAILS_STAT_MELEE;
+            var offence = new List<AttrRow> { new AttrRow(Localization.UI_STATS_POWER, HudFormat.Grouped(s.EffectivePower)) };
+            if (style != RavenNest.Combat.AttackStyle.Healing) offence.Add(new AttrRow(Localization.UI_STATS_ACCURACY, HudFormat.Grouped(s.EffectiveAccuracy)));
+            offence.Add(new AttrRow(style == RavenNest.Combat.AttackStyle.Healing ? Localization.UI_STATS_MAX_HEAL : Localization.UI_STATS_MAX_HIT,
+                HudFormat.Grouped((int)RavenNest.Combat.CombatMath.MaxHit(s.DamageLevel, s.EffectivePower))));
+            offence.Add(new AttrRow(Localization.UI_STATS_CRIT_CHANCE, Percent(sheet.CritChance)));
+            offence.Add(new AttrRow(Localization.UI_STATS_CRIT_DAMAGE, Percent(sheet.CritDamage)));
+            if (sheet.AttackSpeed != 1) offence.Add(new AttrRow(RavenNest.Combat.GearStats.Label(RavenNest.Combat.GearStat.AttackSpeed), SignedPercent(sheet.AttackSpeed - 1), sheet.AttackSpeed > 1, sheet.AttackSpeed < 1));
+            if (sheet.ArmorPenetration > 0) offence.Add(new AttrRow(RavenNest.Combat.GearStats.Label(RavenNest.Combat.GearStat.ArmorPenetration), Percent(sheet.ArmorPenetration)));
+            if (sheet.BossDamage > 0) offence.Add(new AttrRow(RavenNest.Combat.GearStats.Label(RavenNest.Combat.GearStat.BossDamage), SignedPercent(sheet.BossDamage), true));
+            if (sheet.ExecuteDamage > 0) offence.Add(new AttrRow(RavenNest.Combat.GearStats.Label(RavenNest.Combat.GearStat.ExecuteDamage), SignedPercent(sheet.ExecuteDamage), true));
+            if (sheet.ThreatMultiplier != 1) offence.Add(new AttrRow(RavenNest.Combat.GearStats.Label(RavenNest.Combat.GearStat.Threat), SignedPercent(sheet.ThreatMultiplier - 1)));
+            right.Add((Localization.UI_STATS_GROUP_OFFENCE + " \u00b7 " + styleName, offence));
+
+            // elements: the style's conversion plus what other gear adds, and the resistances
+            var elements = new List<AttrRow>();
+            foreach (var e in new[] { RavenNest.Combat.Element.Fire, RavenNest.Combat.Element.Ice, RavenNest.Combat.Element.Lightning, RavenNest.Combat.Element.Poison })
+            {
+                var damage = s.Conversion[e] + sheet.ElementBonus[e];
+                if (damage > 0) elements.Add(new AttrRow(string.Format(CultureInfo.InvariantCulture, Localization.UI_STATS_ELEMENT_DAMAGE, e), Percent(damage), true));
+            }
+            foreach (var e in new[] { RavenNest.Combat.Element.Fire, RavenNest.Combat.Element.Ice, RavenNest.Combat.Element.Lightning, RavenNest.Combat.Element.Poison })
+            {
+                var resist = sheet.Resistance[e];
+                if (resist != 0) elements.Add(new AttrRow(string.Format(CultureInfo.InvariantCulture, Localization.UI_STATS_ELEMENT_RESIST, e), Percent(resist), resist > 0, resist < 0));
+            }
+            right.Add((Localization.UI_STATS_GROUP_ELEMENTS, elements));
+
+            // rebuilt only when something changed: the list is a few dozen labels, refreshed every slow tick
+            var key = new System.Text.StringBuilder();
+            foreach (var g in left) { key.Append(g.Heading).Append('|'); foreach (var r in g.Rows) key.Append(r.Label).Append('=').Append(r.Value).Append(';'); }
+            key.Append("||");
+            foreach (var g in right) { key.Append(g.Heading).Append('|'); foreach (var r in g.Rows) key.Append(r.Label).Append('=').Append(r.Value).Append(';'); }
+            var text = key.ToString();
+            if (text == shownAttrs)
+            {
+                return;
+            }
+
+            shownAttrs = text;
+            FillAttrColumn(attrsLeft, left);
+            FillAttrColumn(attrsRight, right);
+        }
+
+        private static void FillAttrColumn(VisualElement column, List<(string Heading, List<AttrRow> Rows)> groups)
+        {
+            column.Clear();
+            foreach (var g in groups)
+            {
+                var heading = new Label(g.Heading) { pickingMode = PickingMode.Ignore };
+                heading.AddToClassList("rf-attrs__heading");
+                column.Add(heading);
+                if (g.Rows.Count == 0)
+                {
+                    var empty = new Label(Localization.UI_STATS_NO_ELEMENTS) { pickingMode = PickingMode.Ignore };
+                    empty.AddToClassList("rf-attrs__empty");
+                    column.Add(empty);
+                    continue;
+                }
+
+                foreach (var r in g.Rows)
+                {
+                    var row = new VisualElement { pickingMode = PickingMode.Ignore };
+                    row.AddToClassList("rf-attrs__row");
+                    var label = new Label(r.Label) { pickingMode = PickingMode.Ignore };
+                    label.AddToClassList("rf-attrs__label");
+                    var value = new Label(r.Value) { pickingMode = PickingMode.Ignore };
+                    value.AddToClassList("rf-attrs__value");
+                    if (r.Good) value.AddToClassList("rf-attrs__value--good");
+                    if (r.Bad) value.AddToClassList("rf-attrs__value--bad");
+                    row.Add(label);
+                    row.Add(value);
+                    column.Add(row);
+                }
+            }
+        }
+
         // ---- Tooltips ------------------------------------------------------------------------
 
         private void FillSkillTooltip(HudTooltip t, SkillTile tile)
@@ -1354,7 +1626,7 @@ namespace Shinobytes.UI
 
             var stat = tile.Stat;
             int level = stat.Level;
-            int current = stat.CurrentValue;
+            int current = stat.Type == Skill.Health ? Mathf.FloorToInt(stat.Level + stat.Bonus) : stat.CurrentValue;
 
             t.SetTitle(tile.IsClan ? Localization.UI_SKILL_ENCHANTING : Localization.SkillName(tile.Skill));
             t.AddRow(Localization.UI_TIP_LEVEL, level.ToString(CultureInfo.InvariantCulture), level >= GameMath.MaxLevel ? "rf-tooltip__value--gold" : null);
@@ -1425,6 +1697,12 @@ namespace Shinobytes.UI
                 }
             }
 
+            // an armour piece's armour gives health (combat v2)
+            if (CombatRules.Enabled && RavenNest.Combat.CombatMath.IsArmorPiece((int)item.Item.Type) && item.Item.ArmorPower > 0)
+            {
+                t.AddRow(Localization.UI_TIP_ITEM_HEALTH, "+" + HudFormat.Grouped(RavenNest.Combat.CombatMath.ArmorHealth(item.Item.ArmorPower)), "rf-tooltip__value--good");
+            }
+
             foreach (var (label, value) in item.Item.GetExtraStatLines())
             {
                 t.AddRow(label, value, null);
@@ -1466,6 +1744,7 @@ namespace Shinobytes.UI
                 case StatKind.Armor:
                     t.SetTitle(Localization.UI_TIP_ARMOR);
                     AddSplit(t, Localization.UI_TIP_ARMOR_POWER, eq.BaseArmorPower, eq.ArmorPowerBonus);
+                    if (eq.ArmorHealth > 0) t.AddRow(Localization.UI_STATS_FROM_ARMOUR, "+" + HudFormat.Grouped(eq.ArmorHealth), "rf-tooltip__value--good");
                     t.SetNote(Localization.UI_TIP_ARMOR_NOTE);
                     break;
                 case StatKind.Melee:
@@ -1625,7 +1904,12 @@ namespace Shinobytes.UI
             if (window != null)
             {
                 window.EnableInClassList("rf-details--gear-closed", !gearOpen);
+                window.EnableInClassList("rf-details--stats-view", statsView);
             }
+
+            // the switch shows the view that would show when open; folded, neither is lit
+            viewEquipment?.EnableInClassList("rf-segment__button--on", gearOpen && !statsView);
+            viewStats?.EnableInClassList("rf-segment__button--on", gearOpen && statsView);
         }
 
         private void ApplyPreviewTexture()
@@ -1651,6 +1935,9 @@ namespace Shinobytes.UI
             shownRestedMinutes = int.MinValue;
             shownTrainingFill = -1f;
             shownObserve = -1f;
+            shownHealth = int.MinValue;
+            shownMaxHealth = int.MinValue;
+            shownAttrs = null;
 
             // The training row caches its icon and state class as well. A rebuilt tree starts without
             // them, and a cache left pointing at the old sprite meant the icon was never set again.

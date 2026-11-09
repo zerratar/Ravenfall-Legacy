@@ -72,7 +72,7 @@ enchantments, skill tree passives and status effects:
 
 | Stat | From | What it does |
 |---|---|---|
-| **Max HP** | 10 per Health level, plus gear, gems, passives | The health pool. Health level 10 is 100 HP, level 999 is 9,990 HP before gear. |
+| **Max HP** | 8 per Vitality level (the skill stored as Health), 0.8 per point of armour on armour pieces, plus gear, gems, passives | The health pool. Vitality 999 is 7,992; a full Elder Atlarus set with a shield adds 2,075 (10,067). Enemies and pets keep 10 per Health level. Changed 2026-11-09, see Progress. |
 | **Power** (per style) | Strength for melee, Ranged, Magic; weapon power | The size of hits |
 | **Accuracy** (per style) | Attack for melee, Ranged, Magic; weapon accuracy | Chance to hit |
 | **Evasion** | Defense level, some gear | Chance to be missed |
@@ -381,6 +381,18 @@ Phase 1 (foundation), started 2026-11-07:
   falls).
 
 - [x] Gems and sockets (phase 4, 2026-11-08): see [gems-design.md](gems-design.md), section 7.
+- [x] Vitality and armour health (2026-11-09, user): the Health skill is shown as **Vitality** everywhere players
+  look (game, chat, website); stored names, the database, the API and leaderboard addresses keep Health, and
+  `!train health` still works next to `!train vitality`. A player's pool is 8 a Vitality level
+  (`CombatMath.PlayerHealthPerLevel`) plus 0.8 health per point of base armour on armour pieces (helmet to shoulders,
+  `CombatMath.HealthPerArmor`; enchantments to armour do not count), flat health on gear and "more health" shares of
+  the whole pool. Combat level adds nothing (the user dropped that: health would grow too big). Worked out in the game
+  from what is worn rather than stored on items, so an edited item never saves it twice. Simulator `enemies`: the
+  same fight lengths, players a few percent sturdier at low and mid levels (Lord Quackers knocks out 12% instead of
+  19%). Synced tower floors cap armour health with the armour (`Tower.SyncGearHealth`). The details window has a
+  health bar of its own, the Vitality tile shows the level, the armour tile says how much health its armour gives,
+  and an Equipment / Stats switch lists every stat from the fight's own combat sheet (mockups
+  docs/mockups/details-vitality-*.webp). Website: the combat guide has a Health section and calculator.
 
 ## For later
 

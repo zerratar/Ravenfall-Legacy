@@ -1604,6 +1604,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         PlayerName = player.Name;
         PlayerNameLowerCase = player.Name.ToLower();
         Stats = new Skills(player.Skills);
+        Stats.Health.PlayerPool = true; // eight a Vitality level and armour health (combat v2)
         CharacterIndex = player.CharacterIndex;
         Identifier = player.Identifier;
         Resources = player.Resources;
@@ -3164,6 +3165,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
         var extras = new RavenNest.Combat.GearStats();
         RavenNest.Combat.GearStats[] weaponExtras = null;
+        var armorHealth = 0;
 
         foreach (var s in Stats.SkillList)
         {
@@ -3186,6 +3188,9 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
                 continue;
 
             var stats = e.GetItemStats();
+
+            // armour pieces' own armour gives health (combat v2: eight a Vitality level, the rest from armour)
+            if (RavenNest.Combat.CombatMath.IsArmorPiece((int)e.Item.Type)) armorHealth += RavenNest.Combat.CombatMath.ArmorHealth(e.Item.ArmorPower);
 
             // combat v2's stats beyond aim, power and armour; a weapon's element goes on its own style
             var gear = e.Item.GetGearStats();
@@ -3244,11 +3249,17 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
         EquipmentStats.Extras = extras;
         EquipmentStats.WeaponExtras = weaponExtras;
-        var gearHealth = extras[RavenNest.Combat.GearStat.MaxHealth];
+        if (!CombatRules.Enabled) armorHealth = 0;
+        var gearHealth = extras[RavenNest.Combat.GearStat.MaxHealth] + armorHealth;
         if (weaponExtras != null) foreach (var w in weaponExtras) if (w != null) gearHealth += w[RavenNest.Combat.GearStat.MaxHealth];
-        // a share more health (Hardy, Titan): of the pool the Health level gives
+        // a share more health (Hardy, Titan, gems in armour): of the whole pool, Vitality's and gear's
         var healthBonus = EquipmentStats.Gear(RavenNest.Combat.GearStat.MaxHealthBonus);
-        if (healthBonus != 0) gearHealth += CombatRules.MaxHealth(Mathf.FloorToInt(Stats.Health.Level + Stats.Health.Bonus)) * healthBonus;
+        var flatHealth = gearHealth;
+        if (healthBonus != 0) gearHealth += (CombatRules.PlayerMaxHealth(Mathf.FloorToInt(Stats.Health.Level + Stats.Health.Bonus)) + flatHealth) * healthBonus;
+        EquipmentStats.ArmorHealth = armorHealth;
+        EquipmentStats.FlatGearHealth = (int)(flatHealth - armorHealth);
+        EquipmentStats.BonusHealth = (int)(gearHealth - flatHealth);
+        Stats.Health.ArmorHealth = armorHealth;
         if (Stats.Health.GearHealth != (int)gearHealth)
         {
             Stats.Health.GearHealth = (int)gearHealth;

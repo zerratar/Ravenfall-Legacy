@@ -940,3 +940,204 @@
     margin-top: 8px;
     white-space: normal;
 }
+
+/* ==========================================================================
+   Health bar (2026-11-09): its own row, the Vitality tile shows the level
+   ========================================================================== */
+
+.rf-health {
+    flex-direction: row;
+    align-items: center;
+    height: 40px;
+    margin-left: var(--rf-space-4);
+    margin-right: var(--rf-space-4);
+    margin-top: var(--rf-space-1);
+    padding-left: 8px;
+    padding-right: 10px;
+    background-color: var(--rf-row-alt);
+    border-width: 2px;
+    border-color: var(--rf-divider);
+    border-radius: var(--rf-radius);
+}
+
+.rf-health__icon {
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
+    margin-right: 8px;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.rf-details .rf-health__caption {
+    font-size: 20px;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+    -unity-font-style: normal;
+    color: var(--rf-text);
+    letter-spacing: 1px;
+    margin-right: 10px;
+}
+
+.rf-health__bar {
+    flex-grow: 1;
+    height: 16px;
+    margin-right: 12px;
+    background-color: var(--rf-bar-track);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.rf-health__fill {
+    height: 100%;
+    width: 100%;
+    background-color: rgb(226, 52, 70);
+    border-radius: 8px;
+    transition-property: width;
+    transition-duration: 0.3s;
+    transition-timing-function: ease-out;
+}
+
+.rf-health--low .rf-health__fill {
+    background-color: rgb(255, 92, 60);
+}
+
+.rf-details .rf-health__value {
+    font-size: 20px;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+    -unity-font-style: normal;
+    color: var(--rf-text);
+    -unity-text-align: middle-right;
+    white-space: nowrap;
+}
+
+/* ---- Equipment / Stats switch in the gear header ---- */
+
+.rf-segment {
+    flex-direction: row;
+    margin-right: var(--rf-space-4);
+    border-width: 2px;
+    border-color: var(--rf-divider);
+    border-radius: var(--rf-radius);
+    background-color: var(--rf-row-alt);
+    overflow: hidden;
+}
+
+.rf-details .rf-segment__button {
+    font-size: 18px;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+    -unity-font-style: normal;
+    color: var(--rf-text-dim);
+    letter-spacing: 1px;
+    height: 34px;
+    padding-left: 14px;
+    padding-right: 14px;
+    margin: 0;
+    border-width: 0;
+    border-radius: 0;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.rf-details .rf-segment__button:hover {
+    color: var(--rf-text);
+}
+
+.rf-details .rf-segment__button--on {
+    color: rgb(30, 22, 10);
+    background-color: var(--rf-accent);
+}
+
+.rf-details .rf-segment__button--on:hover {
+    color: rgb(30, 22, 10);
+}
+
+/* ---- The stats view ---- */
+
+.rf-attrs {
+    display: none;
+    flex-direction: row;
+    margin-top: var(--rf-space-1);
+}
+
+.rf-details--stats-view .rf-gear__top,
+.rf-details--stats-view .rf-stats {
+    display: none;
+}
+
+.rf-details--stats-view .rf-attrs {
+    display: flex;
+}
+
+.rf-attrs__column {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin-right: 14px;
+}
+
+.rf-attrs__column--right {
+    margin-right: 0;
+    padding-left: 14px;
+    border-left-width: 1px;
+    border-left-color: var(--rf-divider);
+}
+
+.rf-details .rf-attrs__heading {
+    font-size: 18px;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+    -unity-font-style: normal;
+    color: var(--rf-accent);
+    letter-spacing: 1.5px;
+    margin-top: 8px;
+    margin-bottom: 2px;
+    padding-bottom: 3px;
+    border-bottom-width: 2px;
+    border-bottom-color: rgba(255, 196, 92, 0.35);
+}
+
+.rf-attrs__row {
+    flex-direction: row;
+    align-items: center;
+    min-height: 30px;
+    border-bottom-width: 1px;
+    border-bottom-color: var(--rf-divider);
+}
+
+.rf-details .rf-attrs__label {
+    flex-grow: 1;
+    flex-shrink: 1;
+    font-size: 18px;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+    -unity-font-style: normal;
+    color: var(--rf-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rf-details .rf-attrs__value {
+    flex-shrink: 0;
+    font-size: 20px;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+    -unity-font-style: normal;
+    color: var(--rf-text);
+    -unity-text-align: middle-right;
+    white-space: nowrap;
+    margin-left: 8px;
+}
+
+.rf-details .rf-attrs__value--good {
+    color: var(--rf-success);
+}
+
+.rf-details .rf-attrs__value--bad {
+    color: rgb(255, 110, 100);
+}
+
+.rf-details .rf-attrs__empty {
+    font-size: 16px;
+    color: var(--rf-text-dim);
+    margin-top: 4px;
+}
+
+/* the armour tile's second line: the health the armour gives */
+.rf-details .rf-stat__aim--health {
+    color: rgb(255, 120, 130);
+}

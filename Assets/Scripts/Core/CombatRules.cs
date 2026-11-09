@@ -15,8 +15,17 @@ public static class CombatRules
     /// <summary>Health points per Health level: ten with the new combat, one with today's.</summary>
     public static int HealthPerLevel => Enabled ? CombatMath.HealthPerLevel : 1;
 
-    /// <summary>The size of the health pool for a Health level (with its bonus).</summary>
+    /// <summary>The size of an enemy's health pool for its Health level (with its bonus).</summary>
     public static int MaxHealth(int healthLevel) => Mathf.Max(1, healthLevel * HealthPerLevel);
+
+    /// <summary>
+    ///     A player's health per Vitality level (the skill stored as Health): eight with the new combat, the rest from
+    ///     armour (CombatMath.HealthPerArmor), one with today's.
+    /// </summary>
+    public static int PlayerHealthPerLevel => Enabled ? CombatMath.PlayerHealthPerLevel : 1;
+
+    /// <summary>The share of a player's health pool their Vitality level (with its bonus) gives.</summary>
+    public static int PlayerMaxHealth(int vitalityLevel) => Mathf.Max(1, vitalityLevel * PlayerHealthPerLevel);
 
     /// <summary>The biggest normal hit or heal, on the scale in use (times ten with the new combat).</summary>
     public static int MaxHit(int level, int power) => Enabled ? (int)CombatMath.MaxHit(level, power) : GameMath.MaxHit(level, power);
@@ -197,7 +206,7 @@ public static class CombatRules
         if (SyncFloor != null && !fighter.IsEnemy)
         {
             var synced = SyncFloor(fighter);
-            if (synced > 0) Tower.Sync(sheet, synced, stats.Health.GearHealth);
+            if (synced > 0) Tower.Sync(sheet, synced, Tower.SyncGearHealth(stats.Health.GearHealth, stats.Health.ArmorHealth, Tower.SyncLevel(synced)));
         }
 
         SheetModifiers?.Invoke(fighter, sheet); // Shield Wall, Expose Weakness, Disarm, Rally, Rapid Fire

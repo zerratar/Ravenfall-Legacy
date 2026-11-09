@@ -36,7 +36,7 @@ public class SetVillageHuts : ChatBotCommandHandler<string>
         var str = data.ToLower().Trim();
         var result = TownHouseSlotType.Empty;
 
-        if (str.StartsWith("str") || str.StartsWith("def") || str.StartsWith("health") || str.StartsWith("atk") || str.StartsWith("att"))
+        if (str.StartsWith("str") || str.StartsWith("def") || str.StartsWith("health") || str.StartsWith("vit") || str.StartsWith("atk") || str.StartsWith("att"))
         {
             result = TownHouseSlotType.Melee;
         }

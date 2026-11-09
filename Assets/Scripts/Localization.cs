@@ -2224,7 +2224,7 @@ public static class Localization
     public static string UI_SKILL_ATTACK = "Attack";
     public static string UI_SKILL_DEFENSE = "Defense";
     public static string UI_SKILL_STRENGTH = "Strength";
-    public static string UI_SKILL_HEALTH = "Health";
+    public static string UI_SKILL_HEALTH = "Vitality"; // the skill stored as Health: health is its own pool now (2026-11-09)
     public static string UI_SKILL_WOODCUTTING = "Woodcutting";
     public static string UI_SKILL_FISHING = "Fishing";
     public static string UI_SKILL_MINING = "Mining";
@@ -2291,6 +2291,33 @@ public static class Localization
     public static string UI_PLAYERLIST_IDLE = "Idle";
     public static string UI_DETAILS_LEVEL_CAPTION = "LV";
     public static string UI_DETAILS_EQUIPMENT = "EQUIPMENT";
+    public static string UI_DETAILS_STATS = "STATS";
+    public static string UI_DETAILS_HEALTH = "HEALTH";
+    public static string UI_DETAILS_ARMOR_HEALTH = "+{0} health";
+    public static string UI_STATS_GROUP_HEALTH = "HEALTH";
+    public static string UI_STATS_GROUP_DEFENCE = "DEFENCE";
+    public static string UI_STATS_GROUP_OFFENCE = "OFFENCE";
+    public static string UI_STATS_GROUP_ELEMENTS = "ELEMENTS";
+    public static string UI_STATS_HEALTH = "Health";
+    public static string UI_STATS_MAX_HEALTH = "Max health";
+    public static string UI_STATS_FROM_VITALITY = "From Vitality";
+    public static string UI_STATS_FROM_ARMOUR = "From armour";
+    public static string UI_STATS_FROM_GEAR = "From gear";
+    public static string UI_STATS_HEALTH_BONUS = "Health bonus";
+    public static string UI_STATS_HEALTH_NOTE = "Vitality gives {0} health a level; every point of armour on armour pieces adds {1}.";
+    public static string UI_STATS_ARMOUR = "Armour";
+    public static string UI_STATS_ARMOUR_CUT = "Physical damage cut";
+    public static string UI_STATS_POWER = "Power";
+    public static string UI_STATS_ACCURACY = "Accuracy";
+    public static string UI_STATS_MAX_HIT = "Max hit";
+    public static string UI_STATS_MAX_HEAL = "Max heal";
+    public static string UI_STATS_CRIT_CHANCE = "Crit chance";
+    public static string UI_STATS_CRIT_DAMAGE = "Crit damage";
+    public static string UI_STATS_DAMAGE_REDUCTION = "Damage reduction";
+    public static string UI_STATS_ELEMENT_DAMAGE = "{0} damage";
+    public static string UI_STATS_ELEMENT_RESIST = "{0} resistance";
+    public static string UI_STATS_NO_ELEMENTS = "No element damage or resistance";
+    public static string UI_TIP_ITEM_HEALTH = "Health";
     public static string UI_BADGE_BROADCASTER = "Streamer";
     public static string UI_BADGE_MODERATOR = "Moderator";
     public static string UI_BADGE_SUBSCRIBER = "Subscriber";
@@ -2767,6 +2794,7 @@ public static class Localization
             case "ARMOUR": return UI_TIP_ARMOR;
             case "POWER": return UI_ENCHANT_POWER;
             case "AIM": return UI_ENCHANT_AIM;
+            case "HEALTH": return UI_SKILL_HEALTH; // an enchantment on the Health skill raises Vitality
             default:
                 // combat v2's gear stats and magical enchantments (CRIT_CHANCE, THORNS, ...)
                 if (stat != null && RavenNest.Combat.GearStats.TryParseKey(stat, out var gearStat)) return RavenNest.Combat.GearStats.Label(gearStat);

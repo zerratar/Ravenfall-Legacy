@@ -600,6 +600,8 @@ public static class SkillUtilities
             SkillLookup["all"] = Skill.Health;
             SkillLookup["melee"] = Skill.Health;
             SkillLookup["health"] = Skill.Health;
+            SkillLookup["vitality"] = Skill.Health; // the name players see since 2026-11-09
+            SkillLookup["vit"] = Skill.Health;
             SkillLookup["heal"] = Skill.Healing;
             SkillLookup["mage"] = Skill.Magic;
             SkillLookup["atk"] = Skill.Attack;
