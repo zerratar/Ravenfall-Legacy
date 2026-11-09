@@ -178,13 +178,23 @@ public sealed class PlayerBattlePets
         }
     }
 
+    /// <summary>
+    ///     One animal at the owner's heels: the cosmetic pet hides while a battle pet is drawn. Checked every second,
+    ///     not only when that changes: the cosmetic pet is an equipment model, made again whenever the equipment
+    ///     refreshes (the inventory feed), and a new one came in visible beside the battle pet.
+    /// </summary>
     private void ShowCosmetic(bool show)
     {
-        if (cosmeticHidden == !show) return;
+        var changed = cosmeticHidden == show;
         cosmeticHidden = !show;
+        if (show && !changed) return; // shown and left alone: nothing of ours to undo
         foreach (var pet in owner.GetComponentsInChildren<PetController>(true))
         {
-            foreach (var r in pet.GetComponentsInChildren<Renderer>(true)) r.enabled = show;
+            pet.HiddenByBattlePet = !show;
+            foreach (var r in pet.GetComponentsInChildren<Renderer>(true))
+            {
+                if (r.enabled != show) r.enabled = show;
+            }
         }
     }
 

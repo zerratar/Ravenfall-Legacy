@@ -6,6 +6,9 @@ using UnityEngine;
 
 public class PetController : MonoBehaviour
 {
+    /// <summary>Hidden while its owner's battle pet is out (PlayerBattlePets): its light stays off too.</summary>
+    [System.NonSerialized] public bool HiddenByBattlePet;
+
     [SerializeField] private float movementSpeed = 1.0f;
     [SerializeField] private Vector3 offsetPosition;
     [SerializeField] private float sleepTimer = 3.0f;
@@ -228,7 +231,7 @@ public class PetController : MonoBehaviour
 
         if (lightSource && Overlay.IsGame)
         {
-            lightSource.enabled = !gameManager.PotatoMode;
+            lightSource.enabled = !gameManager.PotatoMode && !HiddenByBattlePet;
         }
 
         if (HasEmotions && GameTime.time >= timeForNextEmotion)
