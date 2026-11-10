@@ -356,11 +356,59 @@ island, so waiting for the next floor costs nothing (the same complaint came fro
 - **Ravebridge uprisings** can be turned off (Settings > Game > World): Ravebridge then only opens when the streamer
   starts it, for streams left running (AFK streamers found the random uprisings disruptive for their viewers).
 
+## 15. The second band, the Frozen Vault (2026-11-10)
+
+Zerratar (2026-11-10): the tower does not stop at ten floors for v0.9.7; keep adding floors while there is time.
+
+- **Floors 11 to 20** (`Tower.cs`, band 2 "The Frozen Vault", biome ice): monsters hit with ice (30% of each blow),
+  resist ice by half and are a quarter weak to fire and a tenth to lightning, so the band asks for fire gems and ice
+  resistance. Monsters from today's looks: Frost Raiders (vikings), Snow Hares, Frozen Skeletons, Frost Wraiths (souls,
+  magic), Quacklings (Lord Quackers at 0.4 scale: `TowerEnemy.Scale` is new), Raider Thanes (viking chiefs), Frost
+  Drakes (white dragons), Frozen Ronin (samurai) and Frostbitten Cows. Bosses: Jarl Rimebeard, Snowball (Nibbles' big
+  sister: "You defeated my little brother. Prepare to be nibbled."), the Frozen Warden, the Wailing Matron, Emperor
+  Quackers ("QUACK."), Sigrid the Unthawed, Hoarfang, the Thawed Ronin, the Moo-tant, Refrozen ("Mooooo. Brrrr.") and
+  Glacius, the Winter Wyrm on floor 20 (adds at three quarters, half and a quarter, enrage after 7 minutes). Simulator
+  `tower`: the same shape as band 1, five synced players win the middle floors 5 to 89% of the time, eight always;
+  floor 20, like floor 10, wants eight.
+- **Two layouts**: the glacier (`Tower_Glacier`, floors 11, 12, 15, 16, 19): a snowed-in valley in a bowl of snow pines
+  with mountains behind, a frozen pond with a wrecked boat (the ducks of floor 15 stand on it), a ring of rune stones
+  with burning braziers round the boss's frozen flagstones, a gravel path, soft snowfall. The ice vault
+  (`Tower_FrostVault`, 13, 14, 17, 18, 20): the crypt's rooms frozen over (made from its builder by
+  tools/tower/make-vault.py), cold blue light against warm braziers, glowing floor runes, ice crystals, icicles off the
+  walls and pillars, snow drifted in the corners, the dragon skull kept as the hint of floor 20.
+- **Rimeholt** (`Tower_Rimeholt`, at (1200, 0, -6000)), the band's town: a snowed-in hamlet of snow-roofed log houses
+  round a cobbled square with a statue, Hilda's glowing forge, the Thawing Mead hall, watchtowers by the gate up to the
+  vault, Old Tove's frozen fishing pond, and a campfire with pelts and logs for `!tower rest`. Its people and chains
+  (the server's QuestChains, `Town = "rimeholt"`):
+  - *Hilda's forge* (Hilda Embersmith): monsters on any floor, Frost Raiders, 50 coal, take part in a clear, report
+    back; the Embersmith Band (a ring, a little fire damage and ice resistance) and "the Emberkeeper".
+  - *The old man and the ice* (Old Tove): catch fish, a riddle (what gets wetter the more it dries?), Snow Hares, raw
+    salmon; the Frostbeard Amulet (ice resistance) and "the Ice Fisher".
+  - *Where is Sir Quacksalot?* (Ylva): Quacklings, why the duck crossed the road, bread, be there when a boss falls;
+    the duck was in her hat all along; the Rubber Duck (a keepsake) and "the Duck Whisperer".
+  - Big Gunnhild keeps the mead hall and the gossip.
+  Icons for the three items (Image Generator). Climber gets two more titles: "the Frostwalker" (floor 15) and "the Bane
+  of Glacius" (20).
+- **Towns by name**: `!tower town` goes to the town that is open (players go where the others are), else the stream's
+  band's; `!tower town mossgate`, `!tower mossgate` or `!tower rimeholt` goes to that one if the stream has reached it,
+  so Mossgate's chains can still be finished. One town is loaded at a time: another opens once the open one is empty.
+- **Training on cleared floors** (the open question below, answered): `!tower floor 7` (the streamer and moderators)
+  takes everyone in the tower down to a floor the stream has reached; its monsters give experience and count for the
+  town chains, but the climb's quests and boss stay on the stream's floor. The same layout refills at once, another is
+  a climb as after a clear. `!tower floor` alone brings everyone back up. The top floor already worked this way once
+  everything is cleared.
+
+Checked in play mode with bots on the local server (the dev stream set to floor 11 for it): floor 11 loads the glacier
+with Frost Raiders and Snow Hares (level 110, ice); Rimeholt loads with its four people and six rest spots; asking for
+Mossgate while others are in Rimeholt is refused, and once they left Rimeholt went and Mossgate came; floor 13 loads
+the vault with Frozen Skeletons and Frost Wraiths; `!tower floor` went 11 to 5 (a climb), 5 to 2 (refilled), 2 back to 11.
+Not checked: the band 2 boss fights in the game, Rimeholt's chains with a signed-in character, the snowfall and fire
+effects' cost in a full stream.
+
 ## Open questions
 
 - Is the tower always open while a stream is live, or does the streamer open it, as with Ravebridge?
 - Who can start a boss attempt: only the streamer, or chat by vote as well?
 - Should a stream's climb ever reset (seasons, with rewards for how far you got), or is progress forever?
 - Can players who fall during a boss attempt be revived (a Restoration skill), or do they sit out the attempt?
-- Can players train on cleared floors and in towns while no attempt is running? (This doc assumes yes, with at most
-  one fighting floor and one town loaded at a time.)
+- ~~Can players train on cleared floors?~~ Yes: `!tower floor N` (section 15) and the towns (section 14).
