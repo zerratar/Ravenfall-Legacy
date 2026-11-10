@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
@@ -254,24 +254,48 @@ public sealed class TowerManager : MonoBehaviour
 
     // ---- The town ---------------------------------------------------------------------------------------------
 
-    public enum TownJoinResult { Joined, Loading, Busy, AlreadyIn, NoTown }
+    public enum TownJoinResult { Joined, Loading, Busy, AlreadyIn, NoTown, Locked, OtherOpen }
 
     /// <summary>The town the stream can visit now: the one of the band its floor is in.</summary>
     public TowerTownDefinition StreamTown => Tower.TownFor(StreamFloor);
 
-    /// <summary>!tower town: into the band's town, loading it first; from a floor too (not during a boss attempt).</summary>
-    public TownJoinResult JoinTown(PlayerController player)
+    /// <summary>A town the stream has reached: its band's or one below (Mossgate stays open for its chains).</summary>
+    public bool TownUnlocked(TowerTownDefinition town) => town != null && StreamTown != null && town.Band <= StreamTown.Band;
+
+    /// <summary>The town loaded now, or loading, or the one !tower town would open: the stream's band's.</summary>
+    public TowerTownDefinition CurrentTown => TownLoading && loadingTown != null ? loadingTown : TowerTown.Loaded && TowerTown.Loaded.Town != null ? TowerTown.Loaded.Town : StreamTown;
+
+    private TowerTownDefinition loadingTown;
+
+    /// <summary>
+    ///     !tower town: into a town, loading it first; from a floor too (not during a boss attempt). Without a name: the
+    ///     town that is open (players go where the others are), else the stream's band's. With one (!tower town mossgate):
+    ///     that town if the stream has reached it. One town is loaded at a time; another opens once the open one empties.
+    /// </summary>
+    public TownJoinResult JoinTown(PlayerController player, TowerTownDefinition wanted = null)
     {
         if (!player || player.towerHandler == null) return TownJoinResult.Busy;
-        var definition = StreamTown;
+        if (wanted != null && !TownUnlocked(wanted)) return TownJoinResult.Locked;
+        var definition = wanted ?? CurrentTown;
         if (definition == null) return TownJoinResult.NoTown;
-        if (player.towerHandler.InTown || pendingTownJoins.Contains(player)) return TownJoinResult.AlreadyIn;
+        if ((player.towerHandler.InTown && TowerTown.Loaded && TowerTown.Loaded.Town == definition) || pendingTownJoins.Contains(player)) return TownJoinResult.AlreadyIn;
         if (player.towerHandler.InBossFight) return TownJoinResult.Busy;
-        if (!player.towerHandler.InTower && !player.towerHandler.CanEnter) return TownJoinResult.Busy;
+        if (!player.towerHandler.CanEnter && !player.towerHandler.InTower) return TownJoinResult.Busy;
 
         var town = TowerTown.Loaded;
+        if (TownLoading && loadingTown != null && loadingTown != definition) return TownJoinResult.OtherOpen;
         if (town && !TownLoading)
         {
+            if (town.Town != definition)
+            {
+                // another town is open: it gives way only when nobody is in it
+                foreach (var p in TownPlayers()) if (p != player) return TownJoinResult.OtherOpen;
+                if (pendingTownJoins.Count > 0) return TownJoinResult.OtherOpen;
+                if (player.towerHandler.InTown) player.towerHandler.Exit();
+                pendingTownJoins.Add(player);
+                StartCoroutine(SwitchTownRoutine(definition));
+                return TownJoinResult.Loading;
+            }
             if (!player.towerHandler.Enter(town)) return TownJoinResult.Busy;
             pendingJoins.Remove(player);
             townEmptySince = -1f;
@@ -279,8 +303,22 @@ public sealed class TowerManager : MonoBehaviour
         }
 
         pendingTownJoins.Add(player);
-        if (!TownLoading) StartCoroutine(LoadTownRoutine(ScenePath(definition.Layout)));
+        if (!TownLoading)
+        {
+            loadingTown = definition;
+            StartCoroutine(LoadTownRoutine(ScenePath(definition.Layout)));
+        }
         return TownJoinResult.Loading;
+    }
+
+    // the open town is empty and another was asked for: it goes, the other comes
+    private IEnumerator SwitchTownRoutine(TowerTownDefinition next)
+    {
+        TownLoading = true;
+        loadingTown = next;
+        yield return UnloadTownRoutine();
+        TownLoading = false;
+        yield return LoadTownRoutine(ScenePath(next.Layout));
     }
 
     private IEnumerator LoadTownRoutine(string scene)
@@ -302,6 +340,7 @@ public sealed class TowerManager : MonoBehaviour
         yield return null;
         TownScene = scene;
         TownLoading = false;
+        loadingTown = null;
         var town = TowerTown.Loaded;
         foreach (var p in pendingTownJoins)
             if (p && !p.isDestroyed && town) p.towerHandler.Enter(town);

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using RavenNest.Combat;
 using UnityEngine;
 
@@ -71,7 +71,7 @@ public sealed class TowerFloor : TowerPlace
             if (!template) continue;
             if (!made.TryGetValue(kind.Id, out var definition)) made[kind.Id] = definition = Tower.Enemy(floor, kind);
             var spot = Spawns.GetChild(i);
-            var enemy = Make(template, spot.position, spot.rotation, 1f);
+            var enemy = Make(template, spot.position, spot.rotation, kind.Scale > 0 ? kind.Scale : 1f);
             enemy.ApplyRuntimeDefinition(definition, kind.Name, Tower.EnemyRespawnSeconds);
             enemies.Add(enemy);
             kinds[enemy] = kind;
@@ -112,7 +112,7 @@ public sealed class TowerFloor : TowerPlace
             var radius = 3f + Boss.transform.localScale.x * 1.2f;
             var spot = Boss.transform.position + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius;
             if (UnityEngine.AI.NavMesh.SamplePosition(spot, out var hit, 4f, UnityEngine.AI.NavMesh.AllAreas)) spot = hit.position;
-            var enemy = Make(template, spot, Quaternion.LookRotation(Boss.transform.position - spot), 1f);
+            var enemy = Make(template, spot, Quaternion.LookRotation(Boss.transform.position - spot), kind.Scale > 0 ? kind.Scale : 1f);
             enemy.AutomaticRespawn = false;
             enemy.ApplyRuntimeDefinition(definition, kind.Name, 0f);
             adds.Add(enemy);

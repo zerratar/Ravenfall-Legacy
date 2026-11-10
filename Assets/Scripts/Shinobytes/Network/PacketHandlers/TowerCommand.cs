@@ -48,8 +48,8 @@ public class TowerCommand : ChatBotCommandHandler<string>
                     Info(tower, gm, client);
                     return;
                 case "town":
-                case "mossgate":
-                    Town(tower, player, gm, client);
+                    // !tower town, or !tower town rimeholt
+                    Town(tower, player, space < 0 ? null : RavenNest.Combat.Tower.Town(text.Substring(space + 1).Trim()), space < 0 ? null : text.Substring(space + 1).Trim(), gm, client);
                     return;
                 case "rest":
                 case "sleep":
@@ -60,6 +60,13 @@ public class TowerCommand : ChatBotCommandHandler<string>
                     Talk(player, space < 0 ? "" : text.Substring(space + 1).Trim(), gm, client);
                     return;
                 default:
+                    // !tower mossgate, !tower rimeholt: that town
+                    var named = RavenNest.Combat.Tower.Town(action);
+                    if (named != null)
+                    {
+                        Town(tower, player, named, action, gm, client);
+                        return;
+                    }
                     Join(tower, player, gm, client);
                     return;
             }
@@ -107,7 +114,7 @@ public class TowerCommand : ChatBotCommandHandler<string>
         }
     }
 
-    private static void Town(TowerManager tower, PlayerController player, GameMessage gm, GameClient client)
+    private static void Town(TowerManager tower, PlayerController player, RavenNest.Combat.TowerTownDefinition wanted, string asked, GameMessage gm, GameClient client)
     {
         if (!player)
         {
@@ -115,9 +122,23 @@ public class TowerCommand : ChatBotCommandHandler<string>
             return;
         }
 
-        var town = tower.StreamTown;
-        switch (tower.JoinTown(player))
+        if (wanted == null && !string.IsNullOrEmpty(asked))
         {
+            client.SendReply(gm, Localization.MSG_TOWER_TOWN_UNKNOWN, asked, TownNames(tower));
+            return;
+        }
+
+        var open = tower.CurrentTown;
+        var result = tower.JoinTown(player, wanted);
+        var town = wanted ?? tower.CurrentTown;
+        switch (result)
+        {
+            case TowerManager.TownJoinResult.Locked:
+                client.SendReply(gm, Localization.MSG_TOWER_TOWN_LOCKED, wanted.Name, Math.Max(1, (wanted.Band - 1) * 10));
+                return;
+            case TowerManager.TownJoinResult.OtherOpen:
+                client.SendReply(gm, Localization.MSG_TOWER_TOWN_OTHER_OPEN, open != null ? open.Name : "", wanted != null ? wanted.Name : "", wanted != null ? wanted.Key : "");
+                return;
             case TowerManager.TownJoinResult.Joined:
             case TowerManager.TownJoinResult.Loading:
                 client.SendReply(gm, Localization.MSG_TOWER_TOWN_JOINED, town.Name, People(town));
@@ -147,7 +168,7 @@ public class TowerCommand : ChatBotCommandHandler<string>
         }
 
         var handler = player.towerHandler;
-        var town = tower.StreamTown;
+        var town = tower.CurrentTown;
         if (handler != null && handler.InTown)
         {
             switch (handler.StartResting())
@@ -185,6 +206,14 @@ public class TowerCommand : ChatBotCommandHandler<string>
         }
     }
 
+    /// <summary>The towns the stream has reached, for chat: "Mossgate (!tower town mossgate), Rimeholt (...)".</summary>
+    private static string TownNames(TowerManager tower)
+    {
+        var parts = new System.Collections.Generic.List<string>();
+        foreach (var t in RavenNest.Combat.Tower.Towns) if (tower.TownUnlocked(t)) parts.Add(t.Name + " (!tower town " + t.Key + ")");
+        return string.Join(", ", parts);
+    }
+
     /// <summary>"Warden Elm (!tower talk elm), Bramble (!tower talk bramble), ..."</summary>
     private static string People(TowerTownDefinition town)
     {
@@ -204,7 +233,7 @@ public class TowerCommand : ChatBotCommandHandler<string>
         var town = TowerTown.Loaded;
         if (!tower || player.towerHandler == null || !player.towerHandler.InTown || !town || town.Town == null)
         {
-            client.SendReply(gm, Localization.MSG_TOWER_TALK_NOT_IN_TOWN, tower ? tower.StreamTown?.Name ?? "" : "");
+            client.SendReply(gm, Localization.MSG_TOWER_TALK_NOT_IN_TOWN, tower ? tower.CurrentTown?.Name ?? "" : "");
             return;
         }
 
