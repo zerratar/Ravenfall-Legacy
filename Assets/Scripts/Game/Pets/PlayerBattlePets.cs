@@ -214,8 +214,11 @@ public sealed class PlayerBattlePets
             pendingPet = earner;
         }
         pendingExperience += share;
+        // Taming: the full share while it is below the trained skill's level (the catch-up), a smaller one after
         var taming = owner.Stats?.Taming;
-        if (taming != null && taming.AddExp(share, out var levels)) owner.CelebrateSkillLevelUp(RavenNest.Models.Skill.Taming, levels);
+        var trained = owner.Stats?.GetSkill(skill);
+        var tamingExp = experience * BattlePets.TamingShare(taming != null ? taming.Level : 1, trained != null ? trained.Level : 1);
+        if (taming != null && taming.AddExp(tamingExp, out var levels)) owner.CelebrateSkillLevelUp(RavenNest.Models.Skill.Taming, levels);
     }
 
     private async void Report()

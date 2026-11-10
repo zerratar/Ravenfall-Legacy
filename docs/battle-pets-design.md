@@ -266,7 +266,9 @@ a bot taming a bunny (it went to the bunnies by itself) and Taming rising from t
 - **Tank pets take half of the blows on their owner** while near, and all of them while Guard or Moo is up; other roles
   take none. Enemies do not target pets directly yet.
 - **The quarter share of experience goes to Taming as well as the pet** while a pet is out. This is the catch-up for
-  high level players: Taming climbs quickly towards their other levels. It may be too quick; watch it.
+  high level players: Taming climbs quickly towards their other levels. Since 2026-11-10 it slows once caught up: the
+  full quarter while Taming is below the level of the skill being trained, a tenth at or above it
+  (`BattlePets.TamingShare`), so Taming follows a player's levels instead of passing them. The pet keeps the quarter.
 - The first pet tamed or woken goes straight out; a tame is announced at most every 8 s.
 - `!pets release (name) confirm` lets a pet go for good.
 

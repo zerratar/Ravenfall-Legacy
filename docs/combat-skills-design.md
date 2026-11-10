@@ -216,4 +216,11 @@ Done since (2026-11-07):
   RavenNest.Combat, so it follows balance changes.
 
 Still open: the character page's tab has not been seen signed in; taunt and the healing skills want a real group of
-players to be judged; Elements and Hunter look strong in the simulator.
+players to be judged.
+
+**Elements and Hunter toned down (2026-11-10):** Fireball 1.2 to 1.0, Chain Lightning 1.0 to 0.8, Meteor 4.0 to 2.8,
+Big Game 4% to 3% a rank, Apex Predator 10% to 8%, Execute 4.0 to 3.0. Simulator `builds` (damage against one enemy of
+the player's level, as a multiple of no build, levels 100/300/600/999): Might 1.40-1.55x, Precision 1.37-1.46x,
+Marksman 1.32-1.49x, Elements 1.44-1.83x (was 1.53-2.00x), Hunter against bosses 1.68-1.76x (was 1.77-1.86x, for 43
+points but bosses only). Elements still grows with level because element damage takes only half of armour's share and
+armour grows with level; the simulator's enemies resist nothing, while many real ones resist an element.
