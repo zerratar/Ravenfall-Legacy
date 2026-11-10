@@ -44,8 +44,13 @@ public class TowerCommand : ChatBotCommandHandler<string>
                     return;
                 case "info":
                 case "status":
-                case "floor":
                     Info(tower, gm, client);
+                    return;
+                case "floor":
+                case "train":
+                    // !tower floor 7 (streamer, moderators): train on a floor the stream has reached; !tower floor: back up
+                    if (space < 0 && action == "floor" && !tower.Training) { Info(tower, gm, client); return; }
+                    Floor(tower, player, space < 0 ? "" : text.Substring(space + 1).Trim(), user.IsBroadcaster || user.IsModerator || (player && (player.IsGameAdmin || player.IsGameModerator)), gm, client);
                     return;
                 case "town":
                     // !tower town, or !tower town rimeholt
@@ -296,6 +301,45 @@ public class TowerCommand : ChatBotCommandHandler<string>
                 return;
             default:
                 client.SendReply(gm, Localization.MSG_TOWER_BOSS_NOBODY, tower.StreamFloor, floor != null ? floor.Boss.Name : "");
+                return;
+        }
+    }
+
+    private static void Floor(TowerManager tower, PlayerController player, string arg, bool canChoose, GameMessage gm, GameClient client)
+    {
+        if (!canChoose)
+        {
+            client.SendReply(gm, Localization.MSG_TOWER_FLOOR_ONLY_MODS);
+            return;
+        }
+        if (tower.State == null)
+        {
+            tower.RefreshState();
+            client.SendReply(gm, Localization.MSG_TOWER_NOT_READY);
+            return;
+        }
+        var number = tower.StreamFloor;
+        if (!string.IsNullOrEmpty(arg) && !int.TryParse(arg, NumberStyles.Integer, CultureInfo.InvariantCulture, out number))
+        {
+            client.SendReply(gm, Localization.MSG_TOWER_FLOOR_LOCKED, arg, tower.StreamFloor);
+            return;
+        }
+        var def = Tower.Get(number);
+        switch (tower.ChangeFloor(number))
+        {
+            case TowerManager.FloorChangeResult.Changed:
+            case TowerManager.FloorChangeResult.Climbing:
+                if (number == tower.StreamFloor) client.SendReply(gm, Localization.MSG_TOWER_FLOOR_BACK, number, def.Name);
+                else client.SendReply(gm, Localization.MSG_TOWER_FLOOR_TRAIN, number, def.Name, tower.StreamFloor);
+                return;
+            case TowerManager.FloorChangeResult.Same:
+                client.SendReply(gm, Localization.MSG_TOWER_FLOOR_SAME, number, def.Name);
+                return;
+            case TowerManager.FloorChangeResult.Locked:
+                client.SendReply(gm, Localization.MSG_TOWER_FLOOR_LOCKED, number, tower.StreamFloor);
+                return;
+            default:
+                client.SendReply(gm, Localization.MSG_TOWER_FLOOR_BUSY);
                 return;
         }
     }

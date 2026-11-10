@@ -1582,6 +1582,12 @@ public static class Localization
     public static string MSG_TOWER_BOSS_ADDS = Meta("tower", "info") + "{boss} calls for help! {count} more join the fight ({monster}). Deal with them first!";
     public static string MSG_TOWER_BOSS_ENRAGED = Meta("tower", "info") + "{boss} is enraged! It strikes faster and harder now. Finish it!";
     public static string MSG_TOWER_TOWN_JOINED = Meta("tower", "success") + "You walk into {town}. You keep training here as on your island, or rest by the campfire with !rest. Its people: {people}.";
+    public static string MSG_TOWER_FLOOR_TRAIN = Meta("tower", "success") + "Everyone in the tower goes down to floor {floor}, {name}, to train. Its monsters give experience as usual; the climb waits on floor {current}. !tower floor brings everyone back up.";
+    public static string MSG_TOWER_FLOOR_BACK = Meta("tower", "success") + "Back up to floor {floor}, {name}: the climb goes on.";
+    public static string MSG_TOWER_FLOOR_SAME = Meta("tower", "info") + "The tower is on floor {floor}, {name}, already.";
+    public static string MSG_TOWER_FLOOR_LOCKED = Meta("tower", "fail") + "Floor {floor} has not been reached yet. Your stream is on floor {current}.";
+    public static string MSG_TOWER_FLOOR_BUSY = Meta("tower", "fail") + "Not now: a boss attempt or a climb is under way.";
+    public static string MSG_TOWER_FLOOR_ONLY_MODS = Meta("tower", "fail") + "Only the streamer and moderators choose the floor.";
     public static string MSG_TOWER_TOWN_LOCKED = Meta("tower", "fail") + "{town} is further up the tower. Your stream has to beat floor {floor} first.";
     public static string MSG_TOWER_TOWN_OTHER_OPEN = Meta("tower", "fail") + "{open} is open right now. Once everyone has left it, !tower town {key} takes you to {town}.";
     public static string MSG_TOWER_TOWN_UNKNOWN = Meta("tower", "fail") + "There is no town called {name}. Your stream's towns: {towns}.";

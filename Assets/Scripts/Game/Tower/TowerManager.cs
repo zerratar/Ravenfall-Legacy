@@ -845,6 +845,41 @@ public sealed class TowerManager : MonoBehaviour
         }
     }
 
+    public enum FloorChangeResult { Changed, Climbing, Same, Locked, Busy }
+
+    /// <summary>A floor below the stream's, where the players train (its quests and boss count only on the stream's floor).</summary>
+    public bool Training => CurrentFloor > 0 && CurrentFloor != StreamFloor;
+
+    /// <summary>
+    ///     !tower floor N (the streamer and moderators): the players on the floor go to floor N, one the stream has
+    ///     reached, to train there (docs/tower-design.md, training on cleared floors); !tower floor alone takes them back
+    ///     to the stream's floor. The same layout fills again at once; another one is a climb like after a clear. One
+    ///     floor is loaded at a time, so everyone in the tower goes. Not during a boss countdown or fight.
+    /// </summary>
+    public FloorChangeResult ChangeFloor(int number)
+    {
+        var def = Tower.Get(number);
+        if (def == null || number < 1 || number > StreamFloor) return FloorChangeResult.Locked;
+        if (Phase == TowerPhase.Countdown || Phase == TowerPhase.Fight || Phase == TowerPhase.Loading || climbing || Loading) return FloorChangeResult.Busy;
+        var floor = TowerFloor.Loaded;
+        if (floor && number == CurrentFloor) return FloorChangeResult.Same;
+        if (!floor)
+        {
+            // nobody in the tower: the floor loads now and !tower joins it
+            LoadFloor(number);
+            return FloorChangeResult.Changed;
+        }
+        if (floor.Definition != null && def.Layout == floor.Definition.Layout)
+        {
+            CurrentFloor = number;
+            floor.Apply(def);
+            foreach (var p in Players()) p.towerHandler.FloorChanged(floor);
+            return FloorChangeResult.Changed;
+        }
+        StartCoroutine(ClimbRoutine(number));
+        return FloorChangeResult.Climbing;
+    }
+
     /// <summary>
     ///     The next floor is another layout: after a moment to celebrate, the players on the floor climb to it. The old
     ///     scene goes (they step back to the world for the moment it takes) and the new one loads with them in it.
