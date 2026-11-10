@@ -298,8 +298,8 @@ Phase 1 (foundation), started 2026-11-07:
   - Enemies keep the library's `ThreatTable`: damage adds threat (a one handed sword still 2.5 times, the tank's
     weapon), healing someone they fight adds half the heal shared over them, and they switch target only to someone
     with 10% more threat (30% for ranged and magic enemies). The old table switched whenever anyone caught up.
-  - Not yet: effect icons or "Burn" numbers on stream (open question), enemies dealing elements themselves (their
-    definitions are all physical), taunts (they come with the skill trees).
+  - Not yet: effect icons or "Burn" numbers on stream (open question). Enemies deal elements since 2026-11-10 (below);
+    taunts came with the skill trees.
 - [x] The baseline bugs (2026-11-07):
   - POWER, AIM and ARMOR enchantments counted twice (`UpdateEquipmentEffect` added the item's number with the bonus,
     then the bonus again). Fixed: a Lionsbane Katana (173 power) with POWER:20% wears 207, not 241. Enchanted gear
@@ -393,6 +393,21 @@ Phase 1 (foundation), started 2026-11-07:
   health bar of its own, the Vitality tile shows the level, the armour tile says how much health its armour gives,
   and an Equipment / Stats switch lists every stat from the fight's own combat sheet (mockups
   docs/mockups/details-vitality-*.webp). Website: the combat guide has a Health section and calculator.
+
+- [x] Enemies deal elements (2026-11-10): 18 island kinds hit with the element they resist, a share of each blow
+  (`EnemyDefinition.Element`/`ElementShare` in their assets): Ravebridge goblins poison 15%, tormented souls ice 40%,
+  the pirate captains fire 20 to 25% (flintlocks), red/purple/green Metalons fire/lightning/poison 30%, Ironhill's
+  dragons by colour (red fire 50%, blue lightning 50%, purple lightning 40%, white ice 30%, green poison 30%, the plain
+  one fire 35%), Lord Quackers ice 15%, ninjas poison 30%, vikings ice 15% (the chief 25%) and elven soldiers lightning
+  25%. Cows, bunnies, skeletons, samurai, gladiators and plain pirates stay physical. Their blows burn, poison, chill,
+  freeze and stun players the same way players' do to them, and an enemy's lightning jumps to another player within
+  6 m. Raid and dungeon bosses roll an element each fight (`EnemyDefinition.BossElement`: 40% plain, 15% each
+  element, 40% of each hit, resisting it by half and a quarter weak to the opposite). Resistance gems in armour now
+  matter. The simulator's `enemies` now plays status effects both ways (it ignored them): with them, a player at the
+  area's requirement loses at most 7% of fights against the regular enemies (green dragon 7%, white dragon and viking
+  chief 6%), Lord Quackers 25% (24% before the elements). Ice was the strongest (chills slow a player's swings), so the
+  ice shares are the smallest. Seen in play mode with bots: burn, chill (swings at 60%), poison stacks, a lightning
+  jump to a bot standing next to the target.
 
 ## For later
 

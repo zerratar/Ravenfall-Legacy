@@ -212,6 +212,10 @@ public static class CombatEffects
         {
             Chain(attacker, enemy, Mathf.RoundToInt((float)chained));
         }
+        else if (chained >= 1 && defender is PlayerController player && attacker is EnemyController)
+        {
+            ChainToPlayer(attacker, player, Mathf.RoundToInt((float)chained)); // an enemy's lightning jumps to a player nearby
+        }
     }
 
     private static Entry GetOrAdd(IAttackable fighter, IAttackable source, CombatSheet sheet)
@@ -319,6 +323,26 @@ public static class CombatEffects
         {
             player.Combat.Defeated(target);
         }
+    }
+
+    private static void ChainToPlayer(IAttackable attacker, PlayerController from, int amount)
+    {
+        var game = GameManager.Instance;
+        if (!game || game.Players == null) return;
+        PlayerController nearest = null;
+        var best = ChainRange * ChainRange;
+        foreach (var other in game.Players.GetAllPlayers())
+        {
+            if (!other || other == from || other.Island != from.Island || other.Stats == null || other.Stats.IsDead) continue;
+            var d = (other.Position - from.Position).sqrMagnitude;
+            if (d < best)
+            {
+                best = d;
+                nearest = other;
+            }
+        }
+
+        if (nearest) Deal(attacker, nearest, amount);
     }
 
     private static void Chain(IAttackable attacker, EnemyController from, int amount)

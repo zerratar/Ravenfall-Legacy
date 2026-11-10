@@ -28,8 +28,8 @@ MonoBehaviour:
     Accuracy: 17
     Armor: 132
     Style: 0
-    Element: 0
-    ElementShare: 0
+    Element: 4
+    ElementShare: 0.3
     Resistance:
       Physical: 0
       Fire: -0.25

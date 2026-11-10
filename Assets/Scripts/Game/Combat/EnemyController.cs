@@ -40,6 +40,20 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
     }
 
     /// <summary>
+    ///     Raid and dungeon bosses (combat v2): an element for this fight from their asset's definition, or plain physical
+    ///     blows (<see cref="RavenNest.Combat.EnemyDefinition.BossElement"/>). Their levels and gear stay their own.
+    /// </summary>
+    public RavenNest.Combat.Element RollBossElement()
+    {
+        var basis = Definition ? Definition.Definition : null;
+        var element = RavenNest.Combat.EnemyDefinition.BossElement(UnityEngine.Random.value);
+        RuntimeDefinition = basis == null || element == RavenNest.Combat.Element.Physical
+            ? null
+            : basis.WithElement(element, RavenNest.Combat.EnemyDefinition.BossElementShare);
+        return RuntimeDefinition != null ? element : RavenNest.Combat.Element.Physical;
+    }
+
+    /// <summary>
     ///     A tower boss enrages (docs/tower-design.md, section 3): it swings faster and harder from now on. Its health and
     ///     everything else stay as they are.
     /// </summary>

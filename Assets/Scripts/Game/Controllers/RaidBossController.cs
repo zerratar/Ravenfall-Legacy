@@ -246,6 +246,7 @@ public class RaidBossController : MonoBehaviour
 
         enemyController.Stats = stats;
         enemyController.EquipmentStats = equipmentStats;
+        enemyController.RollBossElement(); // fire, ice, lightning, poison or plain blows this time
 
         modelObject = Instantiate(model, transform);
         modelAnimator = modelObject.GetComponent<Animator>();

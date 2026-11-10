@@ -239,6 +239,7 @@ public class DungeonBossController : MonoBehaviour
 
         enemyController.Stats = cbStat;
         enemyController.EquipmentStats = eqStat;
+        enemyController.RollBossElement(); // fire, ice, lightning, poison or plain blows this time
 
         transform.localScale = Vector3.one * Mathf.Max(1f, Mathf.Min(3.5f, enemyController.Stats.CombatLevel * 0.003f));
         modelObject.transform.localScale = Vector3.one;
