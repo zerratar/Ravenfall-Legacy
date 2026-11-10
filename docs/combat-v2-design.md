@@ -409,12 +409,17 @@ Phase 1 (foundation), started 2026-11-07:
   ice shares are the smallest. Seen in play mode with bots: burn, chill (swings at 60%), poison stacks, a lightning
   jump to a bot standing next to the target.
 
+- [x] Weapon effects (2026-11-10, `WeaponElementFx`): a weapon turning at least 15% of its hit into an element (its
+  own stats and its gems) gives that element off: embers rising off fire, frost motes drifting from ice, spark streaks
+  jumping off lightning, venom dripping from poison; more element, more of it. Particles in code (hero mode's additive
+  particle material with a soft dot), over the weapon model's own box (the biggest model, so a look over a base weapon
+  wins; weapon models scaled up many times have that undone so sizes are in metres), world space so a swing leaves a
+  trail. Refreshed once a second for every player. Settings > Graphics > Weapon effects, off in potato mode. Seen in
+  play mode on bots (katanas, a 2H sword, a Pickle Rick).
+
 ## For later
 
-- **Weapon effects you can see:** weapons with an element could carry a visual effect (embers on a fire sword, frost
-  on an ice staff, sparks on lightning, dripping venom), not on every item but where it fits: the themed sets'
-  higher tiers, the silly weapons (a sizzling Bacon 2H Sword), and later gems socketed into weapons. Like the other
-  look features, it needs a settings toggle and turns off in potato mode.
+- ~~Weapon effects you can see~~ built 2026-11-10, see "Weapon effects" in Progress.
 
 ## Open questions
 

@@ -60,6 +60,11 @@ public class PlayerEquipment : MonoBehaviour
     public IReadOnlyList<ItemController> EquippedItems => equippedObjects;
     public bool HasShield => !!shield;
 
+    /// <summary>The worn weapons' objects (null when none), for their element effects (WeaponElementFx).</summary>
+    public ItemController MeleeWeaponObject => weapon;
+    public ItemController BowObject => bow;
+    public ItemController StaffObject => staff;
+
     /// <summary>The melee weapon's object, when one is worn (hero mode's sword trail).</summary>
     public Transform MeleeWeapon => weapon ? weapon.transform : null;
 

@@ -1178,6 +1178,7 @@ public class GameManager : MonoBehaviour, IGameManager
         InputActivity.Track();
         GameSystems.Update(!isReloadingScene);
         CombatEffects.Update(GameTime.deltaTime);
+        WeaponElementFx.Update(GameTime.deltaTime); // embers, frost, sparks and venom on elemental weapons
         FreezeChecker.SetCurrentScriptUpdate("GameManager Update");
 
         if (isReloadingScene)

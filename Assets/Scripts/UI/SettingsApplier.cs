@@ -86,6 +86,7 @@ public static class SettingsApplier
         public const bool AmbientEffects = true;
         public const bool TreeWind = true;
         public const bool BattlePets = true;
+        public const bool WeaponEffects = true;
         public const bool DungeonLighting = true;
         public const float NightBrightness = 0.75f;
         public const bool AtmosphericHaze = true;
@@ -771,6 +772,13 @@ public static class SettingsApplier
     public static bool BattlePets => PlayerSettings.Instance.BattlePets.GetValueOrDefault(Defaults.BattlePets);
 
     public static void SetBattlePets(bool value) => PlayerSettings.Instance.BattlePets = value;
+
+    // ---- Weapon effects --------------------------------------------------------------------------
+    // Weapons with an element give it off (WeaponElementFx): embers, frost, sparks, dripping venom. Off in potato mode.
+
+    public static bool WeaponEffects => PlayerSettings.Instance.WeaponEffects.GetValueOrDefault(Defaults.WeaponEffects);
+
+    public static void SetWeaponEffects(bool value) => PlayerSettings.Instance.WeaponEffects = value;
 
     // ---- Dungeon lighting ------------------------------------------------------------------------
     // Dungeons by torchlight. Potato mode leaves them in plain daylight, without changing the setting.

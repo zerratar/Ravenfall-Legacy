@@ -2821,6 +2821,8 @@
     "UI_SETTINGS_VOLUMETRIC_CLOUDS_HINT": "Soft, sunlit clouds with real depth. Off shows simple low-poly clouds.",
     "UI_SETTINGS_VSYNC": "Vertical sync",
     "UI_SETTINGS_VSYNC_HINT": "Matches the monitor's refresh rate and stops tearing. The frame rate limit is not used while it is on.",
+    "UI_SETTINGS_WEAPON_EFFECTS": "Weapon effects",
+    "UI_SETTINGS_WEAPON_EFFECTS_HINT": "Weapons with an element give it off: embers, frost, sparks or dripping venom. Off in potato mode.",
     "UI_SETTINGS_WEATHER": "Changing weather",
     "UI_SETTINGS_WEATHER_HINT": "The sky clears and clouds over as the days go by: clear spells, fair weather, cloudy and overcast skies, rain, heavy rain and thunderstorms. With the volumetric clouds.",
     "UI_SETTINGS_WEATHER_SOUNDS": "Weather sounds",
