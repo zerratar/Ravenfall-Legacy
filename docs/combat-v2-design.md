@@ -312,7 +312,7 @@ Phase 1 (foundation), started 2026-11-07:
   - Heals putting crit chance in the dodge slot, backwards hit chance effects and `StyleBonus` live in the old
     `GameMath` formulas, which the new rules replace (`CombatRules`): heals can crit, hit chance effects raise
     accuracy, and there is no style triangle. They stay as they were for `CombatRules.Enabled` off.
-- [~] Simulator scenarios: `enemies` (a player at each fighting area's requirement, every combat skill at that level,
+- [x] Simulator scenarios (raids and dungeons came as `bosses` below; `builds`, `pets` and `tower` followed; `enemies` plays status effects since 2026-11-10): `enemies` (a player at each fighting area's requirement, every combat skill at that level,
   best melee gear, against its enemies) is in; raids and dungeons are next. First results (swings to win, new rules):
   Home 2 to 6, Ravebridge 8 to 16, the away island's pirates 5 to 7, Ironhill 6 to 9, then Kyojin 4, Iceheim 3 to 5,
   Atria 3 and Eldara 2. From Kyojin up the enemies sit below their area's requirement and have no gear, so a player at
