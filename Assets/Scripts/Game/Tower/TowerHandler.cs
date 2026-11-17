@@ -61,6 +61,33 @@ public class TowerHandler : IAwayHandler
     private bool seated;
     private float seatBy;
 
+    // training in town: the work place for the skill (TowerTown.Work), what it looks like there
+    private string workKind;
+    private Transform workSpot;
+    private Vector3 workOffset;
+    private bool working;
+    private float workBy;
+    private float nextWork;
+
+    /// <summary>The stand at a town work place this player has, or null.</summary>
+    public Transform WorkSpot => workSpot;
+
+    /// <summary>
+    ///     The island's experience is paid here (PlayerProgression.TrainAway): in a town while not resting, and on a floor
+    ///     for a skill the floor's fights do not train (a woodcutter fighting along keeps their woodcutting). Combat skills
+    ///     and Healing earn on a floor by fighting and healing.
+    /// </summary>
+    public bool TrainsAway
+    {
+        get
+        {
+            if (!InTower) return false;
+            if (town) return !Resting;
+            var skill = player.ActiveSkill;
+            return floor && skill != RavenNest.Models.Skill.None && skill != RavenNest.Models.Skill.Healing && !skill.IsCombatSkill();
+        }
+    }
+
     public enum RestResult { Resting, AlreadyResting, NotInTown, Full }
 
     /// <summary>!tower rest in a town: off to a free spot at the resting place, to sit, meditate or sleep there.</summary>
@@ -70,6 +97,7 @@ public class TowerHandler : IAwayHandler
         if (Resting) return RestResult.AlreadyResting;
         var spot = town.TakeRestSpot(player);
         if (!spot) return RestResult.Full;
+        StopWorking();
         restSpot = spot;
         Resting = true;
         seated = false;
@@ -159,6 +187,7 @@ public class TowerHandler : IAwayHandler
         var restAfter = RestOnArrival && targetTown;
         RestOnArrival = false;
         StopResting(false);
+        StopWorking();
         enemyTarget = null;
         healTarget = null;
         player.attackTarget = null;
@@ -218,6 +247,7 @@ public class TowerHandler : IAwayHandler
     private void Clear()
     {
         StopResting(false);
+        StopWorking();
         enemyTarget = null;
         healTarget = null;
         boss = null;
@@ -306,10 +336,36 @@ public class TowerHandler : IAwayHandler
         return false;
     }
 
-    /// <summary>In a town: wander to a spot now and then and linger there.</summary>
+    /// <summary>
+    ///     In a town: off to the work place of the skill being trained and at it there (the experience is the island's,
+    ///     see <see cref="TrainsAway"/>), or, with no place for it, wander to a spot now and then and linger there.
+    /// </summary>
     private void UpdateTown()
     {
         if (Resting) { UpdateResting(); return; }
+        var kind = TowerTown.WorkKind(player.ActiveSkill);
+        if (!town.HasWork(kind)) kind = null;
+        if (kind != workKind)
+        {
+            StopWorking();
+            workKind = kind;
+            if (kind != null)
+            {
+                workSpot = town.TakeWorkSpot(player, kind, out var shared);
+                // a stand others have: a little to one side of them
+                workOffset = shared && workSpot && kind != "Sailing" ? workSpot.right * Random.Range(-1.1f, 1.1f) - workSpot.forward * Random.Range(0f, 0.8f) : Vector3.zero;
+                workBy = Time.time + 30f;
+                player.InterruptAction();
+                player.taskTarget = null;
+                if (workSpot) player.SetDestination(workSpot.position + workOffset);
+            }
+        }
+        if (workSpot)
+        {
+            UpdateWorking();
+            return;
+        }
+
         if (Time.time < nextStroll) return;
         nextStroll = Time.time + Random.Range(12f, 30f);
         var spot = town.RandomStroll();
@@ -317,6 +373,148 @@ public class TowerHandler : IAwayHandler
         spot += new Vector3(offset.x, 0f, offset.y);
         if (UnityEngine.AI.NavMesh.SamplePosition(spot, out var hit, 3f, UnityEngine.AI.NavMesh.AllAreas)) spot = hit.position;
         player.SetDestination(spot);
+    }
+
+    private void UpdateWorking()
+    {
+        var stand = workSpot.position + workOffset;
+        if (!working)
+        {
+            var flat = stand - player.Position;
+            flat.y = 0f;
+            if (flat.sqrMagnitude > 0.6f * 0.6f && Time.time < workBy)
+            {
+                if (!player.Movement.IsMoving) player.SetDestination(stand);
+                return;
+            }
+            // stuck on the way (a crowd, a corner): there at once
+            if (flat.sqrMagnitude > 3f * 3f) player.teleportHandler.Teleport(stand, true);
+            player.Movement.Lock();
+            player.InCombat = false;
+            player.ClearTarget();
+            player.transform.rotation = Quaternion.Euler(0f, workSpot.eulerAngles.y, 0f);
+            // a seat (a bench by the boat): on it, as resting does
+            if (Seated) player.transform.SetPositionAndRotation(workSpot.position, Quaternion.Euler(0f, workSpot.eulerAngles.y, 0f));
+            working = true;
+            StartWork();
+            nextWork = Time.time + Random.Range(0.6f, 1.6f);
+            return;
+        }
+        if (Time.time < nextWork) return;
+        player.transform.rotation = Quaternion.Euler(0f, workSpot.eulerAngles.y, 0f);
+        nextWork = Time.time + DoWork();
+    }
+
+    private Vector3 WorkTarget => workSpot.position + workSpot.forward * 1.5f + Vector3.up;
+
+    // the work done sitting (its stands are seats, placed at the sitting height)
+    private bool Seated => workKind == "Sailing";
+
+    private void StartWork()
+    {
+        var animations = player.Animations;
+        var equipment = player.Equipment;
+        switch (workKind)
+        {
+            case "Woodcutting": equipment.ShowHatchet(); animations.StartWoodcutting(); break;
+            case "Mining": equipment.ShowPickAxe(); animations.StartMining(); break;
+            case "Fishing": equipment.ShowFishingRod(); animations.StartFishing(); break;
+            case "Farming": equipment.ShowRake(); animations.StartFarming(); break;
+            case "Cooking": equipment.HideEquipments(); animations.StartCooking(); break;
+            case "Crafting": equipment.ShowHammer(); animations.StartCrafting(); break;
+            case "Alchemy": equipment.HideEquipments(); animations.StartBrewing(); break;
+            case "Gathering": equipment.HideEquipments(); animations.StartGathering(true); break;
+            case "Taming": equipment.HideEquipments(); animations.StartGathering(false); break;
+            case "Sailing": equipment.HideEquipments(); animations.Sit(); break;
+            case "Melee":
+            case "Ranged":
+            case "Magic":
+            case "Healing":
+                var type = WorkAttackType;
+                equipment.ShowWeapon(type);
+                animations.StartCombat(WorkWeaponAnimation(type), equipment.HasShield);
+                break;
+        }
+    }
+
+    /// <summary>One stroke of the work (a chop, a cast); the seconds until the next.</summary>
+    private float DoWork()
+    {
+        var animations = player.Animations;
+        var at = WorkTarget;
+        switch (workKind)
+        {
+            case "Woodcutting":
+                animations.Chop(0);
+                GameSounds.Play(SoundKind.WoodChop, at, 0.5f, 1f, player);
+                return 2f;
+            case "Mining":
+                animations.Mine();
+                GameSounds.Play(SoundKind.RockImpact, at, 0.5f, 0.35f, player);
+                return 2f;
+            case "Fishing":
+                animations.Fish();
+                if (Random.value < 0.4f) GameSounds.Play(SoundKind.WaterSplash, at, 0.4f, 0.7f, player);
+                return 3f;
+            case "Farming":
+                GameSounds.Play(SoundKind.Soil, at, 0.4f, 0.3f, player);
+                return 3f;
+            case "Cooking":
+                GameSounds.Play(SoundKind.Sizzle, at, 0.35f, 0.2f, player);
+                return 3f;
+            case "Crafting":
+                animations.Craft();
+                GameSounds.Play(Random.value < 0.6f ? SoundKind.Hammer : SoundKind.Saw, at, 0.45f, 0.3f, player);
+                return 3f;
+            case "Alchemy":
+                animations.Brew();
+                GameSounds.Play(SoundKind.Bubbles, at, 0.35f, 0.2f, player);
+                return 3f;
+            case "Gathering":
+                animations.Gather(true);
+                GameSounds.Play(SoundKind.Foliage, at, 0.35f, 0.4f, player);
+                return 3f;
+            case "Taming":
+                return 6f;
+            case "Sailing":
+                return 10f;
+            default:
+                var type = WorkAttackType;
+                var weapon = WorkWeaponAnimation(type);
+                var count = type == AttackType.Melee ? (player.Inventory.GetEquipmentOfCategory(RavenNest.Models.ItemCategory.Weapon)?.GetAnimationCount() ?? 4) : 0;
+                animations.Attack(weapon, Random.Range(0, Mathf.Max(1, count)), player.Equipment.HasShield);
+                return type == AttackType.Healing ? 2.2f : Random.Range(1.5f, 2f);
+        }
+    }
+
+    private AttackType WorkAttackType => workKind == "Ranged" ? AttackType.Ranged : workKind == "Magic" ? AttackType.Magic : workKind == "Healing" ? AttackType.Healing : AttackType.Melee;
+
+    // the animator's weapon numbers, as PlayerCombat's
+    private int WorkWeaponAnimation(AttackType type)
+    {
+        switch (type)
+        {
+            case AttackType.Healing: return 6;
+            case AttackType.Magic: return 4;
+            case AttackType.Ranged: return 3;
+            default: return player.Inventory.GetEquipmentOfCategory(RavenNest.Models.ItemCategory.Weapon)?.GetAnimation() ?? 0;
+        }
+    }
+
+    /// <summary>Done at the work place (another skill, resting, leaving the town): up and free again.</summary>
+    private void StopWorking()
+    {
+        var spot = workSpot;
+        var kind = workKind;
+        workSpot = null;
+        workKind = null;
+        if (town && spot) town.ReleaseWorkSpot(spot, player);
+        if (!working || !player) return;
+        working = false;
+        player.Animations.ResetAnimationStates();
+        if (kind == "Sailing") player.Animations.ClearOnsenAnimations();
+        player.Equipment.HideEquipments();
+        player.Movement.Unlock();
     }
 
     private void UpdateHealing()

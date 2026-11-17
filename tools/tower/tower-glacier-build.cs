@@ -1,7 +1,7 @@
 // Builds Assets/Scenes/Tower/Tower_Glacier.unity: the second band's open layout ("The Frozen Vault"), a snowed-in valley
 // under the open sky at (0, 0, -6000). A terrain (deep snow, packed snow on the path, blue ice on a frozen pond, rock on
 // the slopes, frozen flagstones in the boss's ring) in a bowl of pine-covered hills with mountains behind, so the floor
-// never ends at an edge; a ring of rune stones and braziers around the plaza; cairns, snow mounds, rocks; falling snow
+// never ends at an edge; a ring of rune stones and braziers around the plaza; cairns, snow mounds, rocks, two frozen raiders' camps and ice chunks; falling snow
 // and an aurora; 24 monster spots; the boss's spot; one hidden template per monster look (copied from MainWorld's
 // enemies); its own navmesh. Editor only, not in play mode. Writes the result to %TEMP%/tower-glacier-build.txt.
 var tmp = System.IO.Path.GetTempPath();
@@ -231,6 +231,40 @@ for (var i = 0; i < 12; i++)
 }
 Place(vp + "SM_Prop_Boat_Destroyed_01.prefab", OnGround(pond.x - 6f, pond.z + 8f) + UnityEngine.Vector3.down * 0.3f, 1f, 35f, props);
 Place(vp + "SM_Prop_Fire_Pit_01.prefab", OnGround(pond.x + 9f, pond.z - 9f), 1f, -1, props);
+
+// two frozen raiders' camps in the clearing (the floor's Frost Raiders and Thanes): a lean-to, a fire, pelts, a crate, a
+// flag; only looks (no colliders), so monsters can stand in them. And ice chunks pushed up through the snow.
+void Bare(UnityEngine.GameObject go) { if (go) foreach (var col in go.GetComponentsInChildren<UnityEngine.Collider>(true)) UnityEngine.Object.DestroyImmediate(col); }
+var camps = 0;
+foreach (var (cx, cz) in new[] { (-31f, 12f), (33f, -6f), (-27f, -22f), (29f, 22f) })
+{
+    if (camps >= 2 || !Clear(cx, cz, 6f)) continue;
+    camps++;
+    var face = UnityEngine.Mathf.Atan2(-cx, -cz) * UnityEngine.Mathf.Rad2Deg;
+    var fwd = UnityEngine.Quaternion.Euler(0f, face, 0f) * UnityEngine.Vector3.forward;
+    var side = UnityEngine.Quaternion.Euler(0f, face + 90f, 0f) * UnityEngine.Vector3.forward;
+    UnityEngine.Vector3 At(float f, float sd) { var w = new UnityEngine.Vector3(cx, 0, cz) + fwd * f + side * sd; return OnGround(w.x, w.z); }
+    Bare(Place(snowv + "SM_Bld_Stall_Cover_01_Snow.prefab", At(-2.2f, 0f), 1.4f, face, props));
+    Bare(Place(vp + "SM_Prop_Fire_Pit_01.prefab", At(1.2f, 0f), 1f, -1, props));
+    var fire = Place("Assets/Synty/PolygonDarkFortress/Prefabs/FX/FX_Fire_01.prefab", At(1.2f, 0f) + UnityEngine.Vector3.up * 0.3f, 1f, 0f, fx);
+    var lg = new UnityEngine.GameObject("Camp Light"); lg.transform.SetParent(fx, false); lg.transform.position = At(1.2f, 0f) + UnityEngine.Vector3.up * 1.2f;
+    var cl = lg.AddComponent<UnityEngine.Light>(); cl.type = UnityEngine.LightType.Point; cl.color = new UnityEngine.Color(1f, 0.6f, 0.3f); cl.range = 8f; cl.intensity = 2f; cl.shadows = UnityEngine.LightShadows.None;
+    Bare(Place(vp + "SM_Prop_Pelt_0" + (3 + rng.Next(2)) + ".prefab", At(-0.6f, -2f), 1f, face + 70f, props));
+    Bare(Place(vp + "SM_Prop_Pelt_0" + (3 + rng.Next(2)) + ".prefab", At(-0.4f, 2.1f), 1f, face - 60f, props));
+    Bare(Place(snowv + "SM_Prop_Crate_Base_01_Snow.prefab", At(-2.6f, -2.6f), 1f, -1, props));
+    Bare(Place(snowv + "SM_Prop_Barrel_Half_01_Snow.prefab", At(-2.8f, 2.6f), 1f, -1, props));
+    Bare(Place(snowv + "SM_Prop_Flag_02_Snow.prefab", At(-3.4f, 3.6f), 1.4f, face, props));
+    Bare(Place(snowv + "SM_Prop_Rack_01_Snow.prefab", At(2.6f, 3f), 1.1f, face + 90f, props));
+    Bare(Place(snowv + "SM_Prop_Cow_Skull_01_Snow.prefab", At(3.4f, -2.4f), 1f, -1, props));
+}
+log.AppendLine("camps " + camps);
+for (var i = 0; i < 18; i++)
+{
+    var a = R() * UnityEngine.Mathf.PI * 2f; var r = 16f + R() * 44f;
+    var x = UnityEngine.Mathf.Cos(a) * r; var z = UnityEngine.Mathf.Sin(a) * r;
+    if (!Clear(x, z, 2.5f)) continue;
+    Place("Assets/PolygonVikings/Prefabs/Environments/SM_Env_IceChunk_0" + (1 + rng.Next(6)) + ".prefab", OnGround(x, z) + UnityEngine.Vector3.down * 0.3f, 0.5f + R() * 0.5f, -1, props);
+}
 
 // the plaza: a ring of rune stones with braziers between them, statues at the way in
 var stones = 10;

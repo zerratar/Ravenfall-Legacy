@@ -5,8 +5,9 @@ using UnityEngine;
 /// <summary>
 ///     The root of a tower town scene (docs/tower-design.md, section 4): a calm place between the bands with no
 ///     fighting. Its people (<see cref="IslandNpc"/>s under it, keyed as in RavenNest.Combat.Tower's town) stand about,
-///     say their lines, and give each player their own quest chain (!tower talk). Players who come here stroll between
-///     the <see cref="Strolls"/> spots. Loaded next to MainWorld like a floor, and beside one.
+///     say their lines, and give each player their own quest chain (!tower talk). Players who come here train their skill
+///     at its work place (<see cref="Work"/>), or stroll between the <see cref="Strolls"/> spots with nothing to train.
+///     Loaded next to MainWorld like a floor, and beside one.
 /// </summary>
 public sealed class TowerTown : TowerPlace
 {
@@ -25,7 +26,17 @@ public sealed class TowerTown : TowerPlace
     /// </summary>
     public Transform RestSpots;
 
+    /// <summary>
+    ///     Where players train their skill while in town (docs/tower-design.md, section 16): every child is a work place
+    ///     named by its kind (<see cref="WorkKind"/>: "Woodcutting", "Melee", ...), several of one kind allowed. A place's
+    ///     children named "Stand ..." are where a player stands, turned toward the work (the tree, the anvil, the dummy).
+    ///     The experience is the island's (PlayerProgression.TrainAway); this is what it looks like.
+    /// </summary>
+    public Transform Work;
+
     private readonly Dictionary<Transform, PlayerController> restTaken = new Dictionary<Transform, PlayerController>();
+    private readonly Dictionary<Transform, PlayerController> workTaken = new Dictionary<Transform, PlayerController>();
+    private readonly Dictionary<string, List<Transform>> workStands = new Dictionary<string, List<Transform>>();
 
     private readonly List<IslandNpc> people = new List<IslandNpc>();
 
@@ -36,6 +47,16 @@ public sealed class TowerTown : TowerPlace
     private void OnEnable()
     {
         Loaded = this;
+        workStands.Clear();
+        workTaken.Clear();
+        if (Work)
+        {
+            foreach (Transform place in Work)
+            {
+                if (!workStands.TryGetValue(place.name, out var stands)) workStands[place.name] = stands = new List<Transform>();
+                foreach (Transform stand in place) if (stand.name.StartsWith("Stand")) stands.Add(stand);
+            }
+        }
         people.Clear();
         people.AddRange(GetComponentsInChildren<IslandNpc>(true));
         // their idle lines are the town's texts (UI_TOWN_ELM_1, ...); the ones who give a chain show a talk mark
@@ -87,6 +108,60 @@ public sealed class TowerTown : TowerPlace
     public void ReleaseRestSpot(Transform spot, PlayerController player)
     {
         if (spot && restTaken.TryGetValue(spot, out var who) && who == player) restTaken.Remove(spot);
+    }
+
+    /// <summary>The kind of work place a skill is trained at in town, or null (strolling).</summary>
+    public static string WorkKind(RavenNest.Models.Skill skill)
+    {
+        switch (skill)
+        {
+            case RavenNest.Models.Skill.Attack:
+            case RavenNest.Models.Skill.Defense:
+            case RavenNest.Models.Skill.Strength:
+            case RavenNest.Models.Skill.Health:
+            case RavenNest.Models.Skill.Melee:
+            case RavenNest.Models.Skill.Slayer:
+                return "Melee";
+            case RavenNest.Models.Skill.Ranged: return "Ranged";
+            case RavenNest.Models.Skill.Magic: return "Magic";
+            case RavenNest.Models.Skill.Healing: return "Healing";
+            case RavenNest.Models.Skill.Woodcutting: return "Woodcutting";
+            case RavenNest.Models.Skill.Fishing: return "Fishing";
+            case RavenNest.Models.Skill.Mining: return "Mining";
+            case RavenNest.Models.Skill.Crafting: return "Crafting";
+            case RavenNest.Models.Skill.Cooking: return "Cooking";
+            case RavenNest.Models.Skill.Farming: return "Farming";
+            case RavenNest.Models.Skill.Gathering: return "Gathering";
+            case RavenNest.Models.Skill.Alchemy: return "Alchemy";
+            case RavenNest.Models.Skill.Sailing: return "Sailing";
+            case RavenNest.Models.Skill.Taming: return "Taming";
+            default: return null;
+        }
+    }
+
+    /// <summary>Whether the town has a place for this kind of work.</summary>
+    public bool HasWork(string kind) => kind != null && workStands.TryGetValue(kind, out var stands) && stands.Count > 0;
+
+    /// <summary>
+    ///     A place to stand for this kind of work: a free one at random, or (all taken) the least crowded at random, so a
+    ///     crowd shares the stands. Null when the town has no place for it.
+    /// </summary>
+    public Transform TakeWorkSpot(PlayerController player, string kind, out bool shared)
+    {
+        shared = false;
+        if (!player || kind == null || !workStands.TryGetValue(kind, out var stands) || stands.Count == 0) return null;
+        var free = new List<Transform>();
+        foreach (var s in stands)
+            if (!workTaken.TryGetValue(s, out var who) || !who || who.isDestroyed || who == player || who.towerHandler == null || who.towerHandler.WorkSpot != s) free.Add(s);
+        var pick = free.Count > 0 ? free[Random.Range(0, free.Count)] : stands[Random.Range(0, stands.Count)];
+        if (free.Count > 0) workTaken[pick] = player;
+        else shared = true;
+        return pick;
+    }
+
+    public void ReleaseWorkSpot(Transform spot, PlayerController player)
+    {
+        if (spot && workTaken.TryGetValue(spot, out var who) && who == player) workTaken.Remove(spot);
     }
 
     /// <summary>A spot to stroll to, picked at random, near the town's spawn when it has none.</summary>

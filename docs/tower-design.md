@@ -405,10 +405,60 @@ the vault with Frozen Skeletons and Frost Wraiths; `!tower floor` went 11 to 5 (
 Not checked: the band 2 boss fights in the game, Rimeholt's chains with a signed-in character, the snowfall and fire
 effects' cost in a full stream.
 
+## 16. Training in town, the way between floors and chat in charge (2026-11-17)
+
+Zerratar (2026-11-17): check the floors' roads and that everything can be reached; players must train everything in the
+tower towns, automatically doing what they train outside, while they wait for the streamer (or chat, by vote) to go on or
+call it quits; viewers must be able to run the tower when the streamer is away, so it never gets stuck; viewers can leave;
+every level should look good.
+
+- **Work places in the towns.** Mossgate and Rimeholt have a place for every skill (`TowerTown.Work`: a child per place,
+  named by its kind, with "Stand" children where a player stands, turned toward the work). A player in town walks to the
+  place of the skill they train and does it there with the island's animation, tool and sound: woodcutters at big trees,
+  miners at rocks with ore, fishers at the pond (Mossgate's new mill pond, holes in Rimeholt's ice), farmers in a fenced
+  vegetable patch, cooks at a spit, crafters at anvils and a workbench, alchemists at cauldrons, gatherers at mushrooms or
+  berry bushes, attack, strength, defense and health at straw dummies, ranged and magic at targets, healers beside the
+  dummies, sailors on a bench by a boat. Taming has a pen (Pip's bunny hutch, Rimeholt's frostbitten cows and a snow hare)
+  for when it becomes a trainable task. The experience is still the island's (section 14); the work place is what it looks
+  like. A crowd shares the stands, a little to one side of each other. Strolling stays for players with nothing to train.
+- **No lost training on the floors either.** On a floor, a player training a skill the floor's fights do not train (a
+  woodcutter fighting along) gets the island's experience for it as in town (`TowerHandler.TrainsAway`); combat skills and
+  Healing earn by fighting and healing as before.
+- **After a clear, down to the town.** 12 seconds after a boss falls, everyone on the floor goes down to the town of the
+  next floor's band (the new band's town after a tenth floor), keeps training there, and the floor gets ready (the same
+  layout refills for the next floor, another unloads and loads on the way up). `!tower climb` takes everyone in the town up
+  to the next floor. `!tower` from the world goes to wherever the group is (the town between floors); `!tower` again from
+  the town goes up alone.
+- **Chat can make every choice.** The streamer or a moderator decides at once; anyone in the tower can vote instead, and a
+  quarter of everyone in the tower (at least three, everyone when fewer are in) decides (`TowerManager.VotesNeeded`: 3 for
+  up to 12 players, 5 for 20, 10 for 40). A vote stays open for two minutes. The choices: `!tower boss` (an attempt),
+  `!tower climb` (on up from the town), `!tower floor 7` (train on a floor already reached; was the streamer's only),
+  `!tower close` (everyone back to what they were doing, not during an attempt for a vote; the climb stays where it is).
+  `!tower vote climb` works too. `!tower leave` still takes only the one player out, any time.
+- **Roads and reach.** An audit (`tools/tower/tower-audit.cs`) walks the navmesh from the arrival to every monster spot, the
+  boss, the people, rest spots, strolls, work stands and road points, and says where a road ends far from any other.
+  It found Rimeholt's mead hall standing across the road to the gate (the road stopped at its door and went on behind it),
+  four marsh monsters beyond a pool's banks, and Mossgate's inn covering the smithy's door (the village preset buildings'
+  pivots are off to one side). Rimeholt was relaid: the hall moved beside the gate road, the watchtowers out, eight lanes
+  from the square that branch to every work place, the forge, the pond, the resting place and the hall. Mossgate's
+  buildings are now placed by the middle of what they look like, the smithy moved clear of the inn, lanes reach the inn's
+  door, the smithy, the yard, the range, the pond, the rocks, the trees, the patch and the hutch, and its resting place is
+  built with the town (moss-rest.cs is gone). The builders log any prop standing on a lane. The marsh moves a spot nobody
+  can reach to the nearest place they can. Every scene passes the audit with no problems.
+- **Looks.** Fence pieces now run along their length (they stood crosswise, as loose posts, at Rimeholt's gate), resting
+  on Rimeholt's log benches is sitting on them (it was meditating inside them) and sleeping is on a flat pelt (some pelts
+  were hanging ones, floating), the glacier's empty middle got two frozen raiders' camps and ice chunks.
+
+Checked in play mode with 14 bots on the local server: every skill went to its place and worked there in both towns; four
+votes of fourteen took them from Mossgate up to floor 4, four more down to floor 2; the streamer's choice back to 4; the way
+after a clear took them down to Mossgate and unloaded the crypt; a newcomer's `!tower` went to the town; a close vote sent
+everyone back to their islands (one player voting twice counts once); a sailor sat on the bench by Rimeholt's frozen boat.
+Not checked: the after-clear walk with a real boss kill (tested without the server call), the vote replies in a real chat.
+
 ## Open questions
 
 - Is the tower always open while a stream is live, or does the streamer open it, as with Ravebridge?
-- Who can start a boss attempt: only the streamer, or chat by vote as well?
+- ~~Who can start a boss attempt: only the streamer, or chat by vote as well?~~ Both, and every other choice too (section 16).
 - Should a stream's climb ever reset (seasons, with rewards for how far you got), or is progress forever?
 - Can players who fall during a boss attempt be revived (a Restoration skill), or do they sit out the attempt?
 - ~~Can players train on cleared floors?~~ Yes: `!tower floor N` (section 15) and the towns (section 14).

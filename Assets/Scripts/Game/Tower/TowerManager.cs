@@ -19,6 +19,9 @@ using UnityEngine.SceneManagement;
 ///     Beside the floor, the band's town (<see cref="TowerTown"/>) loads the same way when someone goes there with
 ///     !tower town, and goes when it has been empty a while. When the next floor is a different layout (the forest, the
 ///     marsh, the crypt), the players climb to it: the old scene goes and the new one loads with them in it.
+///     After a clear everyone on the floor goes down to the town to rest and train, and goes on up when the streamer, a
+///     moderator or a chat vote says so (!tower climb); every choice the streamer makes can be made by a vote, so a
+///     tower never waits on an away streamer (docs/tower-design.md, section 16).
 /// </summary>
 public sealed class TowerManager : MonoBehaviour
 {
@@ -78,7 +81,7 @@ public sealed class TowerManager : MonoBehaviour
     private readonly StringBuilder report = new StringBuilder();
     private readonly List<PlayerController> pendingJoins = new List<PlayerController>();
     private readonly HashSet<PlayerController> participants = new HashSet<PlayerController>();
-    private readonly HashSet<string> bossVotes = new HashSet<string>();
+    private readonly Dictionary<string, Vote> votes = new Dictionary<string, Vote>();
     private readonly Dictionary<string, int> pendingKills = new Dictionary<string, int>();
     private readonly Dictionary<(Guid Character, string Kind), int> characterKills = new Dictionary<(Guid, string), int>();
     private readonly List<TowerCharacterFall> characterFalls = new List<TowerCharacterFall>();
@@ -90,7 +93,6 @@ public sealed class TowerManager : MonoBehaviour
     private float emptySince = -1f;
     private float phaseEnds;
     private float retryAt;
-    private float voteStarted;
     private float nextSlam;
     private float slamAt = -1f;
     private GameObject slamRing;
@@ -220,7 +222,7 @@ public sealed class TowerManager : MonoBehaviour
 
     // ---- Joining and leaving --------------------------------------------------------------------------------
 
-    public enum JoinResult { Joined, Loading, Busy, AlreadyIn, FightUnderWay, NotReady }
+    public enum JoinResult { Joined, Loading, Busy, AlreadyIn, FightUnderWay, NotReady, ToTown }
 
     /// <summary>
     ///     !tower: into the floor, loading it first if nobody is in the tower. Players can join while it trains and during
@@ -234,6 +236,13 @@ public sealed class TowerManager : MonoBehaviour
         if ((player.towerHandler.InTower && !fromTown) || pendingJoins.Contains(player)) return JoinResult.AlreadyIn;
         if (Phase == TowerPhase.Fight) return JoinResult.FightUnderWay;
         if (!fromTown && !player.towerHandler.CanEnter) return JoinResult.Busy;
+
+        // between floors everyone waits in the town: a newcomer goes to them (!tower again goes up alone)
+        if (!fromTown && Phase != TowerPhase.Countdown && Players().Count == 0 && TowerTown.Loaded && !TownLoading && TownPlayers().Count > 0)
+        {
+            var town = JoinTown(player);
+            if (town == TownJoinResult.Joined || town == TownJoinResult.Loading) return JoinResult.ToTown;
+        }
 
         if (Phase == TowerPhase.Open || Phase == TowerPhase.Countdown)
         {
@@ -276,6 +285,17 @@ public sealed class TowerManager : MonoBehaviour
         if (!g) return list;
         foreach (var p in g.Players.GetAllPlayers())
             if (p && p.towerHandler != null && p.towerHandler.InTower && !p.towerHandler.InTown) list.Add(p);
+        return list;
+    }
+
+    /// <summary>Everyone in the tower: on the floor and in the town.</summary>
+    public List<PlayerController> AllPlayers()
+    {
+        var list = new List<PlayerController>();
+        var g = Game;
+        if (!g) return list;
+        foreach (var p in g.Players.GetAllPlayers())
+            if (p && p.towerHandler != null && p.towerHandler.InTower) list.Add(p);
         return list;
     }
 
@@ -614,14 +634,103 @@ public sealed class TowerManager : MonoBehaviour
         }
     }
 
+    // ---- Votes ----------------------------------------------------------------------------------------------
+
+    private sealed class Vote
+    {
+        public readonly HashSet<string> Voters = new HashSet<string>();
+        public float Started;
+    }
+
+    /// <summary>Seconds a vote stays open after its first voice.</summary>
+    public const float VoteSeconds = 120f;
+
+    /// <summary>
+    ///     Voices that decide a vote (docs/tower-design.md, section 16): a quarter of everyone in the tower, at least three
+    ///     (everyone, when fewer are in it): 3 for up to 12 players, 5 for 20, 10 for 40.
+    /// </summary>
+    public static int VotesNeeded(int inTower) => inTower <= 0 ? 1 : Mathf.Min(inTower, Mathf.Max(3, Mathf.CeilToInt(inTower * 0.25f)));
+
+    /// <summary>
+    ///     A player in the tower votes for <paramref name="key"/> ("boss", "climb", "close", "floor 7"): the voices still
+    ///     missing, 0 when this one decided it (the vote is then over).
+    /// </summary>
+    private int AddVote(string key, PlayerController player)
+    {
+        if (!votes.TryGetValue(key, out var vote) || Time.time - vote.Started > VoteSeconds)
+            votes[key] = vote = new Vote { Started = Time.time };
+        vote.Voters.Add(player.Id.ToString());
+        var missing = Mathf.Max(0, VotesNeeded(AllPlayers().Count) - vote.Voters.Count);
+        if (missing == 0) votes.Remove(key);
+        return missing;
+    }
+
+    private static bool CanVote(PlayerController player) => player && player.towerHandler != null && player.towerHandler.InTower;
+
+    // ---- Climbing on and closing -----------------------------------------------------------------------------
+
+    public enum ClimbResult { Climbing, Voted, NotInTower, NobodyInTown, FightUnderWay, NotReady }
+
+    /// <summary>
+    ///     !tower climb: everyone in the town goes up to the stream's floor (loading it when it is not). The streamer or a
+    ///     moderator at once; anyone in the tower votes for it otherwise.
+    /// </summary>
+    public ClimbResult Climb(PlayerController player, bool canForce, out int votesNeeded)
+    {
+        votesNeeded = 0;
+        var inTown = TownPlayers();
+        if (inTown.Count == 0) return ClimbResult.NobodyInTown;
+        if (Phase == TowerPhase.Fight) return ClimbResult.FightUnderWay;
+        if (State == null) { if (!stateRequested) RefreshState(); return ClimbResult.NotReady; }
+        if (!canForce)
+        {
+            if (!CanVote(player)) return ClimbResult.NotInTower;
+            votesNeeded = AddVote("climb", player);
+            if (votesNeeded > 0) return ClimbResult.Voted;
+        }
+        votes.Remove("climb");
+        foreach (var p in inTown) Join(p);
+        return ClimbResult.Climbing;
+    }
+
+    public enum CloseResult { Closed, Voted, NotInTower, Empty, FightUnderWay }
+
+    /// <summary>
+    ///     !tower close: everyone in the tower goes back to what they were doing (the floor and the town unload once
+    ///     empty, the stream's progress stays). The streamer or a moderator at once, also during a boss attempt; anyone in
+    ///     the tower votes for it otherwise, not during an attempt.
+    /// </summary>
+    public CloseResult Close(PlayerController player, bool canForce, out int votesNeeded)
+    {
+        votesNeeded = 0;
+        var everyone = AllPlayers();
+        if (everyone.Count == 0 && pendingJoins.Count == 0 && pendingTownJoins.Count == 0) return CloseResult.Empty;
+        if (!canForce)
+        {
+            if (!CanVote(player)) return CloseResult.NotInTower;
+            if (Phase == TowerPhase.Countdown || Phase == TowerPhase.Fight) return CloseResult.FightUnderWay;
+            votesNeeded = AddVote("close", player);
+            if (votesNeeded > 0) return CloseResult.Voted;
+        }
+        votes.Clear();
+        if (Phase == TowerPhase.Countdown || Phase == TowerPhase.Fight)
+        {
+            EndAttempt();
+            Phase = TowerPhase.Open;
+        }
+        pendingJoins.Clear();
+        pendingTownJoins.Clear();
+        foreach (var p in everyone) Leave(p);
+        return CloseResult.Closed;
+    }
+
     // ---- Boss attempts -------------------------------------------------------------------------------------
 
     public enum BossCallResult { Started, Voted, NotOpen, NotLoaded, UnderWay, Regrouping, NotInTower }
 
     /// <summary>
     ///     !tower boss: the streamer or a moderator starts the countdown at once; anyone else in the tower votes, and
-    ///     three votes (or everyone in the tower, when fewer are in it) start it. <paramref name="votesNeeded"/> is what
-    ///     is still missing after a vote.
+    ///     <see cref="VotesNeeded"/> votes start it. <paramref name="votesNeeded"/> is what is still missing after a vote.
     /// </summary>
     public BossCallResult CallBoss(PlayerController player, bool canForce, out int votesNeeded)
     {
@@ -633,12 +742,8 @@ public sealed class TowerManager : MonoBehaviour
 
         if (!canForce)
         {
-            if (!player || player.towerHandler == null || !player.towerHandler.InTower) return BossCallResult.NotInTower;
-            if (Time.time - voteStarted > 120f) bossVotes.Clear();
-            if (bossVotes.Count == 0) voteStarted = Time.time;
-            bossVotes.Add(player.Name);
-            var needed = Mathf.Min(3, Mathf.Max(1, Players().Count));
-            votesNeeded = Mathf.Max(0, needed - bossVotes.Count);
+            if (!CanVote(player)) return BossCallResult.NotInTower;
+            votesNeeded = AddVote("boss", player);
             if (votesNeeded > 0) return BossCallResult.Voted;
         }
 
@@ -648,7 +753,7 @@ public sealed class TowerManager : MonoBehaviour
 
     private void StartCountdown()
     {
-        bossVotes.Clear();
+        votes.Remove("boss");
         participants.Clear();
         foreach (var p in Players()) participants.Add(p);
         Phase = TowerPhase.Countdown;
@@ -861,29 +966,82 @@ public sealed class TowerManager : MonoBehaviour
         if (result.Rewards != null && result.Rewards.Length > 0) g.AddItems(result.Rewards);
         if (result.State != null) SetState(result.State);
 
-        // the next floor: the same layout fills again for it, a new one loads after the players come back
+        // the next floor: after a moment to celebrate, everyone goes down to the town to rest and train until the
+        // stream goes on (!tower climb)
         var next = Tower.Get(StreamFloor);
         if (AllCleared || next == null)
         {
             Announce(Localization.MSG_TOWER_TOP, floorNumber);
             return;
         }
-        var floor = TowerFloor.Loaded;
-        if (floor && next.Layout == def.Layout)
+        var town = StreamTown;
+        if (town == null)
         {
-            CurrentFloor = next.Number;
-            floor.Apply(next);
-            foreach (var p in Players()) p.towerHandler.FloorChanged(floor);
-            Announce(Localization.MSG_TOWER_NEXT_FLOOR, next.Number, next.Name, QuestText());
-        }
-        else
-        {
-            Announce(Localization.MSG_TOWER_CLIMB, next.Number, next.Name, (int)ClimbDelay);
+            // no town for it (should not happen): straight on, as before the towns
             StartCoroutine(ClimbRoutine(next.Number));
+            return;
         }
+        Announce(Localization.MSG_TOWER_TO_TOWN, (int)ClimbDelay, town.Name, next.Number, next.Name);
+        StartCoroutine(AfterClearRoutine(def, next, town));
     }
 
-    public enum FloorChangeResult { Changed, Climbing, Same, Locked, Busy }
+    /// <summary>
+    ///     After a clear: the players on the floor go to the town of the next floor's band (the new band's town after a
+    ///     tenth floor), and the floor gets ready for the next one: the same layout fills for it at once, another goes
+    ///     now and loads when they climb (!tower climb).
+    /// </summary>
+    private IEnumerator AfterClearRoutine(TowerFloorDefinition cleared, TowerFloorDefinition next, TowerTownDefinition town)
+    {
+        climbing = true;
+        yield return new WaitForSeconds(ClimbDelay);
+        var moved = 0;
+        foreach (var p in Players())
+        {
+            if (Phase == TowerPhase.Countdown || Phase == TowerPhase.Fight) break;
+            var r = JoinTown(p, town);
+            // another town is open with people in it: they go there instead, to be with the others
+            if (r == TownJoinResult.OtherOpen) r = JoinTown(p);
+            if (r == TownJoinResult.Joined || r == TownJoinResult.Loading) moved++;
+        }
+        while (TownLoading) yield return null;
+        var floor = TowerFloor.Loaded;
+        if (floor && Players().Count == 0)
+        {
+            if (next.Layout == cleared.Layout)
+            {
+                CurrentFloor = next.Number;
+                floor.Apply(next);
+            }
+            else
+            {
+                yield return UnloadRoutine();
+            }
+        }
+        climbing = false;
+        if (moved > 0) Announce(Localization.MSG_TOWER_IN_TOWN, TowerTown.Loaded && TowerTown.Loaded.Town != null ? TowerTown.Loaded.Town.Name : town.Name, next.Number, next.Name, VotesNeeded(AllPlayers().Count));
+    }
+
+    public enum FloorChangeResult { Changed, Climbing, Same, Locked, Busy, Voted, NotInTower }
+
+    /// <summary>
+    ///     !tower floor N from chat: the streamer or a moderator changes the floor at once (<see cref="ChangeFloor"/>);
+    ///     anyone else in the tower votes for that floor.
+    /// </summary>
+    public FloorChangeResult RequestFloor(PlayerController player, int number, bool canForce, out int votesNeeded)
+    {
+        votesNeeded = 0;
+        var def = Tower.Get(number);
+        if (def == null || number < 1 || number > StreamFloor) return FloorChangeResult.Locked;
+        if (Phase == TowerPhase.Countdown || Phase == TowerPhase.Fight || Phase == TowerPhase.Loading || climbing || Loading) return FloorChangeResult.Busy;
+        if (TowerFloor.Loaded && number == CurrentFloor) return FloorChangeResult.Same;
+        if (!canForce)
+        {
+            if (!CanVote(player)) return FloorChangeResult.NotInTower;
+            votesNeeded = AddVote("floor " + number, player);
+            if (votesNeeded > 0) return FloorChangeResult.Voted;
+        }
+        return ChangeFloor(number);
+    }
 
     /// <summary>A floor below the stream's, where the players train (its quests and boss count only on the stream's floor).</summary>
     public bool Training => CurrentFloor > 0 && CurrentFloor != StreamFloor;

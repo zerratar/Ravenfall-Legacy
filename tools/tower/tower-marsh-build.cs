@@ -394,6 +394,22 @@ if (surface.navMeshData)
     log.AppendLine("navmesh bounds " + surface.navMeshData.sourceBounds);
 }
 else log.AppendLine("navmesh build gave nothing");
+// a spot the players cannot walk to (beyond a pool's steep banks) moves to the nearest place they can reach, so no
+// monster stands where nobody can fight it
+{
+    UnityEngine.AI.NavMesh.SamplePosition(spawn.transform.position, out var from, 4f, -1);
+    var moved = 0;
+    foreach (UnityEngine.Transform spot in spawns)
+    {
+        if (!UnityEngine.AI.NavMesh.SamplePosition(spot.position, out var at, 6f, -1)) continue;
+        var path = new UnityEngine.AI.NavMeshPath();
+        UnityEngine.AI.NavMesh.CalculatePath(from.position, at.position, -1, path);
+        if (path.status == UnityEngine.AI.NavMeshPathStatus.PathComplete || path.corners.Length == 0) continue;
+        spot.position = path.corners[path.corners.Length - 1];
+        moved++;
+    }
+    log.AppendLine("spots moved within reach: " + moved);
+}
 
 var scenePath = folder + "/Tower_Marsh.unity";
 log.AppendLine(root.transform.childCount + " children under the floor");

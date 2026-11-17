@@ -15,13 +15,19 @@ Each writes its log to `%TEMP%/<name>.txt` (the eval call itself times out after
 | tower-overgrown-build.cs | Tower_Overgrown (floors 1, 2, 5, 6) | 1 |
 | tower-marsh-build.cs | Tower_Marsh (3, 8) | 1 |
 | tower-crypt-build.cs | Tower_Crypt (4, 7, 9, 10) | 1 |
-| tower-mossgate-build.cs + moss-rest.cs | Tower_Mossgate (town) | 1 |
+| tower-mossgate-build.cs | Tower_Mossgate (town, its resting place and work places) | 1 |
 | tower-glacier-build.cs | Tower_Glacier (11, 12, 15, 16, 19) | 2 |
 | make-vault.py -> tower-frostvault-build.cs | Tower_FrostVault (13, 14, 17, 18, 20), generated from the crypt's builder | 2 |
-| tower-rimeholt-build.cs | Tower_Rimeholt (town) | 2 |
+| tower-rimeholt-build.cs | Tower_Rimeholt (town, its resting place and work places) | 2 |
+
+`tower-audit.cs` checks a scene (path in `%TEMP%/tower-audit-scene.txt`): every monster spot, the boss, the people, rest
+spots, strolls, work stands and road points can be walked to from the arrival, and where each road ends; it writes
+`%TEMP%/tower-audit.txt`. Run it after every rebuild. The town builders also log props standing on a lane and work stands
+nobody can reach.
 
 `tower-capture2.cs` renders a scene from cameras listed in `%TEMP%/tower-shots.txt` (scene path in
-`%TEMP%/tower-capture.txt`); `tower2-test.cs` drives bots through the tower in play mode (steps in its header).
+`%TEMP%/tower-capture.txt`); `tower2-test.cs` and `tower3-test.cs` drive bots through the tower in play mode (steps in their headers; tower3 covers
+the town work places, the votes and the way after a clear).
 
 Assets in `Assets/Scenes/Tower/*/` (NavMesh.asset, Terrain.asset, materials, metas) are gitignored by the project's
 rules: add them with `git add -f`.

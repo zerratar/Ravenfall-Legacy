@@ -755,9 +755,9 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         battlePets?.Tick();
 
         // training away from the islands: the rate is learned on them, and paid in calm places (a tower town while not
-        // resting, Ravebridge)
+        // resting, a tower floor for a skill its fights do not train, Ravebridge)
         Progression.TrackTraining(GameTime.deltaTime);
-        if (InRavebridge || (towerHandler != null && towerHandler.InTown && !towerHandler.Resting)) Progression.TrainAway(GameTime.deltaTime);
+        if (InRavebridge || (towerHandler != null && towerHandler.TrainsAway)) Progression.TrainAway(GameTime.deltaTime);
 
         using (EffectsMarker.Auto()) UpdateActiveEffects();
 

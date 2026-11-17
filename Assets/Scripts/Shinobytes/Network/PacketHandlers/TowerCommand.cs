@@ -4,9 +4,11 @@ using RavenNest.Combat;
 
 /// <summary>
 /// The tower from chat (docs/tower-design.md). The bot sends "tower_command" with the action first: !tower (enter the
-/// stream's floor, or where it stands when already in), !tower leave, !tower boss (the streamer or a moderator starts
-/// a boss attempt; anyone in the tower votes for one), !tower info, !tower town (the band's town, Mossgate first) and
-/// !tower talk elm (one of the town's people: their quest chain, or a rumour).
+/// stream's floor, or the town when everyone waits there between floors), !tower leave, !tower info, !tower town (the
+/// band's town, Mossgate first), !tower talk elm (one of the town's people: their quest chain, or a rumour), and the
+/// choices for everyone, which the streamer or a moderator makes at once and anyone in the tower can vote for (section
+/// 16): !tower boss (a boss attempt), !tower climb (from the town up to the next floor), !tower floor 7 (train on a
+/// floor already reached) and !tower close (everyone out for now). !tower vote climb is the same as !tower climb.
 /// </summary>
 public class TowerCommand : ChatBotCommandHandler<string>
 {
@@ -25,10 +27,13 @@ public class TowerCommand : ChatBotCommandHandler<string>
         }
 
         var text = (data ?? "").Trim().ToLowerInvariant();
+        // !tower vote climb: the same as !tower climb
+        if (text.StartsWith("vote ")) text = text.Substring(5).Trim();
         var space = text.IndexOf(' ');
         var action = space < 0 ? text : text.Substring(0, space);
         var user = gm.Sender;
         var player = PlayerManager.GetPlayer(user);
+        var canForce = user.IsBroadcaster || user.IsModerator || (player && (player.IsGameAdmin || player.IsGameModerator));
 
         try
         {
@@ -40,7 +45,19 @@ public class TowerCommand : ChatBotCommandHandler<string>
                     return;
                 case "boss":
                 case "challenge":
-                    Boss(tower, player, user.IsBroadcaster || user.IsModerator || (player && (player.IsGameAdmin || player.IsGameModerator)), gm, client);
+                    Boss(tower, player, canForce, gm, client);
+                    return;
+                case "climb":
+                case "up":
+                case "continue":
+                case "next":
+                    Climb(tower, player, canForce, gm, client);
+                    return;
+                case "close":
+                case "quit":
+                case "end":
+                case "stop":
+                    Close(tower, player, canForce, gm, client);
                     return;
                 case "info":
                 case "status":
@@ -48,9 +65,9 @@ public class TowerCommand : ChatBotCommandHandler<string>
                     return;
                 case "floor":
                 case "train":
-                    // !tower floor 7 (streamer, moderators): train on a floor the stream has reached; !tower floor: back up
+                    // !tower floor 7: train on a floor the stream has reached; !tower floor: back up (votes but for the streamer)
                     if (space < 0 && action == "floor" && !tower.Training) { Info(tower, gm, client); return; }
-                    Floor(tower, player, space < 0 ? "" : text.Substring(space + 1).Trim(), user.IsBroadcaster || user.IsModerator || (player && (player.IsGameAdmin || player.IsGameModerator)), gm, client);
+                    Floor(tower, player, space < 0 ? "" : text.Substring(space + 1).Trim(), canForce, gm, client);
                     return;
                 case "town":
                     // !tower town, or !tower town rimeholt
@@ -103,6 +120,9 @@ public class TowerCommand : ChatBotCommandHandler<string>
                 return;
             case TowerManager.JoinResult.Loading:
                 client.SendReply(gm, Localization.MSG_TOWER_LOADING, tower.StreamFloor, floor != null ? floor.Name : "");
+                return;
+            case TowerManager.JoinResult.ToTown:
+                client.SendReply(gm, Localization.MSG_TOWER_TOWN_ARRIVED, tower.CurrentTown != null ? tower.CurrentTown.Name : "", tower.StreamFloor);
                 return;
             case TowerManager.JoinResult.AlreadyIn:
                 Info(tower, gm, client);
@@ -305,13 +325,57 @@ public class TowerCommand : ChatBotCommandHandler<string>
         }
     }
 
-    private static void Floor(TowerManager tower, PlayerController player, string arg, bool canChoose, GameMessage gm, GameClient client)
+    private static void Climb(TowerManager tower, PlayerController player, bool canForce, GameMessage gm, GameClient client)
     {
-        if (!canChoose)
+        var floor = Tower.Get(tower.StreamFloor);
+        var town = tower.CurrentTown;
+        switch (tower.Climb(player, canForce, out var needed))
         {
-            client.SendReply(gm, Localization.MSG_TOWER_FLOOR_ONLY_MODS);
-            return;
+            case TowerManager.ClimbResult.Climbing:
+                client.SendReply(gm, Localization.MSG_TOWER_CLIMB_STARTED, town != null ? town.Name : "", tower.StreamFloor, floor != null ? floor.Name : "");
+                return;
+            case TowerManager.ClimbResult.Voted:
+                client.SendReply(gm, Localization.MSG_TOWER_CLIMB_VOTE, tower.StreamFloor, needed);
+                return;
+            case TowerManager.ClimbResult.NotInTower:
+                client.SendReply(gm, Localization.MSG_TOWER_ENTER_TO_VOTE);
+                return;
+            case TowerManager.ClimbResult.NobodyInTown:
+                client.SendReply(gm, Localization.MSG_TOWER_CLIMB_NOBODY, tower.StreamFloor);
+                return;
+            case TowerManager.ClimbResult.FightUnderWay:
+                client.SendReply(gm, Localization.MSG_TOWER_FIGHT_UNDER_WAY, ((int)tower.PhaseSecondsLeft).ToString(CultureInfo.InvariantCulture));
+                return;
+            default:
+                client.SendReply(gm, Localization.MSG_TOWER_NOT_READY);
+                return;
         }
+    }
+
+    private static void Close(TowerManager tower, PlayerController player, bool canForce, GameMessage gm, GameClient client)
+    {
+        switch (tower.Close(player, canForce, out var needed))
+        {
+            case TowerManager.CloseResult.Closed:
+                client.SendReply(gm, Localization.MSG_TOWER_CLOSED, tower.StreamFloor);
+                return;
+            case TowerManager.CloseResult.Voted:
+                client.SendReply(gm, Localization.MSG_TOWER_CLOSE_VOTE, needed);
+                return;
+            case TowerManager.CloseResult.NotInTower:
+                client.SendReply(gm, Localization.MSG_TOWER_ENTER_TO_VOTE);
+                return;
+            case TowerManager.CloseResult.FightUnderWay:
+                client.SendReply(gm, Localization.MSG_TOWER_CLOSE_FIGHTING);
+                return;
+            default:
+                client.SendReply(gm, Localization.MSG_TOWER_CLOSE_EMPTY);
+                return;
+        }
+    }
+
+    private static void Floor(TowerManager tower, PlayerController player, string arg, bool canForce, GameMessage gm, GameClient client)
+    {
         if (tower.State == null)
         {
             tower.RefreshState();
@@ -325,8 +389,14 @@ public class TowerCommand : ChatBotCommandHandler<string>
             return;
         }
         var def = Tower.Get(number);
-        switch (tower.ChangeFloor(number))
+        switch (tower.RequestFloor(player, number, canForce, out var needed))
         {
+            case TowerManager.FloorChangeResult.Voted:
+                client.SendReply(gm, Localization.MSG_TOWER_FLOOR_VOTE, number, def.Name, needed);
+                return;
+            case TowerManager.FloorChangeResult.NotInTower:
+                client.SendReply(gm, Localization.MSG_TOWER_ENTER_TO_VOTE);
+                return;
             case TowerManager.FloorChangeResult.Changed:
             case TowerManager.FloorChangeResult.Climbing:
                 if (number == tower.StreamFloor) client.SendReply(gm, Localization.MSG_TOWER_FLOOR_BACK, number, def.Name);
