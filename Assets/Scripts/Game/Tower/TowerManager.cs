@@ -22,6 +22,8 @@ using UnityEngine.SceneManagement;
 ///     After a clear everyone on the floor goes down to the town to rest and train, and goes on up when the streamer, a
 ///     moderator or a chat vote says so (!tower climb); every choice the streamer makes can be made by a vote, so a
 ///     tower never waits on an away streamer (docs/tower-design.md, section 16).
+///     The first time a stream opens the tower, and the first time it reaches a new band's town, a cutscene plays
+///     (<see cref="TowerCutscene"/>); joins wait for the first.
 /// </summary>
 public sealed class TowerManager : MonoBehaviour
 {
@@ -169,6 +171,8 @@ public sealed class TowerManager : MonoBehaviour
     {
         if (Instance == this) Instance = null;
         if (Ocean.NoSeaAt == (System.Func<Vector3, bool>)NearPlace) Ocean.NoSeaAt = null;
+        if (hazeMaterial) Destroy(hazeMaterial);
+        if (hazeBand) Destroy(hazeBand);
     }
 
     private GameManager Game => game ? game : (game = FindAnyObjectByType<GameManager>());
@@ -236,6 +240,8 @@ public sealed class TowerManager : MonoBehaviour
         if ((player.towerHandler.InTower && !fromTown) || pendingJoins.Contains(player)) return JoinResult.AlreadyIn;
         if (Phase == TowerPhase.Fight) return JoinResult.FightUnderWay;
         if (!fromTown && !player.towerHandler.CanEnter) return JoinResult.Busy;
+        // the first time the stream opens the tower: its cutscene first, then they go in
+        if (!fromTown && WaitForOpening(player, false, null)) return JoinResult.Loading;
 
         // between floors everyone waits in the town: a newcomer goes to them (!tower again goes up alone)
         if (!fromTown && Phase != TowerPhase.Countdown && Players().Count == 0 && TowerTown.Loaded && !TownLoading && TownPlayers().Count > 0)
@@ -274,6 +280,7 @@ public sealed class TowerManager : MonoBehaviour
     public void Leave(PlayerController player)
     {
         pendingJoins.Remove(player);
+        waitingForOpening.RemoveAll(w => w.Player == player);
         pendingTownJoins.Remove(player);
         if (player && player.towerHandler != null) player.towerHandler.Exit();
     }
@@ -339,6 +346,7 @@ public sealed class TowerManager : MonoBehaviour
         if ((player.towerHandler.InTown && TowerTown.Loaded && TowerTown.Loaded.Town == definition) || pendingTownJoins.Contains(player)) return TownJoinResult.AlreadyIn;
         if (player.towerHandler.InBossFight) return TownJoinResult.Busy;
         if (!player.towerHandler.CanEnter && !player.towerHandler.InTower) return TownJoinResult.Busy;
+        if (!player.towerHandler.InTower && WaitForOpening(player, true, wanted)) return TownJoinResult.Loading;
 
         var town = TowerTown.Loaded;
         if (TownLoading && loadingTown != null && loadingTown != definition) return TownJoinResult.OtherOpen;
@@ -1018,6 +1026,9 @@ public sealed class TowerManager : MonoBehaviour
             }
         }
         climbing = false;
+        // a new band's town, the first time the stream gets there: a fly-over with its name
+        var arrived = TowerTown.Loaded;
+        if (moved > 0 && arrived && arrived.Town == town && Tower.TownFor(cleared.Number) != town) PlayArrival(arrived, false);
         if (moved > 0) Announce(Localization.MSG_TOWER_IN_TOWN, TowerTown.Loaded && TowerTown.Loaded.Town != null ? TowerTown.Loaded.Town.Name : town.Name, next.Number, next.Name, VotesNeeded(AllPlayers().Count));
     }
 
@@ -1148,6 +1159,135 @@ public sealed class TowerManager : MonoBehaviour
         g.RavenBot.Announce(message, args.Select(a => a?.ToString() ?? "").ToArray());
     }
 
+    // ---- Cutscenes --------------------------------------------------------------------------------------------
+
+    /// <summary>How long the opening (over Mossgate and up the tower) and a town's arrival take, the name included.</summary>
+    public const float OpeningSeconds = 20f, ArrivalSeconds = 15f;
+
+    /// <summary>The tower's first opening is playing: joins wait for it (as for Ravebridge's rising).</summary>
+    public bool Opening { get; private set; }
+
+    private readonly List<(PlayerController Player, bool Town, TowerTownDefinition Wanted)> waitingForOpening = new List<(PlayerController, bool, TowerTownDefinition)>();
+    private bool openingTried;
+
+    // what the stream has seen: kept on this PC, per streamer (as Ravebridge's rising)
+    private string StreamKey => Game && Game.RavenNest != null ? Game.RavenNest.UserId.ToString() : "local";
+    private string OpeningKey => "tower.opened." + StreamKey;
+    private string ArrivalKey(TowerTownDefinition town) => "tower.arrived." + town.Key + "." + StreamKey;
+
+    /// <summary>
+    ///     A join from the world while the opening is to play or playing: it waits (true) and goes through after it. The
+    ///     opening starts with the first join of a stream that has not seen it, once per session at most (it is skipped
+    ///     when the camera is busy or cutscenes are off, and tried again next session).
+    /// </summary>
+    private bool WaitForOpening(PlayerController player, bool town, TowerTownDefinition wanted)
+    {
+        if (!Opening)
+        {
+            if (openingTried || State == null || !SettingsApplier.Cutscenes || PlayerPrefs.GetInt(OpeningKey, 0) == 1) return false;
+            var g = Game;
+            if (!g || !g.Camera || !g.Camera.CinematicFree || TowerCutscene.Playing || RavebridgeReveal.Playing) return false;
+            // Mossgate is where it starts: not while another town is open (somebody is already in the tower)
+            if (TownLoading || (TowerTown.Loaded && TowerTown.Loaded.Town != Tower.TownFor(1))) return false;
+            openingTried = true;
+            Opening = true;
+            StartCoroutine(OpeningRoutine());
+        }
+        if (!waitingForOpening.Any(w => w.Player == player)) waitingForOpening.Add((player, town, wanted));
+        return true;
+    }
+
+    private IEnumerator OpeningRoutine()
+    {
+        var played = false;
+        var foot = Tower.TownFor(1);
+        // Mossgate, loaded for it when it is not (nobody walks in; it goes again when nobody comes)
+        if (foot != null && !TowerTown.Loaded && !TownLoading)
+        {
+            loadingTown = foot;
+            yield return LoadTownRoutine(ScenePath(foot.Layout));
+        }
+        var town = TowerTown.Loaded;
+        if (town && town.Town == foot)
+        {
+            var finished = false;
+            played = TowerCutscene.Play(this, town.CutscenePoses(true), OpeningSeconds, Localization.UI_TOWER_OPENING_TITLE, Localization.UI_TOWER_OPENING_LINE,
+                town.TitleColor, town.TitleOutline, null, () => finished = true);
+            while (played && !finished) yield return null;
+        }
+        if (played)
+        {
+            PlayerPrefs.SetInt(OpeningKey, 1);
+            PlayerPrefs.Save();
+        }
+        Opening = false;
+        var waiting = waitingForOpening.ToArray();
+        waitingForOpening.Clear();
+        foreach (var (player, toTown, wanted) in waiting)
+        {
+            if (!player || player.isDestroyed) continue;
+            if (toTown) JoinTown(player, wanted);
+            else Join(player);
+        }
+    }
+
+    /// <summary>The town's fly-over with its name, the first time the stream gets there (or again when <paramref name="replay"/>).</summary>
+    private bool PlayArrival(TowerTown town, bool replay)
+    {
+        var definition = town ? town.Town : null;
+        if (definition == null || !SettingsApplier.Cutscenes) return false;
+        var key = ArrivalKey(definition);
+        if (!replay && PlayerPrefs.GetInt(key, 0) == 1) return false;
+        var band = Tower.Bands.FirstOrDefault(b => b.Number == definition.Band);
+        var line = band != null ? string.Format(Localization.UI_TOWER_TOWN_LINE, band.FirstFloor, band.LastFloor, band.Name) : "";
+        // at the end the camera goes to someone in the town
+        return TowerCutscene.Play(this, town.CutscenePoses(false), ArrivalSeconds, definition.Name, line, town.TitleColor, town.TitleOutline,
+            () => TownPlayers().FirstOrDefault(), () =>
+            {
+                PlayerPrefs.SetInt(key, 1);
+                PlayerPrefs.Save();
+            });
+    }
+
+    /// <summary>The cutscenes play again (the settings' "Introductions").</summary>
+    public void ForgetCutscenesSeen()
+    {
+        PlayerPrefs.DeleteKey(OpeningKey);
+        foreach (var town in Tower.Towns) PlayerPrefs.DeleteKey(ArrivalKey(town));
+        PlayerPrefs.Save();
+        openingTried = false;
+    }
+
+    /// <summary>The debug menu's "Tower Opens": the opening again, now (Mossgate loads for it when no town is open).</summary>
+    public bool ReplayOpening()
+    {
+        if (Opening || TowerCutscene.Playing || TownLoading || (TowerTown.Loaded && TowerTown.Loaded.Town != Tower.TownFor(1))) return false;
+        PlayerPrefs.DeleteKey(OpeningKey);
+        openingTried = true;
+        Opening = true;
+        StartCoroutine(OpeningRoutine());
+        return true;
+    }
+
+    /// <summary>The debug menu's "Town Arrival": the open town's fly-over (the stream's town loads for it when none is open).</summary>
+    public void ReplayArrival()
+    {
+        if (Opening || TowerCutscene.Playing) return;
+        StartCoroutine(ReplayArrivalRoutine());
+    }
+
+    private IEnumerator ReplayArrivalRoutine()
+    {
+        var town = StreamTown;
+        if (!TowerTown.Loaded && !TownLoading && town != null)
+        {
+            loadingTown = town;
+            yield return LoadTownRoutine(ScenePath(town.Layout));
+        }
+        while (TownLoading) yield return null;
+        PlayArrival(TowerTown.Loaded, true);
+    }
+
     // ---- Every frame -----------------------------------------------------------------------------------------
 
     private void Update()
@@ -1190,6 +1330,7 @@ public sealed class TowerManager : MonoBehaviour
         if (camera) floor = PlaceNear(camera.transform.position, LookMargin);
         var over = floor;
         SetLook(over);
+        UpdateHaze(over, camera);
         if (!over) return;
 
         // GameManager sets these from potato mode every frame, so they are switched off every frame while the camera is
@@ -1215,6 +1356,94 @@ public sealed class TowerManager : MonoBehaviour
             sun.intensity = floor.SunIntensity;
             sun.transform.rotation = Quaternion.Euler(floor.SunAngles);
         }
+    }
+
+    /// <summary>How far down under a place the haze floor lies: below its lowest ground.</summary>
+    private const float HazeDepth = 3f;
+
+    /// <summary>The ring round the camera that hides the horizon past the sheet (inside the camera's 1300 m reach).</summary>
+    private const float HazeRing = 1000f;
+
+    private GameObject haze;
+    private GameObject hazeRing;
+    private Material hazeMaterial;
+    private Mesh hazeBand;
+
+    /// <summary>
+    ///     A wide flat sheet in the place's fog colour under the camera while its look is on: from high up (a cutscene, a
+    ///     wide shot) the ground of a town or an open floor ends a hundred metres out, and past it the sky's dark lower
+    ///     half showed as a blue sea round a floating plateau. The fog turns the sheet into haze out to the horizon, and a
+    ///     low ring of the same colour round the camera covers the last strip below the horizon, where the sheet is too far
+    ///     to draw.
+    /// </summary>
+    private void UpdateHaze(TowerPlace place, Camera camera)
+    {
+        if (!place || !camera)
+        {
+            if (haze && haze.activeSelf) haze.SetActive(false);
+            if (hazeRing && hazeRing.activeSelf) hazeRing.SetActive(false);
+            return;
+        }
+        if (!haze)
+        {
+            var shader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (!shader) shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (!shader) return;
+            hazeMaterial = new Material(shader) { name = "Tower Haze" };
+            // the ring is seen from inside
+            if (hazeMaterial.HasProperty("_Cull")) hazeMaterial.SetFloat("_Cull", (float)UnityEngine.Rendering.CullMode.Off);
+            GameObject Part(PrimitiveType type, string name)
+            {
+                var go = GameObject.CreatePrimitive(type);
+                go.name = name;
+                go.hideFlags = HideFlags.DontSave;
+                Destroy(go.GetComponent<Collider>());
+                go.transform.SetParent(transform, false);
+                var renderer = go.GetComponent<MeshRenderer>();
+                renderer.sharedMaterial = hazeMaterial;
+                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                renderer.receiveShadows = false;
+                return go;
+            }
+            haze = Part(PrimitiveType.Quad, "Tower Haze");
+            haze.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+            haze.transform.localScale = new Vector3(2f * HazeRing + 200f, 2f * HazeRing + 200f, 1f);
+            // an open band one high and two across (a cylinder's lid would cover the sky)
+            hazeRing = Part(PrimitiveType.Quad, "Tower Haze Ring");
+            hazeRing.GetComponent<MeshFilter>().sharedMesh = hazeBand = Band(64);
+        }
+        if (!haze.activeSelf) haze.SetActive(true);
+        if (!hazeRing.activeSelf) hazeRing.SetActive(true);
+        var eye = camera.transform.position;
+        var floorY = place.Centre.y - HazeDepth;
+        haze.transform.position = new Vector3(eye.x, floorY, eye.z);
+        // from the sheet up to the camera's height: its top edge is the horizon (higher, it stood as a wall over the hills)
+        var top = Mathf.Max(eye.y, floorY + 1f);
+        hazeRing.transform.position = new Vector3(eye.x, floorY, eye.z);
+        hazeRing.transform.localScale = new Vector3(HazeRing, top - floorY, HazeRing);
+        if (hazeMaterial.HasProperty("_BaseColor")) hazeMaterial.SetColor("_BaseColor", place.FogColor);
+        else hazeMaterial.color = place.FogColor;
+    }
+
+    /// <summary>A ring of <paramref name="segments"/> quads, radius 1, from 0 up to 1 high, with no top or bottom.</summary>
+    private static Mesh Band(int segments)
+    {
+        var vertices = new Vector3[(segments + 1) * 2];
+        var triangles = new int[segments * 6];
+        for (var i = 0; i <= segments; i++)
+        {
+            var a = i * Mathf.PI * 2f / segments;
+            vertices[i * 2] = new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a));
+            vertices[i * 2 + 1] = new Vector3(Mathf.Cos(a), 1f, Mathf.Sin(a));
+            if (i == segments) break;
+            var t = i * 6;
+            triangles[t] = i * 2; triangles[t + 1] = i * 2 + 1; triangles[t + 2] = i * 2 + 2;
+            triangles[t + 3] = i * 2 + 1; triangles[t + 4] = i * 2 + 3; triangles[t + 5] = i * 2 + 2;
+        }
+        var mesh = new Mesh { name = "Tower Haze Band", vertices = vertices, triangles = triangles };
+        mesh.RecalculateNormals();
+        mesh.bounds = new Bounds(new Vector3(0f, 0.5f, 0f), new Vector3(2f, 1f, 2f));
+        return mesh;
     }
 
     private void SetLook(bool on)

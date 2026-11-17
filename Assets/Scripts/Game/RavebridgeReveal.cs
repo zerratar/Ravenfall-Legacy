@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 /// <summary>
 /// Ravebridge rising from the sea (the user, 2026-11-03): the first time a stream opens Ravebridge (RavebridgeManager,
@@ -25,8 +24,6 @@ public sealed class RavebridgeReveal : MonoBehaviour
 
     private readonly List<(Transform Part, Vector3 At)> parts = new List<(Transform, Vector3)>();
     private readonly List<GameObject> walkers = new List<GameObject>();
-    private readonly List<(VisualElement Element, StyleEnum<DisplayStyle> Display)> hiddenUi = new List<(VisualElement, StyleEnum<DisplayStyle>)>();
-    private readonly List<Canvas> hiddenCanvases = new List<Canvas>();
     private Action done;
     private IslandController island;
     private Rect land;          // x and z
@@ -45,7 +42,7 @@ public sealed class RavebridgeReveal : MonoBehaviour
     private float musicVolume = -1f;
     private bool boomDone;
     private static Texture2D puff;
-    private VisualElement title;
+    private CutsceneScreen screen;
 
     /// <summary>Starts the cutscene; false when the camera is not free for it (a raid, a dungeon, a war).</summary>
     public static bool Play(MonoBehaviour host, IslandController island, Action done)
@@ -479,107 +476,23 @@ public sealed class RavebridgeReveal : MonoBehaviour
 
     // ---- The screen ----------------------------------------------------------------------------------
 
-    /// <summary>Everything on screen steps aside (UI Toolkit panels and the old canvases); its name shows at the end.</summary>
+    /// <summary>Everything on screen steps aside (CutsceneScreen); its name shows at the end.</summary>
     private void HideUi()
     {
-        UIDocument host = null;
-        foreach (var doc in FindObjectsByType<UIDocument>(FindObjectsSortMode.None))
-        {
-            var root = doc.rootVisualElement;
-            if (root == null) continue;
-            if (!host && root.Q<VisualElement>("conn-layer") != null) host = doc;
-            foreach (var child in root.Children())
-            {
-                hiddenUi.Add((child, child.style.display));
-                child.style.display = DisplayStyle.None;
-            }
-        }
-        foreach (var canvas in FindObjectsByType<Canvas>(FindObjectsSortMode.None))
-        {
-            if (!canvas.enabled || !canvas.isRootCanvas) continue;
-            canvas.enabled = false;
-            hiddenCanvases.Add(canvas);
-        }
-
-        if (!host) return;
-        title = new VisualElement { pickingMode = PickingMode.Ignore };
-        title.style.position = Position.Absolute;
-        title.style.left = 0; title.style.right = 0; title.style.top = 0; title.style.bottom = 0;
-        title.style.alignItems = Align.Center;
-        title.style.justifyContent = Justify.Center;
-        title.style.opacity = 0f;
-        var shadow = new TextShadow { offset = new Vector2(0f, 4f), blurRadius = 14f, color = new Color(0f, 0f, 0f, 0.85f) };
-        var name = new Label(Localization.UI_RAVEBRIDGE_TITLE) { pickingMode = PickingMode.Ignore };
-        name.AddToClassList("rf-font-eb");
-        name.style.fontSize = 120;
-        name.style.color = new Color(1f, 0.84f, 0.36f);
-        name.style.textShadow = shadow;
-        name.style.unityTextOutlineWidth = 1.5f;
-        name.style.unityTextOutlineColor = new Color(0.25f, 0.15f, 0.02f);
-        var line = new Label(Localization.UI_RAVEBRIDGE_RISEN) { pickingMode = PickingMode.Ignore };
-        line.AddToClassList("rf-font-b");
-        line.style.fontSize = 38;
-        line.style.marginTop = -6;
-        line.style.color = new Color(0.97f, 0.94f, 0.86f);
-        line.style.textShadow = shadow;
-        title.Add(name);
-        title.Add(line);
-        host.rootVisualElement.Add(title);
-
-        // the only thing on screen besides the island: a Skip button in the corner (the user, 2026-11-03), Esc too
-        var gold = new Color(0.84f, 0.67f, 0.16f);
-        var skip = new Button(SkipNow) { name = "reveal-skip" };
-        skip.style.position = Position.Absolute;
-        skip.style.right = 36; skip.style.bottom = 32;
-        skip.style.flexDirection = FlexDirection.Row;
-        skip.style.alignItems = Align.Center;
-        skip.style.paddingLeft = 18; skip.style.paddingRight = 10; skip.style.paddingTop = 8; skip.style.paddingBottom = 8;
-        skip.style.backgroundColor = new Color(0.08f, 0.07f, 0.06f, 0.92f);
-        skip.style.borderLeftWidth = skip.style.borderRightWidth = skip.style.borderTopWidth = skip.style.borderBottomWidth = 2;
-        skip.style.borderLeftColor = skip.style.borderRightColor = skip.style.borderTopColor = skip.style.borderBottomColor = gold;
-        skip.style.borderTopLeftRadius = skip.style.borderTopRightRadius = skip.style.borderBottomLeftRadius = skip.style.borderBottomRightRadius = 10;
-        var word = new Label(Localization.UI_CUTSCENE_SKIP) { pickingMode = PickingMode.Ignore };
-        word.AddToClassList("rf-font-eb");
-        word.style.fontSize = 20;
-        word.style.color = new Color(0.97f, 0.94f, 0.86f);
-        word.style.marginRight = 12;
-        var key = new Label("Esc") { pickingMode = PickingMode.Ignore };
-        key.AddToClassList("rf-font-b");
-        key.style.fontSize = 15;
-        key.style.color = new Color(0.97f, 0.94f, 0.86f);
-        key.style.paddingLeft = 8; key.style.paddingRight = 8; key.style.paddingTop = 2; key.style.paddingBottom = 3;
-        key.style.backgroundColor = new Color(0.16f, 0.14f, 0.11f);
-        key.style.borderLeftWidth = key.style.borderRightWidth = key.style.borderTopWidth = key.style.borderBottomWidth = 1;
-        key.style.borderLeftColor = key.style.borderRightColor = key.style.borderTopColor = key.style.borderBottomColor = gold;
-        key.style.borderTopLeftRadius = key.style.borderTopRightRadius = key.style.borderBottomLeftRadius = key.style.borderBottomRightRadius = 5;
-        skip.Add(word);
-        skip.Add(key);
-        skip.RegisterCallback<MouseEnterEvent>(_ => skip.style.backgroundColor = new Color(0.2f, 0.16f, 0.06f, 0.95f));
-        skip.RegisterCallback<MouseLeaveEvent>(_ => skip.style.backgroundColor = new Color(0.08f, 0.07f, 0.06f, 0.92f));
-        host.rootVisualElement.Add(skip);
+        screen = CutsceneScreen.Show(Localization.UI_RAVEBRIDGE_TITLE, Localization.UI_RAVEBRIDGE_RISEN, CutsceneScreen.Gold, CutsceneScreen.GoldOutline, SkipNow);
     }
 
     private void UpdateTitle()
     {
-        if (title == null) return;
+        if (screen == null) return;
         var start = Total - Hold - 0.6f;
         var alpha = Mathf.Clamp01((time - start) / TitleIn) * Mathf.Clamp01((Total - time) / TitleOut);
-        title.style.opacity = alpha;
-        title.style.scale = new Scale(Vector3.one * Mathf.Lerp(0.94f, 1f, Mathf.Clamp01((time - start) / (TitleIn + Hold))));
+        screen.SetTitle(alpha, (time - start) / (TitleIn + Hold));
     }
 
     private void ShowUi()
     {
-        foreach (var (element, display) in hiddenUi) element.style.display = display;
-        hiddenUi.Clear();
-        foreach (var canvas in hiddenCanvases) if (canvas) canvas.enabled = true;
-        hiddenCanvases.Clear();
-        if (title != null)
-        {
-            var parent = title.parent;
-            title.RemoveFromHierarchy();
-            parent?.Q<Button>("reveal-skip")?.RemoveFromHierarchy();
-            title = null;
-        }
+        screen?.Restore();
+        screen = null;
     }
 }

@@ -156,7 +156,7 @@ public class RavebridgeManager : MonoBehaviour, IEvent
         Ask = ask;
         // the first time this stream opens it: it rises from the sea (RavebridgeReveal); not when nobody would see it
         // (HeroStart, a storm, the streamer away: ask false)
-        Revealing = ask && !RevealSeen && RavebridgeReveal.Play(this, Island, RevealDone);
+        Revealing = ask && !RevealSeen && SettingsApplier.Cutscenes && RavebridgeReveal.Play(this, Island, RevealDone);
         var banner = ask ? null : FindAnyObjectByType<Shinobytes.UI.NotificationScreenView>(FindObjectsInactive.Include);
         if (banner)
         {

@@ -115,6 +115,7 @@ public static class SettingsApplier
         public const bool RaceCamera = true;
         public const bool RavebridgeUprisings = true;
         public const bool ScreenShake = true;
+        public const bool Cutscenes = true;
         public const bool DownloadUpdatesEarly = true;
         public const bool InstallUpdatesAutomatically = false;
         public const bool QuestTracker = true;
@@ -1074,6 +1075,10 @@ public static class SettingsApplier
         && !(GameManager.Instance && GameManager.Instance.PotatoMode);
     public static bool ScreenShakeSetting => PlayerSettings.Instance.ScreenShake.GetValueOrDefault(Defaults.ScreenShake);
     public static void SetScreenShake(bool value) => PlayerSettings.Instance.ScreenShake = value;
+
+    /// <summary>The cutscenes the first time something big happens: Ravebridge rising, the tower opening, a new tower town.</summary>
+    public static bool Cutscenes => PlayerSettings.Instance.Cutscenes.GetValueOrDefault(Defaults.Cutscenes);
+    public static void SetCutscenes(bool value) => PlayerSettings.Instance.Cutscenes = value;
 
     /// <summary>A new version is downloaded while the stream goes on, so updating needs only a quick restart.</summary>
     public static bool DownloadUpdatesEarly => PlayerSettings.Instance.DownloadUpdatesEarly.GetValueOrDefault(Defaults.DownloadUpdatesEarly);

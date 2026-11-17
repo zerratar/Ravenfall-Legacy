@@ -703,6 +703,28 @@ foreach (var st in work.GetComponentsInChildren<UnityEngine.Transform>())
 }
 log.AppendLine("work stands unreachable: " + unreachable);
 
+// ---- the cutscene (TowerCutscene): the camera's way through the town, poses in order (tools/tower/tower-cutscene-preview.cs
+// renders them); Arrival the first time a stream gets here
+var cut = new UnityEngine.GameObject("Cutscene").transform;
+cut.SetParent(root.transform, false);
+void Pose(UnityEngine.Transform row, int n, float x, float y, float z, float lx, float ly, float lz)
+{
+    var pose = new UnityEngine.GameObject("Shot " + n).transform;
+    pose.SetParent(row, false);
+    pose.position = origin + new UnityEngine.Vector3(x, y, z);
+    pose.LookAt(origin + new UnityEngine.Vector3(lx, ly, lz));
+}
+{
+    var row = new UnityEngine.GameObject("Arrival").transform; row.SetParent(cut, false);
+    Pose(row, 1, 0f, 50f, -100f, 0f, 0f, 10f);
+    Pose(row, 2, -25f, 22f, -42f, 0f, 4f, 15f);
+    Pose(row, 3, -12f, 10f, -12f, 4f, 5f, 30f);
+    Pose(row, 4, -5f, 7f, 2f, 3f, 10f, 45f);
+}
+town.Cutscene = cut;
+town.TitleColor = new UnityEngine.Color(0.80f, 0.93f, 1f);
+town.TitleOutline = new UnityEngine.Color(0.05f, 0.14f, 0.28f);
+
 var scenePath = folder + "/Tower_Rimeholt.unity";
 UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene, scenePath);
 UnityEditor.SceneManagement.EditorSceneManager.CloseScene(scene, true);

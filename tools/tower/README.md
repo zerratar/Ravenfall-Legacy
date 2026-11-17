@@ -25,6 +25,10 @@ spots, strolls, work stands and road points can be walked to from the arrival, a
 `%TEMP%/tower-audit.txt`. Run it after every rebuild. The town builders also log props standing on a lane and work stands
 nobody can reach.
 
+`tower-cutscene-preview.cs` renders frames along a town's cutscene path (`TowerCutscene`) in edit mode, from poses in
+`%TEMP%/tower-cutscene.txt` or the scene's own (header says how); the town builders place the poses (`Cutscene/Arrival`,
+Mossgate's `Opening`).
+
 `tower-capture2.cs` renders a scene from cameras listed in `%TEMP%/tower-shots.txt` (scene path in
 `%TEMP%/tower-capture.txt`); `tower2-test.cs` and `tower3-test.cs` drive bots through the tower in play mode (steps in their headers; tower3 covers
 the town work places, the votes and the way after a clear).

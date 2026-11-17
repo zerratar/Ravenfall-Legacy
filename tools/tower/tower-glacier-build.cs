@@ -72,11 +72,16 @@ var vr = "Assets/Synty/PolygonVikingRealm/Textures/Env/";
 UnityEngine.TerrainLayer Layer(string name, UnityEngine.Texture2D diffuse, UnityEngine.Texture2D normal, float tile, UnityEngine.Color tint, float smooth)
 {
     var path = dataFolder + "/" + name + ".terrainlayer";
-    UnityEditor.AssetDatabase.DeleteAsset(path);
-    var l = new UnityEngine.TerrainLayer { diffuseTexture = diffuse, normalMapTexture = normal, tileSize = new UnityEngine.Vector2(tile, tile), smoothness = smooth };
+    // updated in place, never made anew: Rimeholt's terrain uses these layers too, and a new asset would be a new id
+    // (Rimeholt's snow turned into a checkerboard after every glacier rebuild)
+    var l = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.TerrainLayer>(path);
+    var made = !l;
+    if (made) l = new UnityEngine.TerrainLayer();
+    l.diffuseTexture = diffuse; l.normalMapTexture = normal; l.tileSize = new UnityEngine.Vector2(tile, tile); l.smoothness = smooth;
     l.diffuseRemapMin = UnityEngine.Vector4.zero;
     l.diffuseRemapMax = new UnityEngine.Vector4(tint.r, tint.g, tint.b, 1f);
-    UnityEditor.AssetDatabase.CreateAsset(l, path);
+    if (made) UnityEditor.AssetDatabase.CreateAsset(l, path);
+    else UnityEditor.EditorUtility.SetDirty(l);
     return l;
 }
 var snowTex = Tex(vr + "Snow_01.png");

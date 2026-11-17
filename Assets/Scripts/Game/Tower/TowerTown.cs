@@ -34,6 +34,17 @@ public sealed class TowerTown : TowerPlace
     /// </summary>
     public Transform Work;
 
+    /// <summary>
+    ///     The camera's way through the town in its cutscenes (TowerCutscene): a child "Arrival" (the fly-over the first
+    ///     time a stream reaches the town) and, at the tower's foot, "Opening" (on from the arrival, up the tower, the first
+    ///     time the tower opens); each holds camera poses in order, placed and turned as the camera will be.
+    /// </summary>
+    public Transform Cutscene;
+
+    /// <summary>The town's name in its cutscene, and the outline round the letters.</summary>
+    public Color TitleColor = new Color(1f, 0.84f, 0.36f);
+    public Color TitleOutline = new Color(0.25f, 0.15f, 0.02f);
+
     private readonly Dictionary<Transform, PlayerController> restTaken = new Dictionary<Transform, PlayerController>();
     private readonly Dictionary<Transform, PlayerController> workTaken = new Dictionary<Transform, PlayerController>();
     private readonly Dictionary<string, List<Transform>> workStands = new Dictionary<string, List<Transform>>();
@@ -41,6 +52,21 @@ public sealed class TowerTown : TowerPlace
     private readonly List<IslandNpc> people = new List<IslandNpc>();
 
     public TowerTownDefinition Town => Tower.Town(Key);
+
+    /// <summary>The camera poses of the arrival, with the opening's after them when <paramref name="opening"/>.</summary>
+    public Transform[] CutscenePoses(bool opening)
+    {
+        var poses = new List<Transform>();
+        if (!Cutscene) return poses.ToArray();
+        void Add(string part)
+        {
+            var row = Cutscene.Find(part);
+            if (row) foreach (Transform pose in row) poses.Add(pose);
+        }
+        Add("Arrival");
+        if (opening) Add("Opening");
+        return poses.ToArray();
+    }
 
     public IReadOnlyList<IslandNpc> People => people;
 

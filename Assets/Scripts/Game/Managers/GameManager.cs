@@ -2231,7 +2231,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
     private void OnGUI()
     {
-        if (!SessionSettings.IsAdministrator || RavebridgeReveal.Playing)
+        if (!SessionSettings.IsAdministrator || RavebridgeReveal.Playing || TowerCutscene.Playing)
         {
             return;
         }
@@ -2311,6 +2311,17 @@ public class GameManager : MonoBehaviour, IGameManager
         if (Ravebridge && !Ravebridge.Active && GUI.Button(GetButtonRect(buttonIndex++), "Ravebridge Rises"))
         {
             Ravebridge.ReplayReveal();
+        }
+
+        // the tower's cutscenes again: the first opening (over Mossgate and up the tower) and the open town's arrival
+        var tower = TowerManager.Instance;
+        if (tower && !tower.Opening && GUI.Button(GetButtonRect(buttonIndex++), "Tower Opens"))
+        {
+            tower.ReplayOpening();
+        }
+        if (tower && !tower.Opening && GUI.Button(GetButtonRect(buttonIndex++), "Town Arrival"))
+        {
+            tower.ReplayArrival();
         }
 
         if (Arena.Activated)

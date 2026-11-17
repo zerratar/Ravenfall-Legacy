@@ -923,6 +923,9 @@ public static class Localization
     public static string UI_RAVEBRIDGE_TITLE = "Ravebridge";
     public static string UI_RAVEBRIDGE_RISEN = "has risen from the sea";
     public static string UI_CUTSCENE_SKIP = "Skip";
+    public static string UI_TOWER_OPENING_TITLE = "The Tower";
+    public static string UI_TOWER_OPENING_LINE = "opens its gate";
+    public static string UI_TOWER_TOWN_LINE = "Floors {0} to {1}: {2}";
     public static string UI_RB_INTRO_EYEBROW = "Welcome to Ravebridge";
     public static string UI_RB_INTRO_1_TITLE = "You are the hero";
     public static string UI_RB_INTRO_1_TEXT = "In Ravebridge you play your own character by hand: you walk, fight and talk to people yourself, while chat comes along and fights beside you. Here is how it works.";
@@ -952,7 +955,7 @@ public static class Localization
     public static string UI_RB_INTRO_DONE = "Let's go!";
     public static string UI_RB_INTRO_OPEN = "Introduction to Ravebridge";
     public static string UI_SETTINGS_INTROS = "Introductions";
-    public static string UI_SETTINGS_INTROS_HINT = "Ravebridge's introduction and its rising from the sea show again the next time.";
+    public static string UI_SETTINGS_INTROS_HINT = "Ravebridge's introduction and the cutscenes (Ravebridge rising, the tower opening, its towns) show again the next time.";
     public static string UI_SETTINGS_INTROS_BUTTON = "Show again";
     public static string UI_RAVEBRIDGE_JOIN = "Type {command} to come along";
     public static string UI_RAVEBRIDGE_BAR = "Ravebridge: {0} there, open {1}";
@@ -2567,6 +2570,8 @@ public static class Localization
     public static string UI_SETTINGS_RACE_CAMERA = "Regatta camera";
     public static string UI_SETTINGS_SCREEN_SHAKE = "Screen shake";
     public static string UI_SETTINGS_SCREEN_SHAKE_HINT = "Hero mode's hits and the Kraken's roar shake the camera. Always off in potato mode.";
+    public static string UI_SETTINGS_CUTSCENES = "Cutscenes";
+    public static string UI_SETTINGS_CUTSCENES_HINT = "A short scene the first time something big happens: Ravebridge rising from the sea, the tower opening, a new tower town. It takes the camera for a few seconds; Esc skips it.";
     public static string UI_SETTINGS_RACE_CAMERA_HINT = "The banana island regatta gets its own camera: the start, the leaders, close battles, the buoys and the finish. Any camera key takes the camera back.";
     public static string UI_SETTINGS_AFK = "Kick players who are away";
     public static string UI_SETTINGS_AFK_HINT = "Players who have not typed a command for this long are removed.";

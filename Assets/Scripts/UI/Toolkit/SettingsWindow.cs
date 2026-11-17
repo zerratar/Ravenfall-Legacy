@@ -336,6 +336,8 @@ namespace Shinobytes.UI
                 SettingsApplier.RaceCamera, SettingsApplier.Defaults.RaceCamera, SettingsApplier.SetRaceCamera);
             Switch(c, Localization.UI_SETTINGS_SCREEN_SHAKE, Localization.UI_SETTINGS_SCREEN_SHAKE_HINT,
                 SettingsApplier.ScreenShakeSetting, SettingsApplier.Defaults.ScreenShake, SettingsApplier.SetScreenShake);
+            Switch(c, Localization.UI_SETTINGS_CUTSCENES, Localization.UI_SETTINGS_CUTSCENES_HINT,
+                SettingsApplier.Cutscenes, SettingsApplier.Defaults.Cutscenes, SettingsApplier.SetCutscenes);
 
             Section(c, Localization.UI_SETTINGS_SECTION_FREE_CAMERA);
             SliderRow(c, Localization.UI_SETTINGS_FREE_SPEED, Localization.UI_SETTINGS_FREE_SPEED_HINT, 10f, 200f,
@@ -607,11 +609,12 @@ namespace Shinobytes.UI
             Switch(c, Localization.UI_SETTINGS_QUEST_BAR, Localization.UI_SETTINGS_QUEST_BAR_HINT, SettingsApplier.StreamQuestBar, SettingsApplier.Defaults.StreamQuestBar,
                 SettingsApplier.SetStreamQuestBar);
             ButtonRow(c, Localization.UI_SETTINGS_RESET_WINDOWS, Localization.UI_SETTINGS_RESET_WINDOWS_HINT, Localization.UI_SETTINGS_RESET_WINDOWS_BUTTON, ResetWindowPositions);
-            // what is shown only once: Ravebridge's introduction and its rising from the sea
+            // what is shown only once: Ravebridge's introduction and its rising from the sea, the tower's cutscenes
             ButtonRow(c, Localization.UI_SETTINGS_INTROS, Localization.UI_SETTINGS_INTROS_HINT, Localization.UI_SETTINGS_INTROS_BUTTON, () =>
             {
                 RavebridgeIntro.ForgetSeen();
                 if (RavebridgeManager.Instance) RavebridgeManager.Instance.ForgetRevealSeen();
+                if (TowerManager.Instance) TowerManager.Instance.ForgetCutscenesSeen();
             });
         }
 

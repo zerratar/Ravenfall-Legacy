@@ -610,9 +610,7 @@ public class GameCamera : MonoBehaviour
     /// </summary>
     public bool StartCinematic()
     {
-        if (forcedFreeCamera || controlled) return false;
-        if (state == GameCameraType.Raid || state == GameCameraType.Dungeon || state == GameCameraType.Arena) return false;
-        if (gameManager.StreamRaid.IsWar || gameManager.Raid.Started || gameManager.Dungeons.Started) return false;
+        if (!CinematicFree) return false;
         LeaveRace();
         state = GameCameraType.Cinematic;
         observeCamera.ObservePlayer(null);
@@ -623,6 +621,31 @@ public class GameCamera : MonoBehaviour
         islandObserveCamera.enabled = false;
         focusTargetCamera.enabled = false;
         return true;
+    }
+
+    /// <summary>Whether a cutscene could take the camera now (<see cref="StartCinematic"/>).</summary>
+    public bool CinematicFree
+    {
+        get
+        {
+            if (forcedFreeCamera || controlled) return false;
+            if (state == GameCameraType.Raid || state == GameCameraType.Dungeon || state == GameCameraType.Arena || state == GameCameraType.Cinematic) return false;
+            return !(gameManager.StreamRaid.IsWar || gameManager.Raid.Started || gameManager.Dungeons.Started);
+        }
+    }
+
+    /// <summary>The cutscene is over: the camera goes on to <paramref name="player"/>, or to the islands as usual.</summary>
+    public void StopCinematic(PlayerController player)
+    {
+        if (state != GameCameraType.Cinematic) return;
+        if (!player || forcedFreeCamera || controlled || !CanObservePlayer(player))
+        {
+            StopCinematic((IslandController)null);
+            return;
+        }
+        state = GameCameraType.Observe;
+        focusTargetCamera.enabled = false;
+        ObservePlayer(player);
     }
 
     /// <summary>The cutscene is over: the camera goes on to <paramref name="island"/>, or to the islands as usual.</summary>

@@ -26,6 +26,8 @@ public class PlayerSettings
     public bool? RavebridgeUprisings;
     /// <summary>Hero mode's hits and the Kraken's roar shake the camera.</summary>
     public bool? ScreenShake;
+    /// <summary>The cutscenes the first time something big happens (Ravebridge rising, the tower opening, a tower town).</summary>
+    public bool? Cutscenes;
     public bool? DownloadUpdatesEarly;
     public bool? InstallUpdatesAutomatically;
     public bool? QuestTracker;
@@ -440,6 +442,7 @@ public class PlayerSettings
             Serialize(sw, "regattaCamera", obj.RegattaCamera);
             Serialize(sw, "ravebridgeUprisings", obj.RavebridgeUprisings);
             Serialize(sw, "screenShake", obj.ScreenShake);
+            Serialize(sw, "cutscenes", obj.Cutscenes);
             Serialize(sw, "downloadUpdatesEarly", obj.DownloadUpdatesEarly);
             Serialize(sw, "installUpdatesAutomatically", obj.InstallUpdatesAutomatically);
             Serialize(sw, "questTracker", obj.QuestTracker);

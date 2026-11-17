@@ -455,6 +455,38 @@ after a clear took them down to Mossgate and unloaded the crypt; a newcomer's `!
 everyone back to their islands (one player voting twice counts once); a sailor sat on the bench by Rimeholt's frozen boat.
 Not checked: the after-clear walk with a real boss kill (tested without the server call), the vote replies in a real chat.
 
+## 17. Cutscenes (2026-11-17)
+
+Zerratar (2026-11-17): players were pleasantly surprised by Ravebridge rising from the sea, so more cutscenes would be nice:
+the first time the tower opens, the floor bosses, the new towns. Decided: the rare moments get a real cutscene, the frequent
+ones stay short so the climb is not interrupted.
+
+- **The tower opens (built).** The first time a stream sends someone into the tower, the camera comes in high over the
+  trees with the tower standing in the haze, glides over Mossgate's square to the gate and ends low beside the gatehouse,
+  looking up the tower, with "The Tower, opens its gate". 20 seconds. Joins wait for it, as for Ravebridge, and go through
+  after it (the chat reply is the usual "the tower opens, you will be taken to floor N in a moment"). Mossgate loads for it
+  when it is not open; nobody walks in, and it goes again when nobody comes.
+- **A new band's town (built).** The first time a stream reaches a band's town (after the band's last boss, floors 10, 20,
+  and on), a fly-over of the town while the players walk in, with its name and "Floors 11 to 20: The Frozen Vault". 15
+  seconds, and at the end the camera goes to someone in the town. Mossgate has none of its own: the opening is its arrival.
+- **Next (not built):** a short boss intro the first time a boss is fought (a few seconds on the boss, its name and line, a
+  taunt animation where its model has one, a big wind-up swing where not), and a 3 to 4 second "boss falls" moment after
+  every clear (slow motion on the falling boss, "Floor 7 cleared").
+- **How they are made.** Each town has a `Cutscene` child with an "Arrival" row of camera poses (and "Opening" at the
+  tower's foot); `TowerCutscene` flies a smooth curve through them at an even pace, easing in and out, and the name shows over
+  the last four seconds with a deep boom. The builders place the poses; `tools/tower/tower-cutscene-preview.cs` renders
+  frames along a path in edit mode to tune them. A new town only needs its row of poses and a title colour.
+- **What they share with Ravebridge's.** `CutsceneScreen`: the screen steps aside, a Skip button sits in the corner (Esc and
+  Space too), the name has a soft dark band behind it so it reads over snow or a bright sky. One **Cutscenes** setting
+  (camera settings) turns them all off, Ravebridge's rising included; the settings' "Introductions" plays them again. Each
+  plays once per streamer on this PC, and only when the camera is free (not in a raid, a dungeon, a war or a character played
+  by hand); a skipped chance is tried again next session. The debug menu has "Tower Opens" and "Town Arrival".
+- **The horizon in wide shots.** From high up, a town's ground ends a hundred metres out and the sky's dark lower half
+  showed past it like a blue sea round a floating plateau. While a place's look is on, a wide sheet in its fog colour lies
+  under it and a low ring of the same colour stands round the camera up to the horizon, so the haze reaches the horizon.
+- **Rimeholt's snow** was a checkerboard: the glacier's builder made its terrain layers anew on every run (new ids), and
+  Rimeholt uses them too. The builder now updates them in place, and Rimeholt was rebuilt.
+
 ## Open questions
 
 - Is the tower always open while a stream is live, or does the streamer open it, as with Ravebridge?

@@ -105,7 +105,7 @@ public static class BackgroundUpdate
         if (gm.Raid && gm.Raid.IsEventActive) return true;
         if (gm.Dungeons && gm.Dungeons.Active) return true;
         if (RavebridgeManager.Instance && RavebridgeManager.Instance.Active) return true;
-        return RavebridgeReveal.Playing || WaveRun.Current != null || Regatta.Running || PirateRaid.Running;
+        return RavebridgeReveal.Playing || TowerCutscene.Playing || WaveRun.Current != null || Regatta.Running || PirateRaid.Running;
     }
 
     /// <summary>

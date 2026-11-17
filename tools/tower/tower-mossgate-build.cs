@@ -744,6 +744,33 @@ foreach (var st in work.GetComponentsInChildren<UnityEngine.Transform>())
 }
 log.AppendLine("work stands unreachable: " + unreachable);
 
+// ---- the cutscene (TowerCutscene): the camera's way through the town, poses in order (tools/tower/tower-cutscene-preview.cs
+// renders them); Arrival the first time a stream gets here, Opening on from it up the tower the first time the tower opens
+var cut = new UnityEngine.GameObject("Cutscene").transform;
+cut.SetParent(root.transform, false);
+void Pose(UnityEngine.Transform row, int n, float x, float y, float z, float lx, float ly, float lz)
+{
+    var pose = new UnityEngine.GameObject("Shot " + n).transform;
+    pose.SetParent(row, false);
+    pose.position = origin + new UnityEngine.Vector3(x, y, z);
+    pose.LookAt(origin + new UnityEngine.Vector3(lx, ly, lz));
+}
+{
+    var row = new UnityEngine.GameObject("Arrival").transform; row.SetParent(cut, false);
+    Pose(row, 1, 0f, 55f, -125f, 0f, 20f, 40f);
+    Pose(row, 2, -4f, 26f, -60f, 0f, 8f, 20f);
+    Pose(row, 3, 4f, 12f, -14f, 0f, 8f, 40f);
+    Pose(row, 4, 6f, 7f, 10f, 0f, 14f, 60f);
+}
+{
+    var row = new UnityEngine.GameObject("Opening").transform; row.SetParent(cut, false);
+    Pose(row, 1, 12f, 4f, 18f, 0f, 32f, 82f);
+    Pose(row, 2, 17f, 2.5f, 23f, -2f, 50f, 82f);
+}
+town.Cutscene = cut;
+town.TitleColor = new UnityEngine.Color(1f, 0.84f, 0.36f);
+town.TitleOutline = new UnityEngine.Color(0.25f, 0.15f, 0.02f);
+
 var scenePath = folder + "/Tower_Mossgate.unity";
 UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene, scenePath);
 UnityEditor.SceneManagement.EditorSceneManager.CloseScene(scene, true);
