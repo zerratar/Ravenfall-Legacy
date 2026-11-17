@@ -607,6 +607,38 @@ public class RaidManager : MonoBehaviour, IEvent
         }
     }
 
+    /// <summary>How far from a cliff, wall or shore the boss wants to stand: it grows to 3.5 times a player's size.</summary>
+    private const float BossRoom = 5f;
+
+    /// <summary>
+    ///     Where the raid boss appears by an area: on the walkable ground near its centre, somewhere players can walk to
+    ///     from the island's spawn, clear of cliffs and walls (the centre dropped onto the first rock below it stood the
+    ///     boss in Ironhill's iron mountain). The old spot, the centre a little up, when the navmesh has nothing there.
+    /// </summary>
+    private static Vector3 BossSpot(Chunk chunk)
+    {
+        var centre = chunk.CenterPointWorld;
+        var mask = NavMeshHelper.AreaMaskAt(centre);
+        var hasStart = UnityEngine.AI.NavMesh.SamplePosition(chunk.Island ? chunk.Island.SpawnPosition : centre, out var start, 10f, mask);
+        var path = new UnityEngine.AI.NavMeshPath();
+        var best = centre + Vector3.up * 3.4f;
+        var bestRoom = -1f;
+        for (var i = 0; i < 16; i++)
+        {
+            var offset = i == 0 ? Vector2.zero : UnityEngine.Random.insideUnitCircle * 14f;
+            if (!UnityEngine.AI.NavMesh.SamplePosition(centre + new Vector3(offset.x, 0f, offset.y), out var hit, 6f, mask)) continue;
+            if (hasStart && (!UnityEngine.AI.NavMesh.CalculatePath(start.position, hit.position, mask, path) || path.status != UnityEngine.AI.NavMeshPathStatus.PathComplete)) continue;
+            var room = UnityEngine.AI.NavMesh.FindClosestEdge(hit.position, out var edge, mask) ? edge.distance : 0f;
+            if (room >= BossRoom) return hit.position;
+            if (room > bestRoom)
+            {
+                best = hit.position;
+                bestRoom = room;
+            }
+        }
+        return best;
+    }
+
     private bool SpawnRaidBoss()
     {
         try
@@ -630,7 +662,7 @@ public class RaidManager : MonoBehaviour, IEvent
 
                 if (randomChunk != null)
                 {
-                    spawnPosition = randomChunk.CenterPointWorld + (Vector3.up * 3.4f);
+                    spawnPosition = BossSpot(randomChunk);
                     randomChunk.Island.Statistics.RaidBossesSpawned++;
                 }
             }

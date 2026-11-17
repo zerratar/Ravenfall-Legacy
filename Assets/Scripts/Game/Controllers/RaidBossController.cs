@@ -73,7 +73,11 @@ public class RaidBossController : MonoBehaviour
 
     public void UnlockMovement()
     {
-        enemyController.AdjustPlacement();
+        // RaidManager puts the boss on the walkable ground; dropping it from above again would land it on the first rock
+        // under it (a cliff's ledge, inside a mountain). Only a spot off the navmesh is dropped onto the ground.
+        var position = _transform.position;
+        if (UnityEngine.AI.NavMesh.SamplePosition(position, out var hit, 1f, NavMeshHelper.AreaMaskAt(position))) enemyController.SetPosition(hit.position);
+        else enemyController.AdjustPlacement();
         enemyController.Unlock(true);
     }
 
