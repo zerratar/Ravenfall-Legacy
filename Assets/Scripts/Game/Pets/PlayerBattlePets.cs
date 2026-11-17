@@ -47,6 +47,13 @@ public sealed class PlayerBattlePets
     }
     public BattlePetController Controller { get; private set; }
 
+    /// <summary>
+    ///     Experience a pet has earned that is not sent yet, with the Rookery's bonus the server will add: the details
+    ///     window's bar moves with it instead of once a minute.
+    /// </summary>
+    public double Unsent(BattlePet pet) =>
+        pet != null && pet.Id == pendingPet ? pendingExperience * (1 + Rookery.ExperienceBonus(RookeryLevel)) : 0;
+
     /// <summary>The kind being tamed (!tame), or null.</summary>
     public PetSpecies Taming { get; private set; }
 

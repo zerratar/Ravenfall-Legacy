@@ -112,12 +112,13 @@
                 <!-- The skill tree loadout (combat v2): each active with its cooldown. Hidden without one. -->
                 <engine:VisualElement name="details-loadout" class="rf-loadout" />
 
-                <!-- Gear, folded away by default. The two buttons switch between the equipment and the list of
-                     every stat (docs/mockups/details-vitality-*.webp); either opens the section. -->
+                <!-- Gear, folded away by default. The buttons switch between the equipment, the list of every
+                     stat (docs/mockups/details-vitality-*.webp) and the battle pet that is out; any opens the section. -->
                 <engine:VisualElement name="details-gear-header" class="rf-gear-header">
                     <engine:VisualElement class="rf-segment">
                         <engine:Button name="gear-view-equipment" text="EQUIPMENT" class="rf-segment__button" />
                         <engine:Button name="gear-view-stats" text="STATS" class="rf-segment__button" />
+                        <engine:Button name="gear-view-pet" text="PET" class="rf-segment__button" />
                     </engine:VisualElement>
                     <engine:VisualElement name="details-scrolls" class="rf-gear-header__scrolls" />
                     <engine:VisualElement class="rf-details__spacer" picking-mode="Ignore" />
@@ -139,6 +140,27 @@
                         <engine:VisualElement name="details-slots" class="rf-slots" />
                     </engine:VisualElement>
                     <engine:VisualElement name="details-stats" class="rf-stats" />
+                    <!-- The battle pet that is out: its level and experience, kind and health, its numbers in the
+                         columns below. Without one, the stable. -->
+                    <engine:VisualElement name="details-pet" class="rf-training rf-pet">
+                        <engine:VisualElement name="pet-icon" class="rf-training__icon" picking-mode="Ignore" />
+                        <engine:VisualElement class="rf-training__main" picking-mode="Ignore">
+                            <engine:VisualElement class="rf-training__line" picking-mode="Ignore">
+                                <engine:Label name="pet-title" class="rf-training__title" picking-mode="Ignore" />
+                                <engine:VisualElement class="rf-details__spacer" picking-mode="Ignore" />
+                                <engine:Label name="pet-percent" class="rf-training__percent" picking-mode="Ignore" />
+                            </engine:VisualElement>
+                            <engine:VisualElement name="pet-bar" class="rf-training__bar" picking-mode="Ignore">
+                                <engine:VisualElement name="pet-fill" class="rf-training__fill" picking-mode="Ignore" />
+                            </engine:VisualElement>
+                            <engine:Label name="pet-status" class="rf-training__status" picking-mode="Ignore" />
+                            <engine:VisualElement class="rf-training__line" picking-mode="Ignore">
+                                <engine:Label name="pet-next" class="rf-training__next" picking-mode="Ignore" />
+                                <engine:VisualElement class="rf-details__spacer" picking-mode="Ignore" />
+                                <engine:Label name="pet-rate" class="rf-training__rate" picking-mode="Ignore" />
+                            </engine:VisualElement>
+                        </engine:VisualElement>
+                    </engine:VisualElement>
                     <!-- Every stat, filled in code: health and defence on the left, offence and elements on the right. -->
                     <engine:VisualElement name="details-attrs" class="rf-attrs">
                         <engine:VisualElement name="attrs-left" class="rf-attrs__column" />

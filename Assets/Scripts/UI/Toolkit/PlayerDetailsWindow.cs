@@ -193,7 +193,9 @@ namespace Shinobytes.UI
         private PlayerController player;
         private bool visible = true;
         private bool gearOpen;
-        private bool statsView;
+        private int gearView; // 0 equipment, 1 every stat, 2 the battle pet
+        private bool statsView => gearView == 1;
+        private bool petView => gearView == 2;
         private float nextRefresh;
         private float nextSlowRefresh;
         private SkillStat clanEnchanting;
@@ -223,6 +225,17 @@ namespace Shinobytes.UI
         private VisualElement attrsRight;
         private string shownAttrs;
 
+        // The pet view (2026-11-17).
+        private Button viewPet;
+        private VisualElement petIcon;
+        private Label petTitle;
+        private Label petPercent;
+        private VisualElement petBar;
+        private VisualElement petFill;
+        private Label petStatus;
+        private Label petNext;
+        private Label petRate;
+
         // ---- Lifecycle -------------------------------------------------------------------
 
         private void Awake()
@@ -233,7 +246,7 @@ namespace Shinobytes.UI
             }
 
             gearOpen = PlayerPrefs.GetInt(GearOpenKey, 0) == 1;
-            statsView = PlayerPrefs.GetInt(GearViewKey, 0) == 1;
+            gearView = Mathf.Clamp(PlayerPrefs.GetInt(GearViewKey, 0), 0, 2);
         }
 
         private void OnEnable()
@@ -363,13 +376,29 @@ namespace Shinobytes.UI
             if (viewEquipment != null)
             {
                 viewEquipment.text = Localization.UI_DETAILS_EQUIPMENT;
-                viewEquipment.clicked += () => SetGearView(false);
+                viewEquipment.clicked += () => SetGearView(0);
             }
             if (viewStats != null)
             {
                 viewStats.text = Localization.UI_DETAILS_STATS;
-                viewStats.clicked += () => SetGearView(true);
+                viewStats.clicked += () => SetGearView(1);
             }
+            viewPet = root.Q<Button>("gear-view-pet");
+            if (viewPet != null)
+            {
+                viewPet.text = Localization.UI_DETAILS_PET;
+                viewPet.clicked += () => SetGearView(2);
+            }
+            petIcon = root.Q<VisualElement>("pet-icon");
+            if (petIcon != null && iconBySkill.TryGetValue(Skill.Taming, out var paw) && paw != null)
+                petIcon.style.backgroundImage = new StyleBackground(paw);
+            petTitle = root.Q<Label>("pet-title");
+            petPercent = root.Q<Label>("pet-percent");
+            petBar = root.Q<VisualElement>("pet-bar");
+            petFill = root.Q<VisualElement>("pet-fill");
+            petStatus = root.Q<Label>("pet-status");
+            petNext = root.Q<Label>("pet-next");
+            petRate = root.Q<Label>("pet-rate");
             attrsLeft = root.Q<VisualElement>("attrs-left");
             attrsRight = root.Q<VisualElement>("attrs-right");
 
@@ -481,12 +510,12 @@ namespace Shinobytes.UI
             return gearOpen;
         }
 
-        /// <summary>Equipment or the list of every stat; either button opens the section if it was folded.</summary>
-        private void SetGearView(bool stats)
+        /// <summary>Equipment, the list of every stat or the pet; any button opens the section if it was folded.</summary>
+        private void SetGearView(int view)
         {
             tooltip?.Hide();
-            statsView = stats;
-            PlayerPrefs.SetInt(GearViewKey, stats ? 1 : 0);
+            gearView = view;
+            PlayerPrefs.SetInt(GearViewKey, view);
             PlayerPrefs.Save();
             shownAttrs = null;
             if (!gearOpen)
@@ -1487,8 +1516,14 @@ namespace Shinobytes.UI
         /// </summary>
         private void RefreshAttrs()
         {
-            if (!gearOpen || !statsView || attrsLeft == null || attrsRight == null || !player || player.Stats?.Health == null)
+            if (!gearOpen || gearView == 0 || attrsLeft == null || attrsRight == null || !player || player.Stats?.Health == null)
             {
+                return;
+            }
+
+            if (petView)
+            {
+                RefreshPet();
                 return;
             }
 
@@ -1578,6 +1613,161 @@ namespace Shinobytes.UI
             shownAttrs = text;
             FillAttrColumn(attrsLeft, left);
             FillAttrColumn(attrsRight, right);
+        }
+
+        /// <summary>
+        ///     The battle pet that is out: name, level and experience on the bar (its unsent experience too), kind and
+        ///     health, and its numbers from the sheet it fights with. Without one out, the stable.
+        /// </summary>
+        private void RefreshPet()
+        {
+            var pets = player.BattlePets;
+            var pet = pets?.Active;
+            var left = new List<(string Heading, List<AttrRow> Rows)>();
+            var right = new List<(string Heading, List<AttrRow> Rows)>();
+            string title, percent, status, next, rate;
+            var fill = 0f;
+            var species = pet != null ? RavenNest.Combat.BattlePets.GetSpecies(pet.Species) : null;
+            var taming = player.Stats?.Taming != null ? (int)player.Stats.Taming.Level : 1;
+
+            if (pet == null || species == null)
+            {
+                var count = pets != null ? pets.Stable.Count : 0;
+                title = count == 0 ? Localization.UI_PET_NONE : Localization.UI_PET_NONE_OUT;
+                percent = string.Empty;
+                var size = pets != null && pets.ServerStableSize > 0 ? pets.ServerStableSize : RavenNest.Combat.BattlePets.StableSize(taming);
+                status = count == 0 ? string.Empty : string.Format(CultureInfo.InvariantCulture, Localization.UI_PET_STABLE_SIZE, count, size);
+                next = count == 0 ? Localization.UI_PET_NONE_HINT : Localization.UI_PET_NONE_OUT_HINT;
+                rate = string.Empty;
+                if (count > 0)
+                {
+                    var stable = new List<AttrRow>();
+                    foreach (var p in pets.Stable) stable.Add(StableRow(pets, p));
+                    left.Add((Localization.UI_PET_GROUP_STABLE, stable));
+                }
+            }
+            else
+            {
+                var c = pets.Controller;
+                var sheet = c && c.Sheet != null ? c.Sheet : species.Sheet(pet.Level, pet.Stage);
+                var cap = RavenNest.Combat.BattlePets.LevelCap(taming);
+                var need = (long)GameMath.ExperienceForLevel(pet.Level + 1);
+                var have = pet.Experience + (long)pets.Unsent(pet);
+                var capped = pet.Level >= cap;
+                title = pet.Name;
+                percent = Localization.UI_DETAILS_LEVEL_CAPTION + " " + pet.Level.ToString(CultureInfo.InvariantCulture);
+                fill = need > 0 ? Mathf.Clamp01((float)((double)have / need)) : 1f;
+                status = capped
+                    ? string.Format(CultureInfo.InvariantCulture, Localization.UI_PET_CAPPED, pet.Level + 1)
+                    : string.Format(CultureInfo.InvariantCulture, Localization.UI_PET_EXP, HudFormat.Grouped(System.Math.Min(have, need)), HudFormat.Grouped(need));
+                next = pet.Stage >= RavenNest.Combat.BattlePets.MaxStage
+                    ? Localization.UI_PET_EVOLVED
+                    : string.Format(CultureInfo.InvariantCulture, Localization.UI_PET_EVOLVES, species.NameAt(pet.Stage + 1),
+                        RavenNest.Combat.BattlePets.EvolveLevels[pet.Stage], RavenNest.Combat.BattlePets.EvolveSkillLevels[pet.Stage]);
+                var max = c ? c.MaxHealth : Mathf.Max(1, sheet.MaxHealth);
+                // health is in the columns; the bar's corner only says when the pet is out cold
+                rate = c && c.KnockedOut ? Localization.UI_PET_KNOCKED_OUT : string.Empty;
+
+                // what it is
+                var about = new List<AttrRow>
+                {
+                    new AttrRow(Localization.UI_PET_KIND, species.NameAt(pet.Stage)),
+                    new AttrRow(Localization.UI_PET_ROLE, species.Role.ToString()),
+                    new AttrRow(Localization.UI_PET_ELEMENT, species.Element == RavenNest.Combat.Element.Physical ? Localization.UI_PET_ELEMENT_NONE
+                        : species.Element + " " + Percent(System.Math.Min(1, species.ElementShare))),
+                    new AttrRow(Localization.UI_PET_ATTACKS, species.Strike == RavenNest.Combat.PetStrike.Bite ? Localization.UI_PET_BITES
+                        : species.Strike == RavenNest.Combat.PetStrike.Pounce ? Localization.UI_PET_POUNCES : Localization.UI_PET_BOLTS),
+                    new AttrRow(Localization.UI_PET_STAGE, string.Format(CultureInfo.InvariantCulture, Localization.UI_PET_STAGE_OF, pet.Stage + 1, RavenNest.Combat.BattlePets.MaxStage + 1)),
+                    new AttrRow(Localization.UI_PET_LEVEL_CAP, cap.ToString(CultureInfo.InvariantCulture)),
+                };
+                left.Add((Localization.UI_PET_GROUP_PET, about));
+
+                // health and defense
+                var defence = new List<AttrRow>
+                {
+                    new AttrRow(Localization.UI_STATS_HEALTH, HudFormat.Grouped(c ? c.Health : max) + " / " + HudFormat.Grouped(max)),
+                    new AttrRow(Localization.UI_STATS_ARMOUR, HudFormat.Grouped(sheet.EffectiveArmor)),
+                    new AttrRow(Localization.UI_STATS_ARMOUR_CUT, Percent(RavenNest.Combat.CombatMath.ArmorReduction(sheet.EffectiveArmor))),
+                };
+                foreach (var e in new[] { RavenNest.Combat.Element.Fire, RavenNest.Combat.Element.Ice, RavenNest.Combat.Element.Lightning, RavenNest.Combat.Element.Poison })
+                {
+                    var resist = sheet.Resistance[e];
+                    if (resist != 0) defence.Add(new AttrRow(string.Format(CultureInfo.InvariantCulture, Localization.UI_STATS_ELEMENT_RESIST, e), Percent(resist), resist > 0, resist < 0));
+                }
+                left.Add((Localization.UI_STATS_GROUP_DEFENCE, defence));
+
+                // offense, in its own style
+                var style = species.Stats != null ? species.Stats.Style : RavenNest.Combat.AttackStyle.Melee;
+                var s = sheet.Style(style);
+                var offence = new List<AttrRow>
+                {
+                    new AttrRow(Localization.UI_STATS_POWER, HudFormat.Grouped(s.EffectivePower)),
+                    new AttrRow(Localization.UI_STATS_ACCURACY, HudFormat.Grouped(s.EffectiveAccuracy)),
+                    new AttrRow(Localization.UI_STATS_MAX_HIT, HudFormat.Grouped((int)RavenNest.Combat.CombatMath.MaxHit(s.DamageLevel, s.EffectivePower))),
+                };
+                if (species.Stats != null && species.Stats.HealingLevel > 0)
+                    offence.Add(new AttrRow(Localization.UI_STATS_MAX_HEAL, HudFormat.Grouped((int)RavenNest.Combat.CombatMath.MaxHit(sheet.Healing.DamageLevel, sheet.Healing.EffectivePower))));
+                if (species.Stats != null) offence.Add(new AttrRow(Localization.UI_PET_ATTACK_EVERY, species.Stats.AttackInterval.ToString("0.0", CultureInfo.InvariantCulture) + " s"));
+                if (sheet.ThreatMultiplier != 1) offence.Add(new AttrRow(Localization.UI_PET_THREAT, SignedPercent(sheet.ThreatMultiplier - 1)));
+                right.Add((Localization.UI_STATS_GROUP_OFFENCE, offence));
+
+                // the skills in its slots
+                var skills = new List<AttrRow>();
+                foreach (var id in (pet.Slots ?? string.Empty).Split(','))
+                {
+                    var skill = RavenNest.Combat.BattlePets.GetSkill(id);
+                    if (skill != null) skills.Add(new AttrRow(skill.Name, skill.IsActive ? Localization.UI_PET_SKILL_ACTIVE : Localization.UI_PET_SKILL_PASSIVE));
+                }
+                if (skills.Count == 0) skills.Add(new AttrRow(Localization.UI_PET_NO_SKILLS, string.Empty));
+                skills.Add(new AttrRow(Localization.UI_PET_SLOTS, RavenNest.Combat.BattlePets.SkillSlots(taming, pet.Stage).ToString(CultureInfo.InvariantCulture)));
+                right.Add((Localization.UI_PET_GROUP_SKILLS, skills));
+
+                // the rest of the stable
+                if (pets.Stable.Count > 1)
+                {
+                    var stable = new List<AttrRow>();
+                    foreach (var p in pets.Stable) if (p != pet) stable.Add(StableRow(pets, p));
+                    right.Add((Localization.UI_PET_GROUP_STABLE, stable));
+                }
+            }
+
+            ShowPetText(petTitle, title);
+            ShowPetText(petPercent, percent);
+            ShowPetText(petStatus, status);
+            ShowPetText(petNext, next);
+            ShowPetText(petRate, rate);
+            if (petBar != null) petBar.style.display = pet != null && species != null ? DisplayStyle.Flex : DisplayStyle.None;
+            if (petFill != null) petFill.style.width = new Length(fill * 100f, LengthUnit.Percent);
+
+            var key = new System.Text.StringBuilder("pet|");
+            foreach (var g in left) { key.Append(g.Heading).Append('|'); foreach (var r in g.Rows) key.Append(r.Label).Append('=').Append(r.Value).Append(';'); }
+            key.Append("||");
+            foreach (var g in right) { key.Append(g.Heading).Append('|'); foreach (var r in g.Rows) key.Append(r.Label).Append('=').Append(r.Value).Append(';'); }
+            var text = key.ToString();
+            if (text == shownAttrs)
+            {
+                return;
+            }
+
+            shownAttrs = text;
+            FillAttrColumn(attrsLeft, left);
+            FillAttrColumn(attrsRight, right);
+        }
+
+        private static AttrRow StableRow(PlayerBattlePets pets, RavenNest.Models.BattlePet p)
+        {
+            if (RavenNest.Combat.PetEggs.IsUnhatched(p.Level))
+                return new AttrRow(p.Name, string.Format(CultureInfo.InvariantCulture, Localization.UI_PET_EGG, pets.MinutesLeft(p)));
+            var kind = RavenNest.Combat.BattlePets.GetSpecies(p.Species)?.NameAt(p.Stage) ?? p.Species;
+            return new AttrRow(p.Name, kind + " " + Localization.UI_DETAILS_LEVEL_CAPTION + " " + p.Level.ToString(CultureInfo.InvariantCulture));
+        }
+
+        private static void ShowPetText(Label label, string text)
+        {
+            if (label == null) return;
+            text = text ?? string.Empty;
+            if (label.text != text) label.text = text;
+            label.style.display = text.Length == 0 ? DisplayStyle.None : DisplayStyle.Flex;
         }
 
         private static void FillAttrColumn(VisualElement column, List<(string Heading, List<AttrRow> Rows)> groups)
@@ -1905,11 +2095,13 @@ namespace Shinobytes.UI
             {
                 window.EnableInClassList("rf-details--gear-closed", !gearOpen);
                 window.EnableInClassList("rf-details--stats-view", statsView);
+                window.EnableInClassList("rf-details--pet-view", petView);
             }
 
             // the switch shows the view that would show when open; folded, neither is lit
-            viewEquipment?.EnableInClassList("rf-segment__button--on", gearOpen && !statsView);
+            viewEquipment?.EnableInClassList("rf-segment__button--on", gearOpen && gearView == 0);
             viewStats?.EnableInClassList("rf-segment__button--on", gearOpen && statsView);
+            viewPet?.EnableInClassList("rf-segment__button--on", gearOpen && petView);
         }
 
         private void ApplyPreviewTexture()

@@ -1066,6 +1066,23 @@
     display: flex;
 }
 
+/* the pet view: the pet's bar on top, its numbers in the stat columns */
+.rf-pet {
+    display: none;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.rf-details--pet-view .rf-gear__top,
+.rf-details--pet-view .rf-stats {
+    display: none;
+}
+
+.rf-details--pet-view .rf-pet,
+.rf-details--pet-view .rf-attrs {
+    display: flex;
+}
+
 .rf-attrs__column {
     flex-grow: 1;
     flex-basis: 0;
