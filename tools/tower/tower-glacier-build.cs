@@ -198,13 +198,7 @@ for (var i = 0; i < 270; i++)
     var pineScale = kind < 4 ? 2.4f + R() * 1.0f : kind < 7 ? 1.1f + R() * 0.5f : 1.0f + R() * 0.6f;
     Place(name + ".prefab", OnGround(x, z) + UnityEngine.Vector3.down * 0.4f, pineScale, -1, foliage);
 }
-// mountains far behind the hills, cliffs on the rim
-for (var i = 0; i < 9; i++)
-{
-    var a = i / 9f * UnityEngine.Mathf.PI * 2f + R() * 0.3f; var r = 150f + R() * 25f;
-    var x = UnityEngine.Mathf.Cos(a) * r; var z = UnityEngine.Mathf.Sin(a) * r;
-    Place(env + "SM_Env_Mountain_0" + (1 + rng.Next(3)) + ".prefab", origin + new UnityEngine.Vector3(x, -6f, z), 3.5f + R() * 1.5f, -1, props);
-}
+// cliffs on the rim (no SM_Env_Mountain: scaled up, it drew white streaks across the sky)
 for (var i = 0; i < 24; i++)
 {
     var a = i / 24f * UnityEngine.Mathf.PI * 2f + R() * 0.15f; var r = 76f + R() * 16f;

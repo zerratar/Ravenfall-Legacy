@@ -48,6 +48,12 @@ public sealed class Ocean : MonoBehaviour
     /// <summary>Cheap water for now (potato mode), whatever the setting.</summary>
     public static bool Suppressed { get; set; }
 
+    /// <summary>
+    ///     Places with no sea at all (the tower's floors and towns, far out at z -6000): a camera there sees no water,
+    ///     even when it looks in from outside the place's own reach.
+    /// </summary>
+    public static System.Func<Vector3, bool> NoSeaAt;
+
     /// <summary>The material drawn, made from <see cref="OceanShader"/>.</summary>
     public Material Material => material;
 
@@ -208,7 +214,7 @@ public sealed class Ocean : MonoBehaviour
         var eye = camera.transform.position;
         surface.transform.position = new Vector3(eye.x, transform.position.y, eye.z);
         // well under the sea (down in a dungeon) the water's underside would fill the top of the view
-        if (surfaceRenderer) surfaceRenderer.enabled = eye.y > transform.position.y - 20f;
+        if (surfaceRenderer) surfaceRenderer.enabled = eye.y > transform.position.y - 20f && (NoSeaAt == null || !NoSeaAt(eye));
     }
 
     private void Tear()

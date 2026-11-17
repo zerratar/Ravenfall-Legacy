@@ -124,11 +124,49 @@ public sealed class TowerManager : MonoBehaviour
         Instance = go.AddComponent<TowerManager>();
         // level sync on the floors (docs/tower-design.md section 12)
         CombatRules.SyncFloor = f => f is PlayerController p && p.towerHandler != null ? p.towerHandler.SyncFloor : 0;
+        // the tower stands far out at sea, but its floors and towns have no sea: a camera anywhere near one (a wide
+        // shot from outside its reach too) sees none
+        Ocean.NoSeaAt = NearPlace;
+    }
+
+    /// <summary>How far past a place's own reach the sea stays hidden: the islands are kilometres away.</summary>
+    private const float NoSeaMargin = 400f;
+
+    /// <summary>
+    ///     How far past a place's own reach the camera still sees its look (light, fog, no sky clouds or weather): a
+    ///     wide shot from outside showed MainWorld's sky and sea round the floor. The towns stand 600 m from the floors,
+    ///     so the nearest loaded place wins.
+    /// </summary>
+    private const float LookMargin = 200f;
+
+    private static bool NearPlace(Vector3 eye) => PlaceNear(eye, NoSeaMargin);
+
+    /// <summary>The nearest loaded floor or town within its reach plus a margin, or null.</summary>
+    private static TowerPlace PlaceNear(Vector3 eye, float margin)
+    {
+        // called every frame and for every camera that draws: no allocations
+        var floor = Reach(TowerFloor.Loaded, eye, margin);
+        var town = Reach(TowerTown.Loaded, eye, margin);
+        if (floor < 0f && town < 0f) return null;
+        if (town < 0f) return TowerFloor.Loaded;
+        if (floor < 0f) return TowerTown.Loaded;
+        return floor <= town ? (TowerPlace)TowerFloor.Loaded : TowerTown.Loaded;
+    }
+
+    /// <summary>The ground distance from a place within its reach plus a margin, or -1.</summary>
+    private static float Reach(TowerPlace place, Vector3 eye, float margin)
+    {
+        if (!place) return -1f;
+        var d = eye - place.Centre;
+        d.y = 0f;
+        var distance = d.magnitude;
+        return distance <= place.Radius + margin ? distance : -1f;
     }
 
     private void OnDestroy()
     {
         if (Instance == this) Instance = null;
+        if (Ocean.NoSeaAt == (System.Func<Vector3, bool>)NearPlace) Ocean.NoSeaAt = null;
     }
 
     private GameManager Game => game ? game : (game = FindAnyObjectByType<GameManager>());
@@ -989,13 +1027,9 @@ public sealed class TowerManager : MonoBehaviour
     private void LateUpdate()
     {
         var camera = Camera.main;
+        // the place the camera is at, or near enough to look at from outside (a wide shot): the nearest loaded one
         TowerPlace floor = null;
-        if (camera)
-        {
-            var cam = camera.transform.position;
-            if (TowerFloor.Loaded && TowerFloor.Loaded.Contains(cam)) floor = TowerFloor.Loaded;
-            else if (TowerTown.Loaded && TowerTown.Loaded.Contains(cam)) floor = TowerTown.Loaded;
-        }
+        if (camera) floor = PlaceNear(camera.transform.position, LookMargin);
         var over = floor;
         SetLook(over);
         if (!over) return;

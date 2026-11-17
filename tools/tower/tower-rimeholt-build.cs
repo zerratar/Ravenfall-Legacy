@@ -257,7 +257,7 @@ for (var i = 0; i < 6; i++)
     s.SetPositionAndRotation(OnGround(p.x, p.y) + UnityEngine.Vector3.up * 0.08f, UnityEngine.Quaternion.Euler(0f, yaw, 0f));
 }
 
-// pines on the slopes (none in town: the camera looks down from behind), mountains behind
+// pines on the slopes (none in town: the camera looks down from behind)
 var trees = new[] { "SM_Env_Tree_Pine_01_Snow", "SM_Env_Tree_Pine_02_Snow", "SM_Env_Tree_Pine_03_Snow", "SM_Env_Tree_Pine_04_Snow", "SM_Env_Tree_Pine_Large_01_Snow", "SM_Env_Tree_Pine_Large_02_Snow", "SM_Env_Tree_Pine_Large_03_Snow" };
 for (var i = 0; i < 240; i++)
 {
@@ -268,11 +268,7 @@ for (var i = 0; i < 240; i++)
     var k = rng.Next(trees.Length);
     Place(sv + trees[k] + ".prefab", x, z, k < 4 ? 2.4f + R() : 1.1f + R() * 0.5f, -1, foliage, 0.3f);
 }
-for (var i = 0; i < 8; i++)
-{
-    var a = i / 8f * UnityEngine.Mathf.PI * 2f + R() * 0.3f; var r = 140f + R() * 20f;
-    Place(ve + "SM_Env_Mountain_0" + (1 + rng.Next(3)) + ".prefab", UnityEngine.Mathf.Cos(a) * r, UnityEngine.Mathf.Sin(a) * r, 3.5f + R() * 1.5f, -1, props, 6f);
-}
+// no SM_Env_Mountain behind: scaled up, it drew white streaks across the sky
 // snow drifts round the edge of town, rocks
 for (var i = 0; i < 30; i++)
 {
