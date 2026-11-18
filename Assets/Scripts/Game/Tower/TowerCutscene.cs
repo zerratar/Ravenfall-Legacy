@@ -8,6 +8,7 @@ using UnityEngine;
 ///     The camera glides along a smooth path through the town's poses (<see cref="TowerTown.Cutscene"/>), easing in and
 ///     out, and the name shows over the last seconds. The screen steps aside as for Ravebridge (CutsceneScreen); Esc,
 ///     Space or the Skip button go to the name. Nothing in the world waits for it: players walk into the town meanwhile.
+///     The boss intro and the boss's fall (TowerManager) use it too, with a path worked out round the boss.
 /// </summary>
 public sealed class TowerCutscene : MonoBehaviour
 {
@@ -20,7 +21,9 @@ public sealed class TowerCutscene : MonoBehaviour
     private Vector3[] positions;
     private Vector3[] forwards;
     private float seconds;
+    private float titleSeconds;
     private float time;
+    private Action<float> tick;
     private bool finished;
     private bool boomDone;
     private Transform cam;
@@ -38,11 +41,31 @@ public sealed class TowerCutscene : MonoBehaviour
     public static bool Play(MonoBehaviour host, Transform[] poses, float seconds, string name, string line, Color color, Color outline,
         Func<PlayerController> after, Action done)
     {
-        if (current || RavebridgeReveal.Playing || !host || poses == null || poses.Length < 2) return false;
+        if (poses == null || poses.Length < 2) return false;
+        // copied: the town may go while it plays
+        var positions = new Vector3[poses.Length];
+        var forwards = new Vector3[poses.Length];
+        for (var i = 0; i < poses.Length; i++)
+        {
+            positions[i] = poses[i].position;
+            forwards[i] = poses[i].forward;
+        }
+        return Play(host, positions, forwards, seconds, name, line, color, outline, after, done);
+    }
+
+    /// <summary>
+    ///     The same through poses given as points: where the camera is and which way it looks. The name shows over the
+    ///     last <paramref name="titleSeconds"/>, <paramref name="size"/> big; <paramref name="tick"/> is told the seconds
+    ///     played every frame (a skip jumps them on). <paramref name="top"/> puts the name in the upper part of the screen.
+    /// </summary>
+    public static bool Play(MonoBehaviour host, Vector3[] positions, Vector3[] forwards, float seconds, string name, string line, Color color, Color outline,
+        Func<PlayerController> after, Action done, float titleSeconds = TitleSeconds, int size = 120, Action<float> tick = null, bool top = false)
+    {
+        if (current || RavebridgeReveal.Playing || !host || positions == null || forwards == null || positions.Length < 2 || forwards.Length != positions.Length) return false;
         var game = GameManager.Instance;
         if (!game || !game.Camera || !game.Camera.StartCinematic()) return false;
         current = host.gameObject.AddComponent<TowerCutscene>();
-        current.Begin(poses, seconds, name, line, color, outline, after, done);
+        current.Begin(positions, forwards, seconds, name, line, color, outline, after, done, titleSeconds, size, tick, top);
         return true;
     }
 
@@ -52,21 +75,18 @@ public sealed class TowerCutscene : MonoBehaviour
         if (current) current.Finish();
     }
 
-    private void Begin(Transform[] poses, float seconds, string name, string line, Color color, Color outline, Func<PlayerController> after, Action done)
+    private void Begin(Vector3[] positions, Vector3[] forwards, float seconds, string name, string line, Color color, Color outline,
+        Func<PlayerController> after, Action done, float titleSeconds, int size, Action<float> tick, bool top)
     {
-        // copied: the town may go while it plays
-        positions = new Vector3[poses.Length];
-        forwards = new Vector3[poses.Length];
-        for (var i = 0; i < poses.Length; i++)
-        {
-            positions[i] = poses[i].position;
-            forwards[i] = poses[i].forward;
-        }
-        this.seconds = Mathf.Max(TitleSeconds + 2f, seconds);
+        this.positions = positions;
+        this.forwards = forwards;
+        this.titleSeconds = Mathf.Max(TitleIn + TitleOut + 0.5f, titleSeconds);
+        this.seconds = Mathf.Max(this.titleSeconds + 0.5f, seconds);
         this.after = after;
         this.done = done;
+        this.tick = tick;
         cam = GameManager.Instance.Camera.transform;
-        screen = CutsceneScreen.Show(name, line, color, outline, SkipNow);
+        screen = CutsceneScreen.Show(name, line, color, outline, SkipNow, size, top);
         sound = gameObject.AddComponent<AudioSource>();
         sound.spatialBlend = 0f;
         sound.playOnAwake = false;
@@ -85,10 +105,15 @@ public sealed class TowerCutscene : MonoBehaviour
             SkipNow();
         }
         Place();
+        if (tick != null)
+        {
+            try { tick(time); }
+            catch (Exception exc) { Shinobytes.Debug.LogError("TowerCutscene: " + exc.Message); tick = null; }
+        }
 
-        var start = seconds - TitleSeconds;
+        var start = seconds - titleSeconds;
         var alpha = Mathf.Clamp01((time - start) / TitleIn) * Mathf.Clamp01((seconds - time) / TitleOut);
-        screen?.SetTitle(alpha, (time - start) / TitleSeconds);
+        screen?.SetTitle(alpha, (time - start) / titleSeconds);
         if (!boomDone && time >= start)
         {
             boomDone = true;
@@ -156,7 +181,7 @@ public sealed class TowerCutscene : MonoBehaviour
     {
         if (finished) return;
         // the name for a moment, then the end
-        time = Mathf.Max(time, seconds - TitleIn - 1.2f);
+        time = Mathf.Max(time, Mathf.Max(seconds - titleSeconds, seconds - TitleIn - 1.2f));
         boomDone = true;
     }
 

@@ -29,6 +29,9 @@ nobody can reach.
 `%TEMP%/tower-cutscene.txt` or the scene's own (header says how); the town builders place the poses (`Cutscene/Arrival`,
 Mossgate's `Opening`).
 
+`tower-boss-taunts.cs` makes `Assets/Resources/Tower/Boss Taunts.asset` (`TowerBossTaunts`): the clip each boss model
+plays in its intro. Resources is not in git, so run it on a new checkout, and again after adding a boss model.
+
 `tower-capture2.cs` renders a scene from cameras listed in `%TEMP%/tower-shots.txt` (scene path in
 `%TEMP%/tower-capture.txt`); `tower2-test.cs` and `tower3-test.cs` drive bots through the tower in play mode (steps in their headers; tower3 covers
 the town work places, the votes and the way after a clear).

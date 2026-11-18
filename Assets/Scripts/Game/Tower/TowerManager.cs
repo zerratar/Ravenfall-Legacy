@@ -23,7 +23,8 @@ using UnityEngine.SceneManagement;
 ///     moderator or a chat vote says so (!tower climb); every choice the streamer makes can be made by a vote, so a
 ///     tower never waits on an away streamer (docs/tower-design.md, section 16).
 ///     The first time a stream opens the tower, and the first time it reaches a new band's town, a cutscene plays
-///     (<see cref="TowerCutscene"/>); joins wait for the first.
+///     (<see cref="TowerCutscene"/>); joins wait for the first. The first time a stream fights a boss, a short intro shows
+///     it taunting before the fight starts, and every boss falls in slow motion with the floor's number.
 /// </summary>
 public sealed class TowerManager : MonoBehaviour
 {
@@ -769,7 +770,7 @@ public sealed class TowerManager : MonoBehaviour
         Announce(Localization.MSG_TOWER_BOSS_COUNTDOWN, CurrentFloor, Tower.BossCountdownSeconds, Definition.Boss.Name);
     }
 
-    private async void StartFight()
+    private void StartFight()
     {
         var floor = TowerFloor.Loaded;
         var def = Definition;
@@ -784,6 +785,23 @@ public sealed class TowerManager : MonoBehaviour
         if (!boss)
         {
             Shinobytes.Debug.LogError("TowerManager: floor " + CurrentFloor + " has no template for the boss " + def.Boss.Model);
+            Phase = TowerPhase.Open;
+            return;
+        }
+
+        // the first time the stream fights this boss: its intro first (still the countdown: a join meanwhile counts)
+        if (PlayBossIntro(boss, def, false)) return;
+        BeginFight(boss);
+    }
+
+    private async void BeginFight(EnemyController boss)
+    {
+        var floor = TowerFloor.Loaded;
+        var def = Definition;
+        participants.RemoveWhere(p => !p || p.isDestroyed || p.towerHandler == null || !p.towerHandler.InTower);
+        if (!floor || def == null || !boss || floor.Boss != boss || participants.Count == 0)
+        {
+            EndAttempt();
             Phase = TowerPhase.Open;
             return;
         }
@@ -828,7 +846,7 @@ public sealed class TowerManager : MonoBehaviour
 
         if (boss.Stats.IsDead)
         {
-            Won(def);
+            Won(def, boss);
             return;
         }
 
@@ -942,14 +960,18 @@ public sealed class TowerManager : MonoBehaviour
         return best;
     }
 
-    private async void Won(TowerFloorDefinition def)
+    private async void Won(TowerFloorDefinition def, EnemyController boss)
     {
         var floorNumber = CurrentFloor;
         var ids = participants.Where(p => p && !p.isDestroyed).Select(p => p.Id).Distinct().ToArray();
         var players = ids.Length;
-        EndAttempt();
+        var standing = participants.Where(p => p && !p.isDestroyed && !p.Stats.IsDead && p.towerHandler.InTower).ToList();
+        // the body stays for its fall (slow motion when the cutscene plays), then goes
+        EndAttempt(BossFallSeconds + 1.5f);
         Phase = TowerPhase.Open;
         Announce(Localization.MSG_TOWER_BOSS_DOWN, def.Boss.Name, floorNumber);
+        PlayBossFall(boss, def, floorNumber);
+        foreach (var p in standing) p.Cheer();
 
         var g = Game;
         TowerClearResult result = null;
@@ -1110,14 +1132,16 @@ public sealed class TowerManager : MonoBehaviour
         Announce(message, def.Boss.Name, Tower.BossRetrySeconds);
     }
 
-    private void EndAttempt()
+    /// <param name="bossDelay">Seconds before the boss goes: its fall is shown after a win.</param>
+    private void EndAttempt(float bossDelay = 0f)
     {
         HideRing();
         slamAt = -1f;
         spitAt = -1f;
         if (spitRing) spitRing.SetActive(false);
+        StopBossIntro();
         var floor = TowerFloor.Loaded;
-        if (floor) floor.DespawnBoss();
+        if (floor) floor.DespawnBoss(bossDelay);
         foreach (var p in participants) if (p && p.towerHandler != null) p.towerHandler.BossFightEnded();
         participants.Clear();
     }
@@ -1249,13 +1273,284 @@ public sealed class TowerManager : MonoBehaviour
             });
     }
 
+    // ---- The bosses' cutscenes: the intro the first time, the fall every time
+
+    /// <summary>How long a boss's intro and its fall take, and how long their names show at the end.</summary>
+    public const float BossIntroSeconds = 7f, BossIntroTitleSeconds = 4.2f, BossFallSeconds = 4.5f, BossFallTitleSeconds = 3.4f;
+
+    /// <summary>The earliest the boss taunts in its intro, and how slow its fall is.</summary>
+    public const float TauntAt = 1.1f, FallSpeed = 0.35f;
+
+    /// <summary>The boss's name in its intro: a menacing red.</summary>
+    public static readonly Color BossColor = new Color(1f, 0.42f, 0.32f), BossOutline = new Color(0.24f, 0.03f, 0.02f);
+
+    private EnemyController introBoss;
+    private bool introPlaying;
+    private TowerBossTaunts.Playing taunt;
+
+    private string BossKey(int floor) => "tower.boss." + floor + "." + StreamKey;
+
+    /// <summary>
+    ///     The boss's intro, the first time the stream fights it (or again when <paramref name="replay"/>): the camera comes
+    ///     in from the players' side to below its face while it taunts (a cheer, a roar, the cow eats), with its name and
+    ///     its line. The fight starts after it (<see cref="BeginFight"/>); a replay sends the boss away again. False when
+    ///     it does not play: seen, cutscenes off, the camera busy.
+    /// </summary>
+    private bool PlayBossIntro(EnemyController boss, TowerFloorDefinition def, bool replay)
+    {
+        if (!boss || def == null || introBoss || !SettingsApplier.Cutscenes) return false;
+        var key = BossKey(def.Number);
+        if (!replay && PlayerPrefs.GetInt(key, 0) == 1) return false;
+        var (positions, forwards) = BossShot(boss, false);
+        var line = string.IsNullOrEmpty(def.Boss.Line)
+            ? string.Format(Localization.UI_TOWER_BOSS_FLOOR, def.Number)
+            : string.Format(Localization.UI_TOWER_BOSS_QUOTE, def.Boss.Line);
+        var model = def.Boss.Model;
+        var taunted = false;
+        // timed to end as the camera settles under its face and its name shows (a loop, the cow eating, from early on)
+        var entry = TowerBossTaunts.Get() ? TowerBossTaunts.Get().For(model) : null;
+        var tauntAt = entry != null && !entry.Loops ? Mathf.Max(TauntAt, BossIntroSeconds - entry.Seconds - 0.4f) : TauntAt;
+        introBoss = boss;
+        introPlaying = TowerCutscene.Play(this, positions, forwards, BossIntroSeconds, def.Boss.Name, line, BossColor, BossOutline,
+            SomeoneToWatch, () =>
+            {
+                StopTaunt();
+                var wasFor = introBoss;
+                introBoss = null;
+                introPlaying = false;
+                if (!wasFor) return; // the attempt ended meanwhile
+                if (!replay)
+                {
+                    PlayerPrefs.SetInt(key, 1);
+                    PlayerPrefs.Save();
+                }
+                var floor = TowerFloor.Loaded;
+                if (replay)
+                {
+                    if (floor && floor.Boss == wasFor && Phase == TowerPhase.Open) floor.DespawnBoss();
+                    return;
+                }
+                if (Phase == TowerPhase.Countdown) BeginFight(wasFor);
+            }, BossIntroTitleSeconds, 96, t =>
+            {
+                // played through: back to its own idle
+                if (taunt != null && taunt.Done) StopTaunt();
+                if (taunted || t < tauntAt) return;
+                taunted = true;
+                taunt = TowerBossTaunts.Play(boss, model);
+            }, top: true);
+        if (!introPlaying)
+        {
+            introBoss = null;
+            return false;
+        }
+        // the countdown shows the time the intro takes (a !tower now answers with it)
+        if (Phase == TowerPhase.Countdown) phaseEnds = Time.time + BossIntroSeconds;
+        return true;
+    }
+
+    private void StopTaunt()
+    {
+        taunt?.Stop();
+        taunt = null;
+    }
+
+    /// <summary>The attempt ended during the intro (the tower closed): it stops, and no fight follows.</summary>
+    private void StopBossIntro()
+    {
+        StopTaunt();
+        if (!introBoss) return;
+        introBoss = null;
+        if (introPlaying) TowerCutscene.Stop();
+        introPlaying = false;
+    }
+
+    /// <summary>
+    ///     The boss has fallen: a few seconds round it while it falls in slow motion, "Floor 7 cleared". Every clear, when
+    ///     cutscenes are on and the camera is free; the players cheer meanwhile.
+    /// </summary>
+    private bool PlayBossFall(EnemyController boss, TowerFloorDefinition def, int floorNumber)
+    {
+        if (!boss || def == null || !SettingsApplier.Cutscenes) return false;
+        var (positions, forwards) = BossShot(boss, true);
+        var played = TowerCutscene.Play(this, positions, forwards, BossFallSeconds, string.Format(Localization.UI_TOWER_FLOOR_CLEARED, floorNumber),
+            string.Format(Localization.UI_TOWER_BOSS_FALLS, def.Boss.Name), CutsceneScreen.Gold, CutsceneScreen.GoldOutline, SomeoneToWatch, null,
+            BossFallTitleSeconds, 100, top: true);
+        // its death from the start, slowly, held at the end (it goes with the body)
+        if (played && TowerBossTaunts.Fall(boss, FallSpeed, BossFallSeconds - 0.8f) == null)
+        {
+            var animator = boss.GetComponentInChildren<Animator>();
+            if (animator) animator.speed = FallSpeed;
+        }
+        return played;
+    }
+
+    /// <summary>Who the camera goes to after a boss's cutscene: someone in the fight, or anyone on the floor.</summary>
+    private PlayerController SomeoneToWatch()
+    {
+        foreach (var p in participants) if (p && !p.isDestroyed && !p.Stats.IsDead && p.towerHandler.InTower) return p;
+        return Players().FirstOrDefault(p => p && !p.isDestroyed && !p.Stats.IsDead);
+    }
+
+    /// <summary>
+    ///     The camera's path round a boss, sized to it: the intro comes in from the players' side, high and wide, to low
+    ///     under its face; the fall circles slowly round it from one side to the other. Every pose is pulled in front of
+    ///     a wall between it and the boss, and kept off the ground.
+    /// </summary>
+    private static (Vector3[] Positions, Vector3[] Forwards) BossShot(EnemyController boss, bool fall)
+    {
+        var t = boss.transform;
+        var centre = t.position;
+        var bounds = new Bounds(centre, Vector3.zero);
+        var any = false;
+        foreach (var r in boss.GetComponentsInChildren<Renderer>())
+        {
+            if (!r.enabled || r is ParticleSystemRenderer || r is LineRenderer) continue;
+            if (!any) { bounds = r.bounds; any = true; }
+            else bounds.Encapsulate(r.bounds);
+        }
+        // room to grow: a taunt stands it up or rears it (the bunny's ears left the shot)
+        var height = Mathf.Clamp(1.25f * (bounds.max.y - centre.y), 1.2f, 25f);
+        // how far away: by its height, and some of its length (a dragon's tail should not push the camera out of the room),
+        // and never right in its face
+        var size = Mathf.Clamp(Mathf.Max(height, 0.45f * Mathf.Max(bounds.size.x, bounds.size.z)), 3f, 25f);
+        var front = t.forward;
+        front.y = 0f;
+        front = front.sqrMagnitude > 1e-4f ? front.normalized : Vector3.forward;
+        var up = Vector3.up;
+
+        (Vector3, Vector3)[] Poses(Vector3 f)
+        {
+            var r2 = Vector3.Cross(Vector3.up, f);
+            return fall
+                ? new[]
+                {
+                    (centre + f * 1.9f * size + r2 * 1.3f * size + up * 0.75f * height, centre + up * 0.4f * height),
+                    (centre + f * 1.6f * size - r2 * 0.2f * size + up * 0.5f * height, centre + up * 0.3f * height),
+                    (centre + f * 1.2f * size - r2 * 1.1f * size + up * 0.35f * height, centre + up * 0.25f * height),
+                }
+                : new[]
+                {
+                    (centre + f * 3.2f * size + r2 * 1.6f * size + up * 1.4f * height, centre + up * 0.55f * height),
+                    (centre + f * 2.0f * size + r2 * 0.55f * size + up * 0.55f * height, centre + up * 0.65f * height),
+                    (centre + f * 1.1f * size - r2 * 0.15f * size + up * 0.18f * height, centre + up * 0.62f * height),
+                };
+        }
+
+        // from its front if nothing is in the way, else turned round it to the clearest side (a wall, a pillar, a ruin in
+        // front of the boss's spot hid it): every pose is looked at from the boss's middle and from its feet
+        var feet = centre + up * 0.15f * height;
+        (Vector3, Vector3)[] poses = null;
+        var best = int.MaxValue;
+        foreach (var angle in new[] { 0f, 25f, -25f, 50f, -50f, 75f, -75f, 105f, -105f, 140f, -140f, 180f })
+        {
+            var candidate = Poses(Quaternion.AngleAxis(angle, Vector3.up) * front);
+            var blocked = 0;
+            foreach (var (at, look) in candidate) blocked += (Blocked(look, at) ? 1 : 0) + (Blocked(feet, at) ? 1 : 0);
+            if (blocked >= best) continue;
+            best = blocked;
+            poses = candidate;
+            if (blocked == 0) break;
+        }
+        var positions = new Vector3[poses.Length];
+        var forwards = new Vector3[poses.Length];
+        for (var i = 0; i < poses.Length; i++)
+        {
+            var (at, look) = poses[i];
+            at = Clear(look, at);
+            positions[i] = at;
+            forwards[i] = (look - at).normalized;
+        }
+        return (positions, forwards);
+    }
+
+    /// <summary>
+    ///     <paramref name="at"/> pulled in front of anything solid between it and <paramref name="look"/> (a wall, a
+    ///     pillar; not a character), and at least a little over the ground under it.
+    /// </summary>
+    private static Vector3 Clear(Vector3 look, Vector3 at)
+    {
+        var d = at - look;
+        var distance = d.magnitude;
+        if (distance > 0.01f)
+        {
+            var nearest = distance;
+            foreach (var hit in Physics.RaycastAll(look, d / distance, distance, ~0, QueryTriggerInteraction.Ignore))
+            {
+                if (hit.distance >= nearest || Character(hit.collider)) continue;
+                nearest = hit.distance;
+            }
+            if (nearest < distance) at = look + d / distance * Mathf.Max(0.5f, nearest - 0.6f);
+        }
+        foreach (var hit in Physics.RaycastAll(at + Vector3.up * 30f, Vector3.down, 60f, ~0, QueryTriggerInteraction.Ignore))
+        {
+            if (Character(hit.collider)) continue;
+            if (at.y < hit.point.y + 0.7f && hit.point.y < at.y + 3f) at.y = hit.point.y + 0.7f;
+        }
+        return at;
+    }
+
+    /// <summary>
+    ///     Something solid (not a character, not the ground) on or near the line between <paramref name="from"/> and
+    ///     <paramref name="to"/>: a pillar beside the line still fills a third of the shot, so it is a wide sweep.
+    /// </summary>
+    private static bool Blocked(Vector3 from, Vector3 to)
+    {
+        var d = to - from;
+        var distance = d.magnitude;
+        if (distance < 0.01f) return false;
+        var radius = Mathf.Clamp(0.06f * distance, 0.3f, 1.5f);
+        foreach (var hit in Physics.SphereCastAll(from, radius, d / distance, distance, ~0, QueryTriggerInteraction.Ignore))
+        {
+            // touching at the start (the floor round its feet), the ground and floors, characters: not in the way
+            if (hit.distance <= 0f || hit.normal.y > 0.6f || hit.collider is TerrainCollider || Character(hit.collider)) continue;
+            return true;
+        }
+        return false;
+    }
+
+    private static bool Character(Collider c) =>
+        c.GetComponentInParent<EnemyController>() || c.GetComponentInParent<PlayerController>() || c.GetComponentInParent<BattlePetController>();
+
     /// <summary>The cutscenes play again (the settings' "Introductions").</summary>
     public void ForgetCutscenesSeen()
     {
         PlayerPrefs.DeleteKey(OpeningKey);
         foreach (var town in Tower.Towns) PlayerPrefs.DeleteKey(ArrivalKey(town));
+        for (var floor = 1; floor <= Tower.TopFloor; floor++) PlayerPrefs.DeleteKey(BossKey(floor));
         PlayerPrefs.Save();
         openingTried = false;
+    }
+
+    /// <summary>
+    ///     The debug menu's "Boss Intro": the loaded floor's boss steps out and plays its intro, then goes again. Only
+    ///     while the floor trains (no attempt).
+    /// </summary>
+    public bool ReplayBossIntro()
+    {
+        var floor = TowerFloor.Loaded;
+        var def = floor ? floor.Definition : null;
+        if (!floor || def == null || Phase != TowerPhase.Open || TowerCutscene.Playing || introBoss || floor.Boss) return false;
+        var boss = floor.SpawnBoss();
+        if (!boss) return false;
+        if (PlayBossIntro(boss, def, true)) return true;
+        floor.DespawnBoss();
+        return false;
+    }
+
+    /// <summary>The debug menu's "Boss Falls": the loaded floor's boss steps out and falls at once, as after a clear.</summary>
+    public bool ReplayBossFall()
+    {
+        var floor = TowerFloor.Loaded;
+        var def = floor ? floor.Definition : null;
+        if (!floor || def == null || Phase != TowerPhase.Open || TowerCutscene.Playing || introBoss || floor.Boss) return false;
+        var boss = floor.SpawnBoss();
+        if (!boss) return false;
+        var movement = boss.GetComponent<EnemyMovementController>();
+        if (movement) movement.Die();
+        PlayBossFall(boss, def, def.Number);
+        floor.DespawnBoss(BossFallSeconds + 1.5f);
+        return true;
     }
 
     /// <summary>The debug menu's "Tower Opens": the opening again, now (Mossgate loads for it when no town is open).</summary>
@@ -1296,7 +1591,7 @@ public sealed class TowerManager : MonoBehaviour
         if (!g) return;
         if (!stateRequested && g.RavenNest != null && g.RavenNest.SessionStarted) RefreshState();
 
-        if (Phase == TowerPhase.Countdown && PhaseSecondsLeft <= 0f) StartFight();
+        if (Phase == TowerPhase.Countdown && PhaseSecondsLeft <= 0f && !introBoss) StartFight();
         else if (Phase == TowerPhase.Fight) UpdateFight();
 
         if (Time.time >= nextReport)

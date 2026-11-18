@@ -469,9 +469,24 @@ ones stay short so the climb is not interrupted.
 - **A new band's town (built).** The first time a stream reaches a band's town (after the band's last boss, floors 10, 20,
   and on), a fly-over of the town while the players walk in, with its name and "Floors 11 to 20: The Frozen Vault". 15
   seconds, and at the end the camera goes to someone in the town. Mossgate has none of its own: the opening is its arrival.
-- **Next (not built):** a short boss intro the first time a boss is fought (a few seconds on the boss, its name and line, a
-  taunt animation where its model has one, a big wind-up swing where not), and a 3 to 4 second "boss falls" moment after
-  every clear (slow motion on the falling boss, "Floor 7 cleared").
+- **The boss intro (built 2026-11-18).** The first time a stream fights a boss, when the countdown ends: 7 seconds, the
+  camera in from the players' side, high and wide, to low under the boss's face while it taunts, with its name in red and
+  its line (or "Guardian of floor N"). Still the countdown: a !tower meanwhile joins, and the fight starts after it. A
+  close in the middle stops it, no fight follows, and it plays again next time.
+- **The taunts.** Most enemy controllers have no taunt, so a clip plays over the controller for the moment
+  (`TowerBossTaunts`, the asset Resources/Tower/Boss Taunts made by `tools/tower/tower-boss-taunts.cs`; Resources is not in
+  git): the humanoids cheer (goblins, skeletons, vikings, the ronin, the wailing soul), Nibbles and Snowball stand up and
+  stare, the metalons rear up and cast, the dragons roar fire, Emperor Quackers flaps his wings, and the Moo-tant is not
+  impressed and goes on eating. Each is timed to end as the camera settles and the name shows. A model with no taunt winds
+  up its attack, slowed.
+- **The boss falls (built 2026-11-18).** Every clear: 4.5 seconds round the boss as its death plays in slow motion (from
+  the start, not after its swing; a dragon's long death at its own pace so it is down before the end), "Floor 7 cleared"
+  in gold, "The Rootbound King falls". The body stays down until it goes, and the players cheer. Without the cutscene
+  (off, or the camera busy) the death still shows before the body goes.
+- **Framing.** Both shots are worked out round the boss, sized to it (room for a taunt that stands it up, never right in
+  its face), from its front unless a wall, a pillar or a ruin is in the way: then turned round it to the clearest side.
+  The names show at the top, over the sky, not over the boss. The debug menu has "Boss Intro" and "Boss Falls" for the
+  loaded floor.
 - **How they are made.** Each town has a `Cutscene` child with an "Arrival" row of camera poses (and "Opening" at the
   tower's foot); `TowerCutscene` flies a smooth curve through them at an even pace, easing in and out, and the name shows over
   the last four seconds with a deep boom. The builders place the poses; `tools/tower/tower-cutscene-preview.cs` renders

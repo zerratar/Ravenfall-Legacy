@@ -37,6 +37,21 @@ public class EnemyMovementController : MonoBehaviour
     /// <summary>A blow is wound up and has not come down yet.</summary>
     public bool Swinging => attackAnimationTimer > 0f;
 
+    /// <summary>
+    ///     The body stays after the death has played, until whoever made it destroys it (a tower boss: its fall is shown
+    ///     in slow motion, TowerManager).
+    /// </summary>
+    [NonSerialized] public bool KeepBody;
+
+    private Coroutine holding;
+
+    /// <summary>Someone else holds the kept body's pose now (a clip played over the controller): the animator stays on.</summary>
+    public void StopHolding()
+    {
+        if (holding != null) StopCoroutine(holding);
+        holding = null;
+    }
+
     private ConcurrentDictionary<string, AnimatorControllerParameter> parameters
         = new ConcurrentDictionary<string, AnimatorControllerParameter>();
 
@@ -337,7 +352,8 @@ public class EnemyMovementController : MonoBehaviour
 
         if (this.isActiveAndEnabled)
         {
-            StartCoroutine(Hide());
+            if (KeepBody) holding = StartCoroutine(Hold());
+            else StartCoroutine(Hide());
         }
     }
 
@@ -378,6 +394,27 @@ public class EnemyMovementController : MonoBehaviour
         }
         if (!sawDeath && waited < deathAnimationLength) yield return new WaitForSeconds(deathAnimationLength - waited);
         SetVisibility(false);
+    }
+
+    /// <summary>
+    /// The body that stays (<see cref="KeepBody"/>) lies still where it fell: the animator would leave the death by itself
+    /// and stand it up again, so it stops once the death is near its end.
+    /// </summary>
+    private IEnumerator Hold()
+    {
+        var waited = 0f;
+        var sawDeath = false;
+        while (waited < 15f && animator && animator.enabled)
+        {
+            var dying = Playing(animator.GetCurrentAnimatorClipInfo(0));
+            if (dying) sawDeath = true;
+            if (dying && animator.GetCurrentAnimatorStateInfo(0).normalizedTime >= 0.92f) break;
+            if (sawDeath && (!dying || (animator.IsInTransition(0) && !Playing(animator.GetNextAnimatorClipInfo(0))))) break;
+            waited += Time.deltaTime;
+            yield return null;
+        }
+        if (animator) animator.enabled = false;
+        holding = null;
     }
 
     private static bool Playing(AnimatorClipInfo[] clips)

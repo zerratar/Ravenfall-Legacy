@@ -91,6 +91,9 @@ public sealed class TowerFloor : TowerPlace
         Boss = Make(template, point.position, point.rotation, b.Scale);
         Boss.AutomaticRespawn = false;
         Boss.ApplyRuntimeDefinition(Tower.Boss(Definition), b.Name, 0f);
+        // its fall is shown (TowerManager): the body stays until it is despawned
+        var movement = Boss.GetComponent<EnemyMovementController>();
+        if (movement) movement.KeepBody = true;
         return Boss;
     }
 
@@ -143,7 +146,8 @@ public sealed class TowerFloor : TowerPlace
         return best;
     }
 
-    public void DespawnBoss()
+    /// <summary>The boss and its helpers go; the boss after <paramref name="bossDelay"/> seconds (its fall is shown).</summary>
+    public void DespawnBoss(float bossDelay = 0f)
     {
         foreach (var a in adds)
         {
@@ -155,7 +159,8 @@ public sealed class TowerFloor : TowerPlace
         if (Boss)
         {
             spawned.Remove(Boss.gameObject);
-            Destroy(Boss.gameObject);
+            if (bossDelay > 0f) Destroy(Boss.gameObject, bossDelay);
+            else Destroy(Boss.gameObject);
         }
         Boss = null;
     }

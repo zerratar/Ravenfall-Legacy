@@ -20,14 +20,16 @@ public sealed class CutsceneScreen
     public static readonly Color GoldOutline = new Color(0.25f, 0.15f, 0.02f);
 
     /// <summary>Hides the screen and builds the (invisible) title and the Skip button, which calls <paramref name="onSkip"/>.</summary>
-    public static CutsceneScreen Show(string name, string line, Color color, Color outline, Action onSkip)
+    /// <param name="size">The name's size: a boss's long name is smaller.</param>
+    /// <param name="top">The title in the upper part of the screen, over the sky, not over what the shot is of (a boss).</param>
+    public static CutsceneScreen Show(string name, string line, Color color, Color outline, Action onSkip, int size = 120, bool top = false)
     {
         var screen = new CutsceneScreen();
-        screen.Hide(name, line, color, outline, onSkip);
+        screen.Hide(name, line, color, outline, onSkip, size, top);
         return screen;
     }
 
-    private void Hide(string name, string line, Color color, Color outline, Action onSkip)
+    private void Hide(string name, string line, Color color, Color outline, Action onSkip, int size, bool top)
     {
         UIDocument host = null;
         foreach (var doc in UnityEngine.Object.FindObjectsByType<UIDocument>())
@@ -53,7 +55,8 @@ public sealed class CutsceneScreen
         title.style.position = Position.Absolute;
         title.style.left = 0; title.style.right = 0; title.style.top = 0; title.style.bottom = 0;
         title.style.alignItems = Align.Center;
-        title.style.justifyContent = Justify.Center;
+        title.style.justifyContent = top ? Justify.FlexStart : Justify.Center;
+        if (top) title.style.paddingTop = Length.Percent(6);
         title.style.opacity = 0f;
         // a soft dark band across the screen behind the words: a light name over snow or a bright sky was hard to read
         var card = new VisualElement { name = "cutscene-title-band", pickingMode = PickingMode.Ignore };
@@ -67,7 +70,7 @@ public sealed class CutsceneScreen
         var shadow = new TextShadow { offset = new Vector2(0f, 4f), blurRadius = 14f, color = new Color(0f, 0f, 0f, 0.85f) };
         var big = new Label(name) { pickingMode = PickingMode.Ignore };
         big.AddToClassList("rf-font-eb");
-        big.style.fontSize = 120;
+        big.style.fontSize = size;
         big.style.color = color;
         big.style.textShadow = shadow;
         big.style.unityTextOutlineWidth = 2f;

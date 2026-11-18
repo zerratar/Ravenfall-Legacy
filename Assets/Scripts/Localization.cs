@@ -926,6 +926,10 @@ public static class Localization
     public static string UI_TOWER_OPENING_TITLE = "The Tower";
     public static string UI_TOWER_OPENING_LINE = "opens its gate";
     public static string UI_TOWER_TOWN_LINE = "Floors {0} to {1}: {2}";
+    public static string UI_TOWER_BOSS_FLOOR = "Guardian of floor {0}";
+    public static string UI_TOWER_BOSS_QUOTE = "\"{0}\"";
+    public static string UI_TOWER_FLOOR_CLEARED = "Floor {0} cleared";
+    public static string UI_TOWER_BOSS_FALLS = "{0} falls";
     public static string UI_RB_INTRO_EYEBROW = "Welcome to Ravebridge";
     public static string UI_RB_INTRO_1_TITLE = "You are the hero";
     public static string UI_RB_INTRO_1_TEXT = "In Ravebridge you play your own character by hand: you walk, fight and talk to people yourself, while chat comes along and fights beside you. Here is how it works.";
