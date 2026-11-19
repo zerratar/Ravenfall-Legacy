@@ -24,6 +24,8 @@ public class PlayerSettings
     public bool? RegattaCamera;
     /// <summary>Ravebridge's goblin uprisings start by themselves now and then (off: only the streamer starts Ravebridge).</summary>
     public bool? RavebridgeUprisings;
+    /// <summary>Chat can go into the tower with !tower (off: the tower is closed on this stream).</summary>
+    public bool? TowerOpen;
     /// <summary>Hero mode's hits and the Kraken's roar shake the camera.</summary>
     public bool? ScreenShake;
     /// <summary>The cutscenes the first time something big happens (Ravebridge rising, the tower opening, a tower town).</summary>
@@ -441,6 +443,7 @@ public class PlayerSettings
             Serialize(sw, "canObserveEmptyIslands", obj.CanObserveEmptyIslands);
             Serialize(sw, "regattaCamera", obj.RegattaCamera);
             Serialize(sw, "ravebridgeUprisings", obj.RavebridgeUprisings);
+            Serialize(sw, "towerOpen", obj.TowerOpen);
             Serialize(sw, "screenShake", obj.ScreenShake);
             Serialize(sw, "cutscenes", obj.Cutscenes);
             Serialize(sw, "downloadUpdatesEarly", obj.DownloadUpdatesEarly);

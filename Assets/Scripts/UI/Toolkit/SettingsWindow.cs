@@ -370,6 +370,7 @@ namespace Shinobytes.UI
             Switch(c, Localization.UI_SETTINGS_NO_RAIDS, Localization.UI_SETTINGS_NO_RAIDS_HINT, SettingsApplier.DisableRaids, SettingsApplier.Defaults.DisableRaids, SettingsApplier.SetDisableRaids);
             Switch(c, Localization.UI_SETTINGS_NO_DUNGEONS, Localization.UI_SETTINGS_NO_DUNGEONS_HINT, SettingsApplier.DisableDungeons, SettingsApplier.Defaults.DisableDungeons, SettingsApplier.SetDisableDungeons);
             Switch(c, Localization.UI_SETTINGS_RAVEBRIDGE_UPRISINGS, Localization.UI_SETTINGS_RAVEBRIDGE_UPRISINGS_HINT, SettingsApplier.RavebridgeUprisings, SettingsApplier.Defaults.RavebridgeUprisings, SettingsApplier.SetRavebridgeUprisings);
+            Switch(c, Localization.UI_SETTINGS_TOWER_OPEN, Localization.UI_SETTINGS_TOWER_OPEN_HINT, SettingsApplier.TowerOpen, SettingsApplier.Defaults.TowerOpen, SettingsApplier.SetTowerOpen);
             Switch(c, Localization.UI_SETTINGS_JOIN_CODE, Localization.UI_SETTINGS_JOIN_CODE_HINT, SettingsApplier.RequireJoinCode, SettingsApplier.Defaults.RequireJoinCode, SettingsApplier.SetRequireJoinCode);
             Switch(c, Localization.UI_SETTINGS_PHYSICS, WithKey(Localization.UI_SETTINGS_PHYSICS_HINT, Keybinds.Action.Physics), SettingsApplier.Physics, SettingsApplier.Defaults.Physics, SettingsApplier.SetPhysics);
 
@@ -609,6 +610,11 @@ namespace Shinobytes.UI
             Switch(c, Localization.UI_SETTINGS_QUEST_BAR, Localization.UI_SETTINGS_QUEST_BAR_HINT, SettingsApplier.StreamQuestBar, SettingsApplier.Defaults.StreamQuestBar,
                 SettingsApplier.SetStreamQuestBar);
             ButtonRow(c, Localization.UI_SETTINGS_RESET_WINDOWS, Localization.UI_SETTINGS_RESET_WINDOWS_HINT, Localization.UI_SETTINGS_RESET_WINDOWS_BUTTON, ResetWindowPositions);
+            ButtonRow(c, Localization.UI_SETTINGS_WHATSNEW, Localization.UI_SETTINGS_WHATSNEW_HINT, Localization.UI_SETTINGS_WHATSNEW_BUTTON, () =>
+            {
+                Close();
+                WhatsNew.Open();
+            });
             // what is shown only once: Ravebridge's introduction and its rising from the sea, the tower's cutscenes
             ButtonRow(c, Localization.UI_SETTINGS_INTROS, Localization.UI_SETTINGS_INTROS_HINT, Localization.UI_SETTINGS_INTROS_BUTTON, () =>
             {

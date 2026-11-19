@@ -958,6 +958,24 @@ public static class Localization
     public static string UI_RB_INTRO_NEXT = "Next";
     public static string UI_RB_INTRO_DONE = "Let's go!";
     public static string UI_RB_INTRO_OPEN = "Introduction to Ravebridge";
+    public static string UI_WHATSNEW_EYEBROW = "What's new in v{0}";
+    public static string UI_WHATSNEW_1_TITLE = "Combat, rebuilt";
+    public static string UI_WHATSNEW_1_TEXT = "Fights work in a new way: health from Vitality and armor, armor that takes damage off instead of making blows miss, five elements, combat skills, battle pets, gems and the tower. Here is the short version.";
+    public static string UI_WHATSNEW_2_TITLE = "Health and armor";
+    public static string UI_WHATSNEW_2_TEXT = "Vitality, the skill once called Health, gives 8 health a level, and armor pieces add more. Armor now takes a share off every hit instead of making blows miss, so hits land and fights last. Enchanted gear can show lower numbers than before: an old bug counted some enchantments twice.";
+    public static string UI_WHATSNEW_3_TITLE = "Five elements";
+    public static string UI_WHATSNEW_3_TEXT = "Weapons and gems can carry fire, ice, lightning or poison on top of the plain hit. Fire burns, ice chills and five chills freeze, lightning jumps to the next enemy, poison stacks up. Enemies shrug off some elements and are weak to others, so the right weapon matters.";
+    public static string UI_WHATSNEW_4_TITLE = "Combat skills";
+    public static string UI_WHATSNEW_4_TEXT = "Every combat skill has a skill tree. Spend points with !learn, put skills in your loadout with !loadout, and your character uses them by itself in every fight. !tree shows your points and !respec starts over.";
+    public static string UI_WHATSNEW_5_TITLE = "Battle pets";
+    public static string UI_WHATSNEW_5_TEXT = "Pets fight beside you now: they level up with you, learn skills and evolve. Catch one with !tame and the creature's name (!tame metalon), and see yours with !pets. Eggs from quests and events hatch with !pets hatch.";
+    public static string UI_WHATSNEW_6_TITLE = "Gems and sockets";
+    public static string UI_WHATSNEW_6_TEXT = "Raw gems come from mining and gathering, more from the tower, raids and dungeons. Your clan enchants them, !socket puts one into your gear for stats or an element, !gems combine turns three into a better one, and !unsocket takes one out.";
+    public static string UI_WHATSNEW_7_TITLE = "The tower";
+    public static string UI_WHATSNEW_7_TEXT = "A climb the whole stream makes together. !tower takes you in: clear each floor's quests, then beat its boss with !tower boss. Between floors everyone rests and trains in a town, and chat can vote on every choice when the streamer is away.";
+    public static string UI_SETTINGS_WHATSNEW = "What's new";
+    public static string UI_SETTINGS_WHATSNEW_HINT = "The pages about this version's new combat: health and armor, elements, combat skills, battle pets, gems and the tower.";
+    public static string UI_SETTINGS_WHATSNEW_BUTTON = "Show";
     public static string UI_SETTINGS_INTROS = "Introductions";
     public static string UI_SETTINGS_INTROS_HINT = "Ravebridge's introduction and the cutscenes (Ravebridge rising, the tower opening, its towns) show again the next time.";
     public static string UI_SETTINGS_INTROS_BUTTON = "Show again";
@@ -1555,6 +1573,7 @@ public static class Localization
 
     // the tower (docs/tower-design.md)
     public static string MSG_TOWER_NOT_READY = Meta("tower", "fail") + "The tower is not ready yet. Try again in a moment.";
+    public static string MSG_TOWER_CLOSED_HERE = Meta("tower", "fail") + "The tower is closed on this stream.";
     public static string MSG_TOWER_JOINED = Meta("tower", "success") + "You enter floor {floor} of the tower, {name}. Everyone fights at combat level {level} at most here. Floor quests: {quests}.";
     public static string MSG_TOWER_JOINED_ATTEMPT = Meta("tower", "success") + "You enter floor {floor} of the tower and join the boss attempt. It starts in {seconds} seconds.";
     public static string MSG_TOWER_LOADING = Meta("tower", "success") + "The tower opens. You will be taken to floor {floor}, {name}, in a moment.";
@@ -2623,6 +2642,8 @@ public static class Localization
     public static string UI_SETTINGS_NO_RAIDS = "Turn off raids";
     public static string UI_SETTINGS_NO_DUNGEONS = "Turn off dungeons";
     public static string UI_SETTINGS_RAVEBRIDGE_UPRISINGS = "Ravebridge uprisings";
+    public static string UI_SETTINGS_TOWER_OPEN = "Tower open to chat";
+    public static string UI_SETTINGS_TOWER_OPEN_HINT = "Viewers can go into the tower with !tower and climb it together, by vote when you are away. Turn it off to close the tower on this stream: players inside can still leave.";
     public static string UI_SETTINGS_RAVEBRIDGE_UPRISINGS_HINT = "Now and then the goblins of Ravebridge rise by themselves and pull players into the event. Turn it off for a stream left running: Ravebridge then only opens when you start it.";
     public static string UI_SETTINGS_JOIN_CODE = "Join with a code";
     public static string UI_SETTINGS_JOIN_CODE_HINT = "Raids and dungeons show a word on stream, and viewers join by typing it, such as !raid apple. Keeps out those who are not watching. From the next raid or dungeon.";

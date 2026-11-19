@@ -284,8 +284,9 @@ Phase 1 (foundation), started 2026-11-07:
   or poison): against today's enemies (no armour) an element changes little except where they resist or are weak
   (skeletons: poison 14.4 swings against 11.0 physical, fire 10.4). Against enemies in armour like the player's, any
   element they do not resist ends fights a third sooner from level 200 up (gladiator 7.1 swings physical, 4.8 with a
-  quarter fire), because element damage skips armour entirely. **To decide before enemy gear tuning:** let armour take
-  part of element damage too, give enemies a base resistance that grows with level, or keep weapon shares smaller.
+  quarter fire), because element damage skips armour entirely. **Decided (2026-11-07):** armour takes half its usual cut
+  off element damage too (`CombatMath.ElementArmorShare = 0.5`): armour still counts, and elements still pay off against
+  weaknesses and lightly armoured foes.
 - [x] Threat and status effects in the game's fights (2026-11-07, with `CombatRules.Enabled`):
   - `CombatEffects` (Game/Combat) keeps the library's `StatusEffectSet` per fighter. Every blow of the new rules
     reports its element procs (`CombatRules.BlowLanded`): fire burns, poison stacks, ice chills and five chills

@@ -114,6 +114,7 @@ public static class SettingsApplier
         public const bool ObserveEmptyIslands = true;
         public const bool RaceCamera = true;
         public const bool RavebridgeUprisings = true;
+        public const bool TowerOpen = true;
         public const bool ScreenShake = true;
         public const bool Cutscenes = true;
         public const bool DownloadUpdatesEarly = true;
@@ -1013,6 +1014,11 @@ public static class SettingsApplier
     public static bool RavebridgeUprisings => PlayerSettings.Instance.RavebridgeUprisings.GetValueOrDefault(Defaults.RavebridgeUprisings);
 
     public static void SetRavebridgeUprisings(bool value) => PlayerSettings.Instance.RavebridgeUprisings = value;
+
+    /// <summary>Chat can go into the tower (docs/tower-design.md: open on every stream unless the streamer closes it).</summary>
+    public static bool TowerOpen => PlayerSettings.Instance.TowerOpen.GetValueOrDefault(Defaults.TowerOpen);
+
+    public static void SetTowerOpen(bool value) => PlayerSettings.Instance.TowerOpen = value;
 
     public static bool RequireJoinCode => PlayerSettings.Instance.RequireJoinCode.GetValueOrDefault();
 

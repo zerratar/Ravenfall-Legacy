@@ -35,6 +35,13 @@ public class TowerCommand : ChatBotCommandHandler<string>
         var player = PlayerManager.GetPlayer(user);
         var canForce = user.IsBroadcaster || user.IsModerator || (player && (player.IsGameAdmin || player.IsGameModerator));
 
+        // the streamer closed the tower (settings): nobody goes in; those inside can still leave and look
+        if (!SettingsApplier.TowerOpen && action != "leave" && action != "exit" && action != "info" && action != "status")
+        {
+            client.SendReply(gm, Localization.MSG_TOWER_CLOSED_HERE);
+            return;
+        }
+
         try
         {
             switch (action)

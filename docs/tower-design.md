@@ -504,7 +504,10 @@ ones stay short so the climb is not interrupted.
 
 ## Open questions
 
-- Is the tower always open while a stream is live, or does the streamer open it, as with Ravebridge?
+- ~~Is the tower always open while a stream is live, or does the streamer open it?~~ Open on every stream: any viewer can
+  `!tower` in, and chat climbs by vote when the streamer is away. A streamer who does not want it turns off **Tower open to
+  chat** (settings, World): then `!tower` answers "The tower is closed on this stream", and players inside can still leave
+  (2026-11-19).
 - ~~Who can start a boss attempt: only the streamer, or chat by vote as well?~~ Both, and every other choice too (section 16).
 - Should a stream's climb ever reset (seasons, with rewards for how far you got), or is progress forever?
 - Can players who fall during a boss attempt be revived (a Restoration skill), or do they sit out the attempt?
