@@ -299,7 +299,9 @@ Phase 1 (foundation), started 2026-11-07:
   - Enemies keep the library's `ThreatTable`: damage adds threat (a one handed sword still 2.5 times, the tank's
     weapon), healing someone they fight adds half the heal shared over them, and they switch target only to someone
     with 10% more threat (30% for ranged and magic enemies). The old table switched whenever anyone caught up.
-  - Not yet: effect icons or "Burn" numbers on stream (open question). Enemies deal elements since 2026-11-10 (below);
+  - Effects on stream (2026-11-19): a word over a fighter when an effect starts on it (Burning, Chilled, Frozen,
+    Stunned, Poisoned) or a hit does nothing (Immune), in the element's colour, above the name tag and skill names, once
+    per start and not per tick (`CombatEffects.ShowWord`, `FloatingTextView.AddEffect`; setting "Effect words"). Enemies deal elements since 2026-11-10 (below);
     taunts came with the skill trees.
 - [x] The baseline bugs (2026-11-07):
   - POWER, AIM and ARMOR enchantments counted twice (`UpdateEquipmentEffect` added the item's number with the bonus,
@@ -427,4 +429,4 @@ Phase 1 (foundation), started 2026-11-07:
 - Should Slayer and Health have their own skill trees (boss hunting; vitality and lifesteal), or only Attack, Strength, Defense, Ranged, Magic and Healing?
 - The fifth loadout slot: at a combat level, a tree node, or a later update?
 - Light and dark elements now, or later with the tower floors that need them?
-- How visible should numbers be on stream (damage numbers, "Immune", effect icons) without cluttering the view?
+- ~~How visible should numbers be on stream?~~ Damage numbers as before, plus a word when an effect starts (Progress, status effects).

@@ -26,6 +26,8 @@ public class PlayerSettings
     public bool? RavebridgeUprisings;
     /// <summary>Chat can go into the tower with !tower (off: the tower is closed on this stream).</summary>
     public bool? TowerOpen;
+    /// <summary>Words over fighters when an element's effect starts (Burning, Frozen, Immune).</summary>
+    public bool? EffectWords;
     /// <summary>Hero mode's hits and the Kraken's roar shake the camera.</summary>
     public bool? ScreenShake;
     /// <summary>The cutscenes the first time something big happens (Ravebridge rising, the tower opening, a tower town).</summary>
@@ -444,6 +446,7 @@ public class PlayerSettings
             Serialize(sw, "regattaCamera", obj.RegattaCamera);
             Serialize(sw, "ravebridgeUprisings", obj.RavebridgeUprisings);
             Serialize(sw, "towerOpen", obj.TowerOpen);
+            Serialize(sw, "effectWords", obj.EffectWords);
             Serialize(sw, "screenShake", obj.ScreenShake);
             Serialize(sw, "cutscenes", obj.Cutscenes);
             Serialize(sw, "downloadUpdatesEarly", obj.DownloadUpdatesEarly);

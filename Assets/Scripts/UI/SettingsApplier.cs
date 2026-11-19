@@ -115,6 +115,7 @@ public static class SettingsApplier
         public const bool RaceCamera = true;
         public const bool RavebridgeUprisings = true;
         public const bool TowerOpen = true;
+        public const bool EffectWords = true;
         public const bool ScreenShake = true;
         public const bool Cutscenes = true;
         public const bool DownloadUpdatesEarly = true;
@@ -1019,6 +1020,11 @@ public static class SettingsApplier
     public static bool TowerOpen => PlayerSettings.Instance.TowerOpen.GetValueOrDefault(Defaults.TowerOpen);
 
     public static void SetTowerOpen(bool value) => PlayerSettings.Instance.TowerOpen = value;
+
+    /// <summary>Words over fighters when an element's effect starts.</summary>
+    public static bool EffectWords => PlayerSettings.Instance.EffectWords.GetValueOrDefault(Defaults.EffectWords);
+
+    public static void SetEffectWords(bool value) => PlayerSettings.Instance.EffectWords = value;
 
     public static bool RequireJoinCode => PlayerSettings.Instance.RequireJoinCode.GetValueOrDefault();
 

@@ -49,7 +49,7 @@ namespace Shinobytes.UI
 
         private const int MaxActive = 160;
 
-        private enum Kind { Dealt, Taken, Heal, Miss, Skill }
+        private enum Kind { Dealt, Taken, Heal, Miss, Skill, Effect }
 
         private sealed class Number
         {
@@ -67,6 +67,7 @@ namespace Shinobytes.UI
             public bool Merged;
             public EntityId TargetId;
             public string Text;
+            public Color Color;
         }
 
         private sealed class TargetInfo
@@ -78,6 +79,7 @@ namespace Shinobytes.UI
             public Number Merged;
             public Number Miss;
             public Number Skill;
+            public Number Effect;
         }
 
         private readonly List<Number> active = new List<Number>();
@@ -224,6 +226,56 @@ namespace Shinobytes.UI
             info.Skill = number;
         }
 
+        /// <summary>
+        /// What an element did to <paramref name="target"/> ("Burning", "Frozen", "Immune"), in the element's colour,
+        /// above the name tag and the skill names: one at a time per character, a newer one replaces it. Bold, outlined
+        /// and big enough to read on stream (docs/combat-v2-design.md, numbers on stream).
+        /// </summary>
+        public void AddEffect(Transform target, string text, Color color)
+        {
+            if (!target || layer == null || string.IsNullOrEmpty(text))
+            {
+                return;
+            }
+
+            var id = target.GetEntityId();
+            var info = GetTarget(target, id);
+            var shown = info.Effect;
+            if (shown != null && shown.Kind == Kind.Effect && shown.Target == target && shown.Age < shown.Life)
+            {
+                shown.Text = text;
+                shown.Color = color;
+                shown.Age = 0f;
+                Write(shown);
+                return;
+            }
+
+            if (active.Count >= MaxActive)
+            {
+                Release(0);
+            }
+
+            var number = Take();
+            number.Target = target;
+            number.TargetId = id;
+            number.Height = info.Height + 2.2f; // over the name tag and the skill names, clear of the numbers
+            number.Age = 0f;
+            number.Life = lifetime * 1.4f;
+            number.Value = 0;
+            number.Text = text;
+            number.Color = color;
+            number.Kind = Kind.Effect;
+            number.Merged = false;
+            number.OffsetX = 0f;
+            number.DriftX = 0f;
+            number.Tilt = 0f;
+            number.Size = Mathf.Lerp(fontSizeRange.x, fontSizeRange.y, 0.3f); // about 32 px
+            Write(number);
+            layer.Add(number.Label);
+            active.Add(number);
+            info.Effect = number;
+        }
+
         private TargetInfo GetTarget(Transform target, EntityId id)
         {
             if (!targets.TryGetValue(id, out var info))
@@ -270,7 +322,7 @@ namespace Shinobytes.UI
         {
             var label = n.Label;
             label.text = n.Kind == Kind.Miss ? Localization.UI_FLOAT_MISS
-                : n.Kind == Kind.Skill ? n.Text
+                : n.Kind == Kind.Skill || n.Kind == Kind.Effect ? n.Text
                 : n.Kind == Kind.Heal ? "+" + n.Value.ToString(CultureInfo.InvariantCulture)
                 : n.Value.ToString(CultureInfo.InvariantCulture);
 
@@ -278,7 +330,10 @@ namespace Shinobytes.UI
             label.EnableInClassList("rf-float--taken", n.Kind == Kind.Taken);
             label.EnableInClassList("rf-float--heal", n.Kind == Kind.Heal);
             label.EnableInClassList("rf-float--miss", n.Kind == Kind.Miss);
-            label.EnableInClassList("rf-float--skill", n.Kind == Kind.Skill);
+            label.EnableInClassList("rf-float--skill", n.Kind == Kind.Skill || n.Kind == Kind.Effect);
+            // an effect takes its element's colour; pooled labels go back to the classes' colours
+            if (n.Kind == Kind.Effect) label.style.color = n.Color;
+            else label.style.color = StyleKeyword.Null;
             label.EnableInClassList("rf-float--big", n.Kind == Kind.Dealt && n.Size >= Mathf.Lerp(fontSizeRange.x, fontSizeRange.y, 0.85f));
         }
 

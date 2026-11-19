@@ -609,6 +609,8 @@ namespace Shinobytes.UI
                 SettingsApplier.SetShortcutBar);
             Switch(c, Localization.UI_SETTINGS_QUEST_BAR, Localization.UI_SETTINGS_QUEST_BAR_HINT, SettingsApplier.StreamQuestBar, SettingsApplier.Defaults.StreamQuestBar,
                 SettingsApplier.SetStreamQuestBar);
+            Switch(c, Localization.UI_SETTINGS_EFFECT_WORDS, Localization.UI_SETTINGS_EFFECT_WORDS_HINT, SettingsApplier.EffectWords, SettingsApplier.Defaults.EffectWords,
+                SettingsApplier.SetEffectWords);
             ButtonRow(c, Localization.UI_SETTINGS_RESET_WINDOWS, Localization.UI_SETTINGS_RESET_WINDOWS_HINT, Localization.UI_SETTINGS_RESET_WINDOWS_BUTTON, ResetWindowPositions);
             ButtonRow(c, Localization.UI_SETTINGS_WHATSNEW, Localization.UI_SETTINGS_WHATSNEW_HINT, Localization.UI_SETTINGS_WHATSNEW_BUTTON, () =>
             {

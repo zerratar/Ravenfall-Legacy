@@ -973,6 +973,14 @@ public static class Localization
     public static string UI_WHATSNEW_6_TEXT = "Raw gems come from mining and gathering, more from the tower, raids and dungeons. Your clan enchants them, !socket puts one into your gear for stats or an element, !gems combine turns three into a better one, and !unsocket takes one out.";
     public static string UI_WHATSNEW_7_TITLE = "The tower";
     public static string UI_WHATSNEW_7_TEXT = "A climb the whole stream makes together. !tower takes you in: clear each floor's quests, then beat its boss with !tower boss. Between floors everyone rests and trains in a town, and chat can vote on every choice when the streamer is away.";
+    public static string UI_FLOAT_IMMUNE = "Immune";
+    public static string UI_FLOAT_FROZEN = "Frozen";
+    public static string UI_FLOAT_STUNNED = "Stunned";
+    public static string UI_FLOAT_BURNING = "Burning";
+    public static string UI_FLOAT_POISONED = "Poisoned";
+    public static string UI_FLOAT_CHILLED = "Chilled";
+    public static string UI_SETTINGS_EFFECT_WORDS = "Effect words";
+    public static string UI_SETTINGS_EFFECT_WORDS_HINT = "A word over a fighter when an element's effect starts on it (Burning, Chilled, Frozen, Stunned, Poisoned) or a hit does nothing (Immune), in the element's colour.";
     public static string UI_SETTINGS_WHATSNEW = "What's new";
     public static string UI_SETTINGS_WHATSNEW_HINT = "The pages about this version's new combat: health and armor, elements, combat skills, battle pets, gems and the tower.";
     public static string UI_SETTINGS_WHATSNEW_BUTTON = "Show";

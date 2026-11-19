@@ -178,6 +178,8 @@ public static class CombatEffects
             bleeding.Set.Bleed(result.Bleed / 4.0, 4);
         }
 
+        if (result.Immune) ShowWord(defender, Localization.UI_FLOAT_IMMUNE, new Color(0.85f, 0.85f, 0.85f));
+
         if (result.Procs == null || result.Procs.Count == 0)
         {
             return;
@@ -207,7 +209,9 @@ public static class CombatEffects
 
         entry.Set.IsBoss = defenderSheet != null && defenderSheet.IsBoss;
         entry.Source = attacker;
+        var had = Showing(entry.Set);
         var chained = entry.Set.ApplyProcs(result.Procs, random);
+        ShowStarted(defender, had, Showing(entry.Set));
         if (chained >= 1 && defender is EnemyController enemy)
         {
             Chain(attacker, enemy, Mathf.RoundToInt((float)chained));
@@ -216,6 +220,55 @@ public static class CombatEffects
         {
             ChainToPlayer(attacker, player, Mathf.RoundToInt((float)chained)); // an enemy's lightning jumps to a player nearby
         }
+    }
+
+    // ---- what an element did, in words over the fighter (the user's open question: numbers on stream without clutter):
+    // only when an effect starts, not on every tick, and only for the effects that change a fight
+
+    private static readonly StatusEffectKind[] Shown =
+        { StatusEffectKind.Freeze, StatusEffectKind.Stun, StatusEffectKind.Burn, StatusEffectKind.Poison, StatusEffectKind.Chill };
+
+    private static Shinobytes.UI.FloatingTextView floating;
+
+    private static int Showing(StatusEffectSet set)
+    {
+        var mask = 0;
+        for (var i = 0; i < Shown.Length; i++) if (set.Has(Shown[i])) mask |= 1 << i;
+        return mask;
+    }
+
+    private static void ShowStarted(IAttackable fighter, int before, int after)
+    {
+        var started = after & ~before;
+        if (started == 0) return;
+        // the strongest that started: frozen over chilled, stunned over burning
+        for (var i = 0; i < Shown.Length; i++)
+        {
+            if ((started & (1 << i)) == 0) continue;
+            var (word, color) = Word(Shown[i]);
+            ShowWord(fighter, word, color);
+            return;
+        }
+    }
+
+    private static (string, Color) Word(StatusEffectKind kind)
+    {
+        switch (kind)
+        {
+            case StatusEffectKind.Freeze: return (Localization.UI_FLOAT_FROZEN, new Color(0.62f, 0.88f, 1f));
+            case StatusEffectKind.Stun: return (Localization.UI_FLOAT_STUNNED, new Color(1f, 0.93f, 0.4f));
+            case StatusEffectKind.Burn: return (Localization.UI_FLOAT_BURNING, new Color(1f, 0.55f, 0.2f));
+            case StatusEffectKind.Poison: return (Localization.UI_FLOAT_POISONED, new Color(0.55f, 0.95f, 0.3f));
+            default: return (Localization.UI_FLOAT_CHILLED, new Color(0.62f, 0.88f, 1f));
+        }
+    }
+
+    private static void ShowWord(IAttackable fighter, string word, Color color)
+    {
+        if (!SettingsApplier.EffectWords || !GraphicsToggler.GraphicsEnabled) return;
+        if (!(fighter is Component c) || !c) return;
+        if (!floating) floating = Object.FindAnyObjectByType<Shinobytes.UI.FloatingTextView>();
+        if (floating) floating.AddEffect(c.transform, word, color);
     }
 
     private static Entry GetOrAdd(IAttackable fighter, IAttackable source, CombatSheet sheet)
