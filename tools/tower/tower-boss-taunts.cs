@@ -28,6 +28,15 @@ var entries = new (string Model, UnityEngine.AnimationClip Clip, float Speed)[]
     ("ironhill-dragon-white", Clip(unka, "UAttack FireBreath L"), 1f),
     // a big duck flaps its wings
     ("ironhill-lord-quackers", Clip(unka, "UAttack Wings R"), 1f),
+    // the Storm Spire (band 3): the captain, the ninja, the champion and the warden cheer; the drakes beat their wings and roar
+    ("away-pirate", cheer1, 1f),
+    ("away-pirate-captain", cheer3, 1f),
+    ("mangrove-pirate-captain", cheer3, 1f),
+    ("kyojin-ninja", cheer2, 1.1f),
+    ("atria-gladiator", cheer1, 1f),
+    ("eldara-elven-soldier", cheer2, 0.9f),
+    ("ironhill-dragon-purple", Clip(unka, "UAttack Wings R"), 1f),
+    ("ironhill-dragon-blue", Clip(unka, "UAttack FireBreath L"), 1f),
 };
 if (!UnityEditor.AssetDatabase.IsValidFolder("Assets/Resources/Tower")) UnityEditor.AssetDatabase.CreateFolder("Assets/Resources", "Tower");
 var path = "Assets/Resources/Tower/Boss Taunts.asset";

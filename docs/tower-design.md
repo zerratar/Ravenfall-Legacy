@@ -502,6 +502,42 @@ ones stay short so the climb is not interrupted.
 - **Rimeholt's snow** was a checkerboard: the glacier's builder made its terrain layers anew on every run (new ids), and
   Rimeholt uses them too. The builder now updates them in place, and Rimeholt was rebuilt.
 
+## 18. The third band, the Storm Spire (2026-11-19)
+
+Zerratar (2026-11-19) picked the sky over fire: "the lighting, sky one. sounds interesting". Floors 21 to 30, lightning,
+weak to poison (`Resistance { Lightning 0.5, Poison -0.25, Ice -0.1 }`), the town Galewharf.
+
+- **The monsters** (existing looks, new names): Sky Pirates, Static Hares, Storm Ninjas, Storm Wisps, Squall Ducklings,
+  Storm Corsairs, Thunder Gladiators, Gale Sentinels, Storm Drakes and Charged Cows.
+- **The bosses:** Captain Gale Blackwind (21), Zap, Nibbles' Shocking Cousin (22), Master Kaze (23), Mother Squall (24),
+  Captain Quackbeard (25), Champion Voltus (26), Skyfang (27), High Warden Aerin (28), The Moo-tant, Supercharged (29) and
+  Fulmina, the Thunder Wyrm (30). The family traditions hold: a bunny relative, a Quackers and a Moo-tant in every band.
+  Their taunts: the captain, the ninja, the champion and the warden cheer, Zap stands up and stares, Skyfang beats his
+  wings, Fulmina roars, the cow keeps eating.
+- **Two layouts.** `Tower_SkyDocks` (21, 22, 23, 25, 27, 29): a grassy rock above a sea of clouds, its cliffs dropping
+  into the haze, a pier out over the void with a sky pirates' ship moored at it and more ships drifting, floating islets
+  and ruined bridges ending in mid-air, a stone ring with four lightning rods, a pirates' camp. `Tower_StormSpire` (24,
+  26, 28, 30): the spire's paved top, broken colonnades and ruined towers, six rods round a raised dais, chunks of the
+  spire drifting off into the clouds, a darker sky and more lightning.
+- **The storm.** `TowerLightning` strikes a rod or the far clouds now and then (a jagged bolt, a flash over the place,
+  thunder late and soft for far strikes); `TowerSky` hides the world's sunny sky behind a dome from dark slate overhead
+  to the fog colour at the horizon while the camera is at the place; `TowerPlace.HazeDepth` puts the haze floor (the
+  cloud sea) 48 m under the rim. Lightning is off in potato mode.
+- **Galewharf** (1800, 0, -6000): a harbour on a rock above the clouds under the spire's wall. A cobbled square round a
+  giant anchor, the Crow's Nest inn, timber houses and sailors' shacks, a windmill, a lighthouse, a long pier with
+  Captain Brisa's Gullwing moored at it, Tinker Volt's shed with a lightning rod the storm likes, Tessa's pen, a campfire
+  to rest at, and the gate with stairs up into a notch in the spire. A work place for every skill (67 stands, all
+  reachable): the fishers drop their lines off the pier into the clouds, the sailors mend rope by the Gullwing.
+- **Its people and chains:** Captain Brisa Windlass ("Brisa's sails": the pirates cut the Gullwing's sails; Sailing,
+  the Windlass Band), Tinker Volt ("Lightning in a bottle": copper, a riddle, the wisps, bronze bars; Crafting, Bottled
+  Lightning), Tessa ("Where is Woolly?": her sheep floated off on a cloud, and everyone can hear him baa; Farming,
+  Woolly's Bell, a joke item like the Rubber Duck), and Skipper Hob of the Crow's Nest. Titles: the Sky Sailor, the
+  Lightning Catcher, the Cloud Shepherd, and Climber at 25 (the Stormrider) and 30 (the Bane of Fulmina).
+- **Builders:** `tools/tower/tower-skydocks-build.cs`, `tower-stormspire-build.cs`, `tower-galewharf-build.cs` (made from
+  Rimeholt's, its helpers kept).
+- **Not tested yet:** the chains with a signed-in character (the server's side), the real climb from floor 20 into the
+  band (the town arrival plays, tested with the debug replay), boss fights balanced on band 3's floors.
+
 ## Open questions
 
 - ~~Is the tower always open while a stream is live, or does the streamer open it?~~ Open on every stream: any viewer can

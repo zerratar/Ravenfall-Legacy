@@ -1722,7 +1722,7 @@ public sealed class TowerManager : MonoBehaviour
         if (!haze.activeSelf) haze.SetActive(true);
         if (!hazeRing.activeSelf) hazeRing.SetActive(true);
         var eye = camera.transform.position;
-        var floorY = place.Centre.y - HazeDepth;
+        var floorY = place.Centre.y - Mathf.Max(HazeDepth, place.HazeDepth);
         haze.transform.position = new Vector3(eye.x, floorY, eye.z);
         // from the sheet up to the camera's height: its top edge is the horizon (higher, it stood as a wall over the hills)
         var top = Mathf.Max(eye.y, floorY + 1f);

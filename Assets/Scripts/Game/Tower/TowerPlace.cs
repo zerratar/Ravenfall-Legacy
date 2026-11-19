@@ -12,6 +12,12 @@ public abstract class TowerPlace : MonoBehaviour
     /// <summary>The camera within this distance of the place's centre (on the ground plane) sees its look.</summary>
     public float Radius = 90f;
 
+    /// <summary>
+    ///     How far below the place's centre the haze floor lies (TowerManager): just under the ground for most places, far
+    ///     down for one high in the sky (the Storm Spire's cliffs drop into the clouds).
+    /// </summary>
+    public float HazeDepth = 3f;
+
     [Header("Look")]
     public Color SkyAmbient = new Color(0.45f, 0.55f, 0.50f);
     public Color EquatorAmbient = new Color(0.35f, 0.40f, 0.30f);
