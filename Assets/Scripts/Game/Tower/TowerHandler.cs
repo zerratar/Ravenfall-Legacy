@@ -216,10 +216,32 @@ public class TowerHandler : IAwayHandler
         back.Back(player, "the tower");
     }
 
+    /// <summary>
+    ///     Knocked out in the tower: they get back up at the place's arrival (<see cref="RespawnSpot"/>), as on an
+    ///     island, instead of being sent out of the tower (most viewers do not watch chat, and would quietly drop out of
+    ///     the stream's climb). Out of a boss attempt for good: they sit the rest of it out on the floor's monsters.
+    /// </summary>
     public void Died()
     {
         if (boss && floor && floor.Definition != null && player) TowerManager.Instance?.PlayerFell(player, floor.Definition.Number);
-        Exit();
+        boss = null;
+        enemyTarget = null;
+        healTarget = null;
+        if (player) player.attackTarget = null;
+        StopResting(false);
+        StopWorking();
+    }
+
+    /// <summary>Where a knocked out player gets back up: by the arrival of the floor or town they are in.</summary>
+    public bool RespawnSpot(out Vector3 spot)
+    {
+        spot = default;
+        TowerPlace place = floor ? (TowerPlace)floor : town;
+        if (!InTower || !place) return false;
+        var offset = Random.insideUnitCircle * 3f;
+        spot = place.Spawn + new Vector3(offset.x, 0f, offset.y);
+        if (UnityEngine.AI.NavMesh.SamplePosition(spot, out var hit, 6f, UnityEngine.AI.NavMesh.AllAreas)) spot = hit.position;
+        return true;
     }
 
     public void BossFightStarted(EnemyController target)

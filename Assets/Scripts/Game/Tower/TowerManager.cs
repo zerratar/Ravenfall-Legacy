@@ -84,6 +84,9 @@ public sealed class TowerManager : MonoBehaviour
     private readonly StringBuilder report = new StringBuilder();
     private readonly List<PlayerController> pendingJoins = new List<PlayerController>();
     private readonly HashSet<PlayerController> participants = new HashSet<PlayerController>();
+
+    /// <summary>Participants knocked out during the attempt: they get back up in the tower but sit the rest of it out.</summary>
+    private readonly HashSet<PlayerController> fallen = new HashSet<PlayerController>();
     private readonly Dictionary<string, Vote> votes = new Dictionary<string, Vote>();
     private readonly Dictionary<string, int> pendingKills = new Dictionary<string, int>();
     private readonly Dictionary<(Guid Character, string Kind), int> characterKills = new Dictionary<(Guid, string), int>();
@@ -592,6 +595,13 @@ public sealed class TowerManager : MonoBehaviour
     /// <summary>A player was knocked out during a boss attempt (reported with the kills, for a hidden achievement).</summary>
     public void PlayerFell(PlayerController player, int floor)
     {
+        if (player && Phase == TowerPhase.Fight)
+        {
+            fallen.Add(player);
+            // the boss forgets them: once back up they sit the attempt out, and it does not come after them
+            var boss = TowerFloor.Loaded ? TowerFloor.Loaded.Boss : null;
+            if (boss) boss.RemoveAttacker(player);
+        }
         if (player && player.UserId != Guid.Empty && Phase == TowerPhase.Fight)
             characterFalls.Add(new TowerCharacterFall { CharacterId = player.Id, Floor = floor });
     }
@@ -764,6 +774,7 @@ public sealed class TowerManager : MonoBehaviour
     {
         votes.Remove("boss");
         participants.Clear();
+        fallen.Clear();
         foreach (var p in Players()) participants.Add(p);
         Phase = TowerPhase.Countdown;
         phaseEnds = Time.time + Tower.BossCountdownSeconds;
@@ -850,7 +861,7 @@ public sealed class TowerManager : MonoBehaviour
             return;
         }
 
-        var standing = participants.Count(p => p && !p.isDestroyed && p.towerHandler.InTower && !p.Stats.IsDead);
+        var standing = participants.Count(p => p && !p.isDestroyed && p.towerHandler.InTower && !p.Stats.IsDead && !fallen.Contains(p));
         if (standing == 0) { Lost(def, Localization.MSG_TOWER_BOSS_LOST_FALLEN); return; }
         if (PhaseSecondsLeft <= 0f) { Lost(def, Localization.MSG_TOWER_BOSS_LOST_TIME); return; }
 
@@ -871,7 +882,7 @@ public sealed class TowerManager : MonoBehaviour
             var share = (float)def.Boss.SlamShare;
             foreach (var p in participants.ToList())
             {
-                if (!p || p.isDestroyed || p.Stats.IsDead || !p.towerHandler.InTower) continue;
+                if (!p || p.isDestroyed || p.Stats.IsDead || !p.towerHandler.InTower || fallen.Contains(p)) continue;
                 var d = p.Position - boss.transform.position;
                 d.y = 0f;
                 if (d.magnitude > radius) continue;
@@ -935,7 +946,7 @@ public sealed class TowerManager : MonoBehaviour
             nextSpit = Time.time + SpitInterval(boss);
             foreach (var p in participants.ToList())
             {
-                if (!p || p.isDestroyed || p.Stats.IsDead || !p.towerHandler.InTower) continue;
+                if (!p || p.isDestroyed || p.Stats.IsDead || !p.towerHandler.InTower || fallen.Contains(p)) continue;
                 var d = p.Position - spitSpot;
                 d.y = 0f;
                 if (d.magnitude > SpitRadius) continue;
@@ -953,7 +964,7 @@ public sealed class TowerManager : MonoBehaviour
         var holding = boss.TargetPlayer;
         foreach (var p in participants)
         {
-            if (!p || p.isDestroyed || p.Stats.IsDead || !p.towerHandler.InTower || p == holding) continue;
+            if (!p || p.isDestroyed || p.Stats.IsDead || !p.towerHandler.InTower || p == holding || fallen.Contains(p)) continue;
             var d = Vector3.Distance(p.Position, boss.transform.position);
             if (d > bestDistance) { bestDistance = d; best = p; }
         }
@@ -1144,6 +1155,7 @@ public sealed class TowerManager : MonoBehaviour
         if (floor) floor.DespawnBoss(bossDelay);
         foreach (var p in participants) if (p && p.towerHandler != null) p.towerHandler.BossFightEnded();
         participants.Clear();
+        fallen.Clear();
     }
 
     private static void ShowRing(ref GameObject ring, string name, Vector3 centre, float radius, Color color, float width)

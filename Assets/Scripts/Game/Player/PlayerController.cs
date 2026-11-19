@@ -3287,7 +3287,10 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         // user, 2026-11-04). Warped (SetPosition), so the agent is on the navmesh where it stands.
         var run = InRavebridge ? WaveRun.Current : null;
         var hero = run && !run.Finished && RavebridgeManager.Instance ? RavebridgeManager.Instance.Hero : null;
-        if (hero && hero != this && !hero.Stats.IsDead
+        // in the tower: back up by the floor's (or town's) arrival, still in the tower
+        if (towerHandler != null && towerHandler.RespawnSpot(out var towerSpot))
+            SetPosition(towerSpot);
+        else if (hero && hero != this && !hero.Stats.IsDead
             && UnityEngine.AI.NavMesh.SamplePosition(hero.Position - hero.transform.forward * 4f, out var beside, 6f, UnityEngine.AI.NavMesh.AllAreas))
             SetPosition(beside.position);
         else if (Island && Island.SpawnPositionTransform)

@@ -510,5 +510,9 @@ ones stay short so the climb is not interrupted.
   (2026-11-19).
 - ~~Who can start a boss attempt: only the streamer, or chat by vote as well?~~ Both, and every other choice too (section 16).
 - Should a stream's climb ever reset (seasons, with rewards for how far you got), or is progress forever?
-- Can players who fall during a boss attempt be revived (a Restoration skill), or do they sit out the attempt?
+- ~~Can players who fall during a boss attempt be revived, or do they sit out the attempt?~~ They sit it out (2026-11-19):
+  anyone knocked out in the tower gets back up at the floor's or town's arrival and stays in the tower (before, they were
+  sent back to the world and quietly dropped out of the climb). In a boss attempt they are out of it for good: the boss
+  forgets them, its slams and spits pass them by, and the attempt is lost when every participant has fallen. They still
+  share the clear's rewards.
 - ~~Can players train on cleared floors?~~ Yes: `!tower floor N` (section 15) and the towns (section 14).
