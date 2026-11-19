@@ -112,10 +112,12 @@ namespace Shinobytes.UI
             ReleaseOrbs();
             health = MakeOrb(new Color(0.9f, 0.02f, 0.02f), new Color(0.18f, 0.0f, 0.005f), new Color(1f, 0.22f, 0.1f));
             mana = MakeOrb(new Color(0.06f, 0.25f, 1f), new Color(0.0f, 0.02f, 0.2f), new Color(0.3f, 0.65f, 1f));
-            // a dark plate with a gold edge behind the skill bar and under both orbs: the three read as one piece, as in
-            // an action RPG (the user's mockup, 2026-11-03)
+            // the carved plate behind the skill bar, between the orbs, its griffins facing them: the three read as one
+            // piece, as in the user's first HUD reference (docs/mockups/hero-mode-hud.jpg; art by tools/hero/hero-bar-art.cs)
             var dock = new VisualElement { pickingMode = PickingMode.Ignore };
             dock.AddToClassList("rf-hero-dock");
+            var plate = Resources.Load<Texture2D>("HeroUI/bar-plate");
+            if (plate) dock.style.backgroundImage = new StyleBackground(plate);
             root.Add(dock);
             root.Add(OrbElement("rf-hero-orb--health", health, Localization.UI_HERO_HEALTH, out healthText));
             root.Add(OrbElement("rf-hero-orb--mana", mana, Localization.UI_HERO_MANA, out manaText));
@@ -367,6 +369,8 @@ namespace Shinobytes.UI
         }
 
         /// <summary>A slot: its picture, cooldown sweep, key and note; a click uses it, hovering shows what it does.</summary>
+        private static Texture2D slotFrame;
+
         private Slot MakeSlot(int index, string key)
         {
             var s = new Slot { Index = index, Key = key, Box = new VisualElement { pickingMode = PickingMode.Position } };
@@ -378,6 +382,11 @@ namespace Shinobytes.UI
             s.Name.AddToClassList("rf-hero-slot__icon");
             s.Sweep = new VisualElement { pickingMode = PickingMode.Ignore };
             s.Sweep.AddToClassList("rf-hero-slot__sweep");
+            // the gold frame over the picture's edge (HeroUI/slot-frame), the key on a tab under it
+            var frame = new VisualElement { pickingMode = PickingMode.Ignore };
+            frame.AddToClassList("rf-hero-slot__frame");
+            if (!slotFrame) slotFrame = Resources.Load<Texture2D>("HeroUI/slot-frame");
+            if (slotFrame) frame.style.backgroundImage = new StyleBackground(slotFrame);
             var k = new Label(key) { pickingMode = PickingMode.Ignore };
             k.AddToClassList("rf-hero-slot__key");
             s.Note = new Label { pickingMode = PickingMode.Ignore };
@@ -385,6 +394,7 @@ namespace Shinobytes.UI
             s.Box.Add(s.Picture);
             s.Box.Add(s.Name);
             s.Box.Add(s.Sweep);
+            s.Box.Add(frame);
             s.Box.Add(k);
             s.Box.Add(s.Note);
             // the click is the slot's, not the world's (UIUtility.IsPointerOverAnyUI keeps the hero from walking there)
@@ -538,12 +548,12 @@ namespace Shinobytes.UI
             }
 
             var life = hero.Player.Stats.Health;
-            var share = life.MaxLevel > 0 ? Mathf.Clamp01(life.CurrentValue / (float)life.MaxLevel) : 0f;
+            var share = life.MaxValue > 0 ? Mathf.Clamp01(life.CurrentValue / (float)life.MaxValue) : 0f;
             var game = GameManager.Instance;
             var draw = !(game && game.PotatoMode) || ++orbFrame % 3 == 0;
             DrawOrb(health, share, draw);
             DrawOrb(mana, Mathf.Clamp01(hero.Mana / hero.MaxMana), draw);
-            healthText.text = ((int)life.CurrentValue).ToString(CultureInfo.InvariantCulture) + " / " + ((int)life.MaxLevel).ToString(CultureInfo.InvariantCulture);
+            healthText.text = ((int)life.CurrentValue).ToString(CultureInfo.InvariantCulture) + " / " + ((int)life.MaxValue).ToString(CultureInfo.InvariantCulture);
             manaText.text = Mathf.FloorToInt(hero.Mana).ToString(CultureInfo.InvariantCulture) + " / " + Mathf.RoundToInt(hero.MaxMana).ToString(CultureInfo.InvariantCulture);
 
             styleBox.EnableInClassList("rf-hero-style--flash", Time.time < styleFlashUntil);
@@ -587,7 +597,7 @@ namespace Shinobytes.UI
                     row.Box.style.display = DisplayStyle.Flex;
                     row.Name.text = p.Name;
                     var h = p.Stats.Health;
-                    var share = h.MaxLevel > 0 ? Mathf.Clamp01(h.CurrentValue / (float)h.MaxLevel) : 0f;
+                    var share = h.MaxValue > 0 ? Mathf.Clamp01(h.CurrentValue / (float)h.MaxValue) : 0f;
                     row.Fill.style.width = new Length(share * 100f, LengthUnit.Percent);
                     // green, then yellow under half, red under a quarter: who needs healing reads at a glance
                     row.Box.EnableInClassList("rf-hero-party__row--hurt", share < 0.5f && share >= 0.25f);

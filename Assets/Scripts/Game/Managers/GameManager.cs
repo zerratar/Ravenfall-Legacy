@@ -655,7 +655,7 @@ public class GameManager : MonoBehaviour, IGameManager
         {
             var health = Raid.Boss.Enemy.Stats.Health;
             raidStats.BossHealthCurrent = health.CurrentValue;
-            raidStats.BossHealthMax = health.MaxLevel;
+            raidStats.BossHealthMax = health.MaxValue;
             raidStats.BossHealthPercent = Raid.Boss.Enemy.Stats.HealthPercent;
             raidStats.BossLevel = Raid.Boss.Enemy.Stats.CombatLevel;
         }
@@ -679,7 +679,7 @@ public class GameManager : MonoBehaviour, IGameManager
             var boss = Dungeons.Boss;
             var health = boss.Enemy.Stats.Health;
             dungeonStats.BossHealthCurrent = health.CurrentValue;
-            dungeonStats.BossHealthMax = health.MaxLevel;
+            dungeonStats.BossHealthMax = health.MaxValue;
             dungeonStats.BossHealthPercent = boss.Enemy.Stats.HealthPercent;
             dungeonStats.BossLevel = boss.Enemy.Stats.CombatLevel;
         }

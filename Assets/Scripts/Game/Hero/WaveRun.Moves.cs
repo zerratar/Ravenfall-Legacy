@@ -301,7 +301,7 @@ public partial class WaveRun
         var b = Boss;
         if (!b || b.Stats.IsDead) return;
         var health = b.Stats.Health;
-        var share = health.MaxLevel > 0 ? health.CurrentValue / (float)health.MaxLevel : 1f;
+        var share = health.MaxValue > 0 ? health.CurrentValue / (float)health.MaxValue : 1f;
         if (!bossAdds && share <= 0.5f)
         {
             bossAdds = true;

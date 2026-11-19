@@ -600,7 +600,7 @@ namespace Shinobytes.UI
             if (!on) return;
             bossName.text = run.BossName;
             var h = b.Stats.Health;
-            var share = h.MaxLevel > 0 ? Mathf.Clamp01(h.CurrentValue / (float)h.MaxLevel) : 0f;
+            var share = h.MaxValue > 0 ? Mathf.Clamp01(h.CurrentValue / (float)h.MaxValue) : 0f;
             bossPct.text = Mathf.CeilToInt(share * 100f).ToString(CultureInfo.InvariantCulture) + "%";
             Width(bossFill, share);
             Width(bossShine, share);

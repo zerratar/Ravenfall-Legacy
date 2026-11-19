@@ -456,8 +456,8 @@ public partial class HeroController : MonoBehaviour
     {
         var regen = RavebridgeGear.Stat(Player, "regen");
         var health = Player.Stats.Health;
-        if (regen <= 0f || health.CurrentValue >= health.MaxLevel) { regenCarry = 0f; return; }
-        regenCarry += health.MaxLevel * regen / 100f * Time.deltaTime;
+        if (regen <= 0f || health.CurrentValue >= health.MaxValue) { regenCarry = 0f; return; }
+        regenCarry += health.MaxValue * regen / 100f * Time.deltaTime;
         if (regenCarry < 1f) return;
         var whole = Mathf.FloorToInt(regenCarry);
         regenCarry -= whole;
@@ -974,13 +974,13 @@ public partial class HeroController : MonoBehaviour
         amount = 0;
         wait = 0f;
         var health = Player.Stats.Health;
-        if (health.CurrentValue >= health.MaxLevel || IsDowned) return ChatResult.Nothing;
+        if (health.CurrentValue >= health.MaxValue || IsDowned) return ChatResult.Nothing;
         var healer = viewer.TrainingHealing || viewer.Stats.Healing.Level >= 20;
         if (!Ready(viewer, "heal", healer ? 10f : 30f, out wait)) return ChatResult.Cooldown;
         // shares of the hero's health, as everything in hero mode: a healer's 6%, a bandage's 2%
-        var max = (float)health.MaxLevel;
+        var max = (float)health.MaxValue;
         var heal = max * (healer ? 0.06f : 0.02f);
-        amount = Mathf.Max(1, Mathf.Min(Mathf.RoundToInt(heal), (int)(health.MaxLevel - health.CurrentValue)));
+        amount = Mathf.Max(1, Mathf.Min(Mathf.RoundToInt(heal), (int)(health.MaxValue - health.CurrentValue)));
         var given = amount;
         if (viewer.Island == Player.Island && Vector3.Distance(viewer.Position, Player.Position) < 40f)
         {

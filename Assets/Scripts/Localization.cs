@@ -962,13 +962,13 @@ public static class Localization
     public static string UI_WHATSNEW_1_TITLE = "Combat, rebuilt";
     public static string UI_WHATSNEW_1_TEXT = "Fights work in a new way: health from Vitality and armor, armor that takes damage off instead of making blows miss, five elements, combat skills, battle pets, gems and the tower. Here is the short version.";
     public static string UI_WHATSNEW_2_TITLE = "Health and armor";
-    public static string UI_WHATSNEW_2_TEXT = "Vitality, the skill once called Health, gives 8 health a level, and armor pieces add more. Armor now takes a share off every hit instead of making blows miss, so hits land and fights last. Enchanted gear can show lower numbers than before: an old bug counted some enchantments twice.";
+    public static string UI_WHATSNEW_2_TEXT = "Vitality, the skill once called Health (!train vitality), gives 8 health a level, and armor pieces add more. Armor now takes a share off every hit instead of making blows miss, so hits land and fights last. Enchanted gear can show lower numbers than before: an old bug counted some enchantments twice.";
     public static string UI_WHATSNEW_3_TITLE = "Five elements";
     public static string UI_WHATSNEW_3_TEXT = "Weapons and gems can carry fire, ice, lightning or poison on top of the plain hit. Fire burns, ice chills and five chills freeze, lightning jumps to the next enemy, poison stacks up. Enemies shrug off some elements and are weak to others, so the right weapon matters.";
     public static string UI_WHATSNEW_4_TITLE = "Combat skills";
     public static string UI_WHATSNEW_4_TEXT = "Every combat skill has a skill tree. Spend points with !learn, put skills in your loadout with !loadout, and your character uses them by itself in every fight. !tree shows your points and !respec starts over.";
     public static string UI_WHATSNEW_5_TITLE = "Battle pets";
-    public static string UI_WHATSNEW_5_TEXT = "Pets fight beside you now: they level up with you, learn skills and evolve. Catch one with !tame and the creature's name (!tame metalon), and see yours with !pets. Eggs from quests and events hatch with !pets hatch.";
+    public static string UI_WHATSNEW_5_TEXT = "Pets fight beside you now: they level up, learn skills and evolve. Pick a first pet with !pets starter fox, bear or fawn, tame creatures you fight with !tame bunny, and hatch eggs from quests, raids and the tower with !pets hatch. !pets shows yours.";
     public static string UI_WHATSNEW_6_TITLE = "Gems and sockets";
     public static string UI_WHATSNEW_6_TEXT = "Raw gems come from mining and gathering, more from the tower, raids and dungeons. Your clan enchants them, !socket puts one into your gear for stats or an element, !gems combine turns three into a better one, and !unsocket takes one out.";
     public static string UI_WHATSNEW_7_TITLE = "The tower";

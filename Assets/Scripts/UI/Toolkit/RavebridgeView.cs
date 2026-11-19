@@ -176,6 +176,16 @@ namespace Shinobytes.UI
 
             panel.Add(head);
             panel.Add(body);
+            // the hero bar's gold frame round the panel, stretched by its corners (the user's first HUD reference)
+            var frameArt = Resources.Load<Texture2D>("HeroUI/slot-frame");
+            if (frameArt)
+            {
+                var frame = new VisualElement { pickingMode = PickingMode.Ignore };
+                frame.AddToClassList("rf-rbp__frame");
+                frame.style.backgroundImage = new StyleBackground(frameArt);
+                panel.Add(frame);
+                panel.AddToClassList("rf-rbp--framed");
+            }
             panel.RegisterCallback<PointerEnterEvent>(_ => hovered = true);
             panel.RegisterCallback<PointerLeaveEvent>(_ => { hovered = false; hideAt = Time.unscaledTime + HideAfter; });
 

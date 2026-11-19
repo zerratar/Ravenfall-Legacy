@@ -2110,8 +2110,8 @@
 
 /* the orbs (after the user's reference): a 150 px glass sphere (the Hero Orb shader's render texture, see-through
    where it is empty), the number in the middle, the label under it */
-/* The orbs flank the skill bar (the user, 2026-11-03: at the screen's edges both could not be watched at once):
-   from the middle, half the bar (6 slots of 72px, the 18px gap, padding and border: 476px) and 14px either side. */
+/* The orbs flank the skill bar (the user, 2026-11-03: at the screen's edges both could not be watched at once), at the
+   ends of the carved plate (760px): their centres 433px from the middle, so each orb's edge meets a griffin. */
 .rf-hero-orb {
     position: absolute;
     bottom: 38px;
@@ -2121,11 +2121,11 @@
 }
 
 .rf-hero-orb--health {
-    margin-left: -402px;
+    margin-left: -508px;
 }
 
 .rf-hero-orb--mana {
-    margin-left: 252px;
+    margin-left: 358px;
 }
 
 /* The plate behind the skill bar and under both orbs, so the three read as one piece (the user's mockup): from the
@@ -2133,23 +2133,11 @@
 .rf-hero-dock {
     position: absolute;
     left: 50%;
-    width: 654px;
-    margin-left: -327px;
-    bottom: 26px;
-    height: 102px;
-    background-color: rgba(20, 18, 15, 0.94);
-    border-left-width: 2px;
-    border-right-width: 2px;
-    border-top-width: 2px;
-    border-bottom-width: 2px;
-    border-left-color: rgb(214, 170, 40);
-    border-right-color: rgb(214, 170, 40);
-    border-top-color: rgb(214, 170, 40);
-    border-bottom-color: rgb(214, 170, 40);
-    border-top-left-radius: 14px;
-    border-top-right-radius: 14px;
-    border-bottom-left-radius: 14px;
-    border-bottom-right-radius: 14px;
+    width: 760px;
+    margin-left: -380px;
+    bottom: 22px;
+    height: 144px;
+    -unity-background-scale-mode: stretch-to-fill;
 }
 
 /* The gold socket ring round each orb (HeroUI/orb-health and orb-mana, the gem on top, a bracket below): its opening
@@ -2207,7 +2195,7 @@
 
 .rf-hero-bar {
     position: absolute;
-    bottom: 32px;
+    bottom: 37px;
     left: 0;
     right: 0;
     align-items: center;
@@ -2305,26 +2293,35 @@
 }
 
 .rf-hero-slot {
-    width: 64px;
-    height: 64px;
+    width: 82px;
+    height: 82px;
     margin-left: 4px;
     margin-right: 4px;
-    overflow: hidden;
     justify-content: center;
     align-items: center;
-    background-color: var(--rf-surface-raised);
-    border-left-width: 1px;
-    border-right-width: 1px;
-    border-top-width: 1px;
-    border-bottom-width: 1px;
-    border-left-color: var(--rf-border-strong);
-    border-right-color: var(--rf-border-strong);
-    border-top-color: var(--rf-border-strong);
-    border-bottom-color: var(--rf-border-strong);
-    border-top-left-radius: var(--rf-radius);
-    border-top-right-radius: var(--rf-radius);
-    border-bottom-left-radius: var(--rf-radius);
-    border-bottom-right-radius: var(--rf-radius);
+    background-color: rgb(14, 11, 8);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+/* the gold frame over the slot's edge (HeroUI/slot-frame): its opening is 85% of it */
+.rf-hero-slot__frame {
+    position: absolute;
+    left: -2px;
+    right: -2px;
+    top: -2px;
+    bottom: -2px;
+    -unity-background-scale-mode: stretch-to-fill;
+}
+
+.rf-hero-slot:hover .rf-hero-slot__frame {
+    -unity-background-image-tint-color: rgb(255, 236, 180);
+}
+
+.rf-hero-slot--flash .rf-hero-slot__frame {
+    -unity-background-image-tint-color: rgb(255, 90, 70);
 }
 
 /* the round minimap, top right (HeroMinimap) */
@@ -2573,10 +2570,10 @@
 /* the painted icon, filling the slot under the sweep and the labels */
 .rf-hero-slot__picture {
     position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    bottom: 0;
+    left: 6px;
+    right: 6px;
+    top: 6px;
+    bottom: 6px;
     -unity-background-scale-mode: scale-and-crop;
 }
 
@@ -2586,9 +2583,9 @@
 
 .rf-hero-slot__sweep {
     position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
+    left: 6px;
+    right: 6px;
+    top: 6px;
     height: 0;
     background-color: rgba(0, 0, 0, 0.62);
 }
@@ -2596,22 +2593,23 @@
 /* the key and the note (mana, cooldown, potions) on solid badges, readable over any picture (playtest 18) */
 .rf-hero-slot__key {
     position: absolute;
-    left: 2px;
-    top: 2px;
-    min-width: 18px;
-    padding: 1px 4px;
-    font-size: 13px;
-    color: var(--rf-text);
+    bottom: -12px;
+    min-width: 22px;
+    padding: 1px 6px 2px 6px;
+    font-size: 14px;
+    color: rgb(255, 240, 200);
     -unity-text-align: middle-center;
-    background-color: var(--rf-bg);
-    border-radius: 4px;
+    background-color: rgb(20, 14, 9);
+    border-width: 2px;
+    border-color: rgb(214, 170, 40);
+    border-radius: 5px;
     -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
 }
 
 .rf-hero-slot__note {
     position: absolute;
-    right: 2px;
-    bottom: 2px;
+    right: 5px;
+    top: 5px;
     padding: 1px 4px;
     font-size: 13px;
     color: var(--rf-text);
@@ -2620,12 +2618,6 @@
     -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
 }
 
-.rf-hero-slot:hover {
-    border-left-color: var(--rf-accent);
-    border-right-color: var(--rf-accent);
-    border-top-color: var(--rf-accent);
-    border-bottom-color: var(--rf-accent);
-}
 
 /* the skill bar's tooltip, over the slot under the mouse */
 .rf-hero-tip {
@@ -2666,12 +2658,6 @@
     color: rgb(90, 120, 210);
 }
 
-.rf-hero-slot--flash {
-    border-left-color: var(--rf-danger);
-    border-right-color: var(--rf-danger);
-    border-top-color: var(--rf-danger);
-    border-bottom-color: var(--rf-danger);
-}
 
 /* the left column: the bounties under way, then the party, stacked so they never overlap */
 .rf-hero-left {
@@ -4492,6 +4478,30 @@
 .rf-rbp--collapsed {
     width: auto;
     padding: 6px 8px 6px 12px;
+}
+
+/* the gold frame (HeroUI/slot-frame) round the panel, by its corners, over its own border */
+.rf-rbp--framed {
+    border-width: 0;
+    border-radius: 9px;
+    padding: 16px 18px 18px 18px;
+}
+
+.rf-rbp--framed.rf-rbp--collapsed {
+    padding: 10px 12px 10px 16px;
+}
+
+.rf-rbp__frame {
+    position: absolute;
+    left: -3px;
+    right: -3px;
+    top: -3px;
+    bottom: -3px;
+    -unity-slice-left: 48;
+    -unity-slice-right: 48;
+    -unity-slice-top: 48;
+    -unity-slice-bottom: 48;
+    -unity-slice-scale: 0.5px;
 }
 
 .rf-rbp__head {
