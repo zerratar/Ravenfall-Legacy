@@ -24,6 +24,11 @@ Shader "Ravenfall/Ice"
         _Glow("Glow", Range(0, 2)) = 0.6
         _Rim("Rim", Range(0, 2)) = 0.7
         _Glint("Glint", Range(0, 3)) = 1.2
+        [Header(Clear ice (things frozen inside it))]
+        _Alpha("How much shows through (1 solid)", Range(0, 1)) = 1
+        [Enum(UnityEngine.Rendering.BlendMode)] _SrcBlend("Src Blend", Float) = 1
+        [Enum(UnityEngine.Rendering.BlendMode)] _DstBlend("Dst Blend", Float) = 0
+        [Enum(Off, 0, On, 1)] _ZWrite("Z Write", Float) = 1
     }
 
     SubShader
@@ -34,6 +39,9 @@ Shader "Ravenfall/Ice"
         {
             Name "ForwardLit"
             Tags { "LightMode" = "UniversalForward" }
+            // solid by default; clear ice (a block with a find frozen inside) blends over what is in it
+            Blend [_SrcBlend] [_DstBlend]
+            ZWrite [_ZWrite]
 
             HLSLPROGRAM
             #pragma vertex Vertex
@@ -58,6 +66,7 @@ Shader "Ravenfall/Ice"
                 half _Glow;
                 half _Rim;
                 half _Glint;
+                half _Alpha;
             CBUFFER_END
 
             // the scene's ambient light (SceneAmbient)
@@ -201,7 +210,9 @@ Shader "Ravenfall/Ice"
                 color += _RimColor.rgb * _Rim * pow(1 - nv, 3) * (0.5 + ambient);
 
                 color = MixFog(color, input.fog);
-                return half4(color, 1);
+                // clear ice: what is inside shows through the faces, less at the rim and along the cracks
+                half alpha = lerp(_Alpha, 1, saturate(pow(1 - nv, 3) * 0.6 + near * 0.6));
+                return half4(color, alpha);
             }
             ENDHLSL
         }

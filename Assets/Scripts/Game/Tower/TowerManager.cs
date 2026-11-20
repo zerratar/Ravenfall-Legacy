@@ -1641,8 +1641,10 @@ public sealed class TowerManager : MonoBehaviour
         SkyClouds.Place = null;
         Ambience.Place = null;
         WeatherEffects.PlaceStorm = null;
+        WeatherEffects.PlaceRain = null;
         if (!over) return;
         WeatherEffects.PlaceStorm = over.Storm;
+        WeatherEffects.PlaceRain = over.Rain;
         Ambience.Place = new Ambience.Life { Snow = over.Snow, Fireflies = over.Fireflies, Butterflies = over.Butterflies, Gulls = over.Gulls };
 
         // GameManager sets these from potato mode every frame, so they are switched off every frame while the camera is

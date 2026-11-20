@@ -14,7 +14,7 @@ if (!profile) { profile = UnityEngine.ScriptableObject.CreateInstance<GrassProfi
 string Meadow(string n) => "Assets/PolygonNatureBiomes/PNB_Meadow_Forest/Terrain/Terrain_Meadow_" + n + ".terrainlayer";
 string Frost(string n) => "Assets/Scenes/Tower/Tower_Glacier/" + n + ".terrainlayer";
 // how much grass grows where the ground is all this layer: meadows full, worn and leafy ground less, moss a little,
-// snow a few frosty tufts; paths, tiles, mud, rock and ice none
+// snow a few frosty tufts (0.35 grew a white lawn up close); paths, tiles, mud, rock and ice none
 var densities = new (string path, float density)[]
 {
     (Meadow("Grass_01"), 1f), (Meadow("Grass_02"), 1f), (Meadow("Grass_Clover_01"), 1f), (Meadow("Grass_Flowers_01"), 1f),
@@ -23,7 +23,7 @@ var densities = new (string path, float density)[]
     (Meadow("Dirt_01"), 0f), (Meadow("Dirt_Cracked_Pebbles_01"), 0f), (Meadow("Mud_01"), 0f), (Meadow("Mud_Debris_01"), 0f),
     (Meadow("Cobblestone_01"), 0f), (Meadow("Footpath_Tile_01"), 0f), (Meadow("Ruin_Tiles_01"), 0f), (Meadow("Gravel_01"), 0f),
     (Meadow("Rock_Moss_01"), 0f), (Meadow("Moss_Rock_01"), 0f),
-    (Frost("Snow"), 0.35f), (Frost("Snow_Shade"), 0.25f), (Frost("Snow_Packed"), 0f), (Frost("Ice"), 0f), (Frost("Rock"), 0f),
+    (Frost("Snow"), 0.09f), (Frost("Snow_Shade"), 0.06f), (Frost("Snow_Packed"), 0f), (Frost("Ice"), 0f), (Frost("Rock"), 0f),
     (Frost("Flagstones_Frozen"), 0f),
 };
 var layers = new System.Collections.Generic.List<GrassProfile.Layer>();

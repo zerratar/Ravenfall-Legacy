@@ -68,10 +68,10 @@ MonoBehaviour:
     density: 0
     colour: {r: 0.35325375, g: 0.35151184, b: 0.23363419, a: 1}
   - terrainLayer: {fileID: 8574412962073106934, guid: 03eda4400cdf77d48a54cc3e80f24678, type: 2}
-    density: 0.35
+    density: 0.09
     colour: {r: 0.80833125, g: 0.80470806, b: 0.80833125, a: 1}
   - terrainLayer: {fileID: 8574412962073106934, guid: 165bdf8dd82b0fe488ed38ae5257de28, type: 2}
-    density: 0.25
+    density: 0.06
     colour: {r: 0.69516486, g: 0.72423726, b: 0.7921646, a: 1}
   - terrainLayer: {fileID: 8574412962073106934, guid: c1040fcec68517441b9566b5e44b30c5, type: 2}
     density: 0

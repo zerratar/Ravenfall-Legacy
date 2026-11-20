@@ -62,6 +62,9 @@ public abstract class TowerPlace : MonoBehaviour
     /// <summary>How stormy it is, 0 to 1: lightning in the clouds and thunder (WeatherEffects), none by default.</summary>
     [Range(0f, 1f)] public float Storm;
 
+    /// <summary>How hard it rains, 0 to 1 (WeatherEffects' rain, its sound and ripples), none by default.</summary>
+    [Range(0f, 1f)] public float Rain;
+
     public Vector3 Centre => transform.position;
 
     public Vector3 Spawn => SpawnPoint ? SpawnPoint.position : transform.position;

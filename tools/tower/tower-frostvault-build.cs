@@ -503,6 +503,145 @@ foreach (var target in new[] { W(0f, 38f), W(-30f, -25f), W(30f, -25f) })
 }
 
 var scenePath = folder + "/Tower_FrostVault.unity";
+// things frozen in the cavern's walls (concept-frostvault: bones and weapons caught in the ice): clear ice blocks set half
+// into the wall where rays from the rooms meet it, each with a find inside, a giant's ribs, an old adventurer, a beast's
+// tusked skull, swords and shields, and a few frozen fish. Their own random numbers, so the rest keeps its place.
+{
+    var cavePart = cave.Find("FrostVaultCave");
+    var caveFilter = cavePart ? cavePart.GetComponentInChildren<UnityEngine.MeshFilter>() : null;
+    if (!caveFilter) log.AppendLine("no cavern mesh for the frozen finds");
+    else
+    {
+        var wallCollider = caveFilter.gameObject.AddComponent<UnityEngine.MeshCollider>();
+        wallCollider.sharedMesh = caveFilter.sharedMesh;
+        var clearIce = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(dataFolder + "/ClearIce.mat");
+        if (!clearIce) { clearIce = new UnityEngine.Material(UnityEngine.Shader.Find("Ravenfall/Ice")); UnityEditor.AssetDatabase.CreateAsset(clearIce, dataFolder + "/ClearIce.mat"); }
+        clearIce.shader = UnityEngine.Shader.Find("Ravenfall/Ice");
+        clearIce.SetColor("_SurfaceColor", new UnityEngine.Color(0.66f, 0.86f, 0.98f));
+        clearIce.SetColor("_DeepColor", new UnityEngine.Color(0.10f, 0.32f, 0.52f));
+        clearIce.SetColor("_GlowColor", new UnityEngine.Color(0.10f, 0.42f, 0.95f));
+        clearIce.SetFloat("_Glow", 0.5f);
+        clearIce.SetFloat("_Alpha", 0.28f);
+        clearIce.SetFloat("_Rim", 0.45f);
+        clearIce.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        clearIce.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        clearIce.SetFloat("_ZWrite", 0f);
+        clearIce.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+        UnityEditor.EditorUtility.SetDirty(clearIce);
+
+        var bones = "Assets/PolygonDungeon/Prefabs/Environments/Bones/";
+        var vw = "Assets/PolygonVikings/Prefabs/Weapons/";
+        // what, how big it ends up (its longest side, metres: the packs' bones come big), and how it lies (pitch, roll);
+        // "beast" is the tusked skull put together below, "fish" a little school
+        var finds = new (string what, float size, float pitch, float roll)[]
+        {
+            (bones + "SM_Env_Bone_Rigcage_01", 3.6f, 0f, 70f),
+            ("beast", 3.2f, 0f, 0f),
+            ("Assets/PolygonDungeon/Prefabs/Props/SM_Prop_Skeleton_01", 1.9f, 0f, 20f),
+            (vw + "SM_Wep_Sword_01", 1.7f, 0f, 75f),
+            (bones + "SM_Env_Bone_Spine_02", 2.6f, 0f, 30f),
+            (vw + "SM_Wep_Shield_03", 1.1f, 70f, 0f),
+            ("fish", 1.8f, 0f, 0f),
+            (vw + "SM_Wep_LargeAxe_01", 1.5f, 0f, 60f),
+            (bones + "SM_Env_Bone_Skull_01", 1.1f, 0f, 15f),
+            (vw + "SM_Wep_Spear_02", 2.4f, 0f, 80f),
+            (bones + "SM_Env_BonePile_02", 1.8f, 0f, 0f),
+            (vw + "SM_Wep_Shield_06", 1.1f, 75f, 0f),
+            (bones + "SM_Env_Bone_Tail_01", 2.6f, 0f, 40f),
+            (vw + "SM_Wep_Sword_01", 1.6f, 0f, 100f),
+        };
+        UnityEngine.GameObject Make(string path, UnityEngine.Transform parent)
+        {
+            var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>(path + ".prefab");
+            if (!prefab) { log.AppendLine("missing " + path); return null; }
+            var go = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(prefab, scene);
+            go.transform.SetParent(parent, false);
+            foreach (var c in go.GetComponentsInChildren<UnityEngine.Collider>(true)) UnityEngine.Object.DestroyImmediate(c);
+            return go;
+        }
+        var frozen = new UnityEngine.GameObject("Frozen Finds").transform; frozen.SetParent(root.transform, false);
+        var frng = new System.Random(913);
+        var centre = new UnityEngine.Vector3(0f, 0f, -7.5f);
+        var placedFinds = 0;
+        for (var i = 0; i < finds.Length; i++)
+        {
+            // round the cavern, from the middle of the rooms out to the wall, at chest height
+            var a = (i + 0.3f + 0.4f * (float)frng.NextDouble()) / finds.Length * UnityEngine.Mathf.PI * 2f;
+            var dir = new UnityEngine.Vector3(UnityEngine.Mathf.Cos(a), 0f, UnityEngine.Mathf.Sin(a));
+            var height = 1.2f + 1.8f * (float)frng.NextDouble();
+            var from = root.transform.TransformPoint(centre + UnityEngine.Vector3.up * height);
+            if (!wallCollider.Raycast(new UnityEngine.Ray(from, dir), out var hit, 200f)) { log.AppendLine("no wall for find " + i); continue; }
+            var (what, size, pitch, roll) = finds[i];
+            var spot = new UnityEngine.GameObject("Frozen Find").transform;
+            spot.SetParent(frozen, true);
+            // facing out of the wall, a little into it
+            var outward = new UnityEngine.Vector3(hit.normal.x, 0f, hit.normal.z).normalized;
+            if (outward.sqrMagnitude < 0.1f) outward = -dir;
+            spot.position = hit.point + outward * 0.2f;
+            spot.rotation = UnityEngine.Quaternion.LookRotation(outward, UnityEngine.Vector3.up);
+            var inside = new UnityEngine.GameObject("Inside").transform; inside.SetParent(spot, false);
+            if (what == "beast")
+            {
+                // a great beast's skull with two tusks curling out of it (the packs have no mammoth)
+                var skull = Make(bones + "SM_Env_Bone_Skull_02", inside);
+                if (skull) { skull.transform.localScale = UnityEngine.Vector3.one * 3.4f; skull.transform.localRotation = UnityEngine.Quaternion.Euler(-10f, 180f, 0f); }
+                foreach (var side in new[] { -1f, 1f })
+                {
+                    var tusk = Make(bones + "SM_Env_Bone_Horn_01", inside);
+                    if (!tusk) continue;
+                    tusk.transform.localPosition = new UnityEngine.Vector3(0.55f * side, -0.3f, 0.6f);
+                    tusk.transform.localRotation = UnityEngine.Quaternion.Euler(20f, 180f + 25f * side, 90f * side);
+                    tusk.transform.localScale = UnityEngine.Vector3.one * 3.2f;
+                }
+            }
+            else if (what == "fish")
+            {
+                // a little school of fish, frozen mid-swim
+                for (var k = 0; k < 5; k++)
+                {
+                    var fish = Make("Assets/PolygonFantasyKingdom/Prefabs/Items/SM_Item_Meat_Fish_0" + (1 + frng.Next(4)), inside);
+                    if (!fish) continue;
+                    fish.transform.localPosition = new UnityEngine.Vector3(((float)frng.NextDouble() - 0.5f) * 1.6f, ((float)frng.NextDouble() - 0.5f) * 1.2f, ((float)frng.NextDouble() - 0.5f) * 0.4f);
+                    fish.transform.localRotation = UnityEngine.Quaternion.Euler(0f, 90f + ((float)frng.NextDouble() - 0.5f) * 30f, ((float)frng.NextDouble() - 0.5f) * 20f);
+                    fish.transform.localScale = UnityEngine.Vector3.one * 1.6f;
+                }
+            }
+            else
+            {
+                var go = Make(what, inside);
+                if (go) { go.transform.localRotation = UnityEngine.Quaternion.Euler(pitch, (float)frng.NextDouble() * 360f, roll); }
+            }
+            // the find brought to its size and centred in its block
+            var rs = inside.GetComponentsInChildren<UnityEngine.Renderer>();
+            if (rs.Length == 0) { UnityEngine.Object.DestroyImmediate(spot.gameObject); continue; }
+            var b = rs[0].bounds; foreach (var r in rs) b.Encapsulate(r.bounds);
+            inside.localScale *= size / UnityEngine.Mathf.Max(0.01f, UnityEngine.Mathf.Max(b.size.x, b.size.y, b.size.z));
+            b = rs[0].bounds; foreach (var r in rs) b.Encapsulate(r.bounds);
+            inside.position += spot.position - b.center;
+            foreach (var r in rs) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            // the block: an ice chunk grown round it, clear, half in the wall
+            var chunk = Make("Assets/PolygonVikings/Prefabs/Environments/SM_Env_IceChunk_0" + (1 + frng.Next(6)), spot);
+            if (chunk)
+            {
+                var cr = chunk.GetComponentsInChildren<UnityEngine.Renderer>();
+                var cb = cr[0].bounds; foreach (var r in cr) cb.Encapsulate(r.bounds);
+                var grow = UnityEngine.Mathf.Max(b.size.x / cb.size.x, b.size.y / cb.size.y, b.size.z / cb.size.z) * 1.25f;
+                chunk.transform.localScale *= grow;
+                chunk.transform.localRotation = UnityEngine.Quaternion.Euler(0f, (float)frng.NextDouble() * 360f, 0f);
+                cr = chunk.GetComponentsInChildren<UnityEngine.Renderer>();
+                cb = cr[0].bounds; foreach (var r in cr) cb.Encapsulate(r.bounds);
+                chunk.transform.position += spot.position - cb.center;
+                foreach (var r in cr) { r.sharedMaterials = r.sharedMaterials.Select(_ => clearIce).ToArray(); r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; }
+            }
+            // a faint cold light in the ice, so the find shows in the dark of the cave
+            var glow = new UnityEngine.GameObject("Find Glow"); glow.transform.SetParent(spot, false); glow.transform.position = spot.position + outward * 0.6f;
+            var gl = glow.AddComponent<UnityEngine.Light>(); gl.type = UnityEngine.LightType.Point; gl.color = new UnityEngine.Color(0.55f, 0.8f, 1f); gl.range = 4.5f; gl.intensity = 1.6f; gl.shadows = UnityEngine.LightShadows.None;
+            placedFinds++;
+        }
+        UnityEngine.Object.DestroyImmediate(wallCollider);
+        log.AppendLine("frozen finds " + placedFinds);
+    }
+}
 // the icicle crystals are the cavern's ice too
 {
     var crystals = 0;

@@ -41,6 +41,9 @@ public sealed class WeatherEffects : MonoBehaviour
     /// </summary>
     public static float? PlaceStorm { get; set; }
 
+    /// <summary>How hard it rains on that place, 0 to 1 (TowerManager, every frame); null on the islands.</summary>
+    public static float? PlaceRain { get; set; }
+
     /// <summary>The setting: lightning flashes on or off.</summary>
     public static bool LightningFlashes { get; set; } = true;
 
@@ -77,8 +80,9 @@ public sealed class WeatherEffects : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Create()
     {
-        // a static: what the last play left
+        // statics: what the last play left
         PlaceStorm = null;
+        PlaceRain = null;
         if (!Application.isPlaying) return;
         var go = new GameObject("Weather Effects") { hideFlags = HideFlags.HideInHierarchy };
         DontDestroyOnLoad(go);
@@ -216,9 +220,10 @@ public sealed class WeatherEffects : MonoBehaviour
         var outside = camera && camera.transform.position.y > -30f && Ambience.HasFocus;
         var focus = Ambience.FocusPoint;
         var wet = outside && Weather.Changing && Ambience.Island != "Heim" ? Weather.Rain : 0f;
+        if (PlaceRain is { } placeRain) wet = outside && Weather.Enabled && !Ambience.Suppressed ? placeRain : 0f;
 
         // the rain starts upwind, so it lands round the focus
-        var windSpeed = 2f + 5f * Weather.Storm;
+        var windSpeed = 2f + 5f * (PlaceStorm ?? Weather.Storm);
         var wind = SkyClouds.Wind.normalized * windSpeed;
         var fall = RainHeight / FallSpeed;
         var emission = rain.emission;
@@ -248,8 +253,9 @@ public sealed class WeatherEffects : MonoBehaviour
             var offset = Random.insideUnitCircle * RippleReach;
             var origin = new Vector3(focus.x + offset.x, focus.y + 40f, focus.z + offset.y);
             float y;
-            if (Physics.Raycast(origin, Vector3.down, out var hit, 90f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)) y = Mathf.Max(hit.point.y, sea);
-            else if (sea > -1000f) y = sea;
+            if (Physics.Raycast(origin, Vector3.down, out var hit, 90f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)) y = PlaceRain.HasValue ? hit.point.y : Mathf.Max(hit.point.y, sea);
+            // a place's rain (a tower floor over a sea of cloud) ripples only where it lands on something
+            else if (sea > -1000f && !PlaceRain.HasValue) y = sea;
             else continue;
             emit.position = new Vector3(origin.x, y + 0.04f, origin.z);
             ripples.Emit(emit, 1);
