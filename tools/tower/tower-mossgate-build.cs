@@ -41,13 +41,14 @@ root.transform.position = origin;
 var town = root.AddComponent<TowerTown>();
 town.Key = "mossgate";
 town.Radius = 95f;
-town.SkyAmbient = new UnityEngine.Color(0.62f, 0.62f, 0.52f);
+town.SkyAmbient = new UnityEngine.Color(0.62f, 0.66f, 0.58f);
 town.EquatorAmbient = new UnityEngine.Color(0.48f, 0.46f, 0.36f);
 town.GroundAmbient = new UnityEngine.Color(0.20f, 0.18f, 0.12f);
-town.FogColor = new UnityEngine.Color(0.70f, 0.68f, 0.55f);
-town.FogDensity = 0.007f;
+// clear golden afternoon air, the haze only far off (concept docs/mockups/tower/concept-mossgate.jpg)
+town.FogColor = new UnityEngine.Color(0.74f, 0.76f, 0.64f);
+town.FogDensity = 0.0034f;
 town.SunColor = new UnityEngine.Color(1f, 0.86f, 0.64f);
-town.SunIntensity = 1.2f;
+town.SunIntensity = 1.35f;
 town.SunAngles = new UnityEngine.Vector3(32f, -55f, 0f);
 
 // ---- the ground ----

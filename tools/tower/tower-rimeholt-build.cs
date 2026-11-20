@@ -24,14 +24,15 @@ var town = root.AddComponent<TowerTown>();
 town.Key = "rimeholt";
 town.Radius = 95f;
 // a cold late afternoon: blue shadows, a low warm sun
-town.SkyAmbient = new UnityEngine.Color(0.60f, 0.66f, 0.78f);
-town.EquatorAmbient = new UnityEngine.Color(0.50f, 0.52f, 0.58f);
+// a blue winter evening with warm lights in it (concept docs/mockups/tower/concept-rimeholt.jpg)
+town.SkyAmbient = new UnityEngine.Color(0.48f, 0.56f, 0.74f);
+town.EquatorAmbient = new UnityEngine.Color(0.40f, 0.44f, 0.56f);
 town.GroundAmbient = new UnityEngine.Color(0.30f, 0.30f, 0.34f);
-town.FogColor = new UnityEngine.Color(0.80f, 0.82f, 0.88f);
-town.FogDensity = 0.0048f;
-town.SunColor = new UnityEngine.Color(1f, 0.86f, 0.70f);
-town.SunIntensity = 1.2f;
-town.SunAngles = new UnityEngine.Vector3(24f, -50f, 0f);
+town.FogColor = new UnityEngine.Color(0.64f, 0.70f, 0.84f);
+town.FogDensity = 0.0038f;
+town.SunColor = new UnityEngine.Color(1f, 0.74f, 0.52f);
+town.SunIntensity = 0.95f;
+town.SunAngles = new UnityEngine.Vector3(16f, -50f, 0f);
 
 // ---- the ground ----
 const float size = 220f, height = 36f, baseHeight = 2f, flatRadius = 46f;
@@ -256,6 +257,13 @@ var homes = new System.Collections.Generic.List<UnityEngine.GameObject>
     House("SM_Bld_Base_Door_02_Snow", "SM_Bld_Roof_01_Snow", 26f, -4f, 1.45f),
     House("SM_Bld_Base_Door_01_Snow", "SM_Bld_Roof_01_Snow", -30f, 18f, 1.4f),
 };
+// warm light at every door against the blue evening snow
+foreach (var home in homes)
+{
+    if (!home) continue;
+    var door = DoorOf(home, 1.2f);
+    Lamp(door.x, 2.2f, door.y, warm, 7f, 1.5f);
+}
 // the Thawing Mead: the long hall north-east of the square, its door toward the square (the gate road stays clear)
 var hallC = V(12.5f, 22f);
 var hall = House("SM_Bld_Base_Long_Door_01_Snow", "SM_Bld_Roof_Long_01_Snow", hallC.x, hallC.y, 2.0f);
