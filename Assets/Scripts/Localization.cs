@@ -2748,6 +2748,15 @@ public static class Localization
     public static string UI_ENEMY_ARMOR = "ARMOR";
     public static string UI_ENEMY_POWER = "POWER";
     public static string UI_ENEMY_AIM = "ACCURACY";
+    public static string UI_TOWER_TITLE = "TOWER";
+    public static string UI_TOWER_FLOOR = "Floor {0} - {1}";
+    public static string UI_TOWER_QUESTS = "Floor quests {0} / {1}";
+    public static string UI_TOWER_BOSS_READY = "Boss ready: {0}";
+    public static string UI_TOWER_BOSS_STARTS = "{0} awakens soon";
+    public static string UI_TOWER_REGROUP = "Regrouping: {0} s";
+    public static string UI_TOWER_NEXT_FLOOR = "Next: floor {0}, {1}";
+    public static string UI_TOWER_TRAINING = "Training - the climb waits on floor {0}";
+    public static string UI_TOWER_ALL_CLEARED = "Every floor is cleared";
     public static string UI_ENEMY_STRIKES = "Strikes with {0}";
     public static string UI_ENEMY_WEAK = "Weak to {0}";
     public static string UI_ENEMY_RESISTS = "Resists {0}";

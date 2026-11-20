@@ -1669,11 +1669,20 @@ public sealed class TowerManager : MonoBehaviour
 
     // ---- Every frame -----------------------------------------------------------------------------------------
 
+    private bool hudAdded;
+    private float nextHudTry;
+
     private void Update()
     {
         var g = Game;
         if (!g) return;
         if (!stateRequested && g.RavenNest != null && g.RavenNest.SessionStarted) RefreshState();
+        // the tower panel in the top status column (floor, quests, countdown, boss): added once the column is there
+        if (!hudAdded && Time.time >= nextHudTry)
+        {
+            nextHudTry = Time.time + 2f;
+            hudAdded = Shinobytes.UI.TowerHudView.Ensure();
+        }
 
         if (Phase == TowerPhase.Countdown && PhaseSecondsLeft <= 0f && !introBoss) StartFight();
         else if (Phase == TowerPhase.Fight) UpdateFight();

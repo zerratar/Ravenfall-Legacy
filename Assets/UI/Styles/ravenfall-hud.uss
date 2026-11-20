@@ -1207,6 +1207,87 @@
     display: none;
 }
 
+/* The tower panel (TowerHudView): the raid panel's family in the tower's green. Its bar is the floor's quests until
+   a boss fight, when it is the boss's health in the raid's colour; a row for each quest sits under it. */
+
+.rf-raid--tower {
+    border-top-color: #7FB069;
+}
+
+.rf-raid--tower .rf-live-dot {
+    background-color: #7FB069;
+}
+
+.rf-raid--tower .rf-raid__percent {
+    color: #B9E08F;
+}
+
+.rf-raid--tower .rf-raid__fill {
+    background-color: #5E9A48;
+}
+
+.rf-raid--tower-fight .rf-raid__fill {
+    background-color: var(--rf-health);
+}
+
+/* The bottom row: how many are inside, what is going on (a line of words, not the raid's big percentage, so it is
+   smaller and gives way), and what to type. The sides keep their own width. */
+.rf-raid--tower .rf-raid__side {
+    flex-grow: 0;
+    flex-shrink: 0;
+    flex-basis: auto;
+}
+
+.rf-raid--tower .rf-raid__percent {
+    flex-grow: 1;
+    flex-shrink: 1;
+    font-size: 23px;
+    margin-left: var(--rf-space-4);
+    margin-right: var(--rf-space-4);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rf-tower__quests {
+    margin-top: var(--rf-space-3);
+}
+
+.rf-tower__quest {
+    flex-direction: row;
+    align-items: center;
+    height: 28px;
+}
+
+.rf-top-layer .rf-tower__check {
+    font-size: 18px;
+    width: 26px;
+    color: #B9E08F;
+    opacity: 0;
+}
+
+.rf-tower__quest--done .rf-tower__check {
+    opacity: 1;
+}
+
+.rf-raid .rf-tower__quest-text {
+    flex-grow: 1;
+    font-size: 20px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rf-raid .rf-tower__quest-count {
+    font-size: 20px;
+    margin-left: var(--rf-space-3);
+}
+
+.rf-tower__quest--done .rf-tower__quest-text,
+.rf-tower__quest--done .rf-tower__quest-count {
+    color: #B9E08F;
+}
+
 .rf-dungeon__enemies {
     flex-direction: row;
     align-items: center;
