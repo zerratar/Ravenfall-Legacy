@@ -24,10 +24,11 @@ floor.Radius = 115f;
 floor.SkyAmbient = new UnityEngine.Color(0.40f, 0.48f, 0.40f);
 floor.EquatorAmbient = new UnityEngine.Color(0.40f, 0.45f, 0.34f);
 floor.GroundAmbient = new UnityEngine.Color(0.17f, 0.16f, 0.11f);
-floor.FogColor = new UnityEngine.Color(0.42f, 0.50f, 0.40f);
-floor.FogDensity = 0.011f;
+// a green haze, thin enough that the drowned hall's walls show (concept-marsh)
+floor.FogColor = new UnityEngine.Color(0.40f, 0.52f, 0.42f);
+floor.FogDensity = 0.0058f;
 floor.SunColor = new UnityEngine.Color(0.85f, 0.90f, 0.70f);
-floor.SunIntensity = 0.85f;
+floor.SunIntensity = 0.95f;
 floor.SunAngles = new UnityEngine.Vector3(48f, -35f, 0f);
 
 // ---- the layout (local to the root) ----
@@ -136,6 +137,54 @@ log.AppendLine("terrain layers " + td.terrainLayers.Length);
 
 // the ground's height in world space at a local point
 UnityEngine.Vector3 OnGround(float x, float z) => origin + new UnityEngine.Vector3(x, GroundAt(x, z), z);
+
+// ---- the hall (tools/tower/blender/tower_halls.py, concept docs/mockups/tower/concept-marsh.jpg): this band is the Overgrown
+// Halls, inside the tower, so the floor stands in a vast ruined hall rather than under open hills: tall walls with pointed
+// windows, broken at the top, whole stretches fallen, giant roots over them. They show from inside only, so the camera
+// over the players is never walled off. The FBX comes in turned half round: turned back. Casts no shadow (the walls would
+// shade half the floor at this sun).
+{
+    UnityEngine.Material HallMat(string name, UnityEngine.Texture2D tex, UnityEngine.Texture2D normal, UnityEngine.Color tint)
+    {
+        var path = dataFolder + "/" + name + ".mat";
+        var m = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(path);
+        if (!m) { m = new UnityEngine.Material(UnityEngine.Shader.Find("Universal Render Pipeline/Lit")); UnityEditor.AssetDatabase.CreateAsset(m, path); }
+        m.SetTexture("_BaseMap", tex);
+        m.SetColor("_BaseColor", tint);
+        if (normal) { m.SetTexture("_BumpMap", normal); m.EnableKeyword("_NORMALMAP"); }
+        m.SetFloat("_Smoothness", 0.05f);
+        UnityEditor.EditorUtility.SetDirty(m);
+        return m;
+    }
+    var ae = "Assets/PolygonAncientEmpire/Textures/BuildingAlts/";
+    var stoneTex = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Texture2D>(ae + "Building_Large_Brick_01.png");
+    var stoneNormal = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Texture2D>(ae + "Building_Wall_01_Normals.png");
+    var mossLayer = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.TerrainLayer>("Assets/PolygonNatureBiomes/PNB_Meadow_Forest/Terrain/Terrain_Meadow_Moss_01.terrainlayer");
+    if (!stoneTex) log.AppendLine("missing hall stone texture");
+    var hallMats = new System.Collections.Generic.Dictionary<string, UnityEngine.Material>
+    {
+        ["Stone"] = HallMat("HallStone", stoneTex, stoneNormal, new UnityEngine.Color(0.86f, 0.90f, 0.82f)),
+        ["Moss"] = HallMat("HallMoss", mossLayer ? mossLayer.diffuseTexture : null, null, new UnityEngine.Color(0.85f, 0.95f, 0.75f)),
+        ["Root"] = HallMat("HallRoot", null, null, new UnityEngine.Color(0.34f, 0.24f, 0.15f)),
+    };
+    var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/World/Tower/Halls/Models/MarshHall.fbx");
+    if (!prefab) log.AppendLine("missing model MarshHall (run tools/tower/blender/tower_halls.py)");
+    else
+    {
+        var hall = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(prefab, scene);
+        hall.name = "Hall Walls";
+        hall.transform.SetParent(root.transform, false);
+        hall.transform.localPosition = UnityEngine.Vector3.zero;
+        hall.transform.localRotation = UnityEngine.Quaternion.Euler(0f, 180f, 0f);
+        foreach (var r in hall.GetComponentsInChildren<UnityEngine.MeshRenderer>())
+        {
+            var ms = r.sharedMaterials;
+            for (var k = 0; k < ms.Length; k++) { var key = ms[k] ? ms[k].name.Split(' ')[0].Split('.')[0] : ""; if (hallMats.TryGetValue(key, out var mm)) ms[k] = mm; }
+            r.sharedMaterials = ms;
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+    }
+}
 
 // ---- props ----
 var rng = new System.Random(37);
