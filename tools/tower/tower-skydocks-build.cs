@@ -347,6 +347,8 @@ for (var i = 0; i < 260; i++)
     var go = rng.Next(3) == 0
         ? Place(pr + "Environment/SM_Env_Ground_Cover_0" + (1 + rng.Next(8)) + ".prefab", OnGround(x, z) + UnityEngine.Vector3.down * 0.05f, 0.8f + R() * 0.5f, -1, grassT)
         : Place("Assets/Synty/PolygonGeneric/Prefabs/Environment/SM_Gen_Env_Grass_Tall_0" + (1 + rng.Next(4)) + ".prefab", OnGround(x, z) + UnityEngine.Vector3.down * 0.05f, 0.7f + R() * 0.6f, -1, grassT);
+    // our grass covers the rock now: only one tall clump in four is kept, the rest made and dropped so what comes after keeps its place
+    if (go && go.name.Contains("Grass_Tall") && i % 4 != 0) { UnityEngine.Object.DestroyImmediate(go); continue; }
     Bare(go);
     if (go) foreach (var rr in go.GetComponentsInChildren<UnityEngine.Renderer>()) rr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 }
@@ -599,6 +601,20 @@ if (surface.navMeshData)
 else log.AppendLine("navmesh build gave nothing");
 
 var scenePath = folder + "/Tower_SkyDocks.unity";
+// our grass (GrassField with Assets/World/Grass/Tower Grass Profile.asset, made by tools/tower/tower-grass-profile.cs): the
+// islands' blades, tufts and flowers grown round the camera on the grassy layers; its own setting, off in potato mode
+{
+    var grassProfile = UnityEditor.AssetDatabase.LoadAssetAtPath<GrassProfile>("Assets/World/Grass/Tower Grass Profile.asset");
+    var grassFields = 0;
+    if (!grassProfile) log.AppendLine("missing tower grass profile (run tools/tower/tower-grass-profile.cs)");
+    else foreach (var go in scene.GetRootGameObjects()) foreach (var t in go.GetComponentsInChildren<UnityEngine.Terrain>(true))
+    {
+        if (!t.TryGetComponent<GrassField>(out var gf)) gf = t.gameObject.AddComponent<GrassField>();
+        gf.Profile = grassProfile;
+        grassFields++;
+    }
+    log.AppendLine("grass fields " + grassFields);
+}
 UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene, scenePath);
 UnityEditor.SceneManagement.EditorSceneManager.CloseScene(scene, true);
 UnityEngine.SceneManagement.SceneManager.SetActiveScene(main);

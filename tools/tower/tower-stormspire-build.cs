@@ -573,6 +573,20 @@ if (surface.navMeshData)
 else log.AppendLine("navmesh build gave nothing");
 
 var scenePath = folder + "/Tower_StormSpire.unity";
+// our grass (GrassField with Assets/World/Grass/Tower Grass Profile.asset, made by tools/tower/tower-grass-profile.cs): the
+// islands' blades, tufts and flowers grown round the camera on the grassy layers; its own setting, off in potato mode
+{
+    var grassProfile = UnityEditor.AssetDatabase.LoadAssetAtPath<GrassProfile>("Assets/World/Grass/Tower Grass Profile.asset");
+    var grassFields = 0;
+    if (!grassProfile) log.AppendLine("missing tower grass profile (run tools/tower/tower-grass-profile.cs)");
+    else foreach (var go in scene.GetRootGameObjects()) foreach (var t in go.GetComponentsInChildren<UnityEngine.Terrain>(true))
+    {
+        if (!t.TryGetComponent<GrassField>(out var gf)) gf = t.gameObject.AddComponent<GrassField>();
+        gf.Profile = grassProfile;
+        grassFields++;
+    }
+    log.AppendLine("grass fields " + grassFields);
+}
 UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene, scenePath);
 UnityEditor.SceneManagement.EditorSceneManager.CloseScene(scene, true);
 UnityEngine.SceneManagement.SceneManager.SetActiveScene(main);

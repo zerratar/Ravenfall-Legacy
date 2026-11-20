@@ -165,6 +165,7 @@ void Block(UnityEngine.GameObject go, float shrink = 0.85f)
     var c = new UnityEngine.GameObject("Block " + go.name); c.transform.SetParent(blockers, false);
     c.transform.position = new UnityEngine.Vector3(b.center.x, b.min.y + 1.5f, b.center.z);
     var bc = c.AddComponent<UnityEngine.BoxCollider>(); bc.size = new UnityEngine.Vector3(b.size.x * shrink, 3f, b.size.z * shrink);
+    c.AddComponent<GrassKeepOut>(); // and no grass through the floor
 }
 void NoCollide(UnityEngine.GameObject go) { if (go) foreach (var col in go.GetComponentsInChildren<UnityEngine.Collider>(true)) UnityEngine.Object.DestroyImmediate(col); }
 // a seat on a log bench (the bench runs along its z, so it is turned a quarter): the stand sits on top of it, across it toward what the sitter
@@ -858,6 +859,8 @@ for (var i = 0; i < 140; i++)
     var x = UnityEngine.Mathf.Cos(a) * r; var z = UnityEngine.Mathf.Sin(a) * r;
     if (!Free(x, z, 0.8f) || r > EdgeAt(x, z) - 3f) continue;
     var g = Place(rng.Next(3) == 0 ? pr + "Environment/SM_Env_Ground_Cover_0" + (1 + rng.Next(8)) + ".prefab" : "Assets/Synty/PolygonGeneric/Prefabs/Environment/SM_Gen_Env_Grass_Tall_0" + (1 + rng.Next(4)) + ".prefab", x, z, 0.6f + R() * 0.5f, -1, foliage, 0.05f);
+    // our grass covers the meadow now: only one tall clump in four is kept (made and dropped, so what comes after keeps its place)
+    if (g && g.name.Contains("Grass_Tall") && i % 4 != 0) { UnityEngine.Object.DestroyImmediate(g); continue; }
     NoCollide(g);
 }
 // odds and ends: barrels, logs, a wagon, rope and sails, a flag on the windward side
@@ -993,6 +996,20 @@ townStorm.Rods = new[] { voltRod.transform };
 townStorm.MinGap = 14f; townStorm.MaxGap = 32f; townStorm.RodShare = 0.15f;
 
 var scenePath = folder + "/Tower_Galewharf.unity";
+// our grass (GrassField with Assets/World/Grass/Tower Grass Profile.asset, made by tools/tower/tower-grass-profile.cs): the
+// islands' blades, tufts and flowers grown round the camera on the grassy layers; its own setting, off in potato mode
+{
+    var grassProfile = UnityEditor.AssetDatabase.LoadAssetAtPath<GrassProfile>("Assets/World/Grass/Tower Grass Profile.asset");
+    var grassFields = 0;
+    if (!grassProfile) log.AppendLine("missing tower grass profile (run tools/tower/tower-grass-profile.cs)");
+    else foreach (var go in scene.GetRootGameObjects()) foreach (var t in go.GetComponentsInChildren<UnityEngine.Terrain>(true))
+    {
+        if (!t.TryGetComponent<GrassField>(out var gf)) gf = t.gameObject.AddComponent<GrassField>();
+        gf.Profile = grassProfile;
+        grassFields++;
+    }
+    log.AppendLine("grass fields " + grassFields);
+}
 UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene, scenePath);
 UnityEditor.SceneManagement.EditorSceneManager.CloseScene(scene, true);
 UnityEngine.SceneManagement.SceneManager.SetActiveScene(main);
