@@ -1007,11 +1007,11 @@ public static class Localization
     public static string UI_WHATSNEW_1_TITLE = "Combat, rebuilt";
     public static string UI_WHATSNEW_1_TEXT = "Fights work in a new way: health from Vitality and armor, armor that takes damage off instead of making blows miss, five elements, combat skills, battle pets, gems and the tower. Here is the short version.";
     public static string UI_WHATSNEW_2_TITLE = "Health and armor";
-    public static string UI_WHATSNEW_2_TEXT = "Vitality, the skill once called Health (!train vitality), gives 8 health a level, and armor pieces add more. Armor now takes a share off every hit instead of making blows miss, so hits land and fights last. Enchanted gear can show lower numbers than before: an old bug counted some enchantments twice.";
+    public static string UI_WHATSNEW_2_TEXT = "Vitality, the skill once called Health, grows from all your combat training as before and gives 8 health a level; armor pieces add more. Armor now takes a share off every hit instead of making blows miss, so hits land and fights last. Enchanted gear can show lower numbers than before: an old bug counted some enchantments twice.";
     public static string UI_WHATSNEW_3_TITLE = "Five elements";
     public static string UI_WHATSNEW_3_TEXT = "Weapons and gems can carry fire, ice, lightning or poison on top of the plain hit. Fire burns, ice chills and five chills freeze, lightning jumps to the next enemy, poison stacks up. Enemies shrug off some elements and are weak to others, so the right weapon matters.";
     public static string UI_WHATSNEW_4_TITLE = "Combat skills";
-    public static string UI_WHATSNEW_4_TEXT = "Every combat skill has a skill tree. Spend points with !learn, put skills in your loadout with !loadout, and your character uses them by itself in every fight. !tree shows your points and !respec starts over.";
+    public static string UI_WHATSNEW_4_TEXT = "Every combat skill has a skill tree. Spend points with !learn, set your loadout with !loadout, and your character uses the skills by itself. Enemies now attack whoever worries them most, so a tank with the Bulwark tree and Taunt can hold them while the others deal damage and heal. !tree shows your points, !respec starts over.";
     public static string UI_WHATSNEW_5_TITLE = "Battle pets";
     public static string UI_WHATSNEW_5_TEXT = "Pets fight beside you now: they level up, learn skills and evolve. Pick a first pet with !pets starter fox, bear or fawn, tame creatures you fight with !tame bunny, and hatch eggs from quests, raids and the tower with !pets hatch. !pets shows yours.";
     public static string UI_WHATSNEW_6_TITLE = "Gems and sockets";
@@ -1025,7 +1025,7 @@ public static class Localization
     public static string UI_FLOAT_POISONED = "Poisoned";
     public static string UI_FLOAT_CHILLED = "Chilled";
     public static string UI_SETTINGS_EFFECT_WORDS = "Effect words";
-    public static string UI_SETTINGS_EFFECT_WORDS_HINT = "A word over a fighter when an element's effect starts on it (Burning, Chilled, Frozen, Stunned, Poisoned) or a hit does nothing (Immune), in the element's colour.";
+    public static string UI_SETTINGS_EFFECT_WORDS_HINT = "A word over a fighter when an element's effect starts on it (Burning, Chilled, Frozen, Stunned, Poisoned) or a hit does nothing (Immune), in the element's color.";
     public static string UI_SETTINGS_WHATSNEW = "What's new";
     public static string UI_SETTINGS_WHATSNEW_HINT = "The pages about this version's new combat: health and armor, elements, combat skills, battle pets, gems and the tower.";
     public static string UI_SETTINGS_WHATSNEW_BUTTON = "Show";
@@ -1332,6 +1332,9 @@ public static class Localization
     public static string MSG_SUB_TOKEN_REWARD = Meta("system", "reward") + "You were rewarded {amount} {tokenName}(s)!";
     public static string MSG_RAID_START_CODE = Meta("event", "raid", "raid boss") + "A level {raidLevel} raid boss has appeared! Help fight him by typing '!raid code', find the code on stream.";
     public static string MSG_RAID_START = Meta("event", "raid", "raid boss") + "A level {raidLevel} raid boss has appeared! Help fight him by typing !raid";
+    public static string MSG_RAID_START_ELEMENT = Meta("event", "raid", "raid boss") + "A level {raidLevel} raid boss has appeared, striking with {element} this time! Help fight him by typing !raid";
+    public static string MSG_RAID_START_CODE_ELEMENT = Meta("event", "raid", "raid boss") + "A level {raidLevel} raid boss has appeared, striking with {element} this time! Help fight him by typing '!raid code', find the code on stream.";
+    public static string UI_COMBAT_STYLE_ALL = "All";
     public static string MSG_RAID_START_ERROR = Meta("system", "raid", "raid start", "fail") + "Raid cannot be started right now.";
     public static string MSG_DUEL_REQ = Meta("duel", "request") + "A duel request received from {opponent}, reply with !duel accept or !duel decline";
     public static string MSG_DUEL_REQ_TIMEOUT = Meta("duel", "request", "timeout") + "The duel request from {requester} has timed out and automatically declined.";
@@ -1379,15 +1382,24 @@ public static class Localization
     public static string UI_QUEST_REWARD_ITEM = " and a {0}";
     public static string UI_DETAILS_SKILL_COOLDOWN = "Cooldown";
     public static string UI_DETAILS_SKILL_READY = "Ready";
-    public static string MSG_SKILLS_SHOW = Meta("skills", "info") + "{free} of {earned} skill points to spend. Loadout: {loadout}. !tree Might (or another tree) lists its skills, !learn <skill> spends points, !loadout <slot> <skill> changes the loadout.";
-    public static string MSG_SKILLS_TREE = Meta("skills", "info") + "{tree} ({skill}): {nodes}. The number in brackets is the {skill} level a skill needs.";
-    public static string MSG_SKILLS_INFO = Meta("skills", "info") + "{name} ({tree}, {kind}): {description} {effect}. Needs {skill} {level}, {cost} point(s) per rank.{path}";
+    public static string MSG_SKILLS_SHOW = Meta("skills", "info") + "{free} of {earned} skill points to spend (you earn 1 for every 10 levels across your combat skills, 1 for every 40 past 1,000). Loadout: {loadout}. !tree Might (or another tree) lists its skills, !learn <skill> spends points, !loadout <slot> <skill> changes the loadout. Plan a build at ravenfall.stream/skill-trees";
+    public static string MSG_SKILLS_TREE = Meta("skills", "info") + "{tree} ({skill}): {nodes}. The number in brackets is the {skill} level a skill needs. !tree <skill> tells you about one.";
+    public static string MSG_SKILLS_INFO = Meta("skills", "info") + "{name} ({tree}, {kind}): {description}{effect} Needs {skill} {level}, {cost}.{path}";
+    public static string MSG_SKILLS_COST_ACTIVE = "costs {0} point(s)";
+    public static string MSG_SKILLS_COST_RANK = "{0} point(s) per rank";
+    public static string MSG_SKILLS_TREE_OWN_NAME = Meta("skills", "info") + "{tree}: {nodes}. The number in brackets is the {skill} level a skill needs. !tree <skill> tells you about one.";
     public static string MSG_SKILLS_PATH = " Learn {0} first.";
-    public static string MSG_SKILLS_KIND_ACTIVE = "active, every {0} s";
+    public static string MSG_SKILLS_KIND_ACTIVE = "active, every {0} s, used {1}";
+    public static string MSG_SKILLS_KIND_NEEDS = ", needs {0} equipped";
+    public static string MSG_SKILLS_LOADOUT_NEEDS = " (needs {0})";
+    public static string MSG_SKILLS_LOADOUT_EMPTY = "empty";
     public static string MSG_SKILLS_KIND_PASSIVE = "passive";
     public static string MSG_SKILLS_KIND_RANKS = "passive, {0} ranks";
     public static string MSG_SKILLS_UNKNOWN = Meta("skills", "fail") + "There is no skill or tree called {name}. The trees are Bulwark, Restoration, Might, Precision, Marksman, Elements, Vitality and Hunter.";
     public static string MSG_SKILLS_LEARNED = Meta("skills", "success") + "You learned {name}. {free} skill point(s) left.";
+    public static string MSG_SKILLS_LEARNED_ACTIVE = Meta("skills", "success") + "You learned {name}: it is in loadout slot {slot} and is used {when}. {free} skill point(s) left.";
+    public static string MSG_SKILLS_LEARNED_FULL = Meta("skills", "success") + "You learned {name}, but your loadout is full: !loadout <slot> {name} puts it in a slot (!loadout shows them). {free} skill point(s) left.";
+    public static string MSG_SKILLS_LEARNED_NEEDS = " It is only used with {0} equipped.";
     public static string MSG_SKILLS_LEARN_USAGE = Meta("skills", "fail") + "Use !learn <skill>, for example !learn cleave. !tree Might lists a tree's skills.";
     public static string MSG_SKILLS_LOADOUT = Meta("skills", "info") + "Loadout: {loadout}. The first one that fits is used first.";
     public static string MSG_SKILLS_LOADOUT_USAGE = Meta("skills", "fail") + "Use !loadout <slot> <skill>, for example !loadout 1 cleave, or !loadout clear 3.";
@@ -1395,9 +1407,9 @@ public static class Localization
     public static string MSG_SKILLS_RESPEC_CONFIRM = Meta("skills", "info") + "A respec gives back all {spent} skill points for {price}. Type !respec confirm to do it.";
     public static string MSG_SKILLS_RESPEC_FREE = "nothing (a free respec)";
     public static string MSG_SKILLS_RESPEC_TOME = "a Tome of Forgetting";
-    public static string MSG_SKILLS_RESPEC_COINS = "{0} coins";
+    public static string MSG_SKILLS_RESPEC_COINS = "{0} coins (a Tome of Forgetting makes it free: every weekly quest and finished quest chain gives one)";
     public static string MSG_SKILLS_RESPEC_NOTHING = Meta("skills", "fail") + "You have not spent any skill points yet.";
-    public static string MSG_SKILLS_RESPEC_BUSY = Meta("skills", "fail") + "Not during a raid, dungeon or duel. Try again after it.";
+    public static string MSG_SKILLS_RESPEC_BUSY = Meta("skills", "fail") + "Not during a raid, dungeon, duel or tower climb. Try again after it.";
     public static string MSG_SKILLS_RESPEC_DONE = Meta("skills", "success") + "All {spent} skill points are back. You have {earned} to spend.";
     public static string MSG_SKILLS_DISABLED = Meta("skills", "fail") + "Skill trees come with the new combat.";
     public static string MSG_SKILLS_ERROR = Meta("skills", "fail") + "The skill trees could not be reached right now. Try again in a moment.";
@@ -1599,7 +1611,7 @@ public static class Localization
 
     public static string MSG_UNEQUIPPED = Meta("info", "equipment", "unequip") + "You have unequipped {itemName}.";
     public static string MSG_UNEQUIPPED_ALL = Meta("info", "equipment", "unequip") + "You have unequipped all of your items.";
-    public static string MSG_SET_PET = Meta("info", "equipment", "pet") + "You have changed your active pet to {itemName}";
+    public static string MSG_SET_PET = Meta("info", "equipment", "pet") + "You have changed your active pet to {itemName}.";
     public static string MSG_ITEM_NOT_FOUND = Meta("info", "fail") + "Could not find an item matching the name: {query}";
     public static string MSG_ITEM_NOT_FOUND_SUGGEST = Meta("info", "fail") + "Could not find an item matching the name: {query}, did you mean {suggestion}?";
     public static string MSG_SET_PET_NOT_PET = Meta("info", "equipment", "pet", "fail") + "{itemName} is not a pet.";
@@ -1627,11 +1639,21 @@ public static class Localization
     // the tower (docs/tower-design.md)
     public static string MSG_TOWER_NOT_READY = Meta("tower", "fail") + "The tower is not ready yet. Try again in a moment.";
     public static string MSG_TOWER_CLOSED_HERE = Meta("tower", "fail") + "The tower is closed on this stream.";
+    public static string MSG_TOWER_CLOSED_INSIDE = Meta("tower", "fail") + "The streamer has closed the tower. !tower leave takes you back to what you were doing.";
+    public static string MSG_TOWER_CLOSED_BY_STREAMER = Meta("tower", "info") + "The streamer has closed the tower: everyone inside goes back to what they were doing. The stream's floor is kept.";
+    public static string MSG_TOWER_HELP = Meta("tower", "info") + "!tower enters the tower (or shows where it is). Inside: !tower info, !tower boss (when the floor's quests are done), !tower climb (from the town to the next floor), !tower town, !tower rest, !tower talk (name), !tower floor 3 (train on a floor you reached), !tower leave (only you), !tower close (everyone).";
+    public static string MSG_TOWER_JOINED_TRAINING = Meta("tower", "success") + "You enter floor {floor} of the tower, {name}, where everyone is training. The climb waits on floor {current}: !tower floor takes everyone back up.";
+    public static string MSG_TOWER_JOIN_WARNING = " Careful: this floor is made for combat level {0} and you are {1}. !tower leave takes you back.";
+    public static string MSG_TOWER_LEFT_WAITING = Meta("tower", "success") + "You are no longer waiting to enter the tower.";
+    public static string MSG_TOWER_ALL_CLEARED = Meta("tower", "info") + "Every floor is cleared for now. More come with later updates.";
+    public static string MSG_TOWER_BOSS_TRAINING = Meta("tower", "fail") + "Everyone is training on floor {floor}. !tower floor takes everyone back up to floor {current}, then !tower boss.";
+    public static string MSG_TOWER_BOSS_IN_TOWN = Meta("tower", "fail") + "Everyone is in {town}. !tower climb goes up to floor {floor} first, then !tower boss.";
+    public static string MSG_TOWER_BOSS_CALLED_OFF = Meta("tower", "info") + "Nobody was left to fight {boss}: the attempt is called off. !tower boss starts another.";
     public static string MSG_TOWER_JOINED = Meta("tower", "success") + "You enter floor {floor} of the tower, {name}. Everyone fights at combat level {level} at most here. Floor quests: {quests}.";
     public static string MSG_TOWER_JOINED_ATTEMPT = Meta("tower", "success") + "You enter floor {floor} of the tower and join the boss attempt. It starts in {seconds} seconds.";
     public static string MSG_TOWER_LOADING = Meta("tower", "success") + "The tower opens. You will be taken to floor {floor}, {name}, in a moment.";
     public static string MSG_TOWER_CANNOT_JOIN = Meta("tower", "fail") + "You cannot enter the tower right now: not from a raid, dungeon, duel, arena, war or Ravebridge, or while knocked out.";
-    public static string MSG_TOWER_FIGHT_UNDER_WAY = Meta("tower", "fail") + "A boss fight is under way in the tower. Wait for it to end (at most {seconds} seconds) before entering.";
+    public static string MSG_TOWER_FIGHT_UNDER_WAY = Meta("tower", "fail") + "A boss fight is under way in the tower (about {minutes} min left at most). Try again when it ends.";
     public static string MSG_TOWER_NOT_IN = Meta("tower", "fail") + "You are not in the tower. Use !tower to enter it.";
     public static string MSG_TOWER_LEFT = Meta("tower", "success") + "You leave the tower and go back to what you were doing.";
     public static string MSG_TOWER_INFO = Meta("tower", "info") + "Tower floor {floor} of {top}, {name} (made for combat level {level}, everyone synced to {sync} at most). Quests: {quests}. {boss} Players in the tower: {players}. !tower to enter.";
@@ -1640,7 +1662,7 @@ public static class Localization
     public static string MSG_TOWER_INFO_ALL_CLEARED = "Every floor is cleared for now.";
     public static string MSG_TOWER_QUESTS_CLEARED = "every floor is cleared, more come with later updates";
     public static string MSG_TOWER_BOSS_LOCKED = Meta("tower", "fail") + "The boss of floor {floor} opens when the floor's quests are done: {quests}.";
-    public static string MSG_TOWER_BOSS_VOTE = Meta("tower", "info") + "You want to challenge the boss of floor {floor}. {needed} more !tower boss from players in the tower starts it (or the streamer or a moderator).";
+    public static string MSG_TOWER_BOSS_VOTE = Meta("tower", "info") + "You want to challenge the boss of floor {floor}. {needed} more !tower boss from players in the tower within 2 minutes starts it (or the streamer or a moderator).";
     public static string MSG_TOWER_BOSS_UNDER_WAY = Meta("tower", "fail") + "A boss attempt is already under way. Type !tower to join it while the countdown runs.";
     public static string MSG_TOWER_BOSS_REGROUPING = Meta("tower", "fail") + "The players are regrouping. The next attempt can start in {seconds} seconds.";
     public static string MSG_TOWER_BOSS_ENTER_FIRST = Meta("tower", "fail") + "Enter the tower first (!tower), then vote for the boss.";
@@ -1650,12 +1672,12 @@ public static class Localization
     public static string MSG_TOWER_BOSS_COUNTDOWN = Meta("tower", "info") + "A boss attempt on tower floor {floor} starts in {seconds} seconds! Type !tower to join. {boss} is waiting.";
     public static string MSG_TOWER_BOSS_START = Meta("tower", "info") + "{boss} awakens! {players} player(s) fight it. {line}";
     public static string MSG_TOWER_BOSS_DOWN = Meta("tower", "success") + "{boss} has fallen! Floor {floor} is cleared.";
-    public static string MSG_TOWER_CLEARED = Meta("tower", "success") + "Tower floor {floor} cleared by {players} player(s). Each got {coins} coins; {items} item(s) were found in the chest.";
+    public static string MSG_TOWER_CLEARED = Meta("tower", "success") + "Tower floor {floor} cleared by {players} player(s). Each got {coins} coins, and the chest held {items} item(s).";
     public static string MSG_TOWER_WORLD_FIRST = Meta("tower", "success") + "WORLD FIRST! This stream is the first in the world to clear tower floor {floor}!";
     public static string MSG_TOWER_TOP = Meta("tower", "success") + "Floor {floor} was the last floor there is for now. Your stream has cleared the whole tower! More floors come with later updates.";
     public static string MSG_TOWER_BOSS_LOST_TIME = Meta("tower", "fail") + "Time is up and {boss} still stands. Regroup and try again in {seconds} seconds.";
     public static string MSG_TOWER_BOSS_LOST_FALLEN = Meta("tower", "fail") + "Everyone fell to {boss}. Regroup and try again in {seconds} seconds.";
-    public static string MSG_TOWER_CLEAR_FAILED = Meta("tower", "fail") + "The boss fell, but the clear could not be saved: {reason}";
+    public static string MSG_TOWER_CLEAR_FAILED = Meta("tower", "fail") + "The boss fell, but the clear could not be saved: {reason}. The boss can be tried again with !tower boss.";
     public static string MSG_TOWER_BOSS_ADDS = Meta("tower", "info") + "{boss} calls for help! {count} more join the fight ({monster}). Deal with them first!";
     public static string MSG_TOWER_BOSS_ENRAGED = Meta("tower", "info") + "{boss} is enraged! It strikes faster and harder now. Finish it!";
     public static string MSG_TOWER_TOWN_JOINED = Meta("tower", "success") + "You walk into {town}. You keep training here as on your island, or rest by the campfire with !rest. Its people: {people}.";
@@ -1664,16 +1686,16 @@ public static class Localization
     public static string MSG_TOWER_FLOOR_SAME = Meta("tower", "info") + "The tower is on floor {floor}, {name}, already.";
     public static string MSG_TOWER_FLOOR_LOCKED = Meta("tower", "fail") + "Floor {floor} has not been reached yet. Your stream is on floor {current}.";
     public static string MSG_TOWER_FLOOR_BUSY = Meta("tower", "fail") + "Not now: a boss attempt or a climb is under way.";
-    public static string MSG_TOWER_FLOOR_VOTE = Meta("tower", "info") + "You vote to go to floor {floor}, {name}. {needed} more votes for it from players in the tower (the same command) take everyone there, or the streamer or a moderator does.";
+    public static string MSG_TOWER_FLOOR_VOTE = Meta("tower", "info") + "You vote to go to floor {floor}, {name}. {needed} more votes for it from players in the tower within 2 minutes (the same command) take everyone there, or the streamer or a moderator does.";
     public static string MSG_TOWER_ENTER_TO_VOTE = Meta("tower", "fail") + "Enter the tower first (!tower), then vote.";
     public static string MSG_TOWER_TO_TOWN = Meta("tower", "info") + "In {seconds} seconds everyone on the floor goes down to {town} to rest and keep training. Floor {floor}, {name}, waits for you: !tower climb when you are ready.";
     public static string MSG_TOWER_IN_TOWN = Meta("tower", "info") + "Everyone is in {town}, training as on their islands. Floor {floor}, {name}, is next: the streamer or a moderator types !tower climb, or {needed} players in the tower vote with !tower climb. !tower close ends the climb for now, !tower leave takes only you out.";
-    public static string MSG_TOWER_TOWN_ARRIVED = Meta("tower", "success") + "Everyone is with the others in {town}, between floors. You keep training here as on your island. !tower climb votes to go on up to floor {floor}; !tower again takes only you up.";
+    public static string MSG_TOWER_TOWN_ARRIVED = Meta("tower", "success") + "You join the others in {town}, where everyone waits between floors. You keep training here as on your island. !tower climb votes to go up to floor {floor}; !tower again takes only you up.";
     public static string MSG_TOWER_CLIMB_STARTED = Meta("tower", "success") + "Up we go! Everyone in {town} climbs to floor {floor}, {name}.";
-    public static string MSG_TOWER_CLIMB_VOTE = Meta("tower", "info") + "You vote to climb on to floor {floor}. {needed} more !tower climb from players in the tower takes everyone up (or the streamer or a moderator).";
+    public static string MSG_TOWER_CLIMB_VOTE = Meta("tower", "info") + "You vote to climb on to floor {floor}. {needed} more !tower climb from players in the tower within 2 minutes takes everyone up (or the streamer or a moderator).";
     public static string MSG_TOWER_CLIMB_NOBODY = Meta("tower", "fail") + "Nobody is waiting in a town. !tower takes you to floor {floor}.";
     public static string MSG_TOWER_CLOSED = Meta("tower", "success") + "The climb rests for now: everyone leaves the tower and goes back to what they were doing. Your stream stays on floor {floor}; !tower opens it again.";
-    public static string MSG_TOWER_CLOSE_VOTE = Meta("tower", "info") + "You vote to leave the tower for now. {needed} more !tower close from players in the tower sends everyone back (or the streamer or a moderator). !tower leave takes only you out.";
+    public static string MSG_TOWER_CLOSE_VOTE = Meta("tower", "info") + "You vote to leave the tower for now. {needed} more !tower close from players in the tower within 2 minutes sends everyone back (or the streamer or a moderator). !tower leave takes only you out.";
     public static string MSG_TOWER_CLOSE_EMPTY = Meta("tower", "info") + "Nobody is in the tower.";
     public static string MSG_TOWER_CLOSE_FIGHTING = Meta("tower", "fail") + "Not during a boss attempt. !tower leave takes only you out.";
     public static string MSG_TOWER_TOWN_LOCKED = Meta("tower", "fail") + "{town} is further up the tower. Your stream has to beat floor {floor} first.";
@@ -1688,42 +1710,57 @@ public static class Localization
     public static string MSG_GEM_NONE = Meta("gems") + "You have no enchanted gems. Mine raw ones (Sapphire, Emerald, Ruby, Topaz, Amethyst, Onyx, Diamond) and have your clan enchant them: !gems enchant ruby.";
     public static string MSG_GEM_LIST = Meta("gems") + "Your gems: {gems}.";
     public static string MSG_GEM_ENCHANT_USAGE = Meta("gems", "fail") + "Name the raw gem and how many: !gems enchant ruby 5.";
-    public static string MSG_GEM_COMBINE_USAGE = Meta("gems", "fail") + "Name the gem and its tier: !gems combine ruby flawed (three make one of the next tier). Add a number to do it more than once.";
+    public static string MSG_GEM_COMBINE_USAGE = Meta("gems", "fail") + "Name the gem and its tier: !gems combine ruby flawed (three make one of the next tier). It costs coins: 1,000 for Chipped, 5,000 Flawed, 25,000 Polished, 125,000 Flawless. Add a number to do it more than once.";
     public static string MSG_GEM_SOCKET_USAGE = Meta("gems", "fail") + "Name the item, then the gem: !socket rune sword ruby. A tier picks the gem (flawless ruby), a number at the end picks the socket (and replaces the gem in it).";
-    public static string MSG_GEM_UNSOCKET_USAGE = Meta("gems", "fail") + "Name the item, and the socket if it has more gems: !unsocket rune sword 2. The gem crumbles unless you are lucky: your clan's Enchanting level gives the chance to keep it.";
+    public static string MSG_GEM_UNSOCKET_USAGE = Meta("gems", "fail") + "Name the item, and the socket if it has more gems: !unsocket rune sword 2. The gem crumbles unless you are lucky: your clan's Enchanting level gives the chance to keep it, and you are told the chance before anything happens.";
     public static string MSG_GEM_ENCHANTED = Meta("gems", "success") + "Your clan enchanted your gems: {gems}. !socket (item) (gem) puts one in.";
     public static string MSG_GEM_COMBINED = Meta("gems", "success") + "Combined into {gems} for {coins} coins.";
     public static string MSG_GEM_SOCKETED = Meta("gems", "success") + "Socketed: {socketed}. {old}";
     public static string MSG_GEM_UNSOCKETED = Meta("gems", "success") + "Taken out of {itemName}: {old}";
+    public static string MSG_GEM_CONFIRM_UNSOCKET = Meta("gems") + "Socket {socket} of {itemName} holds a {gem}. Taking it out gives a {chance} chance to keep it; otherwise it crumbles for good. To go ahead: {command}";
+    public static string MSG_GEM_CONFIRM_REPLACE = Meta("gems") + "Socket {socket} of {itemName} already holds a {gem}. Replacing it gives a {chance} chance to keep it; otherwise it crumbles for good. To go ahead: {command}";
+    public static string MSG_GEM_NONE_IN_ITEM = Meta("gems", "fail") + "{itemName} has no gems in it.";
+    public static string MSG_GEM_NOT_OWNED_ANY = Meta("gems", "fail") + "You have no enchanted {gem}. !gems lists yours; !gems enchant {gem} has your clan enchant raw ones.";
     public static string MSG_GEM_KEPT = "Your {0} came back ({1} chance).";
     public static string MSG_GEM_LOST = "The {0} crumbled to dust ({1} chance to keep it).";
     public static string MSG_GEM_NOT_IN_CLAN = Meta("gems", "fail", "no clan") + "Gems are enchanted by a clan's Enchanting skill. Join a clan to enchant them.";
     public static string MSG_GEM_NO_ENCHANTING = Meta("gems", "fail") + "Your clan has not learned Enchanting yet.";
     public static string MSG_GEM_NO_RAW = Meta("gems", "fail") + "You have no raw {gem}. Mining finds them.";
     public static string MSG_GEM_NOT_OWNED = Meta("gems", "fail") + "You have no enchanted {gem} of that tier. !gems lists yours.";
-    public static string MSG_GEM_NOT_ENOUGH = Meta("gems", "fail") + "Combining takes three {gem}.";
+    public static string MSG_GEM_NOT_ENOUGH = Meta("gems", "fail") + "Combining takes three {gem} and you have fewer. !gems lists yours.";
     public static string MSG_GEM_NO_COINS = Meta("gems", "fail") + "Combining these costs {coins} coins.";
     public static string MSG_GEM_HIGHEST = Meta("gems", "fail") + "Perfect gems are as good as gems get.";
-    public static string MSG_GEM_NO_SOCKETS = Meta("gems", "fail") + "{itemName} has no sockets. Weapons, armor, rings and amulets from item level 25 have them (2 from 150, 3 from 400; rings and amulets 1).";
-    public static string MSG_GEM_FULL = Meta("gems", "fail") + "Every socket of {itemName} is filled ({count}). Add a socket number to replace a gem: the old one crumbles unless you are lucky.";
+    public static string MSG_GEM_NO_SOCKETS = Meta("gems", "fail") + "{itemName} has no sockets. Weapons, armor (not hats or masks), rings and amulets from item level 25 have them (2 from 150, 3 from 400; rings and amulets 1).";
+    public static string MSG_GEM_FULL = Meta("gems", "fail") + "Every socket of {itemName} is filled ({count}). Add a socket number to replace a gem: the old one crumbles unless you are lucky, and you are told the chance first.";
     public static string MSG_GEM_NO_SUCH_SOCKET = Meta("gems", "fail") + "{itemName} has {count} socket(s).";
     public static string MSG_GEM_EMPTY_SOCKET = Meta("gems", "fail") + "Socket {socket} of {itemName} is empty.";
     public static string MSG_GEM_BUSY = Meta("gems", "fail") + "That item is busy (being enchanted or traded). Try again in a moment.";
     public static string MSG_GEM_ERROR = Meta("gems", "fail") + "The gem did not take. Try again in a moment.";
 
     // battle pets (docs/battle-pets-design.md)
-    public static string MSG_PET_USAGE = Meta("pets", "fail") + "!pets shows your battle pet. !pets stable, !pets use (name), !pets away, !pets rename (name), !pets skills, !pets slot 2 howl, !pets evolve, !pets wake (pet item), !pets hatch (egg), !pets about (kind). !tame (creature) tames.";
+    public static string MSG_PET_USAGE = Meta("pets", "fail") + "Get a battle pet: !pets starter fox, bear or fawn; !pets wake (a pet item you own); !tame (creature); !pets hatch (egg). Then: !pets (the one out), !pets stable, !pets use (name), !pets away, !pets rename (new name, for the one out), !pets skills, !pets slot 2 howl, !pets evolve, !pets release (name), !pets about (kind).";
     public static string MSG_PET_NEXT_EVOLVE_GEMS = "Evolves into {0} at level {1} (Taming {2}) for {3}.";
     public static string MSG_PET_EGGS = Meta("pets") + "Eggs in your bag: {eggs}. !pets hatch (egg) puts one in your stable to warm while you play.";
-    public static string MSG_PET_NO_EGGS = Meta("pets", "fail") + "You have no pet eggs. They turn up in dungeon, raid and tower rewards now and then.";
+    public static string MSG_PET_NO_EGGS = Meta("pets", "fail") + "You have no pet eggs. They turn up now and then in dungeons, raids, tower chests, quests, play streaks and island events.";
     public static string MSG_PET_NO_SUCH_EGG = Meta("pets", "fail") + "You have no egg called {name}.";
     public static string MSG_PET_HATCHING = Meta("pets") + "Your {egg} is in your stable, warming. It hatches into a {kind} after {minutes} minutes of play.";
     public static string MSG_PET_STREAK_EGG = Meta("pets", "egg") + "{player} has played {days} days in a row and found a {egg}! !pets hatch puts it in the stable to warm.";
     public static string MSG_PET_EGG_FOUND = Meta("pets", "egg") + "{player} found a {egg}! !pets hatch puts it in the stable to warm.";
     public static string MSG_STREAM_QUEST_EGG = Meta("quests", "egg") + "{player} added the most to the stream's quest and found a {egg}!";
     public static string MSG_PET_HATCHED = Meta("pets") + "{player}'s {egg} hatched into a {kind}!";
-    public static string MSG_PET_HATCH_TAMING = Meta("pets", "fail") + "A {egg} needs Taming {level} to hatch.";
-    public static string MSG_PET_HATCH_FULL = Meta("pets", "fail") + "Your stable is full ({size}), and an egg takes a place too. Taming opens more room.";
+    public static string MSG_PET_HATCH_TAMING = Meta("pets", "fail") + "A {egg} needs Taming {level} to hatch. Taming trains while a battle pet is out with you; keep the egg until then.";
+    public static string MSG_PET_HATCH_FULL = Meta("pets", "fail") + "Your stable is full ({size}), and an egg takes a place too. !pets release (name) frees a place.{next}";
+    public static string MSG_PET_FULL = Meta("pets", "fail") + "Your stable is full ({size}). !pets release (name) frees a place.{next}";
+    public static string MSG_PET_NEXT_PLACE = " Your next place opens at Taming {0}.";
+    public static string MSG_PET_WHICH = Meta("pets", "fail") + "Which pet? !pets {action} (name or number): {pets}.";
+    public static string MSG_PET_WAKE_NOT_WORN = Meta("pets", "fail") + "You are not wearing a pet. !pets wake (pet name) wakes one from your bag, for example !pets wake raven.";
+    public static string MSG_PET_TAMED_YOU = Meta("pets") + "You tamed a {kind}! !pets stable lists your pets.";
+    public static string MSG_PET_HATCHED_YOU = Meta("pets") + "Your {egg} hatched into a {kind}! !pets use {kind} sends it out.";
+    public static string MSG_PET_ABOUT_STARTER = "Yours with !pets starter {0}, while your stable is empty.";
+    public static string MSG_PET_ABOUT_WHERE = " Found on {0}.";
+    public static string MSG_PET_LIST_LEVEL = "level {0}";
+    public static string MSG_PET_IS_BATTLE_COMMAND = Meta("pets", "fail") + "That is a battle pet command: try !pets {text}. !pet only picks your cosmetic pet, the one that follows you when no battle pet is out.";
+    public static string MSG_PET_COSMETIC_HIDDEN = " It shows again when {0} rests (!pets away).";
     public static string MSG_PET_NOT_HATCHED = Meta("pets", "fail") + "{name} has not hatched yet: {minutes} more minutes of play.";
     public static string MSG_PET_EGG_LEFT = "warming, {0} min left";
     public static string MSG_PET_RELEASE_EGG = Meta("pets") + "{name} is back in your bag.";
@@ -1751,11 +1788,11 @@ public static class Localization
     public static string MSG_PET_NO_SKILL = Meta("pets", "fail") + "{name} has no skill called {skill}.";
     public static string MSG_PET_NOT_LEARNED = Meta("pets", "fail") + "{name} learns {skill} at level {level}.";
     public static string MSG_PET_NO_SLOT = Meta("pets", "fail") + "{name} has {count} skill slots.";
-    public static string MSG_PET_BAD_NAME = Meta("pets", "fail") + "That name will not do: letters, numbers and spaces, at most 24.";
+    public static string MSG_PET_BAD_NAME = Meta("pets", "fail") + "That name will not do: letters, numbers and spaces only.";
     public static string MSG_PET_RELEASE_CONFIRM = Meta("pets", "fail") + "Letting {name} go is for good. !pets release {name} confirm, if you are sure.";
     public static string MSG_PET_RELEASED = Meta("pets") + "{name} went back to the wild. It looked back once.";
     public static string MSG_PET_ABOUT = Meta("pets") + "{kind} ({role}, {element}, {strike}): {blurb} {how} Stages: {stages}.";
-    public static string MSG_PET_ABOUT_TAME = "Tame it with !tame at Taming {0}; it loves {1}.";
+    public static string MSG_PET_ABOUT_TAME = "Tame it with !tame {2} at Taming {0} (each one you defeat is a try); it loves {1}.";
     public static string MSG_PET_ABOUT_ITEM = "Wake its pet item with !pets wake.";
     public static string MSG_PET_UNKNOWN_KIND = Meta("pets", "fail") + "There is no kind of pet called {name}.";
     public static string MSG_PET_STARTER = Meta("pets") + "A {kind} ({role}) is yours and out with you. It grows with everything you do; !pets tells you about it.";
@@ -1763,17 +1800,19 @@ public static class Localization
     public static string MSG_PET_STARTER_HAVE = Meta("pets", "fail") + "Starter pets are for an empty stable, and yours has pets in it already. !pets stable lists them.";
     public static string MSG_PET_ERROR = Meta("pets", "fail") + "Your pet did not hear you. Try again in a moment.";
     public static string MSG_PET_TAMED = Meta("pets") + "{player} tamed a {kind}!";
-    public static string MSG_PET_STABLE_FULL = Meta("pets", "fail") + "You could have tamed a {kind}, but your stable is full ({size}). Taming opens more room.";
+    public static string MSG_PET_STABLE_FULL = Meta("pets", "fail") + "You could have tamed a {kind}, but your stable is full ({size}), so taming has stopped. !pets release (name) frees a place.{next}";
     public static string MSG_PET_KNOCKED_OUT_SHORT = "Knocked out!";
     public static string MSG_PET_LEVEL_SHORT = "Level {0}!";
-    public static string MSG_TAME_STARTED = Meta("pets") + "Taming {kind}: each one you defeat is a try ({chance} each, Taming {level}). !tame stop ends it. A pet out with you also trains Taming with whatever you do.";
-    public static string MSG_TAME_NOT_FIGHTING = Meta("pets") + "Taming {kind}: train a combat skill and each one you defeat is a try ({chance} each). !tame stop ends it.";
+    public static string MSG_TAME_STARTED = Meta("pets") + "Taming {kind}: each one you defeat is a try ({chance} each, Taming {level}), and every try trains Taming. It goes on after a tame until !tame stop or a full stable. {treat}";
+    public static string MSG_TAME_NOT_FIGHTING = Meta("pets") + "Taming {kind}: train a combat skill and each one you defeat is a try ({chance} each). It goes on after a tame until !tame stop or a full stable. {treat}";
+    public static string MSG_TAME_NOT_HERE = Meta("pets") + "There is no {kind} to fight on {island}: they live on {islands}. Sail there and train a combat skill; each one you defeat is then a try ({chance} each). {treat}";
+    public static string MSG_TAME_NOWHERE = Meta("pets") + "There is no {kind} on any island right now (some creatures only turn up in events). Taming is set for when you meet one: {chance} a try. {treat}";
     public static string MSG_TAME_STATUS = Meta("pets") + "You are taming {kind}: {chance} a try at Taming {level}.";
     public static string MSG_TAME_NOTHING = Meta("pets") + "You are not taming anything. !tame bunny, !tame cow, !tame metalon... Creatures only.";
     public static string MSG_TRAIN_TAMING = Meta("pets") + "Taming trains by itself while a battle pet is out with you, with whatever you train. !pets starter fox, bear or fawn gives you a first one; !tame (creature) tames more.";
     public static string MSG_TAME_STOPPED = Meta("pets") + "You stopped taming.";
-    public static string MSG_TAME_TREAT = Meta("pets") + "You carry {treat}: a {kind} finds it hard to say no (half as likely again). One is eaten when it works.";
-    public static string MSG_TAME_NO_TREAT = Meta("pets") + "Carry {treats} and a {kind} is half as likely again to be tamed: it loves them.";
+    public static string MSG_TAME_TREAT = "You carry {0}, which it loves: 50% more likely. One is eaten when it works.";
+    public static string MSG_TAME_NO_TREAT = "Carry {0} and it is 50% more likely: it loves them.";
     public static string MSG_TAME_CANNOT = Meta("pets", "fail") + "{reason}";
     public static string UI_GEM_SOCKET = "Socket {0}";
     public static string UI_GEM_SOCKET_EMPTY = "empty";
@@ -1844,7 +1883,7 @@ public static class Localization
     public static string MSG_DIAPER_ON = "Diaper mode has been enabled, you have unequipped all armor.";
     public static string MSG_DIAPER_OFF = "Diaper mode has been disabled, you have equipped your armor again.";
     public static string MSG_TOGGLE_PET_NO_PET = "You have no more pets to cycle between.";
-    public static string MSG_TOGGLE_PET = "You have changed your active pet to {itemName}";
+    public static string MSG_TOGGLE_PET = "You have changed your active pet to {itemName}.";
 
     public static string MSG_TRAINING_RECOMMENDED_ISLAND = Meta("training", "info") + "You have not been gaining any experience for more than {mins} minutes. You're recommended to sail to {recommendedIslandName} to continue training. The broadcaster may now also use !sail {recommendedIslandName} {playerName} to make your character move.";
 
@@ -2556,7 +2595,11 @@ public static class Localization
     public static string UI_ENEMY_STRENGTH = "STRENGTH";
     public static string UI_ENEMY_ARMOR = "ARMOR";
     public static string UI_ENEMY_POWER = "POWER";
-    public static string UI_ENEMY_AIM = "AIM";
+    public static string UI_ENEMY_AIM = "ACCURACY";
+    public static string UI_ENEMY_STRIKES = "Strikes with {0}";
+    public static string UI_ENEMY_WEAK = "Weak to {0}";
+    public static string UI_ENEMY_RESISTS = "Resists {0}";
+    public static string UI_ENEMY_IMMUNE = "Immune to {0}";
     public static string UI_FLOAT_MISS = "Miss";
     public static string UI_BUILD_CATEGORY_COMBAT = "Combat";
     public static string UI_BUILD_CATEGORY_GATHERING = "Gathering";
@@ -2929,6 +2972,10 @@ public static class Localization
 
     /// <summary>A skill's name in the current language; the enum name when there is none.</summary>
     public static string SkillName(RavenNest.Models.Skill skill) => SkillName(skill.ToString());
+
+    /// <summary>A raid or dungeon combat style as players set it: "all" is stored as Health (Vitality) or Melee.</summary>
+    public static string CombatStyleName(RavenNest.Models.Skill skill) =>
+        skill == RavenNest.Models.Skill.Health || skill == RavenNest.Models.Skill.Melee ? UI_COMBAT_STYLE_ALL : SkillName(skill);
 
     public static string SkillName(string skill)
     {
@@ -3415,7 +3462,7 @@ public static class Localization
     public static string MSG_AUTOREST_STOPPED = Meta("rest", "auto rest") + "Auto rest has been stopped.";
 
     // RaidCombatStyleSet, DungeonCombatStyleSet
-    public static string MSG_COMBAT_SKILL_NOT_FOUND = Meta("info", "skill", "fail") + "No such combat skill: {skill}";
+    public static string MSG_COMBAT_SKILL_NOT_FOUND = Meta("info", "skill", "fail") + "{skill} is not a combat skill for raids and dungeons. Use attack, defense, strength, all, ranged, magic or healing.";
     public static string MSG_RAID_SKILL_MISSING = Meta("raid", "skill", "fail") + "You need to specify a combat skill to set. Example: !raid skill magic";
     public static string MSG_RAID_SKILL_SET = Meta("raid", "skill") + "Your combat skill during raids has been set to {skill}.";
     public static string MSG_DUNGEON_SKILL_MISSING = Meta("dungeon", "skill", "fail") + "You need to specify a combat skill to set. Example: !dungeon skill magic";

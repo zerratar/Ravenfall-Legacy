@@ -95,7 +95,7 @@ public class PetCommand : ChatBotCommandHandler<string>
                 case "about":
                 case "kind":
                 case "species":
-                    About(rest, gm, client);
+                    About(player, rest, gm, client);
                     return;
                 default:
                     client.SendReply(gm, Localization.MSG_PET_USAGE);
@@ -132,7 +132,16 @@ public class PetCommand : ChatBotCommandHandler<string>
     private static string List(PlayerController player) =>
         string.Join(", ", player.BattlePets.Stable.Select((p, i) => (i + 1) + ". " + p.Name + " (" + (PetEggs.IsUnhatched(p.Level)
             ? string.Format(Localization.MSG_PET_EGG_LEFT, player.BattlePets.MinutesLeft(p))
-            : (BattlePets.GetSpecies(p.Species)?.NameAt(p.Stage) ?? p.Species) + " " + p.Level + (p.Active ? ", out" : "")) + ")"));
+            : (BattlePets.GetSpecies(p.Species)?.NameAt(p.Stage) ?? p.Species) + ", " + string.Format(Localization.MSG_PET_LIST_LEVEL, p.Level) + (p.Active ? ", out" : "")) + ")"));
+
+    // !pets use or !pets release with no name: which pets there are, not "You have no pet called ."
+    private static bool Which(PlayerController player, string name, string action, GameMessage gm, GameClient client)
+    {
+        if (!string.IsNullOrWhiteSpace(name)) return false;
+        if (player.BattlePets.Stable.Count == 0) client.SendReply(gm, Localization.MSG_PET_NONE);
+        else client.SendReply(gm, Localization.MSG_PET_WHICH, action, List(player));
+        return true;
+    }
 
     /// <summary>What the next evolution needs, gems included.</summary>
     private static string NextEvolve(PlayerController player, BattlePet pet, PetSpecies species) =>
@@ -168,6 +177,7 @@ public class PetCommand : ChatBotCommandHandler<string>
 
     private async Task Use(PlayerController player, string name, GameMessage gm, GameClient client)
     {
+        if (Which(player, name, "use", gm, client)) return;
         var pet = Find(player, name);
         if (pet == null) { client.SendReply(gm, Localization.MSG_PET_NOT_FOUND, name); return; }
         if (PetEggs.IsUnhatched(pet.Level)) { client.SendReply(gm, Localization.MSG_PET_NOT_HATCHED, pet.Name, player.BattlePets.MinutesLeft(pet)); return; }
@@ -204,6 +214,7 @@ public class PetCommand : ChatBotCommandHandler<string>
         if (parts.Length == 0 || !int.TryParse(parts[0], out var slot)) { client.SendReply(gm, Localization.MSG_PET_USAGE); return; }
         var skill = parts.Length > 1 ? parts[1] : "";
         var result = await Game.RavenNest.Players.PetSlotAsync(player.Id, pet.Id, slot - 1, skill);
+        if (result != null && result.Status == PetResultStatus.NoSuchSkill) { client.SendReply(gm, Localization.MSG_PET_NO_SKILL, pet.Name, skill); return; }
         await Result(player, gm, client, result, r => client.SendReply(gm, Localization.MSG_PET_SLOT, BattlePets.FindSkill(skill)?.Name ?? "Nothing", slot));
     }
 
@@ -243,11 +254,18 @@ public class PetCommand : ChatBotCommandHandler<string>
             item = all.FirstOrDefault(x => string.Equals(x.Item?.Name, name, StringComparison.OrdinalIgnoreCase))
                 ?? all.FirstOrDefault(x => x.Item?.Name != null && x.Item.Name.IndexOf(name, StringComparison.OrdinalIgnoreCase) >= 0);
         }
-        if (item?.Item == null) { client.SendReply(gm, Localization.MSG_PET_NO_ITEM, string.IsNullOrWhiteSpace(name) ? "on" : name); return; }
+        if (item?.Item == null)
+        {
+            if (string.IsNullOrWhiteSpace(name)) client.SendReply(gm, Localization.MSG_PET_WAKE_NOT_WORN);
+            else client.SendReply(gm, Localization.MSG_PET_NO_ITEM, name);
+            return;
+        }
         var species = BattlePets.SpeciesForItem(item.Item.GenericPrefab) ?? BattlePets.SpeciesForItem(item.Item.Name);
         if (species == null) { client.SendReply(gm, Localization.MSG_PET_NOT_A_PET, item.Item.Name); return; }
 
         var result = await Game.RavenNest.Players.PetWakeAsync(player.Id, item.Item.Id);
+        // the shared answer for a full stable is the taming one ("You could have tamed a , but...")
+        if (result != null && result.Status == PetResultStatus.StableFull) { client.SendReply(gm, Localization.MSG_PET_FULL, result.Missing, player.BattlePets.NextPlaceText()); return; }
         if (result != null && result.Status == PetResultStatus.Ok && result.Pet != null && !result.Pet.Active)
         {
             // woken pets go straight out
@@ -261,6 +279,7 @@ public class PetCommand : ChatBotCommandHandler<string>
     {
         var confirm = rest.EndsWith(" confirm", StringComparison.OrdinalIgnoreCase);
         var name = confirm ? rest.Substring(0, rest.Length - 8).Trim() : rest;
+        if (Which(player, name, "release", gm, client)) return;
         var pet = Find(player, name);
         if (pet == null) { client.SendReply(gm, Localization.MSG_PET_NOT_FOUND, name); return; }
         var egg = PetEggs.IsUnhatched(pet.Level);
@@ -289,20 +308,30 @@ public class PetCommand : ChatBotCommandHandler<string>
         var species = PetEggs.SpeciesForEgg(item.Item.Id);
         var result = await Game.RavenNest.Players.PetHatchAsync(player.Id, item.Item.Id);
         if (result != null && result.Status == PetResultStatus.TamingTooLow) { client.SendReply(gm, Localization.MSG_PET_HATCH_TAMING, species.EggName, species.TameLevel); return; }
-        if (result != null && result.Status == PetResultStatus.StableFull) { client.SendReply(gm, Localization.MSG_PET_HATCH_FULL, result.Missing); return; }
+        if (result != null && result.Status == PetResultStatus.StableFull) { client.SendReply(gm, Localization.MSG_PET_HATCH_FULL, result.Missing, player.BattlePets.NextPlaceText()); return; }
         if (result != null && result.Status == PetResultStatus.NoEgg) { client.SendReply(gm, Localization.MSG_PET_NO_SUCH_EGG, item.Item.Name); return; }
         await Result(player, gm, client, result, r => client.SendReply(gm, Localization.MSG_PET_HATCHING, species.EggName, species.NameAt(0),
             (int)Math.Ceiling(PetEggs.HatchMinutes(species, player.BattlePets.RookeryLevel))));
     }
 
-    private static void About(string name, GameMessage gm, GameClient client)
+    private void About(PlayerController player, string name, GameMessage gm, GameClient client)
     {
-        var s = BattlePets.Species.FirstOrDefault(x => x.StageNames.Any(n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase)) || string.Equals(x.Id, name, StringComparison.OrdinalIgnoreCase))
+        // a starter by its short name first: "fox" and "bear" are pet items too, and their answer said "wake its pet item"
+        var starter = BattlePets.FindStarter(name);
+        var s = starter
+            ?? BattlePets.Species.FirstOrDefault(x => x.StageNames.Any(n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase)) || string.Equals(x.Id, name, StringComparison.OrdinalIgnoreCase))
             ?? BattlePets.SpeciesForCreature(null, name)
             ?? PetEggs.FindEgg(name)
             ?? BattlePets.Species.FirstOrDefault(x => x.StageNames.Any(n => n.IndexOf(name ?? "", StringComparison.OrdinalIgnoreCase) >= 0) && !string.IsNullOrWhiteSpace(name));
         if (s == null) { client.SendReply(gm, Localization.MSG_PET_UNKNOWN_KIND, name); return; }
-        var how = s.Source == PetSource.Tamed ? string.Format(Localization.MSG_PET_ABOUT_TAME, s.TameLevel, string.Join(" or ", s.Treats))
+        var where = "";
+        if (s.Source == PetSource.Tamed)
+        {
+            var islands = PlayerBattlePets.IslandsWith(Game, s);
+            if (islands.Count > 0) where = string.Format(Localization.MSG_PET_ABOUT_WHERE, string.Join(", ", islands));
+        }
+        var how = s == starter && starter != null ? string.Format(Localization.MSG_PET_ABOUT_STARTER, (name ?? "").Trim().ToLowerInvariant())
+            : s.Source == PetSource.Tamed ? string.Format(Localization.MSG_PET_ABOUT_TAME, s.TameLevel, string.Join(" or ", s.Treats), s.CreatureName.ToLowerInvariant()) + where
             : s.Hatches ? string.Format(Localization.MSG_PET_ABOUT_EGG, s.EggName, s.EggFrom.ToLowerInvariant(), (int)s.HatchMinutes, s.TameLevel)
             : s.Source == PetSource.Companion ? Localization.MSG_PET_ABOUT_ITEM : "";
         var gem = Gems.RawName(PetEvolution.GemFor(s));
@@ -325,7 +354,7 @@ public class PetCommand : ChatBotCommandHandler<string>
             case PetResultStatus.ItemMissing: client.SendReply(gm, Localization.MSG_PET_ITEM_MISSING, name); break;
             case PetResultStatus.NoSuchItem: client.SendReply(gm, Localization.MSG_PET_NO_ITEM, name); break;
             case PetResultStatus.NotAPetItem: client.SendReply(gm, Localization.MSG_PET_NOT_A_PET, name); break;
-            case PetResultStatus.StableFull: client.SendReply(gm, Localization.MSG_PET_STABLE_FULL, name, result.Missing); break;
+            case PetResultStatus.StableFull: client.SendReply(gm, Localization.MSG_PET_FULL, result.Missing, player.BattlePets.NextPlaceText()); break;
             case PetResultStatus.BadName: client.SendReply(gm, Localization.MSG_PET_BAD_NAME); break;
             case PetResultStatus.NoSuchSkill: client.SendReply(gm, Localization.MSG_PET_NO_SKILL, player.BattlePets.Active?.Name ?? "Your pet", "that"); break;
             case PetResultStatus.NotLearned:
@@ -369,7 +398,7 @@ public class TameCommand : ChatBotCommandHandler<string>
         if (text.Length == 0)
         {
             if (pets.Taming == null) client.SendReply(gm, Localization.MSG_TAME_NOTHING);
-            else client.SendReply(gm, Localization.MSG_TAME_STATUS, pets.Taming.NameAt(0), ChanceText(level, pets.Taming, pets.Treat(pets.Taming) != null), level);
+            else client.SendReply(gm, Localization.MSG_TAME_STATUS, pets.Taming.CreatureName, ChanceText(level, pets.Taming, pets.Treat(pets.Taming) != null), level);
             return;
         }
         if (text.Equals("stop", StringComparison.OrdinalIgnoreCase) || text.Equals("off", StringComparison.OrdinalIgnoreCase))
@@ -383,9 +412,20 @@ public class TameCommand : ChatBotCommandHandler<string>
         var problem = pets.StartTaming(species, text);
         if (problem != null) { client.SendReply(gm, Localization.MSG_TAME_CANNOT, problem); return; }
         var treat = pets.Treat(species);
-        client.SendReply(gm, player.ActiveSkill.IsCombatSkill() ? Localization.MSG_TAME_STARTED : Localization.MSG_TAME_NOT_FIGHTING,
-            species.NameAt(0), ChanceText(level, species, treat != null), level);
-        client.SendReply(gm, treat != null ? Localization.MSG_TAME_TREAT : Localization.MSG_TAME_NO_TREAT, treat?.Item?.Name ?? string.Join(" or ", species.Treats), species.NameAt(0));
+        var treatText = string.Format(treat != null ? Localization.MSG_TAME_TREAT : Localization.MSG_TAME_NO_TREAT, treat?.Item?.Name ?? string.Join(" or ", species.Treats));
+        var creature = species.CreatureName;
+        var chance = ChanceText(level, species, treat != null);
+        // the creature has to be where the player is: !tame red dragon on the home island answered as if it had
+        // started, and then nothing ever happened
+        if (!pets.HereToTame(species))
+        {
+            var islands = PlayerBattlePets.IslandsWith(Game, species);
+            if (islands.Count == 0) client.SendReply(gm, Localization.MSG_TAME_NOWHERE, creature, chance, treatText);
+            else client.SendReply(gm, Localization.MSG_TAME_NOT_HERE, creature, player.Island ? player.Island.Identifier : "this island", string.Join(" or ", islands), chance, treatText);
+            return;
+        }
+        if (player.ActiveSkill.IsCombatSkill()) client.SendReply(gm, Localization.MSG_TAME_STARTED, creature, chance, level, treatText);
+        else client.SendReply(gm, Localization.MSG_TAME_NOT_FIGHTING, creature, chance, treatText);
     }
 
     private static string ChanceText(int level, PetSpecies species, bool treat = false)

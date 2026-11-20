@@ -53,7 +53,8 @@ public sealed class CombatSkillRunner
 
     // ---- what a skill needs ---------------------------------------------------------------------------------
 
-    private bool HasGear(SkillGear needs)
+    /// <summary>Whether the owner has what an active needs equipped (a bow, a staff...); without it the skill is never used.</summary>
+    public bool HasGear(SkillGear needs)
     {
         var inventory = owner.Inventory;
         switch (needs)

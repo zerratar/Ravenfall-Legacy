@@ -83,7 +83,19 @@ public class SkillsCommand : ChatBotCommandHandler<string>
         var learned = SkillTrees.Find(node);
         var build = player.SkillBuild;
         var rank = learned != null && learned.MaxRank > 1 ? " (" + build.Rank(learned.Id) + "/" + learned.MaxRank + ")" : "";
-        client.SendReply(gm, Localization.MSG_SKILLS_LEARNED, (learned?.Name ?? node) + rank, result.Info.Earned - result.Info.Spent);
+        var free = result.Info.Earned - result.Info.Spent;
+        if (learned != null && learned.IsActive)
+        {
+            // an active is only used from the loadout: say where it went, or that it is not in it (a full loadout left
+            // it out without a word), when it is used and what it needs equipped
+            var slot = build.Loadout.FindIndex(x => string.Equals(x, learned.Id, StringComparison.OrdinalIgnoreCase));
+            var needs = SkillTrees.NeedsText(learned.Active.Needs);
+            var needsText = needs.Length > 0 ? string.Format(Localization.MSG_SKILLS_LEARNED_NEEDS, needs) : "";
+            if (slot < 0) client.SendReply(gm, Localization.MSG_SKILLS_LEARNED_FULL + needsText, learned.Name, free);
+            else client.SendReply(gm, Localization.MSG_SKILLS_LEARNED_ACTIVE + needsText, learned.Name, slot + 1, SkillTrees.UseText(build.RuleOf(learned)), free);
+            return;
+        }
+        client.SendReply(gm, Localization.MSG_SKILLS_LEARNED, (learned?.Name ?? node) + rank, free);
     }
 
     private async Task Loadout(PlayerController player, string args, GameMessage gm, GameClient client)
@@ -143,34 +155,59 @@ public class SkillsCommand : ChatBotCommandHandler<string>
     /// <summary>!skills Might lists a tree; !skills cleave explains one node.</summary>
     private void Describe(PlayerController player, string text, GameMessage gm, GameClient client)
     {
-        var tree = Enum.GetValues(typeof(SkillTree)).Cast<SkillTree>()
-            .FirstOrDefault(t => t.ToString().Equals(text, StringComparison.OrdinalIgnoreCase) || SkillTrees.SkillOf(t).ToString().Equals(text, StringComparison.OrdinalIgnoreCase));
-        if (tree.ToString().Equals(text, StringComparison.OrdinalIgnoreCase) || SkillTrees.SkillOf(tree).ToString().Equals(text, StringComparison.OrdinalIgnoreCase))
+        // a tree by its name, its skill's name (as shown: Vitality, and Health as it was called), or the start of
+        // either ("hunt" is the Hunter tree, not Hunter's Pace) when no skill has that exact name
+        bool IsTree(SkillTree t, bool start) =>
+            start ? t.ToString().StartsWith(text, StringComparison.OrdinalIgnoreCase)
+                : t.ToString().Equals(text, StringComparison.OrdinalIgnoreCase) || SkillTrees.SkillOf(t).ToString().Equals(text, StringComparison.OrdinalIgnoreCase)
+                    || SkillTrees.SkillName(SkillTrees.SkillOf(t)).Equals(text, StringComparison.OrdinalIgnoreCase);
+        var trees = Enum.GetValues(typeof(SkillTree)).Cast<SkillTree>().ToList();
+        var matches = SkillTrees.Matches(text);
+        var exactSkill = matches.Count == 1 && (matches[0].Name.Equals(text, StringComparison.OrdinalIgnoreCase) || matches[0].Id.Equals(text.Replace(' ', '-'), StringComparison.OrdinalIgnoreCase));
+        var treeIndex = trees.FindIndex(t => IsTree(t, false));
+        if (treeIndex < 0 && !exactSkill && text.Length >= 3) treeIndex = trees.FindIndex(t => IsTree(t, true));
+        if (treeIndex >= 0)
         {
+            var tree = trees[treeIndex];
             var build = player.SkillBuild;
+            var skillName = SkillTrees.SkillName(SkillTrees.SkillOf(tree));
             var nodes = SkillTrees.Of(tree).Select(n =>
-                n.Name + (n.MaxRank > 1 ? " " + build.Rank(n.Id) + "/" + n.MaxRank : build.Has(n.Id) ? " (learned)" : "")
+                n.Name + (n.MaxRank > 1 ? " " + build.Rank(n.Id) + "/" + n.MaxRank : build.Has(n.Id) ? " (learned)" : n.IsActive ? " (active)" : "")
                 + (n.Tier > 0 ? " [" + n.RequiredLevel + "]" : ""));
-            client.SendReply(gm, Localization.MSG_SKILLS_TREE, tree, SkillTrees.SkillOf(tree), string.Join(", ", nodes));
+            // the Vitality tree is named after its skill: once, not "Vitality (Vitality)"
+            if (tree.ToString() == skillName) client.SendReply(gm, Localization.MSG_SKILLS_TREE_OWN_NAME, tree, string.Join(", ", nodes), skillName);
+            else client.SendReply(gm, Localization.MSG_SKILLS_TREE, tree, skillName, string.Join(", ", nodes));
             return;
         }
 
-        var node = SkillTrees.Find(text);
+        var node = matches.Count == 1 ? matches[0] : null;
         if (node == null)
         {
-            client.SendReply(gm, Localization.MSG_SKILLS_UNKNOWN, text);
+            // several skills it could mean: say which; none: the trees
+            if (matches.Count > 1) client.SendReply(gm, Localization.MSG_SKILLS_FAILED, SkillTrees.NotFoundText(text));
+            else client.SendReply(gm, Localization.MSG_SKILLS_UNKNOWN, text);
             return;
         }
 
-        var kind = node.IsActive ? string.Format(Localization.MSG_SKILLS_KIND_ACTIVE, node.Active.Cooldown) : node.MaxRank > 1 ? string.Format(Localization.MSG_SKILLS_KIND_RANKS, node.MaxRank) : Localization.MSG_SKILLS_KIND_PASSIVE;
+        // an active: how often, when the character uses it (the player's rule from the website, or the skill's own) and
+        // what must be equipped; a skill learned for the wrong weapon was never used and nothing said why
+        var kind = node.MaxRank > 1 ? string.Format(Localization.MSG_SKILLS_KIND_RANKS, node.MaxRank) : Localization.MSG_SKILLS_KIND_PASSIVE;
+        if (node.IsActive)
+        {
+            kind = string.Format(Localization.MSG_SKILLS_KIND_ACTIVE, node.Active.Cooldown, SkillTrees.UseText(player.SkillBuild != null ? player.SkillBuild.RuleOf(node) : node.Active.Use));
+            var needs = SkillTrees.NeedsText(node.Active.Needs);
+            if (needs.Length > 0) kind += string.Format(Localization.MSG_SKILLS_KIND_NEEDS, needs);
+        }
         // the path: one of the skills linked below it (none on the first tier)
         var path = node.Requires.Length > 0 ? string.Format(Localization.MSG_SKILLS_PATH, string.Join(" or ", node.Requires.Select(r => SkillTrees.Get(r)?.Name ?? r))) : "";
         // the numbers: a passive's per rank and its total (yours now and at the last rank), an active's effects
         var effect = node.EffectText();
         var total = node.TotalText(player.SkillBuild?.Rank(node.Id) ?? 0);
         if (!string.IsNullOrEmpty(total)) effect += " (" + total + ")";
-        if (effect.Length > 0) effect = char.ToUpperInvariant(effect[0]) + effect.Substring(1);
-        client.SendReply(gm, Localization.MSG_SKILLS_INFO, node.Name, node.Tree, kind, node.Description, effect, SkillTrees.SkillOf(node.Tree), node.RequiredLevel, node.Cost, path);
+        // nothing to add for the skills without numbers (Last Stand, Battle Rhythm): no ". ." after the description
+        if (effect.Length > 0) effect = " " + char.ToUpperInvariant(effect[0]) + effect.Substring(1) + ".";
+        var cost = string.Format(node.IsActive || node.MaxRank <= 1 ? Localization.MSG_SKILLS_COST_ACTIVE : Localization.MSG_SKILLS_COST_RANK, node.Cost);
+        client.SendReply(gm, Localization.MSG_SKILLS_INFO, node.Name, node.Tree, kind, node.Description, effect, SkillTrees.SkillName(SkillTrees.SkillOf(node.Tree)), node.RequiredLevel, cost, path);
     }
 
     private static bool Answered(PlayerController player, SkillBuildResult result, GameMessage gm, GameClient client)
@@ -197,9 +234,11 @@ public class SkillsCommand : ChatBotCommandHandler<string>
         {
             var id = i < build.Loadout.Count ? build.Loadout[i] : null;
             var node = SkillTrees.Get(id);
-            if (node == null) return (i + 1) + " -";
+            if (node == null) return (i + 1) + " " + Localization.MSG_SKILLS_LOADOUT_EMPTY;
             var left = player.SkillRunner.CooldownLeft(node.Id);
-            return (i + 1) + " " + node.Name + (left > 0.5f ? " (" + Mathf.CeilToInt(left) + "s)" : "");
+            // a skill whose weapon is not equipped is never used: say so where the player looks
+            var needs = node.Active != null && !player.SkillRunner.HasGear(node.Active.Needs) ? string.Format(Localization.MSG_SKILLS_LOADOUT_NEEDS, SkillTrees.NeedsText(node.Active.Needs)) : "";
+            return (i + 1) + " " + node.Name + needs + (left > 0.5f ? " (" + Mathf.CeilToInt(left) + "s)" : "");
         });
         return string.Join(", ", slots);
     }

@@ -34,6 +34,14 @@ public class Highscore : ChatBotCommandHandler<string>
             || skillName.Equals("overall", StringComparison.OrdinalIgnoreCase) ?
             "all" : skillName;
 
+        // the name as players type it ("vitality", "hp", "wc") to the name the server stores; the server only matched the
+        // start of a stored name, so !hs vitality answered "not a skill in the game"
+        if (skillName != "all")
+        {
+            var parsed = SkillUtilities.ParseSkill(skillName.ToLowerInvariant());
+            if (parsed != RavenNest.Models.Skill.None) skillName = parsed.ToString();
+        }
+
         result = await Game.RavenNest.Players.GetHighscoreAsync(player.Id, skillName);
         if (result == -2)
         {

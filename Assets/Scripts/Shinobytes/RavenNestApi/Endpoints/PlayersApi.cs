@@ -210,11 +210,13 @@ namespace RavenNest.SDK.Endpoints
         public Task<GemResult> GemCombineAsync(Guid characterId, int kind, int tier, int times) =>
             client.UseV2 ? client.V2.Commands.CallAsync<GemResult>(Commands.GemCombine, CommandArgs.Pack(characterId, kind, tier, times)) : Task.FromResult<GemResult>(null);
 
-        public Task<GemResult> GemSocketAsync(Guid characterId, Guid inventoryItem, int kind, int tier, int socket) =>
-            client.UseV2 ? client.V2.Commands.CallAsync<GemResult>(Commands.GemSocket, CommandArgs.Pack(characterId, inventoryItem, kind, tier, socket)) : Task.FromResult<GemResult>(null);
+        // confirm: taking a gem out (or socketing over it) most likely destroys it; without it the server answers
+        // NeedsConfirm with the gem and its keep chance, and does nothing
+        public Task<GemResult> GemSocketAsync(Guid characterId, Guid inventoryItem, int kind, int tier, int socket, bool confirm = false) =>
+            client.UseV2 ? client.V2.Commands.CallAsync<GemResult>(Commands.GemSocket, CommandArgs.Pack(characterId, inventoryItem, kind, tier, socket, confirm)) : Task.FromResult<GemResult>(null);
 
-        public Task<GemResult> GemUnsocketAsync(Guid characterId, Guid inventoryItem, int socket) =>
-            client.UseV2 ? client.V2.Commands.CallAsync<GemResult>(Commands.GemUnsocket, CommandArgs.Pack(characterId, inventoryItem, socket)) : Task.FromResult<GemResult>(null);
+        public Task<GemResult> GemUnsocketAsync(Guid characterId, Guid inventoryItem, int socket, bool confirm = false) =>
+            client.UseV2 ? client.V2.Commands.CallAsync<GemResult>(Commands.GemUnsocket, CommandArgs.Pack(characterId, inventoryItem, socket, confirm)) : Task.FromResult<GemResult>(null);
 
         // battle pets (docs/battle-pets-design.md): only over the v2 connection; older servers have none
         public Task<PetResult> PetListAsync(Guid characterId) =>

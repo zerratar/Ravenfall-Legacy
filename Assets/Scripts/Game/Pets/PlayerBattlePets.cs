@@ -283,7 +283,9 @@ public sealed class PlayerBattlePets
         if (species == null) return;
         var where = Controller && Controller.Data != null && Controller.Data.Id == pet.Id ? Controller.transform.position : owner.Position;
         PetFx.Burst(where, 1.2f, PetFx.ElementColor(species.Element));
-        if (Time.time < nextAnnounce || owner.GameManager?.RavenBot == null) return;
+        if (owner.GameManager?.RavenBot == null) return;
+        // announced at most every 8 s for the whole stream; when it is held back the owner is still told
+        if (Time.time < nextAnnounce) { owner.GameManager.RavenBot.SendReply(owner, Localization.MSG_PET_HATCHED_YOU, species.EggName, species.NameAt(0)); return; }
         nextAnnounce = Time.time + AnnounceEvery;
         owner.GameManager.RavenBot.Announce(Localization.MSG_PET_HATCHED, owner.PlayerName, species.EggName, species.NameAt(0));
     }
@@ -305,12 +307,45 @@ public sealed class PlayerBattlePets
     public void StopTaming() => Taming = null;
 
     /// <summary>Whether an enemy is of the kind being tamed.</summary>
-    public bool IsTamingTarget(EnemyController e)
+    public bool IsTamingTarget(EnemyController e) => Taming != null && IsCreature(e, Taming);
+
+    /// <summary>Whether an enemy is a creature the species is tamed from.</summary>
+    public static bool IsCreature(EnemyController e, PetSpecies species)
     {
-        if (Taming == null || !e) return false;
+        if (species == null || !e) return false;
         var d = e.CombatDefinition;
-        var species = BattlePets.SpeciesForCreature(d?.Id, d?.Name) ?? BattlePets.SpeciesForCreature(null, PetModels.KindName(e.name));
-        return species == Taming;
+        return (BattlePets.SpeciesForCreature(d?.Id, d?.Name) ?? BattlePets.SpeciesForCreature(null, PetModels.KindName(e.name))) == species;
+    }
+
+    /// <summary>Whether the owner's island has a fighting area with the creature.</summary>
+    public bool HereToTame(PetSpecies species)
+    {
+        if (owner.Island == null || owner.GameManager == null) return false;
+        var chunks = owner.GameManager.Chunks.GetChunksOfType(owner.Island, TaskType.Fighting);
+        return chunks != null && chunks.Any(c => c.Enemies != null && c.Enemies.Any(e => IsCreature(e, species)));
+    }
+
+    /// <summary>The islands (by name) with a fighting area that has the creature; players can sail to these.</summary>
+    public static List<string> IslandsWith(GameManager game, PetSpecies species)
+    {
+        var names = new List<string>();
+        if (game == null || species == null) return names;
+        foreach (var chunk in game.Chunks.GetChunksOfType(TaskType.Fighting))
+        {
+            if (chunk == null || !chunk.Island || chunk.Island.EventOnly || chunk.Enemies == null) continue;
+            if (!chunk.Enemies.Any(e => IsCreature(e, species))) continue;
+            var name = chunk.Island.Identifier;
+            if (!string.IsNullOrEmpty(name) && !names.Contains(name)) names.Add(name);
+        }
+        return names;
+    }
+
+    /// <summary>" Your next place opens at Taming 30." or nothing when Taming opens no more.</summary>
+    public string NextPlaceText()
+    {
+        var level = owner.Stats?.Taming?.Level ?? 1;
+        foreach (var l in BattlePets.StableLevels) if (l > level) return string.Format(Localization.MSG_PET_NEXT_PLACE, l);
+        return "";
     }
 
     /// <summary>Sends the owner to the fighting area of their island that has the creature being tamed.</summary>
@@ -362,7 +397,7 @@ public sealed class PlayerBattlePets
             if (result == null) return;
             if (result.Status == PetResultStatus.StableFull)
             {
-                owner.GameManager.RavenBot?.SendReply(owner, Localization.MSG_PET_STABLE_FULL, species.NameAt(0), result.Missing);
+                owner.GameManager.RavenBot?.SendReply(owner, Localization.MSG_PET_STABLE_FULL, species.NameAt(0), result.Missing, NextPlaceText());
                 Taming = null;
                 return;
             }
@@ -391,7 +426,8 @@ public sealed class PlayerBattlePets
     private void Tamed(Vector3 where, PetSpecies species)
     {
         PetFx.Burst(where, 1.2f, PetFx.ElementColor(species.Element));
-        if (Time.time < nextAnnounce || owner.GameManager?.RavenBot == null) return;
+        if (owner.GameManager?.RavenBot == null) return;
+        if (Time.time < nextAnnounce) { owner.GameManager.RavenBot.SendReply(owner, Localization.MSG_PET_TAMED_YOU, species.NameAt(0)); return; }
         nextAnnounce = Time.time + AnnounceEvery;
         owner.GameManager.RavenBot.Announce(Localization.MSG_PET_TAMED, owner.PlayerName, species.NameAt(0));
     }

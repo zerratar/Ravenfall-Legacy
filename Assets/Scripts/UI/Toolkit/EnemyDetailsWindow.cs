@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -39,6 +40,11 @@ namespace Shinobytes.UI
         private VisualElement healthFill;
         private Label health;
         private Label kills;
+        // the element it strikes with and what it is weak to or resists: nowhere else in the game says, and a fighter
+        // in the wrong set only saw a slow fight
+        private Label elements;
+        private RavenNest.Combat.EnemyDefinition shownDefinition;
+        private bool elementsShown;
         private Label deaths;
         private Stat attack, defense, strength, armor, power, aim;
         private DraggableWindow drag;
@@ -109,6 +115,16 @@ namespace Shinobytes.UI
                 armor = AddStat(stats, Localization.UI_ENEMY_ARMOR, armorIcon);
                 power = AddStat(stats, Localization.UI_ENEMY_POWER, meleeIcon);
                 aim = AddStat(stats, Localization.UI_ENEMY_AIM, meleeIcon);
+
+                elements = new Label { name = "enemy-elements", pickingMode = PickingMode.Ignore };
+                elements.AddToClassList("rf-enemy__record-text");
+                elements.style.whiteSpace = WhiteSpace.Normal;
+                elements.style.marginTop = 6;
+                elements.style.marginBottom = 4;
+                elements.style.display = DisplayStyle.None;
+                stats.parent.Insert(stats.parent.IndexOf(stats) + 1, elements);
+                shownDefinition = null;
+                elementsShown = false;
             }
 
             var close = root.Q<Button>("enemy-close");
@@ -231,6 +247,16 @@ namespace Shinobytes.UI
             Set(power, eq.WeaponPower);
             Set(aim, eq.WeaponAim);
 
+            var definition = CombatRules.Enabled ? target.CombatDefinition : null;
+            if (elements != null && (!elementsShown || definition != shownDefinition))
+            {
+                elementsShown = true;
+                shownDefinition = definition;
+                var text = ElementText(definition);
+                elements.text = text;
+                elements.style.display = text.Length > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
             if (target.PlayerKillCount != shownKills)
             {
                 shownKills = target.PlayerKillCount;
@@ -242,6 +268,24 @@ namespace Shinobytes.UI
                 shownDeaths = target.DeathCount;
                 deaths.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_ENEMY_DEATHS, HudFormat.Grouped(shownDeaths));
             }
+        }
+
+        /// <summary>"Strikes with fire. Weak to ice. Resists poison." from an enemy's definition; empty for a plain one.</summary>
+        public static string ElementText(RavenNest.Combat.EnemyDefinition d)
+        {
+            if (d == null) return "";
+            var all = new[] { RavenNest.Combat.Element.Physical, RavenNest.Combat.Element.Fire, RavenNest.Combat.Element.Ice, RavenNest.Combat.Element.Lightning, RavenNest.Combat.Element.Poison };
+            string Names(System.Func<double, bool> pick) =>
+                string.Join(", ", all.Where(e => pick(d.Resistance[e])).Select(e => e == RavenNest.Combat.Element.Physical ? "plain blows" : e.ToString().ToLowerInvariant()));
+            var parts = new System.Collections.Generic.List<string>();
+            if (d.Element != RavenNest.Combat.Element.Physical && d.ElementShare > 0) parts.Add(string.Format(Localization.UI_ENEMY_STRIKES, d.Element.ToString().ToLowerInvariant()));
+            var weak = Names(v => v < 0);
+            var immune = Names(v => v >= 1);
+            var resists = Names(v => v > 0 && v < 1);
+            if (weak.Length > 0) parts.Add(string.Format(Localization.UI_ENEMY_WEAK, weak));
+            if (resists.Length > 0) parts.Add(string.Format(Localization.UI_ENEMY_RESISTS, resists));
+            if (immune.Length > 0) parts.Add(string.Format(Localization.UI_ENEMY_IMMUNE, immune));
+            return parts.Count > 0 ? string.Join(". ", parts) + "." : "";
         }
 
         private static void Set(Stat stat, int value)

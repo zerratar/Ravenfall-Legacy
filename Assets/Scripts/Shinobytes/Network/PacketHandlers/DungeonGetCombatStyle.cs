@@ -18,6 +18,6 @@
             return;
         }
 
-        client.SendReply(gm, Localization.MSG_DUNGEON_SKILL_CURRENT, Localization.SkillName(player.DungeonSkill.Value));
+        client.SendReply(gm, Localization.MSG_DUNGEON_SKILL_CURRENT, Localization.CombatStyleName(player.DungeonSkill.Value));
     }
 }

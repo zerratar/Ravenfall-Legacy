@@ -43,6 +43,9 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
     ///     Raid and dungeon bosses (combat v2): an element for this fight from their asset's definition, or plain physical
     ///     blows (<see cref="RavenNest.Combat.EnemyDefinition.BossElement"/>). Their levels and gear stay their own.
     /// </summary>
+    /// <summary>The element a raid or dungeon boss strikes with this time (Physical: plain blows), for the announcement.</summary>
+    public RavenNest.Combat.Element BossElement { get; private set; }
+
     public RavenNest.Combat.Element RollBossElement()
     {
         var basis = Definition ? Definition.Definition : null;
@@ -50,7 +53,8 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
         RuntimeDefinition = basis == null || element == RavenNest.Combat.Element.Physical
             ? null
             : basis.WithElement(element, RavenNest.Combat.EnemyDefinition.BossElementShare);
-        return RuntimeDefinition != null ? element : RavenNest.Combat.Element.Physical;
+        BossElement = RuntimeDefinition != null ? element : RavenNest.Combat.Element.Physical;
+        return BossElement;
     }
 
     /// <summary>
@@ -1064,8 +1068,10 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
             HeroHelpers.Damage(player, took);
 
             var aggroMultiplier = 1f;
+            // a one-handed sword draws attention, for those fighting with it: an archer or mage who still had one on
+            // pulled bosses off the tank without knowing why
             var sword = player.Inventory.GetMeleeWeapon();
-            if (sword != null && sword.Type == RavenNest.Models.ItemType.OneHandedSword)
+            if (sword != null && sword.Type == RavenNest.Models.ItemType.OneHandedSword && !player.TrainingRanged && !player.TrainingMagic && !player.TrainingHealing)
                 aggroMultiplier = 2.5f;
 
             float aggro = 0;

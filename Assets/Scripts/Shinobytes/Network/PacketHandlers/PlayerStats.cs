@@ -65,7 +65,7 @@ public class PlayerStats : ChatBotCommandHandler<string>
                 var expRequired = GameMath.ExperienceForLevel(skill.Level + 1);
                 var expReq = expRequired < 1000000 ? Utility.FormatValue((long)expRequired) : Utility.FormatExp(expRequired);
                 var curExp = skill.Experience < 1000000 ? Utility.FormatValue((long)skill.Experience) : Utility.FormatExp(skill.Experience);
-                client.SendReply(gm, Localization.MSG_SKILL, skill.ToString(), curExp, expReq);
+                client.SendReply(gm, Localization.MSG_SKILL, Shown(skill), curExp, expReq);
             }
             return;
         }
@@ -138,7 +138,7 @@ public class PlayerStats : ChatBotCommandHandler<string>
         var total = 0;
         foreach (var s in ps.SkillList)
         {
-            skills += s + ", ";
+            skills += Shown(s) + ", ";
             total += s.Level;
         }
 
@@ -246,5 +246,13 @@ public class PlayerStats : ChatBotCommandHandler<string>
         Raid,
         Dungeon,
         War
+    }
+
+    /// <summary>A skill's line ("Vitality 812 (45%)") with its name as players see it: the stored name is still Health.</summary>
+    private static string Shown(SkillStat skill)
+    {
+        var text = skill.ToString();
+        var shown = Localization.SkillName(skill.Name);
+        return !string.IsNullOrEmpty(skill.Name) && !string.IsNullOrEmpty(shown) && text.StartsWith(skill.Name) ? shown + text.Substring(skill.Name.Length) : text;
     }
 }

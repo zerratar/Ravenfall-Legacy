@@ -216,7 +216,7 @@ public class EnchantItem : ChatBotCommandHandler<string>
     private string FormatEnchantmentValues(IReadOnlyList<ItemEnchantment> enchantments)
     {
         if (enchantments == null) return string.Empty;
-        return string.Join(", ", enchantments.Select(x => x.Name + " +" + (x.ValueType == AttributeValueType.Percent ? (int)(x.Value * 100) + "%" : x.Value.ToString())));
+        return string.Join(", ", enchantments.Select(x => Localization.StatName(x.Name) + " +" + (x.ValueType == AttributeValueType.Percent ? (int)(x.Value * 100) + "%" : x.Value.ToString())));
     }
 
     private string GetCooldownString(System.TimeSpan cooldown)

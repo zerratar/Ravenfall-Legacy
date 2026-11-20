@@ -1019,7 +1019,12 @@ public static class SettingsApplier
     /// <summary>Chat can go into the tower (docs/tower-design.md: open on every stream unless the streamer closes it).</summary>
     public static bool TowerOpen => PlayerSettings.Instance.TowerOpen.GetValueOrDefault(Defaults.TowerOpen);
 
-    public static void SetTowerOpen(bool value) => PlayerSettings.Instance.TowerOpen = value;
+    public static void SetTowerOpen(bool value)
+    {
+        PlayerSettings.Instance.TowerOpen = value;
+        // closing it empties it: those inside were left in a tower nobody could use
+        if (!value && TowerManager.Instance) TowerManager.Instance.ClosedByStreamer();
+    }
 
     /// <summary>Words over fighters when an element's effect starts.</summary>
     public static bool EffectWords => PlayerSettings.Instance.EffectWords.GetValueOrDefault(Defaults.EffectWords);

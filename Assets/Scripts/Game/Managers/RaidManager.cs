@@ -340,9 +340,16 @@ public class RaidManager : MonoBehaviour, IEvent
 
     public void Announce()
     {
+        // the boss rolls an element each time: say which, so a fighter in the wrong set knows why the fight drags
+        var element = CombatRules.Enabled && Boss.Enemy.BossElement != RavenNest.Combat.Element.Physical ? Boss.Enemy.BossElement.ToString().ToLowerInvariant() : null;
         if (gameManager.RequireCodeForDungeonOrRaid)
         {
-            gameManager.RavenBot?.Announce(Localization.MSG_RAID_START_CODE, Boss.Enemy.Stats.CombatLevel.ToString());
+            if (element != null) gameManager.RavenBot?.Announce(Localization.MSG_RAID_START_CODE_ELEMENT, Boss.Enemy.Stats.CombatLevel.ToString(), element);
+            else gameManager.RavenBot?.Announce(Localization.MSG_RAID_START_CODE, Boss.Enemy.Stats.CombatLevel.ToString());
+        }
+        else if (element != null)
+        {
+            gameManager.RavenBot?.Announce(Localization.MSG_RAID_START_ELEMENT, Boss.Enemy.Stats.CombatLevel.ToString(), element);
         }
         else
         {

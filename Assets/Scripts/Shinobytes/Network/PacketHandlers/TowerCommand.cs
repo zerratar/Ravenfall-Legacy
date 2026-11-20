@@ -36,9 +36,12 @@ public class TowerCommand : ChatBotCommandHandler<string>
         var canForce = user.IsBroadcaster || user.IsModerator || (player && (player.IsGameAdmin || player.IsGameModerator));
 
         // the streamer closed the tower (settings): nobody goes in; those inside can still leave and look
-        if (!SettingsApplier.TowerOpen && action != "leave" && action != "exit" && action != "info" && action != "status")
+        // (the streamer and moderators can still close it, which sends out anyone left inside)
+        var closing = canForce && (action == "close" || action == "quit" || action == "end" || action == "stop");
+        if (!SettingsApplier.TowerOpen && !closing && action != "leave" && action != "exit" && action != "info" && action != "status")
         {
-            client.SendReply(gm, Localization.MSG_TOWER_CLOSED_HERE);
+            var inside = player && player.towerHandler != null && player.towerHandler.InTower;
+            client.SendReply(gm, inside ? Localization.MSG_TOWER_CLOSED_INSIDE : Localization.MSG_TOWER_CLOSED_HERE);
             return;
         }
 
@@ -69,6 +72,11 @@ public class TowerCommand : ChatBotCommandHandler<string>
                 case "info":
                 case "status":
                     Info(tower, gm, client);
+                    return;
+                case "help":
+                case "commands":
+                case "?":
+                    client.SendReply(gm, Localization.MSG_TOWER_HELP);
                     return;
                 case "floor":
                 case "train":
@@ -120,10 +128,18 @@ public class TowerCommand : ChatBotCommandHandler<string>
         {
             case TowerManager.JoinResult.Joined:
                 var current = tower.Definition;
+                // a character far below the floor: said, with the way out (levels are only brought down to a floor,
+                // never up to it)
+                var warning = "";
+                if (current != null && player.Stats != null && player.Stats.CombatLevel < current.Level * 0.6f)
+                    warning = string.Format(Localization.MSG_TOWER_JOIN_WARNING, current.Level, player.Stats.CombatLevel);
                 if (tower.Phase == TowerManager.TowerPhase.Countdown)
-                    client.SendReply(gm, Localization.MSG_TOWER_JOINED_ATTEMPT, tower.CurrentFloor, ((int)tower.PhaseSecondsLeft).ToString(CultureInfo.InvariantCulture));
+                    client.SendReply(gm, Localization.MSG_TOWER_JOINED_ATTEMPT + warning, tower.CurrentFloor, ((int)tower.PhaseSecondsLeft).ToString(CultureInfo.InvariantCulture));
+                else if (tower.Training)
+                    // a lower floor everyone trains on: the climb's quests do not count here, so they are not listed
+                    client.SendReply(gm, Localization.MSG_TOWER_JOINED_TRAINING + warning, tower.CurrentFloor, current != null ? current.Name : "", tower.StreamFloor);
                 else
-                    client.SendReply(gm, Localization.MSG_TOWER_JOINED, tower.CurrentFloor, current != null ? current.Name : "", Tower.SyncLevel(tower.CurrentFloor), tower.QuestText());
+                    client.SendReply(gm, Localization.MSG_TOWER_JOINED + warning, tower.CurrentFloor, current != null ? current.Name : "", Tower.SyncLevel(tower.CurrentFloor), tower.QuestText());
                 return;
             case TowerManager.JoinResult.Loading:
                 client.SendReply(gm, Localization.MSG_TOWER_LOADING, tower.StreamFloor, floor != null ? floor.Name : "");
@@ -135,7 +151,7 @@ public class TowerCommand : ChatBotCommandHandler<string>
                 Info(tower, gm, client);
                 return;
             case TowerManager.JoinResult.FightUnderWay:
-                client.SendReply(gm, Localization.MSG_TOWER_FIGHT_UNDER_WAY, ((int)tower.PhaseSecondsLeft).ToString(CultureInfo.InvariantCulture));
+                client.SendReply(gm, Localization.MSG_TOWER_FIGHT_UNDER_WAY, UnityEngine.Mathf.Max(1, UnityEngine.Mathf.CeilToInt(tower.PhaseSecondsLeft / 60f)).ToString(CultureInfo.InvariantCulture));
                 return;
             case TowerManager.JoinResult.Busy:
                 client.SendReply(gm, Localization.MSG_TOWER_CANNOT_JOIN);
@@ -297,7 +313,9 @@ public class TowerCommand : ChatBotCommandHandler<string>
     {
         if (!player || player.towerHandler == null || !player.towerHandler.InTower)
         {
-            client.SendReply(gm, Localization.MSG_TOWER_NOT_IN);
+            // waiting to be let in (the floor loading, the opening cutscene): taken back
+            if (player && tower.CancelWaiting(player)) client.SendReply(gm, Localization.MSG_TOWER_LEFT_WAITING);
+            else client.SendReply(gm, Localization.MSG_TOWER_NOT_IN);
             return;
         }
         tower.Leave(player);
@@ -315,7 +333,10 @@ public class TowerCommand : ChatBotCommandHandler<string>
                 client.SendReply(gm, Localization.MSG_TOWER_BOSS_VOTE, tower.CurrentFloor, needed);
                 return;
             case TowerManager.BossCallResult.NotOpen:
-                client.SendReply(gm, tower.AllCleared ? Localization.MSG_TOWER_QUESTS_CLEARED : Localization.MSG_TOWER_BOSS_LOCKED, tower.StreamFloor, tower.QuestText());
+                if (tower.AllCleared) client.SendReply(gm, Localization.MSG_TOWER_ALL_CLEARED);
+                // everyone trains on a lower floor: its boss is beaten, the climb's waits further up
+                else if (tower.Training) client.SendReply(gm, Localization.MSG_TOWER_BOSS_TRAINING, tower.CurrentFloor, tower.StreamFloor);
+                else client.SendReply(gm, Localization.MSG_TOWER_BOSS_LOCKED, tower.StreamFloor, tower.QuestText());
                 return;
             case TowerManager.BossCallResult.UnderWay:
                 client.SendReply(gm, Localization.MSG_TOWER_BOSS_UNDER_WAY);
@@ -327,7 +348,9 @@ public class TowerCommand : ChatBotCommandHandler<string>
                 client.SendReply(gm, Localization.MSG_TOWER_BOSS_ENTER_FIRST);
                 return;
             default:
-                client.SendReply(gm, Localization.MSG_TOWER_BOSS_NOBODY, tower.StreamFloor, floor != null ? floor.Boss.Name : "");
+                // nobody on the floor: in the town between floors, or not in the tower at all
+                if (tower.TownPlayers().Count > 0) client.SendReply(gm, Localization.MSG_TOWER_BOSS_IN_TOWN, tower.CurrentTown != null ? tower.CurrentTown.Name : "the town", tower.StreamFloor);
+                else client.SendReply(gm, Localization.MSG_TOWER_BOSS_NOBODY, tower.StreamFloor, floor != null ? floor.Boss.Name : "");
                 return;
         }
     }
@@ -351,7 +374,7 @@ public class TowerCommand : ChatBotCommandHandler<string>
                 client.SendReply(gm, Localization.MSG_TOWER_CLIMB_NOBODY, tower.StreamFloor);
                 return;
             case TowerManager.ClimbResult.FightUnderWay:
-                client.SendReply(gm, Localization.MSG_TOWER_FIGHT_UNDER_WAY, ((int)tower.PhaseSecondsLeft).ToString(CultureInfo.InvariantCulture));
+                client.SendReply(gm, Localization.MSG_TOWER_FIGHT_UNDER_WAY, UnityEngine.Mathf.Max(1, UnityEngine.Mathf.CeilToInt(tower.PhaseSecondsLeft / 60f)).ToString(CultureInfo.InvariantCulture));
                 return;
             default:
                 client.SendReply(gm, Localization.MSG_TOWER_NOT_READY);
@@ -438,6 +461,6 @@ public class TowerCommand : ChatBotCommandHandler<string>
         var boss = tower.AllCleared ? Localization.MSG_TOWER_INFO_ALL_CLEARED
             : tower.State.BossOpen ? string.Format(Localization.MSG_TOWER_INFO_BOSS_OPEN, floor.Boss.Name)
             : string.Format(Localization.MSG_TOWER_INFO_BOSS_LOCKED, floor.Boss.Name);
-        client.SendReply(gm, Localization.MSG_TOWER_INFO, floor.Number, Tower.TopFloor, floor.Name, floor.Level, Tower.SyncLevel(floor.Number), tower.QuestText(), boss, tower.Players().Count);
+        client.SendReply(gm, Localization.MSG_TOWER_INFO, floor.Number, Tower.TopFloor, floor.Name, floor.Level, Tower.SyncLevel(floor.Number), tower.QuestText(), boss, tower.AllPlayers().Count);
     }
 }

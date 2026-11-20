@@ -24,6 +24,7 @@
             return;
         }
 
-        client.SendReply(gm, Localization.MSG_TOGGLE_PET, result.Item.Name);
+        var battlePet = targetPlayer.BattlePets != null ? targetPlayer.BattlePets.Active : null;
+        client.SendReply(gm, Localization.MSG_TOGGLE_PET + (battlePet != null ? string.Format(Localization.MSG_PET_COSMETIC_HIDDEN, battlePet.Name) : ""), result.Item.Name);
     }
 }

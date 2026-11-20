@@ -281,8 +281,20 @@ public sealed class TowerManager : MonoBehaviour
         return floor && player && player.towerHandler != null && player.towerHandler.Enter(floor);
     }
 
+    /// <summary>Takes a player off the lists of those waiting to be let in; true when they were on one.</summary>
+    public bool CancelWaiting(PlayerController player)
+    {
+        var waiting = pendingJoins.Remove(player);
+        waiting |= pendingTownJoins.Remove(player);
+        waiting |= waitingForOpening.RemoveAll(w => w.Player == player) > 0;
+        return waiting;
+    }
+
     public void Leave(PlayerController player)
     {
+        // out of the attempt too: someone who joined the countdown and left still got the clear's coins and chest
+        participants.Remove(player);
+        fallen.Remove(player);
         pendingJoins.Remove(player);
         waitingForOpening.RemoveAll(w => w.Player == player);
         pendingTownJoins.Remove(player);
@@ -452,10 +464,15 @@ public sealed class TowerManager : MonoBehaviour
 #endif
     }
 
+    // The floor scene is on its way out (UnloadRoutine). A !tower meanwhile waits in pendingJoins: it could not load
+    // the floor (the old one still counted as loaded) and nothing loaded it afterwards, so the player was told "you
+    // will be taken in" and never was. The unload now loads the floor again when someone waits.
+    private bool unloading;
+
     public void LoadFloor(int number)
     {
         var floor = Tower.Get(number);
-        if (floor == null || Loading || TowerFloor.Loaded) return;
+        if (floor == null || Loading || unloading || TowerFloor.Loaded) return;
         CurrentFloor = number;
         Phase = TowerPhase.Loading;
         StartCoroutine(LoadRoutine(ScenePath(floor.Layout)));
@@ -464,7 +481,7 @@ public sealed class TowerManager : MonoBehaviour
     /// <summary>Loads a floor scene (its path in the project, or its name when it is in the build) next to MainWorld.</summary>
     public void Load(string scene)
     {
-        if (Loading || TowerFloor.Loaded) return;
+        if (Loading || unloading || TowerFloor.Loaded) return;
         Phase = TowerPhase.Loading;
         StartCoroutine(LoadRoutine(scene));
     }
@@ -537,6 +554,7 @@ public sealed class TowerManager : MonoBehaviour
 
     private IEnumerator UnloadRoutine()
     {
+        unloading = true;
         EndAttempt();
         foreach (var p in Players()) p.towerHandler.Exit();
         Phase = TowerPhase.Closed;
@@ -562,6 +580,10 @@ public sealed class TowerManager : MonoBehaviour
             + (worst * 1000f).ToString("0", CultureInfo.InvariantCulture) + " ms, memory " + ((memoryAfter - memoryBefore) / (1024f * 1024f)).ToString("+0.0;-0.0", CultureInfo.InvariantCulture) + " MB");
         LoadedScene = null;
         CurrentFloor = 0;
+        unloading = false;
+        // someone typed !tower while it unloaded: the floor loads again for them
+        pendingJoins.RemoveAll(p => !p || p.isDestroyed);
+        if (pendingJoins.Count > 0 && State != null && Phase == TowerPhase.Closed) LoadFloor(StreamFloor);
     }
 
     // ---- Quests ----------------------------------------------------------------------------------------------
@@ -679,6 +701,8 @@ public sealed class TowerManager : MonoBehaviour
         if (!votes.TryGetValue(key, out var vote) || Time.time - vote.Started > VoteSeconds)
             votes[key] = vote = new Vote { Started = Time.time };
         vote.Voters.Add(player.Id.ToString());
+        // two minutes from the last voice, not the first: a slow chat's vote ran out between voices without a word
+        vote.Started = Time.time;
         var missing = Mathf.Max(0, VotesNeeded(AllPlayers().Count) - vote.Voters.Count);
         if (missing == 0) votes.Remove(key);
         return missing;
@@ -710,6 +734,15 @@ public sealed class TowerManager : MonoBehaviour
         votes.Remove("climb");
         foreach (var p in inTown) Join(p);
         return ClimbResult.Climbing;
+    }
+
+    /// <summary>
+    ///     The streamer switched "Tower open to chat" off: everyone inside goes back to what they were doing. Before, the
+    ///     switch only refused commands, so those inside could not climb, fight or close, and nobody could get them out.
+    /// </summary>
+    public void ClosedByStreamer()
+    {
+        if (Close(null, true, out _) == CloseResult.Closed) Announce(Localization.MSG_TOWER_CLOSED_BY_STREAMER);
     }
 
     public enum CloseResult { Closed, Voted, NotInTower, Empty, FightUnderWay }
@@ -789,6 +822,7 @@ public sealed class TowerManager : MonoBehaviour
         if (!floor || def == null || participants.Count == 0)
         {
             Phase = TowerPhase.Open;
+            if (def != null) Announce(Localization.MSG_TOWER_BOSS_CALLED_OFF, def.Boss.Name);
             return;
         }
 
@@ -797,6 +831,7 @@ public sealed class TowerManager : MonoBehaviour
         {
             Shinobytes.Debug.LogError("TowerManager: floor " + CurrentFloor + " has no template for the boss " + def.Boss.Model);
             Phase = TowerPhase.Open;
+            Announce(Localization.MSG_TOWER_BOSS_CALLED_OFF, def.Boss.Name);
             return;
         }
 
@@ -1004,7 +1039,7 @@ public sealed class TowerManager : MonoBehaviour
 
         if (result.WorldFirst) Announce(Localization.MSG_TOWER_WORLD_FIRST, floorNumber);
         Announce(Localization.MSG_TOWER_CLEARED, floorNumber, players, result.Coins.ToString("N0", CultureInfo.InvariantCulture), result.Rewards?.Length ?? 0);
-        if (result.Rewards != null && result.Rewards.Length > 0) g.AddItems(result.Rewards);
+        if (result.Rewards != null && result.Rewards.Length > 0) AnnounceDrops(g, g.AddItems(result.Rewards));
         if (result.State != null) SetState(result.State);
 
         // the next floor: after a moment to celebrate, everyone goes down to the town to rest and train until the
@@ -1026,6 +1061,25 @@ public sealed class TowerManager : MonoBehaviour
         StartCoroutine(AfterClearRoutine(def, next, town));
     }
 
+    // Who got what from the chest, as after a dungeon (the same filter): the clear only gave a count, and nobody knew
+    // what they had won.
+    private static async void AnnounceDrops(GameManager g, PlayerItemDropText drops)
+    {
+        try
+        {
+            if (drops == null || drops.Messages == null || !g || g.RavenBot == null || g.HasMessageFilter("ItemDrop")) return;
+            for (var i = 0; i < drops.Messages.Count; i++)
+            {
+                if (i > 0) await System.Threading.Tasks.Task.Delay(100);
+                g.RavenBot.Announce(drops.Messages[i]);
+            }
+        }
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogError("TowerManager.AnnounceDrops: " + exc.Message);
+        }
+    }
+
     /// <summary>
     ///     After a clear: the players on the floor go to the town of the next floor's band (the new band's town after a
     ///     tenth floor), and the floor gets ready for the next one: the same layout fills for it at once, another goes
@@ -1045,8 +1099,26 @@ public sealed class TowerManager : MonoBehaviour
             if (r == TownJoinResult.Joined || r == TownJoinResult.Loading) moved++;
         }
         while (TownLoading) yield return null;
+        // someone knocked out at that moment cannot be moved yet (they are up again after a few seconds): tried again
+        // for a while. The floor stayed as it was while anyone was on it, the server was already on the next one, and
+        // !tower climb then took everyone back to the cleared floor, where nothing counted.
+        var waited = 0f;
+        while (Players().Count > 0 && waited < 20f && Phase != TowerPhase.Countdown && Phase != TowerPhase.Fight)
+        {
+            yield return new WaitForSeconds(1f);
+            waited += 1f;
+            foreach (var p in Players())
+            {
+                var r = JoinTown(p, town);
+                if (r == TownJoinResult.OtherOpen) r = JoinTown(p);
+                if (r == TownJoinResult.Joined || r == TownJoinResult.Loading) moved++;
+            }
+            while (TownLoading) yield return null;
+        }
         var floor = TowerFloor.Loaded;
-        if (floor && Players().Count == 0)
+        // the floor gets ready for the next one whoever is still on it (they find themselves on the new floor, or
+        // back in the world when its layout is another)
+        if (floor && Phase != TowerPhase.Countdown && Phase != TowerPhase.Fight)
         {
             if (next.Layout == cleared.Layout)
             {

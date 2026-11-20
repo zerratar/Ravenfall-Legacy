@@ -20,6 +20,15 @@ public class SetPet : ChatBotCommandHandler<string>
             return;
         }
 
+        // !pet starter fox, !pet wake raven...: battle pet commands sent to the cosmetic one, which looked for an item
+        // called "starter fox"
+        var first = (inputQuery ?? "").Trim().Split(' ')[0].ToLowerInvariant();
+        if (System.Array.IndexOf(BattlePetActions, first) >= 0)
+        {
+            client.SendReply(gm, Localization.MSG_PET_IS_BATTLE_COMMAND, inputQuery.Trim());
+            return;
+        }
+
         var itemQuery = inputQuery;
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
         var itemResolver = ioc.Resolve<IItemResolver>();
@@ -56,6 +65,10 @@ public class SetPet : ChatBotCommandHandler<string>
             await player.EquipAsync(item.Item);
         }
 
-        client.SendReply(gm, Localization.MSG_SET_PET, item.Item.Name);
+        // while a battle pet is out the cosmetic one is hidden: say so, or the change looks like it did nothing
+        var battlePet = player.BattlePets != null ? player.BattlePets.Active : null;
+        client.SendReply(gm, Localization.MSG_SET_PET + (battlePet != null ? string.Format(Localization.MSG_PET_COSMETIC_HIDDEN, battlePet.Name) : ""), item.Item.Name);
     }
+
+    private static readonly string[] BattlePetActions = { "starter", "start", "stable", "use", "away", "wake", "awaken", "hatch", "evolve", "rename", "skills", "slot", "release", "about" };
 }

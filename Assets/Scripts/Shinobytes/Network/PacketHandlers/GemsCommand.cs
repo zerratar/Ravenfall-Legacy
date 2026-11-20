@@ -8,10 +8,11 @@ using RavenNest.Models;
 
 /// <summary>
 ///     Gems and sockets from chat (docs/gems-design.md). The bot sends "gems_command" with the action first:
-///     !gems (the gems you own and your chance to keep one taken out), !gems enchant ruby 5 (raw gems enchanted by your
-///     clan), !gems combine ruby flawed 2 (three into the next tier, for coins), !socket rune sword flawless ruby 2
-///     (a gem into an item; the tier and the socket can be left out) and !unsocket rune sword 2. The server does it all;
-///     the inventory feed brings the gems and sockets, and the equipment's stats follow.
+///     !gems (the gems you own), !gems enchant ruby 5 (raw gems enchanted by your clan), !gems combine ruby flawed 2
+///     (three into the next tier, for coins), !socket rune sword flawless ruby 2 (a gem into an item; the tier and the
+///     socket can be left out) and !unsocket rune sword 2. Taking a gem out, or socketing over one, most likely destroys
+///     it: the server first answers with the gem and the chance to keep it, and does it when "confirm" is added. The
+///     server does it all; the inventory feed brings the gems and sockets, and the equipment's stats follow.
 /// </summary>
 public class GemsCommand : ChatBotCommandHandler<string>
 {
@@ -132,8 +133,9 @@ public class GemsCommand : ChatBotCommandHandler<string>
 
     private async Task Socket(PlayerController player, string rest, GameMessage gm, GameClient client)
     {
-        // the item's name, then the gem (a tier before it if wanted), then a socket number if wanted
+        // the item's name, then the gem (a tier before it if wanted), then a socket number if wanted, then "confirm"
         var words = Words(rest);
+        var confirm = TakeConfirm(words);
         var socket = TakeNumber(words, 0);
         var at = words.FindLastIndex(w => Gems.TryParseKind(w, out _) && w.Length >= 3);
         if (at <= 0)
@@ -159,7 +161,17 @@ public class GemsCommand : ChatBotCommandHandler<string>
             return;
         }
 
-        var result = await Game.RavenNest.Players.GemSocketAsync(player.Id, item.InstanceId, (int)kind, tier, socket);
+        var result = await Game.RavenNest.Players.GemSocketAsync(player.Id, item.InstanceId, (int)kind, tier, socket, confirm);
+        if (result != null && result.Status == GemResultStatus.NeedsConfirm)
+        {
+            client.SendReply(gm, Localization.MSG_GEM_CONFIRM_REPLACE, result.Socket, result.ItemName, OldGemName(result), KeepText(result), "!socket " + rest.Trim() + " confirm");
+            return;
+        }
+        if (result != null && result.Status == GemResultStatus.NoGem && tier < 0)
+        {
+            client.SendReply(gm, Localization.MSG_GEM_NOT_OWNED_ANY, kind.ToString());
+            return;
+        }
         if (!Ok(result, gm, client)) return;
         var gem = Gems.Name((GemKind)result.Kind, (GemTier)result.Tier);
         var message = string.Format(CultureInfo.InvariantCulture, "{0} -> {1} ({2}/{3})", gem, result.ItemName, result.Socket, result.SocketCount);
@@ -169,6 +181,7 @@ public class GemsCommand : ChatBotCommandHandler<string>
     private async Task Unsocket(PlayerController player, string rest, GameMessage gm, GameClient client)
     {
         var words = Words(rest);
+        var confirm = TakeConfirm(words);
         var socket = TakeNumber(words, 0);
         if (words.Count == 0)
         {
@@ -178,9 +191,32 @@ public class GemsCommand : ChatBotCommandHandler<string>
 
         var item = FindItem(player, string.Join(" ", words), gm, client);
         if (item == null) return;
-        var result = await Game.RavenNest.Players.GemUnsocketAsync(player.Id, item.InstanceId, socket);
+        var result = await Game.RavenNest.Players.GemUnsocketAsync(player.Id, item.InstanceId, socket, confirm);
+        if (result != null && result.Status == GemResultStatus.NeedsConfirm)
+        {
+            client.SendReply(gm, Localization.MSG_GEM_CONFIRM_UNSOCKET, result.Socket, result.ItemName, OldGemName(result), KeepText(result), "!unsocket " + rest.Trim() + " confirm");
+            return;
+        }
+        if (result != null && result.Status == GemResultStatus.NoSuchItem)
+        {
+            client.SendReply(gm, Localization.MSG_ITEM_NOT_OWNED, item.Name);
+            return;
+        }
         if (!Ok(result, gm, client)) return;
         client.SendReply(gm, Localization.MSG_GEM_UNSOCKETED, result.ItemName, OldGem(result));
+    }
+
+    private static string OldGemName(GemResult result) =>
+        result.OldKind.HasValue ? Gems.Name((GemKind)result.OldKind.Value, (GemTier)result.OldTier.GetValueOrDefault()) : "gem";
+
+    private static string KeepText(GemResult result) => Math.Round(result.KeepChance * 100).ToString(CultureInfo.InvariantCulture) + "%";
+
+    // "confirm" at the end, taken off the words
+    private static bool TakeConfirm(List<string> words)
+    {
+        if (words.Count == 0 || !words[words.Count - 1].Equals("confirm", StringComparison.OrdinalIgnoreCase)) return false;
+        words.RemoveAt(words.Count - 1);
+        return true;
     }
 
     // "Your Chipped Ruby came back (12% chance)." or "... crumbled (12% chance to keep it)."
@@ -215,7 +251,10 @@ public class GemsCommand : ChatBotCommandHandler<string>
             case GemResultStatus.NoSockets: client.SendReply(gm, Localization.MSG_GEM_NO_SOCKETS, result.ItemName); break;
             case GemResultStatus.SocketsFull: client.SendReply(gm, Localization.MSG_GEM_FULL, result.ItemName, result.SocketCount); break;
             case GemResultStatus.NoSuchSocket: client.SendReply(gm, Localization.MSG_GEM_NO_SUCH_SOCKET, result.ItemName, result.SocketCount); break;
-            case GemResultStatus.EmptySocket: client.SendReply(gm, Localization.MSG_GEM_EMPTY_SOCKET, result.Socket, result.ItemName); break;
+            case GemResultStatus.EmptySocket:
+                if (result.Socket <= 0) client.SendReply(gm, Localization.MSG_GEM_NONE_IN_ITEM, result.ItemName);
+                else client.SendReply(gm, Localization.MSG_GEM_EMPTY_SOCKET, result.Socket, result.ItemName);
+                break;
             case GemResultStatus.NoSuchItem: client.SendReply(gm, Localization.MSG_GEM_ERROR); break;
             case GemResultStatus.Busy: client.SendReply(gm, Localization.MSG_GEM_BUSY); break;
             default: client.SendReply(gm, Localization.MSG_GEM_ERROR); break;

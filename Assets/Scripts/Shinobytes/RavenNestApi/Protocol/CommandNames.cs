@@ -102,10 +102,10 @@ namespace RavenNest.Protocol
         /// <summary>(Guid characterId, int kind, int tier, int times) -> GemResult: three of a tier into one of the next</summary>
         public const string GemCombine = "gems.combine";
 
-        /// <summary>(Guid characterId, Guid inventoryItemId, int kind, int tier (-1 the best owned), int socket (0 the first free)) -> GemResult</summary>
+        /// <summary>(Guid characterId, Guid inventoryItemId, int kind, int tier (-1 the best owned), int socket (0 the first free), bool confirm) -> GemResult; NeedsConfirm when it would replace a gem and confirm is false</summary>
         public const string GemSocket = "gems.socket";
 
-        /// <summary>(Guid characterId, Guid inventoryItemId, int socket (0 the last filled)) -> GemResult</summary>
+        /// <summary>(Guid characterId, Guid inventoryItemId, int socket (0 the last filled), bool confirm) -> GemResult; NeedsConfirm (the gem and its keep chance) when confirm is false</summary>
         public const string GemUnsocket = "gems.unsocket";
 
         // Battle pets (docs/battle-pets-design.md in the game repo); species are RavenNest.Combat.PetSpecies ids

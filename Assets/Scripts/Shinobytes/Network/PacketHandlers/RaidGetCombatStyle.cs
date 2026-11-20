@@ -18,6 +18,6 @@
             return;
         }
 
-        client.SendReply(gm, Localization.MSG_RAID_SKILL_CURRENT, Localization.SkillName(player.RaidSkill.Value));
+        client.SendReply(gm, Localization.MSG_RAID_SKILL_CURRENT, Localization.CombatStyleName(player.RaidSkill.Value));
     }
 }
