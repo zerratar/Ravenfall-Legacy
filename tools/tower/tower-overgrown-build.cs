@@ -178,6 +178,37 @@ UnityEngine.Vector3 OnGround(float x, float z) => origin + new UnityEngine.Vecto
     }
 }
 
+// sunlight pouring in through the hall's windows on the sun's side (TowerLightShaft; off in potato mode). The windows are
+// tower_halls.py's: 28 bays, none where a stretch has fallen (its gaps, in Blender's angles; the model is turned half
+// round, so Unity's angle is Blender's plus 180), the inside of the wall 74 m out, the openings' middles about 10.5 m up.
+{
+    var sunFwd = UnityEngine.Quaternion.Euler(floor.SunAngles) * UnityEngine.Vector3.forward;
+    var toSun = new UnityEngine.Vector3(-sunFwd.x, 0f, -sunFwd.z).normalized;
+    var gaps = new[] { -90f, 30f, 150f, 215f };
+    var shaftsT = new UnityEngine.GameObject("Light Shafts").transform; shaftsT.SetParent(root.transform, false);
+    var shaftCount = 0;
+    for (var i = 0; i < 28; i++)
+    {
+        var blenderDeg = (i + 0.5f) / 28f * 360f;
+        var fallen = 0f;
+        foreach (var g in gaps) fallen = UnityEngine.Mathf.Max(fallen, 1f - UnityEngine.Mathf.Abs(UnityEngine.Mathf.DeltaAngle(blenderDeg, g)) / 11f);
+        if (fallen > 0.5f) continue;
+        var a = (blenderDeg + 180f) * UnityEngine.Mathf.Deg2Rad;
+        var outward = new UnityEngine.Vector3(UnityEngine.Mathf.Cos(a), 0f, UnityEngine.Mathf.Sin(a));
+        if (UnityEngine.Vector3.Dot(outward, toSun) < 0.3f) continue;
+        var at = outward * 74.3f + UnityEngine.Vector3.up * 10.5f;
+        var shaft = new UnityEngine.GameObject("Light Shaft");
+        shaft.transform.SetParent(shaftsT, false);
+        shaft.transform.localPosition = at;
+        shaft.transform.rotation = UnityEngine.Quaternion.LookRotation(sunFwd, UnityEngine.Vector3.up);
+        var ls = shaft.AddComponent<TowerLightShaft>();
+        ls.Width = 4.4f; ls.Height = 11f; ls.Length = 10.5f / UnityEngine.Mathf.Max(0.2f, -sunFwd.y) + 3f;
+        ls.Tint = new UnityEngine.Color(1f, 0.86f, 0.56f, 0.32f);
+        shaftCount++;
+    }
+    log.AppendLine("light shafts " + shaftCount);
+}
+
 // ---- props ----
 var rng = new System.Random(11);
 float R() => (float)rng.NextDouble();

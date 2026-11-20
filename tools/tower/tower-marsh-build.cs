@@ -186,6 +186,37 @@ UnityEngine.Vector3 OnGround(float x, float z) => origin + new UnityEngine.Vecto
     }
 }
 
+// sunlight pouring in through the hall's windows on the sun's side (TowerLightShaft; off in potato mode). The windows are
+// tower_halls.py's: 28 bays, none where a stretch has fallen (its gaps, in Blender's angles; the model is turned half
+// round, so Unity's angle is Blender's plus 180), the inside of the wall 74 m out, the openings' middles about 10.5 m up.
+{
+    var sunFwd = UnityEngine.Quaternion.Euler(floor.SunAngles) * UnityEngine.Vector3.forward;
+    var toSun = new UnityEngine.Vector3(-sunFwd.x, 0f, -sunFwd.z).normalized;
+    var gaps = new[] { -90f, 60f, 120f, 250f, 330f };
+    var shaftsT = new UnityEngine.GameObject("Light Shafts").transform; shaftsT.SetParent(root.transform, false);
+    var shaftCount = 0;
+    for (var i = 0; i < 28; i++)
+    {
+        var blenderDeg = (i + 0.5f) / 28f * 360f;
+        var fallen = 0f;
+        foreach (var g in gaps) fallen = UnityEngine.Mathf.Max(fallen, 1f - UnityEngine.Mathf.Abs(UnityEngine.Mathf.DeltaAngle(blenderDeg, g)) / 11f);
+        if (fallen > 0.5f) continue;
+        var a = (blenderDeg + 180f) * UnityEngine.Mathf.Deg2Rad;
+        var outward = new UnityEngine.Vector3(UnityEngine.Mathf.Cos(a), 0f, UnityEngine.Mathf.Sin(a));
+        if (UnityEngine.Vector3.Dot(outward, toSun) < 0.3f) continue;
+        var at = outward * 74.3f + UnityEngine.Vector3.up * 10.5f;
+        var shaft = new UnityEngine.GameObject("Light Shaft");
+        shaft.transform.SetParent(shaftsT, false);
+        shaft.transform.localPosition = at;
+        shaft.transform.rotation = UnityEngine.Quaternion.LookRotation(sunFwd, UnityEngine.Vector3.up);
+        var ls = shaft.AddComponent<TowerLightShaft>();
+        ls.Width = 4.4f; ls.Height = 11f; ls.Length = 10.5f / UnityEngine.Mathf.Max(0.2f, -sunFwd.y) + 3f;
+        ls.Tint = new UnityEngine.Color(0.86f, 1f, 0.62f, 0.24f);
+        shaftCount++;
+    }
+    log.AppendLine("light shafts " + shaftCount);
+}
+
 // ---- props ----
 var rng = new System.Random(37);
 float R() => (float)rng.NextDouble();
@@ -294,8 +325,57 @@ for (var i = 0; i < 2000 && i < 60000; i++)
     var x = (R() - 0.5f) * 120f; var z = (R() - 0.5f) * 120f;
     if (GroundAt(x, z) > -1.4f) continue;
     if (rng.Next(4) != 0) continue;
-    var leaf = Place(pnb + "SM_Prop_Leaves_Pile_01.prefab", origin + new UnityEngine.Vector3(x, -0.92f, z), 0.6f + R() * 0.5f, -1, foliage);
+    // real lily pads now (the pick by count, not by a random number, so the props after keep their places)
+    var leaf = Place("Assets/PolygonAdventure/Prefabs/Environments/SM_Env_Lillypads_0" + (1 + i % 3) + ".prefab", origin + new UnityEngine.Vector3(x, -0.92f, z), 0.6f + R() * 0.5f, -1, foliage);
 }
+// mangroves (tools/tower/blender/tower_mangroves.py, concept-marsh: twisted roots arching out of the water) standing in the
+// pools and on their banks, off the paths, the plaza and the arrival; their own random numbers, so the rest keeps its place
+{
+    UnityEngine.Material TreeMat(string name, UnityEngine.Color c)
+    {
+        var path = dataFolder + "/" + name + ".mat";
+        var m = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(path);
+        if (!m) { m = new UnityEngine.Material(UnityEngine.Shader.Find("Universal Render Pipeline/Lit")); UnityEditor.AssetDatabase.CreateAsset(m, path); }
+        m.SetColor("_BaseColor", c);
+        m.SetFloat("_Smoothness", 0.1f);
+        UnityEditor.EditorUtility.SetDirty(m);
+        return m;
+    }
+    var treeMats = new System.Collections.Generic.Dictionary<string, UnityEngine.Material>
+    {
+        ["Bark"] = TreeMat("MangroveBark", new UnityEngine.Color(0.34f, 0.25f, 0.17f)),
+        ["Leaves"] = TreeMat("MangroveLeaves", new UnityEngine.Color(0.20f, 0.38f, 0.15f)),
+        ["LeavesLight"] = TreeMat("MangroveLeavesLight", new UnityEngine.Color(0.34f, 0.50f, 0.20f)),
+    };
+    var mrng = new System.Random(77);
+    var placedTrees = new System.Collections.Generic.List<UnityEngine.Vector2>();
+    for (var i = 0; i < 4000 && placedTrees.Count < 18; i++)
+    {
+        var x = ((float)mrng.NextDouble() - 0.5f) * 124f; var z = ((float)mrng.NextDouble() - 0.5f) * 124f;
+        var hh = GroundAt(x, z);
+        if (hh > -0.7f || hh < -2.6f) continue;
+        if (!Clear(x, z, 4f)) continue;
+        var p2 = new UnityEngine.Vector2(x, z);
+        if (placedTrees.Any(q => (q - p2).magnitude < 10f)) continue;
+        var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/World/Tower/Halls/Models/Mangrove_0" + (1 + placedTrees.Count % 4) + ".fbx");
+        if (!prefab) { log.AppendLine("missing mangrove model (run tools/tower/blender/tower_mangroves.py)"); break; }
+        var tree = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(prefab, scene);
+        tree.name = "Mangrove";
+        tree.transform.SetParent(foliage, false);
+        tree.transform.position = origin + new UnityEngine.Vector3(x, -0.95f, z);
+        tree.transform.rotation = UnityEngine.Quaternion.Euler(0f, (float)mrng.NextDouble() * 360f, 0f);
+        tree.transform.localScale = UnityEngine.Vector3.one * (0.95f + (float)mrng.NextDouble() * 0.4f);
+        foreach (var r in tree.GetComponentsInChildren<UnityEngine.MeshRenderer>())
+        {
+            var ms = r.sharedMaterials;
+            for (var k = 0; k < ms.Length; k++) { var key = ms[k] ? ms[k].name.Split(' ')[0].Split('.')[0] : ""; if (treeMats.TryGetValue(key, out var mm)) ms[k] = mm; }
+            r.sharedMaterials = ms;
+        }
+        placedTrees.Add(p2);
+    }
+    log.AppendLine("mangroves " + placedTrees.Count);
+}
+
 var fx = "Assets/PolygonNatureBiomes/PNB_Swamp_Marshland/FX/FX_Prefabs/";
 foreach (var (name, count) in new[] { ("FX_Fog_01", 8), ("FX_Fireflies_01", 6), ("FX_Swamp_Bubbles_01", 5), ("FX_Dragonflies_01", 3), ("FX_Frogs_01", 3) })
     for (var i = 0; i < count; i++)
