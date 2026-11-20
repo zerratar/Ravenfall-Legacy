@@ -61,6 +61,26 @@ public sealed class VillageLife : MonoBehaviour
         go.AddComponent<VillageLife>();
     }
 
+    /// <summary>The one running while playing; null before play starts.</summary>
+    public static VillageLife Instance { get; private set; }
+
+    /// <summary>
+    /// Smoke from a chimney of a place loaded later than the start of play (the tower's towns, <see cref="ChimneySmoke"/>):
+    /// the same smoke as the islands', with the same setting. Null while the smoke cannot be made (no particle shader).
+    /// Hand it back to <see cref="RemoveSmoke"/> when the place goes.
+    /// </summary>
+    public ParticleSystem AddChimneySmoke(Vector3 at, float strength) => smokeMaterial ? AddSmoke(at, strength) : null;
+
+    public void RemoveSmoke(ParticleSystem smoke)
+    {
+        if (smoke) Remove(smoke);
+    }
+
+    private void Awake()
+    {
+        Instance = this;
+    }
+
     private void Start()
     {
         var shader = Resources.Load<Shader>("AmbienceParticle");

@@ -482,30 +482,40 @@ void Around(UnityEngine.Transform place, float cx, float cz, float r, int n, flo
     Block(hut, 0.5f);
     Place(vr + "SM_Prop_Herb_02.prefab", 9.6f, -39.4f, 1.1f, -1, workProps);
 }
+UnityEngine.Material FrozenWaterMat()
+{
+    // shared by every frozen pond (Assets/World/Water/FrozenWater.shader); made once, then kept as it is tuned
+    var path = "Assets/World/Water/Frozen Water.mat";
+    var m = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(path);
+    if (m) return m;
+    m = new UnityEngine.Material(UnityEngine.Shader.Find("Ravenfall/Frozen Water")) { name = "Frozen Water" };
+    UnityEditor.AssetDatabase.CreateAsset(m, path);
+    return m;
+}
 // Fishing: holes in the ice round the pond; Sailing: an old fishing boat frozen in, sailors sit on logs by it
 {
     var place = WorkPlace("Fishing");
-    var holeMat = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(dataFolder + "/IceHole.mat");
-    if (holeMat) UnityEditor.AssetDatabase.DeleteAsset(dataFolder + "/IceHole.mat");
-    holeMat = null;
-    if (!holeMat)
-    {
-        holeMat = new UnityEngine.Material(UnityEngine.Shader.Find("Universal Render Pipeline/Lit")) { name = "IceHole" };
-        holeMat.SetColor("_BaseColor", new UnityEngine.Color(0.10f, 0.22f, 0.27f)); holeMat.SetFloat("_Smoothness", 0.95f);
-        UnityEditor.AssetDatabase.CreateAsset(holeMat, dataFolder + "/IceHole.mat");
-    }
+    if (UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(dataFolder + "/IceHole.mat")) UnityEditor.AssetDatabase.DeleteAsset(dataFolder + "/IceHole.mat");
+    var iceHoles = new System.Collections.Generic.List<UnityEngine.Vector3>();
     foreach (var bearing in new[] { 10f, 45f, 80f, 115f, 150f, 245f })
     {
         var a = bearing * UnityEngine.Mathf.Deg2Rad;
         var hx = pond.x + UnityEngine.Mathf.Sin(a) * 4.4f; var hz = pond.y + UnityEngine.Mathf.Cos(a) * 4.4f;
-        var hole = UnityEngine.GameObject.CreatePrimitive(UnityEngine.PrimitiveType.Cylinder);
-        UnityEngine.Object.DestroyImmediate(hole.GetComponent<UnityEngine.Collider>());
-        UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(hole, scene);
-        hole.name = "Ice Hole"; hole.transform.SetParent(workProps, true);
-        hole.transform.position = OnGround(hx, hz) + UnityEngine.Vector3.up * 0.02f; hole.transform.localScale = new UnityEngine.Vector3(0.9f, 0.01f, 0.9f);
-        hole.GetComponent<UnityEngine.MeshRenderer>().sharedMaterial = holeMat;
+        // the hole is cut in the pond's ice (FrozenPond below), not a disc laid on it
+        iceHoles.Add(new UnityEngine.Vector3(hx - pond.x, 0.5f, hz - pond.y));
         var sx = pond.x + UnityEngine.Mathf.Sin(a) * 6f; var sz = pond.y + UnityEngine.Mathf.Cos(a) * 6f;
         Stand(place, sx, sz, hx, hz);
+    }
+    {
+        var ice = new UnityEngine.GameObject("Pond Ice");
+        ice.transform.SetParent(workProps, false);
+        ice.transform.position = OnGround(pond.x, pond.y) + UnityEngine.Vector3.up * 0.03f;
+        ice.AddComponent<UnityEngine.MeshFilter>();
+        ice.AddComponent<UnityEngine.MeshRenderer>().sharedMaterial = FrozenWaterMat();
+        var fp = ice.AddComponent<FrozenPond>();
+        fp.Radius = pondRadius + 1.0f;
+        fp.Holes = iceHoles;
+        fp.enabled = false; fp.enabled = true;
     }
     var sail = WorkPlace("Sailing");
     var boat = V(pond.x + 1.5f, pond.y - 2f);
@@ -735,6 +745,32 @@ town.TitleColor = new UnityEngine.Color(0.80f, 0.93f, 1f);
 town.TitleOutline = new UnityEngine.Color(0.05f, 0.14f, 0.28f);
 
 var scenePath = folder + "/Tower_Rimeholt.unity";
+// chimney smoke (ChimneySmoke: the islands' own smoke, with its setting; VillageLife only finds chimneys when play starts)
+var smokes = 0;
+void Smoke(UnityEngine.Vector3 at, float strength)
+{
+    var s = new UnityEngine.GameObject("Chimney Smoke");
+    s.transform.SetParent(root.transform, false);
+    s.transform.position = at;
+    s.AddComponent<ChimneySmoke>().Strength = strength;
+    smokes++;
+}
+// the log houses have no chimneys: smoke from the smoke hole in the ridge, a quarter of the way along it
+foreach (var home in homes)
+{
+    if (!home) continue;
+    foreach (var f in home.GetComponentsInChildren<UnityEngine.MeshFilter>(true))
+    {
+        if (!f.name.StartsWith("SM_Bld_Roof") || !f.sharedMesh) continue;
+        var b = f.sharedMesh.bounds;
+        var alongX = b.extents.x >= b.extents.z;
+        var local = new UnityEngine.Vector3(b.center.x + (alongX ? b.extents.x * 0.4f : 0f), b.max.y - 0.15f, b.center.z + (alongX ? 0f : b.extents.z * 0.4f));
+        Smoke(f.transform.TransformPoint(local), 0.4f);
+        break;
+    }
+}
+log.AppendLine("chimney smokes " + smokes);
+
 // our grass (GrassField with Assets/World/Grass/Tower Grass Profile.asset, made by tools/tower/tower-grass-profile.cs): the
 // islands' blades, tufts and flowers grown round the camera on the grassy layers; its own setting, off in potato mode
 {

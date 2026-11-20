@@ -774,6 +774,26 @@ town.TitleColor = new UnityEngine.Color(1f, 0.84f, 0.36f);
 town.TitleOutline = new UnityEngine.Color(0.25f, 0.15f, 0.02f);
 
 var scenePath = folder + "/Tower_Mossgate.unity";
+// chimney smoke (ChimneySmoke: the islands' own smoke, with its setting; VillageLife only finds chimneys when play starts)
+var smokes = 0;
+void Smoke(UnityEngine.Vector3 at, float strength)
+{
+    var s = new UnityEngine.GameObject("Chimney Smoke");
+    s.transform.SetParent(root.transform, false);
+    s.transform.position = at;
+    s.AddComponent<ChimneySmoke>().Strength = strength;
+    smokes++;
+}
+// the presets' own Synty smoke sits right on the flues: ours takes its place, so the town's smoke is the islands'
+foreach (var go in scene.GetRootGameObjects())
+    foreach (var p in go.GetComponentsInChildren<UnityEngine.ParticleSystem>(true))
+    {
+        if (!p.name.StartsWith("FX_Chimney_Smoke") || !p.gameObject.activeSelf) continue;
+        Smoke(p.transform.position, 0.5f);
+        p.gameObject.SetActive(false);
+    }
+log.AppendLine("chimney smokes " + smokes);
+
 // our grass (GrassField with Assets/World/Grass/Tower Grass Profile.asset, made by tools/tower/tower-grass-profile.cs): the
 // islands' blades, tufts and flowers grown round the camera on the grassy layers; its own setting, off in potato mode
 {

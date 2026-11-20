@@ -251,7 +251,8 @@ for (var i = 0; i < 24; i++)
     if (rng.Next(3) == 0) continue;
     Place(env + "SM_Env_Rock_Cliff_0" + (1 + rng.Next(5)) + ".prefab", OnGround(x, z) + UnityEngine.Vector3.down * 6.5f, 1.2f + R() * 0.6f, -a * UnityEngine.Mathf.Rad2Deg + 90f + (R() - 0.5f) * 30f, props);
 }
-// snow mounds and hills, stones and cairns in the clearing
+// snow mounds and hills, stones and cairns in the clearing (each one's footprint kept, so no monster spot ends up inside one)
+var mounds = new System.Collections.Generic.List<UnityEngine.Vector3>(); // x, z and radius
 for (var i = 0; i < 46; i++)
 {
     var a = R() * UnityEngine.Mathf.PI * 2f; var r = 10f + R() * 52f;
@@ -264,7 +265,12 @@ for (var i = 0; i < 46; i++)
         : kind == 3 ? env + "SM_Env_Snow_Mound_0" + (1 + rng.Next(3))
         : kind == 4 ? snowv + "SM_Env_Rock_0" + (1 + rng.Next(7)) + "_Snow"
         : env + "SM_Env_Snow_Hill_0" + (1 + rng.Next(3));
-    Place(path + ".prefab", OnGround(x, z) + UnityEngine.Vector3.down * 0.2f, 0.8f + R() * 0.7f, -1, props);
+    var placedMound = Place(path + ".prefab", OnGround(x, z) + UnityEngine.Vector3.down * 0.2f, 0.8f + R() * 0.7f, -1, props);
+    if (placedMound)
+    {
+        var mrs = placedMound.GetComponentsInChildren<UnityEngine.Renderer>();
+        if (mrs.Length > 0) { var mb = mrs[0].bounds; foreach (var mr in mrs) mb.Encapsulate(mr.bounds); mounds.Add(new UnityEngine.Vector3(mb.center.x - origin.x, mb.center.z - origin.z, UnityEngine.Mathf.Max(mb.extents.x, mb.extents.z))); }
+    }
 }
 // the frozen pond's edge: stones, a broken boat and a fishing hole with a little fire
 for (var i = 0; i < 12; i++)
@@ -276,6 +282,29 @@ for (var i = 0; i < 12; i++)
 }
 Place(vp + "SM_Prop_Boat_Destroyed_01.prefab", OnGround(pond.x - 6f, pond.z + 8f) + UnityEngine.Vector3.down * 0.3f, 1f, 35f, props);
 Place(vp + "SM_Prop_Fire_Pit_01.prefab", OnGround(pond.x + 9f, pond.z - 9f), 1f, -1, props);
+// the ice itself (FrozenPond, the Frozen Water shader): clear ice over deep water, cracks, frost and frozen bubbles, a
+// little wider than the pond so the rising shore covers its rim; a fishing hole by the fire
+UnityEngine.Material FrozenWaterMat()
+{
+    // shared by every frozen pond (Assets/World/Water/FrozenWater.shader); made once, then kept as it is tuned
+    var path = "Assets/World/Water/Frozen Water.mat";
+    var m = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(path);
+    if (m) return m;
+    m = new UnityEngine.Material(UnityEngine.Shader.Find("Ravenfall/Frozen Water")) { name = "Frozen Water" };
+    UnityEditor.AssetDatabase.CreateAsset(m, path);
+    return m;
+}
+{
+    var pondIce = new UnityEngine.GameObject("Pond Ice");
+    pondIce.transform.SetParent(props, false);
+    pondIce.transform.position = OnGround(pond.x, pond.z) + UnityEngine.Vector3.up * 0.03f;
+    pondIce.AddComponent<UnityEngine.MeshFilter>();
+    pondIce.AddComponent<UnityEngine.MeshRenderer>().sharedMaterial = FrozenWaterMat();
+    var pondFrozen = pondIce.AddComponent<FrozenPond>();
+    pondFrozen.Radius = pondRadius + 1.5f;
+    pondFrozen.Holes = new System.Collections.Generic.List<UnityEngine.Vector3> { new UnityEngine.Vector3(6.3f, 0.75f, -6.3f) };
+    pondFrozen.enabled = false; pondFrozen.enabled = true;
+}
 
 // two frozen raiders' camps in the clearing (the floor's Frost Raiders and Thanes): a lean-to, a fire, pelts, a crate, a
 // flag; only looks (no colliders), so monsters can stand in them. And ice chunks pushed up through the snow.
@@ -375,6 +404,7 @@ while (spots.Count < 24 && tries++ < 3000)
     // monsters may stand on the pond (the ducks of floor 15 like it), not in the plaza or on the path
     var onPond = new UnityEngine.Vector2(x - pond.x, z - pond.z).magnitude < pondRadius - 2f;
     if (!onPond && !Clear(x, z, 3f)) continue;
+    if (mounds.Any(m => new UnityEngine.Vector2(x - m.x, z - m.y).magnitude < m.z + 1.5f)) continue; // not inside a snow hill
     if (spots.Any(s => (new UnityEngine.Vector3(x, 0, z) - s).magnitude < 7f)) continue;
     spots.Add(new UnityEngine.Vector3(x, 0, z));
 }

@@ -996,6 +996,30 @@ townStorm.Rods = new[] { voltRod.transform };
 townStorm.MinGap = 14f; townStorm.MaxGap = 32f; townStorm.RodShare = 0.15f;
 
 var scenePath = folder + "/Tower_Galewharf.unity";
+// chimney smoke (ChimneySmoke: the islands' own smoke, with its setting; VillageLife only finds chimneys when play starts)
+var smokes = 0;
+void Smoke(UnityEngine.Vector3 at, float strength)
+{
+    var s = new UnityEngine.GameObject("Chimney Smoke");
+    s.transform.SetParent(root.transform, false);
+    s.transform.position = at;
+    s.AddComponent<ChimneySmoke>().Strength = strength;
+    smokes++;
+}
+// the Fantasy Kingdom presets are one mesh each: their chimney tops, in the preset's own space, found by eye (the others
+// have no chimney); the blacksmith's forge smokes harder
+var chimneyTops = new System.Collections.Generic.Dictionary<string, (UnityEngine.Vector3 at, float strength)>
+{
+    ["SM_Bld_Preset_House_07_Optimized"] = (new UnityEngine.Vector3(-4.01f, 8.4f, -4.01f), 0.45f),
+    ["SM_Bld_Preset_House_03_Optimized"] = (new UnityEngine.Vector3(4.65f, 7.9f, -4.5f), 0.45f),
+    ["SM_Bld_Preset_House_09_A_Optimized"] = (new UnityEngine.Vector3(-1.31f, 8.4f, -5.21f), 0.45f),
+    ["SM_Bld_Preset_Blacksmith_01_Optimized"] = (new UnityEngine.Vector3(-2.59f, 8.47f, -2.25f), 0.8f),
+};
+foreach (var go in scene.GetRootGameObjects())
+    foreach (var t in go.GetComponentsInChildren<UnityEngine.Transform>(true))
+        if (chimneyTops.TryGetValue(t.name, out var top) && UnityEditor.PrefabUtility.IsOutermostPrefabInstanceRoot(t.gameObject)) Smoke(t.TransformPoint(top.at), top.strength);
+log.AppendLine("chimney smokes " + smokes);
+
 // our grass (GrassField with Assets/World/Grass/Tower Grass Profile.asset, made by tools/tower/tower-grass-profile.cs): the
 // islands' blades, tufts and flowers grown round the camera on the grassy layers; its own setting, off in potato mode
 {
