@@ -16,7 +16,8 @@ PREFIXES = ("UI_QUEST_", "UI_CHAIN_", "UI_ACHIEVEMENT_", "UI_TITLE_", "UI_MEDAL_
 SKIP = re.compile(r"^UI_(CHAIN|STORY)_.*_(ANSWER|WRONG|RIDDLE)(_\d+)?$|^UI_STORY_(TAB|HINT|INTRO|ALL|BEGIN|ONE_AT_A_TIME|LET_CHAT_VOTE|VOTING|ABANDON)$|^UI_QUEST_(TAVERN|WINDOW|TAB|LOADING|FAILED)")
 
 text = open(SOURCE, encoding="utf-8-sig").read()
-pattern = re.compile(r'^\s*public static string (UI_[A-Z0-9_]+)\s*=\s*("(?:[^"\\]|\\.)*")\s*;\s*$', re.M)
+# a line may end with a comment ("Vitality"; // the skill stored as Health): without that the page said Health again
+pattern = re.compile(r'^\s*public static string (UI_[A-Z0-9_]+)\s*=\s*("(?:[^"\\]|\\.)*")\s*;[ \t]*(?://.*)?$', re.M)
 entries = [(k, v) for k, v in pattern.findall(text) if k.startswith(PREFIXES) and not SKIP.search(k)]
 
 lines = [

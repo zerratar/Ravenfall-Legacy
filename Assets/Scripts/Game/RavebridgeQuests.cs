@@ -692,6 +692,8 @@ public static class RavebridgeQuests
                 foreach (var e in result.Exp) player.Stats.GetSkill((Skill)e.Key)?.AddExp(e.Value, out _);
             // a story quest now and then comes with a pet egg (the island's training dummies); the inventory feed brings it
             if (!string.IsNullOrEmpty(result.Egg)) game.RavenBot?.Announce(Localization.MSG_PET_EGG_FOUND, player.PlayerName, result.Egg);
+            // skills at the top level gain nothing: the server gave experience books for their share (the inventory feed brings them)
+            if (!string.IsNullOrEmpty(result.Books)) game.RavenBot?.SendReply(player, Localization.MSG_QUEST_BOOK_RAVEBRIDGE, result.Books);
         }
         catch (Exception exc)
         {

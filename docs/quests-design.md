@@ -354,3 +354,67 @@ taken and given up in chat):
 - The server's website-side reads: `QuestManager.Peek`, `AchievementManager.Peek`, `StreamerQuestManager.ForCharacter`
   and `HistoryOf`, `HeroModeManager.BestOf`, `VillageStoryManager.LogOf`; the page's `QuestPageService` puts them
   together. Opening the page makes a character's offers for the day, as `!quest` does.
+
+## More quests and experience books (2026-11-20, v0.9.7)
+
+The user: "We gotta add in more quest chains and normal quests for the players. Everyone finished all their quests
+already", and a book in place of the experience when a quest pays a skill that is maxed. Built on the server and in
+the game on 2026-11-20; the game side is not compiled or played yet.
+
+### Twelve more chains
+
+In `QuestChains` as the others are, with their texts in `Localization.cs` (`UI_CHAIN_<KEY>_n`, `_END`, `_WRONG`,
+`UI_TITLE_<KEY>`). Each gives its title and a Tome of Forgetting; none has a decor piece or a picture yet.
+
+| Key | Name | About | Opens |
+|---|---|---|---|
+| whiskers | Captain Whiskers | combat, raids, sailing | after cat |
+| bigfish | The one that came back (grand) | fishing up to swordfish and octopus | after fish |
+| knock | The thing that knocks (grand) | mining up to rune and dragon ore, dungeons | after founder |
+| oak | The oak that said ow (grand) | woodcutting up to dragonwood | open |
+| critic | The critic | cooking up to apple pie | open |
+| hiccup | The nine day hiccup | alchemy and its herbs | open |
+| tallknight | The suspiciously tall knight | crafting, bars | open |
+| kennel | The kennel master | battle pets and Taming, ends with a Wolf Pup Egg | open |
+| postman | The very late mail | every island by sea | after shipwright |
+| taster | The best drink in the tower (grand) | the three tower towns' innkeepers | open (needs a stream that reached Galewharf) |
+| ballad | The ballad of you (grand) | kills, raids and dungeons in big amounts | open |
+| magpie | The magpie's ransom | the raw gems mining drops | open |
+
+- **Sequels** (`Chain.Requires`): locked (state 6) until their first chain is finished, so everyone who finished the
+  old chains has them open at once. `!quest begin` says which chain comes first.
+- **Grand chains** (`Chain.Grand`) end in steps for high levels or big amounts and pay twice a chain's coins and
+  experience (a whole level of the reward skill).
+- **Two new kinds of step**: tame creatures (`tame`, reported by `BattlePetManager.Tame`), and experience as a share
+  of the skill's next level (`Step.Share`, worked out when the step begins, so it fits every level; it asks for kills
+  in its place when the skill is maxed).
+- **`!quest chains`** names the chains that can be begun, eight to a message (`!quest chains 2` for more), and counts
+  the rest (finished, the tower towns' own, locked): all 27 in one reply were three chat messages.
+
+### More dailies and weeklies
+
+From objectives counted already: experience in one of the five lowest skills (`exp_weak`, `weekly_exp_weak`), Taming
+experience for those who have begun taming (`exp_taming`), tower kills and tower bosses for characters who have
+climbed (`tower_kill`, `tower_clear`, `weekly_tower_kill`, `weekly_tower_clear`: the climber achievement), and weekly
+crafting, cooking and brewing (`weekly_craft`, `weekly_cook`, `weekly_brew`). Experience quests no longer pick a skill
+at 999: it gains nothing, so the quest could not be finished.
+
+### Experience books
+
+A quest whose reward skill is at level 999 when it pays gives books in place of the experience (dailies, weeklies,
+seasonal quests, chains and the Ravebridge quests).
+
+- **Per category**, and the reader picks the skill: Combat (Attack, Defense, Strength, Vitality, Ranged, Magic,
+  Healing), Gathering (Woodcutting, Mining, Fishing, Farming, Gathering), Artisan (Crafting, Cooking, Alchemy),
+  Adventure (Slayer, Sailing, Taming).
+- **A share of a level, not an amount**: a Small book is 15% of the next level of the skill it is read for (a daily's
+  reward), a Large one 50% (a chain's). A weekly is six small ones, a grand chain two large ones, a seasonal quest
+  two small ones. So a book earned at 999 does not send a low skill up dozens of levels.
+- **Items**: "Small Gathering Book", "Large Combat Book" and so on (eight), made at startup, soulbound by their item
+  (no trading, gifting, marketplace or clan bank), worth 0 at the vendor, stackable.
+- **Reading**: `!use gathering book fishing`, with `small` or `large` before it to pick a size (small ones go first)
+  and a number or `all` after it for more than one. The category may be left out (`!use book fishing`). The replies
+  say when the skill is missing, is not in the book's category, or is at the top level too. The server takes the
+  books (`PlayerManager.UseItem`) and the game adds the experience, as it does for a quest's reward.
+- **The reward reply** names the book and says how to read it; a character with every skill of the category at 999
+  still gets the book.

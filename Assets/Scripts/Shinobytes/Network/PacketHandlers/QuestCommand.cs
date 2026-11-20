@@ -112,7 +112,7 @@ public static class QuestChat
                 case "chains":
                 case "chain":
                 case "stories":
-                    await ChainsAsync(game, player, gm, client);
+                    await ChainsAsync(game, player, argument, gm, client);
                     return;
 
                 case "begin":
@@ -630,21 +630,50 @@ public static class QuestChat
 
     // ---- Chains ----------------------------------------------------------------------------------------------
 
-    private static async System.Threading.Tasks.Task ChainsAsync(GameManager game, PlayerController player, GameMessage gm, GameClient client)
+    /// <summary>How many chains one !quest chains message names: with more, the reply no longer fits a chat message.</summary>
+    private const int ChainsPerPage = 8;
+
+    /// <summary>
+    /// !quest chains: the chain under way and the ones that can be begun now, eight to a message (!quest chains 2 has
+    /// the next eight). The rest are counted, not listed: the finished ones, the tower towns' own (their people give
+    /// them), the sequels still locked (state 6) and a seasonal one out of season. Every chain in one reply was three
+    /// chat messages long once there were 27 of them (2026-11-20).
+    /// </summary>
+    private static async System.Threading.Tasks.Task ChainsAsync(GameManager game, PlayerController player, string argument, GameMessage gm, GameClient client)
     {
         var list = await game.RavenNest.Quests.GetAsync(player.Id);
         if (list?.Chains == null) { client.SendReply(gm, Localization.MSG_QUEST_FAILED); return; }
 
         var entries = new List<string>();
+        int done = 0, town = 0, locked = 0;
         foreach (var c in list.Chains)
         {
-            var state = c.State == 2 ? Localization.UI_QUEST_CHAIN_DONE
-                : c.State == 1 ? string.Format(CultureInfo.InvariantCulture, Localization.UI_QUEST_CHAIN_ACTIVE, c.Step + 1, c.Steps)
-                : c.State == 5 ? string.Format(CultureInfo.InvariantCulture, Localization.UI_QUEST_CHAIN_NOTNOW, Localization.DecorEvent(c.Event))
-                : string.Format(CultureInfo.InvariantCulture, Localization.UI_QUEST_CHAIN_OPEN, c.Steps);
-            entries.Add(string.Format(CultureInfo.InvariantCulture, Localization.UI_QUEST_CHAIN_ENTRY, c.Key, ChainName(c.Key), state));
+            if (c.State == 2) { done++; continue; }
+            if (c.State == 1)
+            {
+                var step = string.Format(CultureInfo.InvariantCulture, Localization.UI_QUEST_CHAIN_ACTIVE, c.Step + 1, c.Steps);
+                entries.Insert(0, string.Format(CultureInfo.InvariantCulture, Localization.UI_QUEST_CHAIN_ENTRY, c.Key, ChainName(c.Key), step));
+                continue;
+            }
+            if (c.State == 6) { locked++; continue; }
+            if (c.State == 5) continue;
+            if (!string.IsNullOrEmpty(c.Town)) { town++; continue; }
+            entries.Add(string.Format(CultureInfo.InvariantCulture, Localization.UI_QUEST_CHAIN_ENTRY_SHORT, c.Key, ChainName(c.Key)));
         }
-        client.SendReply(gm, Localization.MSG_QUEST_CHAINS, string.Join(", ", entries));
+
+        var pages = Math.Max(1, (entries.Count + ChainsPerPage - 1) / ChainsPerPage);
+        var page = int.TryParse(argument, out var number) ? Math.Min(Math.Max(number, 1), pages) : 1;
+        var first = (page - 1) * ChainsPerPage;
+        var shown = entries.Count == 0 ? Localization.UI_QUEST_CHAINS_NONE
+            : string.Join(", ", entries.GetRange(first, Math.Min(ChainsPerPage, entries.Count - first)));
+
+        var also = new List<string>();
+        if (page < pages) also.Add(string.Format(CultureInfo.InvariantCulture, Localization.UI_QUEST_CHAINS_NEXT, page + 1));
+        if (done > 0) also.Add(string.Format(CultureInfo.InvariantCulture, Localization.UI_QUEST_CHAINS_DONE, done));
+        if (town > 0) also.Add(string.Format(CultureInfo.InvariantCulture, Localization.UI_QUEST_CHAINS_TOWN, town));
+        if (locked > 0) also.Add(string.Format(CultureInfo.InvariantCulture, Localization.UI_QUEST_CHAINS_LOCKED, locked));
+        var more = also.Count > 0 ? string.Format(CultureInfo.InvariantCulture, Localization.UI_QUEST_CHAINS_ALSO, string.Join(", ", also)) : string.Empty;
+        client.SendReply(gm, Localization.MSG_QUEST_CHAINS_LIST, shown, more);
     }
 
     private static async System.Threading.Tasks.Task BeginChainAsync(GameManager game, PlayerController player, string argument, GameMessage gm, GameClient client)
@@ -680,6 +709,8 @@ public static class QuestChat
             case "busy": client.SendReply(gm, Localization.MSG_QUEST_CHAIN_BUSY, ChainName(result.Quest?.Key)); break;
             case "taken": client.SendReply(gm, Localization.MSG_QUEST_CHAIN_STEP, ChainName(key), result.Quest.Step + 1, result.Quest.Steps, Story(key, result.Quest.Step), Task(result.Quest)); break;
             case "done": client.SendReply(gm, Localization.MSG_QUEST_CHAIN_FINISHED, ChainName(key)); break;
+            // a sequel: the server names the chain that comes first
+            case "locked": client.SendReply(gm, Localization.MSG_QUEST_CHAIN_LOCKED, ChainName(key), ChainName(result.Quest?.Key)); break;
             case "notnow":
                 {
                     var ev = list?.Chains != null ? Array.Find(list.Chains, c => c.Key == key)?.Event : null;
@@ -974,6 +1005,7 @@ public static class QuestChat
                     ? string.Format(Localization.UI_QUEST_TOWER_KILL, amount)
                     : string.Format(Localization.UI_QUEST_TOWER_KILL_KIND, amount, TowerMonsterName(q.Target, q.Amount));
             case "tower_clear": return string.Format(q.Amount == 1 ? Localization.UI_QUEST_TOWER_CLEAR_ONE : Localization.UI_QUEST_TOWER_CLEAR, amount);
+            case "tame": return string.Format(q.Amount == 1 ? Localization.UI_QUEST_TAME_ONE : Localization.UI_QUEST_TAME, amount);
             case "talk":
                 {
                     var giver = TownPerson(q.Target);
@@ -991,10 +1023,33 @@ public static class QuestChat
         return q.Amount > 1 && q.Progress > 0 ? text + " (" + Number(q.Progress) + "/" + Number(q.Amount) + ")" : text;
     }
 
-    /// <summary>"1,200 coins and 3,400 Woodcutting exp".</summary>
+    /// <summary>
+    /// "1,200 coins and 3,400 Woodcutting exp". Without experience (the reward skill is at the top level and the
+    /// server gives experience books for it, named with the items): "1,200 coins and a Small Gathering Book".
+    /// </summary>
     public static string Reward(RavenNest.Models.QuestInfo q) =>
-        string.Format(CultureInfo.InvariantCulture, Localization.UI_QUEST_REWARD, Number(q.RewardCoins), Number((long)q.RewardExp), Localization.SkillName((Skill)q.RewardSkill))
+        (q.RewardExp > 0
+            ? string.Format(CultureInfo.InvariantCulture, Localization.UI_QUEST_REWARD, Number(q.RewardCoins), Number((long)q.RewardExp), Localization.SkillName((Skill)q.RewardSkill))
+            : string.Format(CultureInfo.InvariantCulture, Localization.UI_QUEST_REWARD_COINS, Number(q.RewardCoins)))
         + (string.IsNullOrEmpty(q.RewardItem) ? "" : string.Format(CultureInfo.InvariantCulture, Localization.UI_QUEST_REWARD_ITEM, q.RewardItem));
+
+    /// <summary>
+    /// The category of the experience books a quest gives in place of experience, or null when it gives experience:
+    /// the server sends no experience then, and names the books with the reward's items.
+    /// </summary>
+    public static ExperienceBooks.Category BooksOf(RavenNest.Models.QuestInfo q) =>
+        q != null && q.RewardExp <= 0 && !string.IsNullOrEmpty(q.RewardItem) && q.RewardItem.IndexOf(ExperienceBooks.ItemWord, StringComparison.OrdinalIgnoreCase) >= 0
+            ? ExperienceBooks.CategoryOf((Skill)q.RewardSkill)
+            : null;
+
+    /// <summary>A finished quest's reward, with how to read the book when the experience came as one.</summary>
+    public static string RewardGiven(RavenNest.Models.QuestInfo q)
+    {
+        var books = BooksOf(q);
+        if (books == null) return Reward(q);
+        var skill = (Skill)q.RewardSkill;
+        return Reward(q) + string.Format(CultureInfo.InvariantCulture, Localization.UI_QUEST_BOOK_HINT, Localization.SkillName(skill), books.Key, ExperienceBooks.SkillNames(books, skill));
+    }
 
     public static string ChainName(string key) => Lookup("UI_CHAIN_" + key, key);
 

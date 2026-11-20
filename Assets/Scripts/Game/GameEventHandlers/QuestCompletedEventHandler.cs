@@ -29,6 +29,8 @@ public class QuestCompletedEventHandler : GameEventHandler<QuestCompleted>
         }
 
         // the reward coins: the server's coin update (ResourceUpdate) brings the new amount; changing it here too raced that update
+        // the experience: none when the reward skill is at the top level; the server gave experience books for it
+        // then (the inventory feed brings them), and the reply says how to read one
         if (quest.RewardExp > 0) player.GetSkill((Skill)quest.RewardSkill)?.AddExp(quest.RewardExp);
 
         switch (quest.Kind)
@@ -36,6 +38,13 @@ public class QuestCompletedEventHandler : GameEventHandler<QuestCompleted>
             case 3:
                 bot.SendReply(player, Localization.MSG_QUEST_CHAIN_COMPLETE, QuestChat.ChainName(quest.Key), QuestChat.Ending(quest.Key),
                     QuestChat.Reward(quest), QuestChat.TitleText(quest.RewardTitle));
+                // a chain's ending fills its message: the book's how-to goes in one of its own
+                var books = QuestChat.BooksOf(quest);
+                if (books != null)
+                {
+                    var maxed = (Skill)quest.RewardSkill;
+                    bot.SendReply(player, Localization.MSG_QUEST_BOOK_HINT, Localization.SkillName(maxed), books.Key, ExperienceBooks.SkillNames(books, maxed));
+                }
                 QuestChat.Say(gameManager, player, QuestChat.Ending(quest.Key), quest.Key);
                 if (!string.IsNullOrEmpty(data.DecorUnlocked))
                 {
@@ -46,13 +55,13 @@ public class QuestCompletedEventHandler : GameEventHandler<QuestCompleted>
                 }
                 break;
             case 2:
-                bot.SendReply(player, Localization.MSG_QUEST_SEASONAL_COMPLETED, QuestChat.SeasonOf(quest), QuestChat.Text(quest), QuestChat.Reward(quest));
+                bot.SendReply(player, Localization.MSG_QUEST_SEASONAL_COMPLETED, QuestChat.SeasonOf(quest), QuestChat.Text(quest), QuestChat.RewardGiven(quest));
                 break;
             case 1:
-                bot.SendReply(player, Localization.MSG_QUEST_WEEKLY_COMPLETED, QuestChat.Text(quest), QuestChat.Reward(quest));
+                bot.SendReply(player, Localization.MSG_QUEST_WEEKLY_COMPLETED, QuestChat.Text(quest), QuestChat.RewardGiven(quest));
                 break;
             default:
-                bot.SendReply(player, Localization.MSG_QUEST_COMPLETED, QuestChat.Text(quest), QuestChat.Reward(quest), data.Streak);
+                bot.SendReply(player, Localization.MSG_QUEST_COMPLETED, QuestChat.Text(quest), QuestChat.RewardGiven(quest), data.Streak);
                 break;
         }
     }

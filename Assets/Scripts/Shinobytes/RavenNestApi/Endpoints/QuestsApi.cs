@@ -14,6 +14,12 @@ namespace RavenNest.SDK.Endpoints
         /// <summary>A pet egg that came with it (its name), or null.</summary>
         public string Egg { get; set; }
 
+        /// <summary>
+        /// Experience books given in place of the experience of skills at the top level, as said after "a"
+        /// ("Small Combat Book", "stack of 3 Small Combat Books"), or null.
+        /// </summary>
+        public string Books { get; set; }
+
         public bool Ok { get; set; }
         /// <summary>notinsession, unknown, done (paid already), cooldown (a bounty too soon).</summary>
         public string Error { get; set; }
