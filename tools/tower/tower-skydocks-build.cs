@@ -494,6 +494,44 @@ var dockPts = new System.Collections.Generic.List<UnityEngine.Vector2>();
 for (var i = 0; i <= 6; i++) { var t = i / 6f; var p = UnityEngine.Vector3.Lerp(plaza + new UnityEngine.Vector3(0, 0, plazaRadius - 1f), dockFoot, t); dockPts.Add(new UnityEngine.Vector2(p.x, p.z)); }
 sceneRoads.Roads.Add(new SceneRoads.Road { Type = 1, Width = 2.8f, Points = dockPts, EndRound = 0.4f });
 
+// more harbour (concept docs/mockups/tower/concept-skydocks.jpg): the harbourmaster's house by the pier, a canopy over the
+// pier's root, and a second dock on the east rim with another ship along it. No R() here: everything after keeps its place.
+{
+    var kingdom = "Assets/PolygonFantasyKingdom/Prefabs/Buildings/Preset_Houses/SM_Bld_Preset_";
+    var hx = dockFoot.x - 11f; var hz = dockFoot.z - 7f;
+    if (Clear(hx, hz, 3f))
+    {
+        var house = Place(kingdom + "House_03_Optimized.prefab", OnGround(hx, hz), 0.75f, UnityEngine.Mathf.Atan2(dockFoot.x - hx, dockFoot.z - hz) * UnityEngine.Mathf.Rad2Deg + 90f, docks);
+        if (house) house.name = "Harbourmaster";
+    }
+    else log.AppendLine("no room for the harbourmaster's house");
+    Place(pr + "Buildings/SM_Bld_Canopy_01.prefab", origin + dockFoot + pierDir * 5f + UnityEngine.Vector3.up * pierY, 1.1f, 0f, docks);
+    // the east dock: out from the rim, a ship moored along it, lanterns at its root
+    var ea = 18f * UnityEngine.Mathf.Deg2Rad;
+    var ed = new UnityEngine.Vector3(UnityEngine.Mathf.Cos(ea), 0f, UnityEngine.Mathf.Sin(ea));
+    var eFoot = ed * (Edge(ed.x * 50f, ed.z * 50f) - 1.5f);
+    var eYaw = UnityEngine.Mathf.Atan2(ed.x, ed.z) * UnityEngine.Mathf.Rad2Deg;
+    var eY = GroundAt(eFoot.x, eFoot.z) + 0.15f;
+    for (var k = 0; k < 3; k++)
+    {
+        var at = origin + eFoot + ed * (k * 7.4f + 3.2f) + UnityEngine.Vector3.up * eY;
+        Place(pr + "Buildings/SM_Bld_Dock_Long_0" + (1 + k) + ".prefab", at, 1f, eYaw, docks);
+        // poles down into the clouds under each piece's far end
+        foreach (var s in new[] { -1.3f, 1.3f })
+            Bare(Place(pr + "Buildings/SM_Bld_Dock_Pole_01.prefab", at + ed * 3.4f + new UnityEngine.Vector3(-ed.z, 0f, ed.x) * s + UnityEngine.Vector3.down * 3f, 2.2f, eYaw, docks));
+    }
+    var eSide = new UnityEngine.Vector3(-ed.z, 0f, ed.x);
+    var ship2 = Place(pr + "Vehicles/SM_Veh_Preset_M_01.prefab", origin + eFoot + ed * 16f + eSide * 7f + UnityEngine.Vector3.up * (eY - 7f), 0.55f, eYaw + 4f, docks);
+    if (ship2) { ship2.name = "Moored Ship East"; Bare(ship2); }
+    foreach (var s in new[] { -1.6f, 1.6f })
+    {
+        var lp = eFoot + eSide * s - ed * 1.5f;
+        Place(pr + "Props/SM_Prop_Lamp_Post_01.prefab", OnGround(lp.x, lp.z), 1f, eYaw, docks);
+        var l = new UnityEngine.GameObject("Dock Lamp"); l.transform.SetParent(root.transform, false); l.transform.localPosition = new UnityEngine.Vector3(lp.x, GroundAt(lp.x, lp.z) + 2.6f, lp.z);
+        var li = l.AddComponent<UnityEngine.Light>(); li.type = UnityEngine.LightType.Point; li.color = new UnityEngine.Color(1f, 0.7f, 0.4f); li.range = 8f; li.intensity = 1.4f; li.shadows = UnityEngine.LightShadows.None;
+    }
+}
+
 // ---- arrival, boss and monster spots ----
 var spawn = new UnityEngine.GameObject("Spawn Point"); spawn.transform.SetParent(root.transform, false);
 spawn.transform.position = OnGround(spawnLocal.x, spawnLocal.z);

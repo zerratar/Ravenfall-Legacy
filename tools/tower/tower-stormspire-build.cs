@@ -447,6 +447,65 @@ var roadPts = new System.Collections.Generic.List<UnityEngine.Vector2>();
 for (var i = 0; i <= 8; i++) { var t = i / 8f; var p = UnityEngine.Vector3.Lerp(spawnLocal, plaza + new UnityEngine.Vector3(0, 0, -plazaRadius + 1f), t); roadPts.Add(new UnityEngine.Vector2(p.x, p.z)); }
 sceneRoads.Roads.Add(new SceneRoads.Road { Type = 1, Width = 3.2f, Points = roadPts, EndRound = 0.4f });
 
+// the storm's sigil on the dais (concept docs/mockups/tower/concept-stormspire.jpg): two glowing rings and the spokes and
+// marks between them, bright enough to bloom; storm guardians at the dais's four corners, facing the fight
+{
+    var sigilMat = new UnityEngine.Material(UnityEngine.Shader.Find("Universal Render Pipeline/Unlit")) { name = "Storm Sigil" };
+    sigilMat.SetColor("_BaseColor", new UnityEngine.Color(0.35f, 1.3f, 3.2f));
+    sigilMat.SetFloat("_Cull", 0f); // both sides: the spokes and marks wind the other way from the rings
+    UnityEditor.AssetDatabase.DeleteAsset(dataFolder + "/StormSigil.mat");
+    UnityEditor.AssetDatabase.CreateAsset(sigilMat, dataFolder + "/StormSigil.mat");
+    var sv = new System.Collections.Generic.List<UnityEngine.Vector3>();
+    var st = new System.Collections.Generic.List<int>();
+    float Lift(float x, float z) => GroundAt(plaza.x + x, plaza.z + z) + 0.04f;
+    void Quad(UnityEngine.Vector2 a, UnityEngine.Vector2 b, UnityEngine.Vector2 c, UnityEngine.Vector2 d)
+    {
+        var i = sv.Count;
+        foreach (var p in new[] { a, b, c, d }) sv.Add(new UnityEngine.Vector3(plaza.x + p.x, Lift(p.x, p.y), plaza.z + p.y));
+        st.AddRange(new[] { i, i + 1, i + 2, i, i + 2, i + 3 });
+    }
+    UnityEngine.Vector2 P(float deg, float r) => new UnityEngine.Vector2(UnityEngine.Mathf.Cos(deg * UnityEngine.Mathf.Deg2Rad), UnityEngine.Mathf.Sin(deg * UnityEngine.Mathf.Deg2Rad)) * r;
+    foreach (var (r, w) in new[] { (11.6f, 0.3f), (8.2f, 0.22f), (4.0f, 0.18f) })
+        for (var k = 0; k < 96; k++)
+        {
+            float a0 = k * 3.75f, a1 = (k + 1) * 3.75f;
+            Quad(P(a0, r - w), P(a0, r + w), P(a1, r + w), P(a1, r - w));
+        }
+    for (var k = 0; k < 8; k++)
+    {
+        var a = k * 45f + 22.5f;
+        // a spoke from the inner ring to the outer, and a bolt mark between the outer two rings
+        var d = P(a, 1f); var side = new UnityEngine.Vector2(-d.y, d.x) * 0.34f;
+        Quad(d * 4.2f - side, d * 4.2f + side, d * 8.0f + side, d * 8.0f - side);
+        var m = d * 9.6f; var s2 = new UnityEngine.Vector2(-d.y, d.x) * 1.7f;
+        Quad(m - d * 0.9f - s2 * 0.5f, m - d * 0.9f + s2 * 0.1f, m + d * 0.1f + s2 * 0.4f, m + d * 0.1f - s2 * 0.2f);
+        Quad(m + d * 0.1f - s2 * 0.4f, m + d * 0.1f + s2 * 0.2f, m + d * 1.0f + s2 * 0.5f, m + d * 1.0f - s2 * 0.1f);
+    }
+    var mesh = new UnityEngine.Mesh { name = "Storm Sigil" };
+    mesh.SetVertices(sv);
+    mesh.SetTriangles(st, 0);
+    mesh.RecalculateNormals();
+    if (mesh.normals.Length > 0 && mesh.normals[0].y < 0f) { st.Reverse(); mesh.SetTriangles(st, 0); mesh.RecalculateNormals(); }
+    UnityEditor.AssetDatabase.DeleteAsset(dataFolder + "/StormSigil.asset");
+    UnityEditor.AssetDatabase.CreateAsset(mesh, dataFolder + "/StormSigil.asset");
+    var sigil = new UnityEngine.GameObject("Storm Sigil");
+    UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(sigil, scene);
+    sigil.transform.SetParent(root.transform, false);
+    sigil.AddComponent<UnityEngine.MeshFilter>().sharedMesh = mesh;
+    var sr = sigil.AddComponent<UnityEngine.MeshRenderer>(); sr.sharedMaterial = sigilMat; sr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+    // its light on the dais
+    var gl = new UnityEngine.GameObject("Sigil Light"); gl.transform.SetParent(root.transform, false); gl.transform.localPosition = new UnityEngine.Vector3(plaza.x, GroundAt(plaza.x, plaza.z) + 2.5f, plaza.z);
+    var glight = gl.AddComponent<UnityEngine.Light>(); glight.type = UnityEngine.LightType.Point; glight.color = new UnityEngine.Color(0.45f, 0.75f, 1f); glight.range = 18f; glight.intensity = 2.2f; glight.shadows = UnityEngine.LightShadows.None;
+    // the guardians, at the dais's corners (inside the plaza, where no monster spot goes), off the arrival path
+    foreach (var deg in new[] { 45f, 135f, 225f, 315f })
+    {
+        var at = P(deg, 13.6f);
+        var x = plaza.x + at.x; var z = plaza.z + at.y;
+        var face = UnityEngine.Mathf.Atan2(-at.x, -at.y) * UnityEngine.Mathf.Rad2Deg;
+        Place("Assets/PolygonDungeonRealms/Prefabs/Environments/SM_Env_Statue_0" + (deg < 180f ? 1 : 2) + ".prefab", OnGround(x, z), 1.5f, face, props);
+    }
+}
+
 // ---- arrival, boss and monster spots ----
 var spawn = new UnityEngine.GameObject("Spawn Point"); spawn.transform.SetParent(root.transform, false);
 spawn.transform.position = OnGround(spawnLocal.x, spawnLocal.z);
