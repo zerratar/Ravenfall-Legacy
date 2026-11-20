@@ -28,6 +28,28 @@ public abstract class TowerPlace : MonoBehaviour
     public float SunIntensity = 1.1f;
     public Vector3 SunAngles = new Vector3(50f, -30f, 0f);
 
+    [Header("Clouds")]
+    /// <summary>
+    ///     A sea of the world's own volumetric clouds under the place (one high in the sky), instead of none: the same
+    ///     clouds as over the islands, so the style does not change from place to place. Heights are from the centre.
+    /// </summary>
+    public bool CloudSea;
+    public float CloudSeaTop = -40f;
+    public float CloudSeaBottom = -100f;
+    [Range(0f, 1f)] public float CloudSeaCoverage = 0.62f;
+    /// <summary>How big a puff is, metres (the sky's are 340; a place seen close up wants smaller).</summary>
+    public float CloudSeaPuff = 70f;
+    /// <summary>0 for white cumulus, 1 for a storm's heavy grey.</summary>
+    [Range(0f, 1f)] public float CloudSeaDark;
+    /// <summary>How bright the cloud sea is against the sky's clouds (a place's light is often dimmer than the world's).</summary>
+    public float CloudSeaBrightness = 1.5f;
+
+    /// <summary>
+    ///     The low-poly cloud meshes round the place: the stand-in while the volumetric clouds are off (the setting or
+    ///     potato mode), hidden while they draw.
+    /// </summary>
+    public GameObject MeshClouds;
+
     public Vector3 Centre => transform.position;
 
     public Vector3 Spawn => SpawnPoint ? SpawnPoint.position : transform.position;

@@ -31,7 +31,9 @@ floor.SunColor = new UnityEngine.Color(0.78f, 0.83f, 1f);
 floor.SunIntensity = 0.75f;
 floor.SunAngles = new UnityEngine.Vector3(38f, -120f, 0f);
 // the haze floor (the cloud sea) far below the rim, so the cliffs have somewhere to fall
-floor.HazeDepth = 48f;
+floor.HazeDepth = 66f;
+// the world's volumetric clouds as the sea under the rock; the mesh puffs stand in while they are off
+floor.CloudSea = true; floor.CloudSeaTop = -10f; floor.CloudSeaBottom = -56f; floor.CloudSeaCoverage = 0.6f; floor.CloudSeaPuff = 55f; floor.CloudSeaDark = 0.55f;
 
 // ---- the layout (local to the root) ----
 var spawnLocal = new UnityEngine.Vector3(0f, 0f, -50f);
@@ -170,6 +172,8 @@ UnityEngine.GameObject Place(string path, UnityEngine.Vector3 world, float scale
 void Bare(UnityEngine.GameObject go) { if (go) foreach (var col in go.GetComponentsInChildren<UnityEngine.Collider>(true)) UnityEngine.Object.DestroyImmediate(col); }
 var props = new UnityEngine.GameObject("Props").transform; props.SetParent(root.transform, false);
 var sky = new UnityEngine.GameObject("Sky").transform; sky.SetParent(root.transform, false);
+var meshClouds = new UnityEngine.GameObject("Mesh Clouds").transform; meshClouds.SetParent(sky, false);
+floor.MeshClouds = meshClouds.gameObject;
 var ringT = new UnityEngine.GameObject("Storm Ring").transform; ringT.SetParent(root.transform, false);
 var docks = new UnityEngine.GameObject("Docks").transform; docks.SetParent(root.transform, false);
 var pr = "Assets/Synty/PolygonPirateRealm/Prefabs/";
@@ -204,7 +208,7 @@ var seaMat = Tinted("CloudSea", new UnityEngine.Color(0.86f, 0.88f, 0.93f));
 var stormMat = Tinted("StormCloud", new UnityEngine.Color(0.26f, 0.28f, 0.36f));
 void Cloud(UnityEngine.Vector3 world, float scale, UnityEngine.Material mat)
 {
-    var go = Place(adv + "SM_Env_Cloud_0" + (1 + rng.Next(6)) + ".prefab", world, scale, -1, sky);
+    var go = Place(adv + "SM_Env_Cloud_0" + (1 + rng.Next(6)) + ".prefab", world, scale, -1, meshClouds);
     if (!go) return;
     Bare(go);
     if (mat) foreach (var r in go.GetComponentsInChildren<UnityEngine.Renderer>()) { r.sharedMaterial = mat; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; }

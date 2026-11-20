@@ -1638,12 +1638,33 @@ public sealed class TowerManager : MonoBehaviour
         var over = floor;
         SetLook(over);
         UpdateHaze(over, camera);
+        SkyClouds.Place = null;
         if (!over) return;
 
         // GameManager sets these from potato mode every frame, so they are switched off every frame while the camera is
         // over the floor; when it leaves, the next frame puts them back as the settings say
         Ocean.Suppressed = true;
-        SkyClouds.Suppressed = true;
+        // the world's clouds stay only as a place's own cloud sea (and only if the setting and potato mode allow them);
+        // its low-poly clouds stand in while they are off
+        if (over.CloudSea)
+        {
+            var c = over.Centre.y;
+            SkyClouds.Place = new SkyClouds.Layer
+            {
+                Floor = c + over.CloudSeaBottom,
+                Ceiling = c + over.CloudSeaTop,
+                Coverage = over.CloudSeaCoverage,
+                PuffSize = over.CloudSeaPuff,
+                Dark = over.CloudSeaDark,
+                Brightness = over.CloudSeaBrightness,
+                // the far cloud melts into the place's fog, as its ground does
+                HazeStart = 100f,
+                HazeRate = Mathf.Max(0.002f, over.FogDensity * 0.45f),
+                HazeColor = over.FogColor
+            };
+        }
+        else SkyClouds.Suppressed = true;
+        if (over.MeshClouds) over.MeshClouds.SetActive(!(over.CloudSea && SkyClouds.Active));
         CloudShadows.Suppressed = true;
         Weather.Suppressed = true;
 

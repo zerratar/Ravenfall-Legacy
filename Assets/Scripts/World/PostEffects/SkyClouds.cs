@@ -95,6 +95,26 @@ public static class SkyClouds
     private static bool meshCloudsShown = true;
     private static bool meshCloudsFound;
 
+    /// <summary>
+    ///     A cloud layer of a place's own, in place of the sky's (a tower place high in the sky has its cloud sea under
+    ///     it): where it lies, how much of it is cloud, how big a puff is, how dark it is, and the haze it melts into.
+    ///     Set every frame by whoever owns the place (TowerManager); null for the sky's own.
+    /// </summary>
+    public struct Layer
+    {
+        public float Floor, Ceiling, Coverage, PuffSize;
+        /// <summary>0 for white cumulus, 1 for a storm's heavy grey.</summary>
+        public float Dark;
+        /// <summary>How far out the haze starts (m) and how quickly it thickens (per m).</summary>
+        public float HazeStart, HazeRate;
+        public Color HazeColor;
+        /// <summary>How bright the cloud is against the sky's (1 the same): a place's light is often dimmer than the world's.</summary>
+        public float Brightness;
+    }
+
+    /// <summary>The place's own cloud layer this frame, or null for the sky's (<see cref="Layer"/>).</summary>
+    public static Layer? Place;
+
     /// <summary>The setting: volumetric clouds on or off.</summary>
     public static bool Enabled { get; set; } = true;
 
@@ -178,6 +198,7 @@ public static class SkyClouds
             ShowMeshClouds(true);
             meshClouds.Clear();
             Overlay.Clear();
+            Place = null;
             meshCloudsFound = false;
         };
     }
@@ -232,20 +253,31 @@ public static class SkyClouds
 
     private static void Set(Material m)
     {
-        m.SetVector(SlabId, new Vector4(Floor, Ceiling, Coverage, PuffSize));
-        m.SetFloat(NightId, Night());
+        var place = Place;
+        if (place.HasValue)
+        {
+            var l = place.Value;
+            m.SetVector(SlabId, new Vector4(l.Floor, l.Ceiling, l.Coverage, l.PuffSize));
+        }
+        else m.SetVector(SlabId, new Vector4(Floor, Ceiling, Coverage, PuffSize));
+        // a place keeps its own light day and night: no stars in its clouds
+        m.SetFloat(NightId, place.HasValue ? 0f : Night());
         // a storm cloud is thicker and darker all through (Weather.Dark)
-        var dark = Weather.Dark;
+        var dark = place.HasValue ? place.Value.Dark : Weather.Dark;
         m.SetVector(ParamsId, new Vector4(0.85f * (1f + 0.5f * dark), 24f, 1f, 0.6f));
         m.SetVector(FlashId, Flash);
-        m.SetFloat(GroundFlashId, Weather.Flash);
+        m.SetFloat(GroundFlashId, place.HasValue ? 0f : Weather.Flash);
         var upwind = -Wind.normalized;
         m.SetVector(FrontId, new Vector4(FrontAt.x, FrontAt.y, upwind.x, upwind.y));
-        m.SetVector(FrontLookId, new Vector4(FrontCoverage, FrontWidth, FrontDarker, 0f));
+        // a place's layer has no weather front coming in: the same cover on both sides
+        m.SetVector(FrontLookId, place.HasValue ? new Vector4(place.Value.Coverage, FrontWidth, 1f, 0f) : new Vector4(FrontCoverage, FrontWidth, FrontDarker, 0f));
         var t = Time.time;
         // a little haze, so the far cloud melts into the horizon
-        m.SetVector(WindId, new Vector4(Wind.x * t, Wind.y * t, 0.00022f, 600f));
-        m.SetVector(LookId, new Vector4(1f, 1f, 0.45f, 0f));
+        m.SetVector(WindId, place.HasValue
+            ? new Vector4(Wind.x * t, Wind.y * t, place.Value.HazeRate, place.Value.HazeStart)
+            : new Vector4(Wind.x * t, Wind.y * t, 0.00022f, 600f));
+        var bright = place.HasValue && place.Value.Brightness > 0f ? place.Value.Brightness : 1f;
+        m.SetVector(LookId, new Vector4(bright, bright, 0.45f, 0f));
 
         var sun = RenderSettings.sun;
         if (sun && sun.isActiveAndEnabled)
@@ -268,7 +300,7 @@ public static class SkyClouds
         var equator = tri ? RenderSettings.ambientEquatorColor.linear : RenderSettings.ambientLight.linear;
         m.SetVector(SkyColorId, Color.Lerp(sky, equator, 0.3f) * (0.85f * (1f - 0.55f * dark)));
         m.SetVector(ShadeColorId, Color.Lerp(sky, equator, 0.5f) * (0.4f * (1f - 0.7f * dark)));
-        m.SetVector(HazeColorId, Color.Lerp(sky, equator, 0.7f) * (0.95f * (1f - 0.3f * dark)));
+        m.SetVector(HazeColorId, place.HasValue ? (Vector4)place.Value.HazeColor.linear : (Vector4)(Color.Lerp(sky, equator, 0.7f) * (0.95f * (1f - 0.3f * dark))));
     }
 
     private sealed class Pass : ScriptableRenderPass

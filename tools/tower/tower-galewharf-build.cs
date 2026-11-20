@@ -35,7 +35,10 @@ town.SunColor = new UnityEngine.Color(0.96f, 0.94f, 1f);
 town.SunIntensity = 1.05f;
 town.SunAngles = new UnityEngine.Vector3(32f, -55f, 0f);
 // the cloud sea far below the rim
-town.HazeDepth = 92f;
+town.HazeDepth = 130f;
+// the world's volumetric clouds as the sea under the island (the rock's tip dips into them); the mesh puffs are the
+// stand-in while they are off
+town.CloudSea = true; town.CloudSeaTop = -48f; town.CloudSeaBottom = -118f; town.CloudSeaCoverage = 0.62f; town.CloudSeaPuff = 60f; town.CloudSeaDark = 0f; town.CloudSeaBrightness = 1.6f;
 
 // ---- the ground: the island's top, cut along the rim the Blender rock follows ----
 const float size = 240f, height = 30f, baseHeight = 6f, flatRadius = 44f;
@@ -505,7 +508,7 @@ for (var i = 0; i < 4; i++)
 var shipAt = pierFoot + pierDir * 22f + pierSide * 6.5f;
 var gullwing = Place(pr + "Vehicles/SM_Veh_Preset_M_01.prefab", 0f, 0f, 0.6f, pierYaw, buildings);
 if (gullwing) { gullwing.name = "Gullwing"; gullwing.transform.position = origin + new UnityEngine.Vector3(shipAt.x, pierY - 6.5f, shipAt.y); NoCollide(gullwing); }
-foreach (var (along, side, path, sc) in new[] { (-3f, 3f, "Props/SM_Prop_Crate_01", 1f), (-4.5f, -2.5f, "Props/SM_Prop_Barrel_01", 1f), (-6f, -4f, "Props/SM_Prop_Sails_Rolled_Pile_01", 1f), (-6.5f, 4.5f, "Props/SM_Prop_Anchor_01", 1.2f) })
+foreach (var (along, side, path, sc) in new[] { (-1.5f, 4.5f, "Props/SM_Prop_Crate_01", 1f), (-1f, -4.5f, "Props/SM_Prop_Barrel_01", 1f), (-2.5f, -6f, "Props/SM_Prop_Sails_Rolled_Pile_01", 1f), (-3f, 6.5f, "Props/SM_Prop_Anchor_01", 1.2f) })
 {
     var at = pierFoot + pierDir * along + pierSide * side;
     Place(pr + path + ".prefab", at.x, at.y, sc, -1, props);
@@ -541,7 +544,8 @@ if (cloudBase)
     if (seaMat.HasProperty("_Color")) seaMat.SetColor("_Color", c);
     UnityEditor.EditorUtility.SetDirty(seaMat);
 }
-var skyT = new UnityEngine.GameObject("Sky").transform; skyT.SetParent(root.transform, false);
+var skyT = new UnityEngine.GameObject("Mesh Clouds").transform; skyT.SetParent(root.transform, false);
+town.MeshClouds = skyT.gameObject;
 void Cloud(UnityEngine.Vector3 world, float scale)
 {
     var go = Place("Assets/PolygonAdventure/Prefabs/Environments/SM_Env_Cloud_0" + (1 + rng.Next(6)) + ".prefab", 0f, 0f, scale, -1, skyT);
@@ -766,7 +770,7 @@ void Around(UnityEngine.Transform place, float cx, float cz, float r, int n, flo
 }
 
 // the resting place (!tower rest): a fire pit south-west of the square, logs to sit and meditate on, pelts to sleep on
-var restC = new UnityEngine.Vector2(-15f, -21f);
+var restC = new UnityEngine.Vector2(-17f, -20.5f);
 Zone(restC.x, restC.y, 5f);
 var rest = new UnityEngine.GameObject("Resting Place").transform; rest.SetParent(root.transform, false);
 var restSpots = new UnityEngine.GameObject("Rest Spots").transform; restSpots.SetParent(rest, false);
@@ -813,7 +817,7 @@ Lane(1, 2.2f, V(18f, -5f), V(28f, 0.5f), V(33.5f, 0.5f));
 Lane(1, 2f, V(28f, 0.5f), V(38f, 6f), bridgeStart);
 Lane(1, 2f, V(15f, 3f), V(17f, 10.5f), V(23f, 17f), V(30f, 18.5f));
 // the cauldrons and the pen, off the south road
-Lane(1, 1.8f, V(0.4f, -31f), V(8.5f, -31.5f), V(18f, -29.5f), V(26.5f, -24.5f));
+Lane(1, 1.8f, V(0.4f, -31f), V(8.5f, -31.5f), V(18f, -29.5f), V(23.8f, -27f)); // to the pen's gate, not into the cows
 
 // market stalls with awnings round the plaza (off the lanes), lantern posts, banners: a busy harbour square
 var market = new UnityEngine.GameObject("Market").transform; market.SetParent(root.transform, false);
@@ -934,7 +938,7 @@ spawn.transform.position = OnGround(0f, -32f);
 town.SpawnPoint = spawn.transform;
 var strolls = new UnityEngine.GameObject("Strolls").transform; strolls.SetParent(root.transform, false);
 town.Strolls = strolls;
-var strollSpots = new[] { (5f, -6f), (-5f, 6f), (-6f, -5f), (6f, 5f), (-4f, 12f), (4f, 11f), (-9f, 6f), (10f, -10f), (8f, -9f), (-11f, -14f), (8f, 9f), (-14f, 2f), (14f, 3f), (0f, -16f), (0f, 30f), (34f, -2f) };
+var strollSpots = new[] { (5f, -6f), (-5f, 6f), (-6f, -5f), (6f, 5f), (-4f, 12f), (4f, 11f), (-9f, 6f), (10f, -10f), (5f, -12f), (-11f, -14f), (8f, 9f), (-14f, 2f), (14f, 3f), (0f, -16f), (0f, 30f), (34f, -2f) };
 foreach (var (x, z) in strollSpots) { var s = new UnityEngine.GameObject("Stroll"); s.transform.SetParent(strolls, false); s.transform.position = OnGround(x, z); }
 
 // ---- navmesh ----
