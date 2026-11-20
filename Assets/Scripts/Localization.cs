@@ -3230,6 +3230,8 @@ public static class Localization
     public static string MSG_PRODUCE_NO_ACTION = Meta("crafting", "fail") + "You don't seem to have an ongoing action.";
     public static string MSG_PRODUCE_NO_ACTION_TO_CANCEL = Meta("crafting", "fail") + "You don't seem to have an action to cancel.";
     public static string MSG_PRODUCE_NOT_CREATABLE = Meta("crafting", "fail") + "{itemName} is not an item that can be created.";
+    public static string MSG_PRODUCE_NOT_FOUND_SUGGEST = Meta("crafting", "fail") + "There is nothing called {query} to {verb}. Did you mean {suggestion}?";
+    public static string MSG_PRODUCE_NOT_FOUND = Meta("crafting", "fail") + "There is nothing called {query} to {verb}. The item list at ravenfall.stream/items shows what can be made.";
     public static string MSG_PRODUCE_WRONG_SKILL = Meta("crafting", "fail") + "{itemName} is not an item that can be created using {skillName}. It requires level {requiredSkillLevel} {requiredSkill}";
     public static string MSG_PRODUCE_LEVEL_TOO_LOW = Meta("crafting", "fail") + "{name} requires level {requiredSkillLevel} {requiredSkill}";
     public static string MSG_PRODUCE_NOT_ENOUGH_RESOURCES = Meta("crafting", "fail") + "You do not have enough resources for creating {name}. You need {requirements}";

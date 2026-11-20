@@ -109,15 +109,11 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
         }
 
         var target = itemResolver.ResolveItemAndAmount(query);
-        if (target.SuggestedItemNames.Length > 0)
+        if (target == null || target.Item == null || target.SuggestedItemNames.Length > 0)
         {
-            client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, query, string.Join(", ", target.SuggestedItemNames));
-            return;
-        }
-
-        if (target.Item == null)
-        {
-            client.SendReply(gm, Localization.MSG_GENERIC_ITEM_NOT_FOUND, query);
+            // nothing by that name: only things this skill makes are worth suggesting. !cook 18 cod answered "did you
+            // mean Ham, Cat, Sand, Coal, Rope?" (any item with a short name), and !cook cat then "cannot be created".
+            ReplyNotFound(query, gm, client);
             return;
         }
 
@@ -227,6 +223,65 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
         }
 
         if (player) Reply(Result.NotEnoughResources, player, recipe, name, gm, client);
+    }
+
+    private void ReplyNotFound(string query, GameMessage gm, GameClient client)
+    {
+        // what was asked for, without the amount ("18 cod", "cod x18")
+        var words = (query ?? "").Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
+            .Where(w => !long.TryParse(w.Trim('x', 'X'), out _)).ToArray();
+        var asked = words.Length > 0 ? string.Join(" ", words) : (query ?? "").Trim();
+        var verb = itemProductionSkill == TaskType.Cooking ? "cook" : itemProductionSkill == TaskType.Alchemy ? "brew" : "craft";
+
+        var skill = GetSkill(itemProductionSkill);
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var recipes = Game.Items.GetItemRecipes();
+        if (recipes != null)
+        {
+            foreach (var r in recipes)
+            {
+                if (r == null || r.RequiredSkill != skill) continue;
+                var made = Game.Items.Get(r.ItemId);
+                if (made != null && !string.IsNullOrEmpty(made.Name)) names.Add(made.Name);
+            }
+        }
+
+        var key = asked.ToLowerInvariant();
+        var close = names
+            .Select(n => new { Name = n, Score = Closeness(key, n.ToLowerInvariant()) })
+            .Where(x => x.Score < 100)
+            .OrderBy(x => x.Score).ThenBy(x => x.Name.Length)
+            .Take(5).Select(x => x.Name).ToArray();
+
+        if (close.Length > 0) client.SendReply(gm, Localization.MSG_PRODUCE_NOT_FOUND_SUGGEST, asked, verb, string.Join(", ", close));
+        else client.SendReply(gm, Localization.MSG_PRODUCE_NOT_FOUND, asked, verb);
+    }
+
+    // how near a name is to what was typed: 0 the same word in it, then the letters that differ; 100 not near at all
+    private static int Closeness(string asked, string name)
+    {
+        if (asked.Length == 0) return 100;
+        if (name.Contains(asked)) return 0;
+        var best = 100;
+        foreach (var word in name.Split(' '))
+        {
+            if (word.Length == 0) continue;
+            if (asked.Contains(word) && word.Length >= 3) return 1;
+            var d = EditDistance(asked, word);
+            if (d <= Math.Max(1, Math.Min(asked.Length, word.Length) / 3)) best = Math.Min(best, 1 + d);
+        }
+        return best;
+    }
+
+    private static int EditDistance(string a, string b)
+    {
+        var d = new int[a.Length + 1, b.Length + 1];
+        for (var i = 0; i <= a.Length; i++) d[i, 0] = i;
+        for (var j = 0; j <= b.Length; j++) d[0, j] = j;
+        for (var i = 1; i <= a.Length; i++)
+            for (var j = 1; j <= b.Length; j++)
+                d[i, j] = Math.Min(Math.Min(d[i - 1, j] + 1, d[i, j - 1] + 1), d[i - 1, j - 1] + (a[i - 1] == b[j - 1] ? 0 : 1));
+        return d[a.Length, b.Length];
     }
 
     private string GetSuitableName(ItemRecipe recipe, Item item)
