@@ -25,11 +25,11 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _Alpha: 0.28
+    - _Alpha: 0.22
     - _Depth: 1.2
     - _DstBlend: 10
     - _Glint: 1.2
-    - _Glow: 0.5
+    - _Glow: 0.85
     - _Rim: 0.45
     - _SrcBlend: 5
     - _VeinScale: 0.3

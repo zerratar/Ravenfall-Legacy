@@ -520,8 +520,8 @@ var scenePath = folder + "/Tower_FrostVault.unity";
         clearIce.SetColor("_SurfaceColor", new UnityEngine.Color(0.66f, 0.86f, 0.98f));
         clearIce.SetColor("_DeepColor", new UnityEngine.Color(0.10f, 0.32f, 0.52f));
         clearIce.SetColor("_GlowColor", new UnityEngine.Color(0.10f, 0.42f, 0.95f));
-        clearIce.SetFloat("_Glow", 0.5f);
-        clearIce.SetFloat("_Alpha", 0.28f);
+        clearIce.SetFloat("_Glow", 0.85f);
+        clearIce.SetFloat("_Alpha", 0.22f);
         clearIce.SetFloat("_Rim", 0.45f);
         clearIce.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
         clearIce.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
@@ -531,24 +531,24 @@ var scenePath = folder + "/Tower_FrostVault.unity";
 
         var bones = "Assets/PolygonDungeon/Prefabs/Environments/Bones/";
         var vw = "Assets/PolygonVikings/Prefabs/Weapons/";
-        // what, how big it ends up (its longest side, metres: the packs' bones come big), and how it lies (pitch, roll);
+        // what, how big it ends up (its longest side, metres, a third up after the first look: small from the camera), and how it lies (pitch, roll);
         // "beast" is the tusked skull put together below, "fish" a little school
         var finds = new (string what, float size, float pitch, float roll)[]
         {
-            (bones + "SM_Env_Bone_Rigcage_01", 3.6f, 0f, 70f),
-            ("beast", 3.2f, 0f, 0f),
-            ("Assets/PolygonDungeon/Prefabs/Props/SM_Prop_Skeleton_01", 1.9f, 0f, 20f),
-            (vw + "SM_Wep_Sword_01", 1.7f, 0f, 75f),
-            (bones + "SM_Env_Bone_Spine_02", 2.6f, 0f, 30f),
-            (vw + "SM_Wep_Shield_03", 1.1f, 70f, 0f),
-            ("fish", 1.8f, 0f, 0f),
-            (vw + "SM_Wep_LargeAxe_01", 1.5f, 0f, 60f),
-            (bones + "SM_Env_Bone_Skull_01", 1.1f, 0f, 15f),
-            (vw + "SM_Wep_Spear_02", 2.4f, 0f, 80f),
-            (bones + "SM_Env_BonePile_02", 1.8f, 0f, 0f),
-            (vw + "SM_Wep_Shield_06", 1.1f, 75f, 0f),
-            (bones + "SM_Env_Bone_Tail_01", 2.6f, 0f, 40f),
-            (vw + "SM_Wep_Sword_01", 1.6f, 0f, 100f),
+            (bones + "SM_Env_Bone_Rigcage_01", 4.9f, 0f, 70f),
+            ("beast", 4.3f, 0f, 0f),
+            ("Assets/PolygonDungeon/Prefabs/Props/SM_Prop_Skeleton_01", 2.6f, 0f, 20f),
+            (vw + "SM_Wep_Sword_01", 2.3f, 0f, 75f),
+            (bones + "SM_Env_Bone_Spine_02", 3.5f, 0f, 30f),
+            (vw + "SM_Wep_Shield_03", 1.5f, 70f, 0f),
+            ("fish", 2.4f, 0f, 0f),
+            (vw + "SM_Wep_LargeAxe_01", 2.0f, 0f, 60f),
+            (bones + "SM_Env_Bone_Skull_01", 1.5f, 0f, 15f),
+            (vw + "SM_Wep_Spear_02", 3.2f, 0f, 80f),
+            (bones + "SM_Env_BonePile_02", 2.4f, 0f, 0f),
+            (vw + "SM_Wep_Shield_06", 1.5f, 75f, 0f),
+            (bones + "SM_Env_Bone_Tail_01", 3.5f, 0f, 40f),
+            (vw + "SM_Wep_Sword_01", 2.2f, 0f, 100f),
         };
         UnityEngine.GameObject Make(string path, UnityEngine.Transform parent)
         {
@@ -577,7 +577,7 @@ var scenePath = folder + "/Tower_FrostVault.unity";
             // facing out of the wall, a little into it
             var outward = new UnityEngine.Vector3(hit.normal.x, 0f, hit.normal.z).normalized;
             if (outward.sqrMagnitude < 0.1f) outward = -dir;
-            spot.position = hit.point + outward * 0.2f;
+            spot.position = hit.point + outward * 0.4f;
             spot.rotation = UnityEngine.Quaternion.LookRotation(outward, UnityEngine.Vector3.up);
             var inside = new UnityEngine.GameObject("Inside").transform; inside.SetParent(spot, false);
             if (what == "beast")
@@ -633,9 +633,9 @@ var scenePath = folder + "/Tower_FrostVault.unity";
                 chunk.transform.position += spot.position - cb.center;
                 foreach (var r in cr) { r.sharedMaterials = r.sharedMaterials.Select(_ => clearIce).ToArray(); r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; }
             }
-            // a faint cold light in the ice, so the find shows in the dark of the cave
-            var glow = new UnityEngine.GameObject("Find Glow"); glow.transform.SetParent(spot, false); glow.transform.position = spot.position + outward * 0.6f;
-            var gl = glow.AddComponent<UnityEngine.Light>(); gl.type = UnityEngine.LightType.Point; gl.color = new UnityEngine.Color(0.55f, 0.8f, 1f); gl.range = 4.5f; gl.intensity = 1.6f; gl.shadows = UnityEngine.LightShadows.None;
+            // a cold light in the ice, so the find shows in the dark of the cave
+            var glow = new UnityEngine.GameObject("Find Glow"); glow.transform.SetParent(spot, false); glow.transform.position = spot.position + outward * 1.0f;
+            var gl = glow.AddComponent<UnityEngine.Light>(); gl.type = UnityEngine.LightType.Point; gl.color = new UnityEngine.Color(0.55f, 0.8f, 1f); gl.range = 6.5f; gl.intensity = 3f; gl.shadows = UnityEngine.LightShadows.None;
             placedFinds++;
         }
         UnityEngine.Object.DestroyImmediate(wallCollider);
