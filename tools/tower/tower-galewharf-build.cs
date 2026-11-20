@@ -1,5 +1,7 @@
 // Builds Assets/Scenes/Tower/Tower_Galewharf.unity: Galewharf, the tower's third town (the Storm Spire band, reached by
-// beating floor 20; docs/tower-design.md, section 4). A harbour on a rock above the clouds where sky sailors moor: a
+// beating floor 20; docs/tower-design.md, section 4), after concept A (docs/mockups/galewharf-concept-a-island.jpg): a
+// floating island whose terrain is cut along its rim (tools/tower/galewharf-rim.json) and sits in a rock made in Blender
+// (tools/tower/blender/galewharf_rocks.py: the island's underside, the lighthouse's islet, the spire). A harbour where sky sailors moor: a
 // cobbled square round a giant anchor, the Crow's Nest inn, timber houses and sailors' shacks, a windmill turning in the
 // wind, a lighthouse, a long pier out over the cloud sea with Captain Brisa's ship moored at it (sailors and cloud fishers
 // work there), Tinker Volt's shed with a lightning rod the storm likes, Tessa's sheep pen, a campfire to rest at (!tower
@@ -33,34 +35,41 @@ town.SunColor = new UnityEngine.Color(0.96f, 0.94f, 1f);
 town.SunIntensity = 1.05f;
 town.SunAngles = new UnityEngine.Vector3(32f, -55f, 0f);
 // the cloud sea far below the rim
-town.HazeDepth = 48f;
+town.HazeDepth = 92f;
 
-// ---- the ground ----
-const float size = 240f, height = 170f, baseHeight = 66f, flatRadius = 44f;
-var pond = new UnityEngine.Vector2(46f, -4f);   // the pier's foot (Rimeholt had a pond here; the fishers stand on the pier)
+// ---- the ground: the island's top, cut along the rim the Blender rock follows ----
+const float size = 240f, height = 30f, baseHeight = 6f, flatRadius = 44f;
+var pond = new UnityEngine.Vector2(46f, -4f);   // unused (Rimeholt's pond)
 const float pondRadius = 0.1f;
-float Noise(float x, float z, float s) => UnityEngine.Mathf.PerlinNoise(x * s + 71.3f, z * s + 9.4f);
-float EdgeAt(float x, float z)
+var ci = System.Globalization.CultureInfo.InvariantCulture;
+var rimTable = new System.Collections.Generic.List<UnityEngine.Vector2>();
+foreach (System.Text.RegularExpressions.Match mm in System.Text.RegularExpressions.Regex.Matches(System.IO.File.ReadAllText("tools/tower/galewharf-rim.json"), @"\[\s*(-?[0-9.]+)\s*,\s*(-?[0-9.]+)\s*\]"))
+    rimTable.Add(new UnityEngine.Vector2(float.Parse(mm.Groups[1].Value, ci), float.Parse(mm.Groups[2].Value, ci)));
+log.AppendLine("rim points " + rimTable.Count);
+// the rim's radius toward a compass angle (degrees from east toward north)
+float RimAt(float deg)
 {
-    var a = UnityEngine.Mathf.Atan2(z, x);
-    return 50f + (Noise(UnityEngine.Mathf.Cos(a) * 40f, UnityEngine.Mathf.Sin(a) * 40f, 0.05f) - 0.5f) * 10f;
+    deg = ((deg % 360f) + 360f) % 360f;
+    var step = 360f / rimTable.Count;
+    var i = (int)(deg / step);
+    var f = (deg - i * step) / step;
+    return rimTable[i % rimTable.Count].y * (1f - f) + rimTable[(i + 1) % rimTable.Count].y * f;
 }
+float EdgeAt(float x, float z) => RimAt(UnityEngine.Mathf.Atan2(z, x) * UnityEngine.Mathf.Rad2Deg);
+UnityEngine.Vector2 Dir(float deg) => new UnityEngine.Vector2(UnityEngine.Mathf.Cos(deg * UnityEngine.Mathf.Deg2Rad), UnityEngine.Mathf.Sin(deg * UnityEngine.Mathf.Deg2Rad));
+float Noise(float x, float z, float s) => UnityEngine.Mathf.PerlinNoise(x * s + 71.3f, z * s + 9.4f);
 float GroundAt(float x, float z)
 {
     var r = UnityEngine.Mathf.Sqrt(x * x + z * z);
-    var h = (Noise(x, z, 0.03f) - 0.5f) * 0.7f;
+    var h = (Noise(x, z, 0.03f) - 0.5f) * 0.9f;
     var flat = UnityEngine.Mathf.InverseLerp(30f, 18f, r);
     h = UnityEngine.Mathf.Lerp(h, 0.05f, flat);
-    // the spire's wall rises behind the gate in the north, a rock face going up out of sight (the stairs climb a notch in it)
-    var north = UnityEngine.Mathf.Clamp01((z - 30f) / 26f);
-    var notch = UnityEngine.Mathf.InverseLerp(9f, 18f, UnityEngine.Mathf.Abs(x));
-    h += north * north * (80f + (Noise(x, z, 0.06f) - 0.5f) * 20f) * UnityEngine.Mathf.Lerp(0.18f, 1f, notch);
-    // everywhere else the rim falls away into the clouds
-    var drop = UnityEngine.Mathf.InverseLerp(EdgeAt(x, z) - 1f, EdgeAt(x, z) + 9f, r) * (1f - north);
-    h -= drop * drop * (60f + Noise(x, z, 0.08f) * 6f);
+    // the ground dips a little toward the rim, where the earth meets the rock
+    var e = EdgeAt(x, z);
+    h -= 0.5f * UnityEngine.Mathf.InverseLerp(e - 6f, e, r);
     return h;
 }
-var res = 257;
+var res = 513;
 var td = new UnityEngine.TerrainData { heightmapResolution = res, size = new UnityEngine.Vector3(size, height, size) };
 var tdPath = dataFolder + "/Terrain.asset";
 UnityEditor.AssetDatabase.DeleteAsset(tdPath);
@@ -75,25 +84,40 @@ for (var zi = 0; zi < res; zi++)
 td.SetHeights(0, 0, heights);
 // the meadow pack's layers: grass, worn grass, a trodden town floor, dirt by the edge, rock on the cliffs
 UnityEngine.TerrainLayer GL(string n) { var l = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.TerrainLayer>("Assets/PolygonNatureBiomes/PNB_Meadow_Forest/Terrain/" + n + ".terrainlayer"); if (!l) log.AppendLine("missing layer " + n); return l; }
-td.terrainLayers = new[] { GL("Terrain_Meadow_Grass_02"), GL("Terrain_Meadow_Grass_Pebbles_01"), GL("Terrain_Meadow_Dirt_Cracked_Pebbles_01"), GL("Terrain_Meadow_Dirt_01"), GL("Terrain_Meadow_Moss_Rock_01") };
+td.terrainLayers = new[] { GL("Terrain_Meadow_Grass_02"), GL("Terrain_Meadow_Grass_Pebbles_01"), GL("Terrain_Meadow_Dirt_Cracked_Pebbles_01"), GL("Terrain_Meadow_Dirt_01"), GL("Terrain_Meadow_Moss_Rock_01"), GL("Terrain_Meadow_Ruin_Tiles_01") };
 var amRes = 256; td.alphamapResolution = amRes;
-var maps = new float[amRes, amRes, 5];
+var maps = new float[amRes, amRes, 6];
 for (var zi = 0; zi < amRes; zi++)
     for (var xi = 0; xi < amRes; xi++)
     {
         var x = (xi + 0.5f) / amRes * size - size / 2f; var z = (zi + 0.5f) / amRes * size - size / 2f;
-        var w = new float[5];
+        var w = new float[6];
         var steep = td.GetSteepness((xi + 0.5f) / amRes, (zi + 0.5f) / amRes);
         var r = UnityEngine.Mathf.Sqrt(x * x + z * z);
         w[0] = 1f;
         w[1] = UnityEngine.Mathf.Clamp01((Noise(x, z, 0.05f) - 0.45f) * 3f);
         // trodden ground in the middle of town, bare dirt toward the wind-scoured edge
         w[2] = UnityEngine.Mathf.Clamp01((24f - r) / 10f) * (0.6f + Noise(x + 9f, z, 0.2f) * 0.6f);
-        w[3] = UnityEngine.Mathf.Clamp01((r - (EdgeAt(x, z) - 7f)) / 5f) * 1.4f;
+        w[3] = UnityEngine.Mathf.Clamp01((r - (EdgeAt(x, z) - 5f)) / 4f) * 1.2f
+            // all dirt where the terrain is cut, so its stepped edge meets the collar dirt on dirt
+            + UnityEngine.Mathf.Clamp01((r - (EdgeAt(x, z) - 3.4f)) / 1.2f) * 14f;
         w[4] = UnityEngine.Mathf.Clamp01((steep - 26f) / 10f) * 4f;
-        var sum = w.Sum(); for (var k = 0; k < 5; k++) maps[zi, xi, k] = w[k] / sum;
+        // the plaza's flagstones, a ragged edge into the trodden ground (concept A's paved square)
+        w[5] = UnityEngine.Mathf.Clamp01((13.5f - r) / 2.5f + (Noise(x * 1.7f, z * 1.7f, 0.25f) - 0.5f) * 0.8f) * 3f;
+        var sum = w.Sum(); for (var k = 0; k < 6; k++) maps[zi, xi, k] = w[k] / sum;
     }
 td.SetAlphamaps(0, 0, maps);
+// cut the terrain along the rim: the rock (Blender) holds it up from below
+var holeRes = res - 1;
+var solid = new bool[holeRes, holeRes];
+for (var zi = 0; zi < holeRes; zi++)
+    for (var xi = 0; xi < holeRes; xi++)
+    {
+        var x = (xi + 0.5f) / holeRes * size - size / 2f; var z = (zi + 0.5f) / holeRes * size - size / 2f;
+        // well inside the rim: the earth collar (below) runs smooth over the stepped hole edge
+        solid[zi, xi] = UnityEngine.Mathf.Sqrt(x * x + z * z) < EdgeAt(x, z) - 1.2f;
+    }
+td.SetHoles(0, 0, solid);
 UnityEditor.EditorUtility.SetDirty(td);
 UnityEditor.AssetDatabase.SaveAssets();
 var terrainGo = UnityEngine.Terrain.CreateTerrainGameObject(td);
@@ -177,6 +201,7 @@ var lights = new UnityEngine.GameObject("Lights").transform; lights.SetParent(ro
 var sv = "Assets/PolygonVikings/Prefabs/Props/";   // the Vikings pack's plain props (Rimeholt used the snowy ones)
 var vb = "Assets/PolygonVikings/Prefabs/Buildings/";
 var fv = "Assets/Synty/PolygonFantasyVillage/Prefabs/Buildings/Preset/";
+var fkh = "Assets/PolygonFantasyKingdom/Prefabs/Buildings/Preset_Houses/SM_Bld_Preset_";
 var pr = "Assets/Synty/PolygonPirateRealm/Prefabs/";
 var pp = "Assets/PolygonPirates/Prefabs/Buildings/";
 var vp = "Assets/PolygonVikings/Prefabs/Props/";
@@ -256,16 +281,18 @@ UnityEngine.GameObject Building(string path, float x, float z, float scale, floa
 }
 var homes = new System.Collections.Generic.List<UnityEngine.GameObject>
 {
-    Building(fv + "Bld_Preset_House_01.prefab", -23f, 7f, 0.62f),
-    Building(fv + "Bld_Preset_House_03.prefab", -23f, -10f, 0.62f),
-    Building(fv + "Bld_Preset_House_02.prefab", 24f, 10f, 0.6f),
-    Building(pp + "SM_Bld_Rickety_House_01.prefab", 27f, -5f, 1.5f),
-    Building(pp + "SM_Bld_Rickety_House_02.prefab", -31f, 18f, 1.5f),
-    Building(pp + "SM_Bld_Rickety_House_03.prefab", 18f, -12.5f, 1.4f),
+    // timber houses on stone feet with slate and grey roofs, close round the square (concept A)
+    Building(fkh + "House_07_Optimized.prefab", -21f, 7f, 0.72f),
+    Building(fkh + "House_03_Optimized.prefab", -21f, -9f, 0.85f),
+    Building(fkh + "House_01_A_Optimized.prefab", 22f, 9f, 0.7f),
+    Building(fkh + "House_08_Optimized.prefab", 22.5f, -5.5f, 0.85f),
+    Building(fkh + "Hut_01_Optimized.prefab", -27.5f, 13f, 0.8f),
+    Building(fkh + "House_10_Optimized.prefab", 16.5f, -15f, 0.5f),
+    Building(fkh + "House_09_A_Optimized.prefab", -9f, -22f, 0.75f),
 };
 // the Crow's Nest: the inn north-east of the square, its door toward the square (the gate road stays clear)
 var hallC = V(14f, 23f);
-var hall = Building(fv + "Bld_Preset_Tavern_01.prefab", hallC.x, hallC.y, 0.62f);
+var hall = Building(fkh + "Tavern_01_Optimized.prefab", hallC.x, hallC.y, 0.85f);
 var toSquare = (-hallC).normalized;
 var across = V(toSquare.y, -toSquare.x);
 var hallDoor = DoorOf(hall, 0.6f);
@@ -277,21 +304,17 @@ var hallYaw = Facing(hallC.x, hallC.y, 0f, 0f);
 { var p = AtDoor(2f, -0.6f); Place(pr + "Props/SM_Prop_Sign_Post_01.prefab", p.x, p.y, 1.2f, hallYaw, props); }
 foreach (var s2 in new[] { -2.2f, 2.2f }) { var p = AtDoor(s2, 0f); Place(pr + "Props/SM_Prop_Lamp_Post_01.prefab", p.x, p.y, 1f, hallYaw, props); }
 { var p = AtDoor(0f, 0.3f); Lamp(p.x, 2.5f, p.y, warm, 10f, 1.8f); }
-// the windmill turning in the wind, west; the lighthouse over the harbour, east
-Block(Place(fv + "Bld_Preset_Windmill_01.prefab", -36f, -2f, 0.9f, 90f, buildings), 0.5f);
-var lighthouse = Place(pr + "Buildings/SM_Bld_Lighthouse_01.prefab", 38f, 18f, 0.62f, 250f, buildings);
-Block(lighthouse, 0.7f);
-if (lighthouse) Lamp(38f, 14.5f, 18f, new UnityEngine.Color(1f, 0.85f, 0.55f), 26f, 3.2f);
+// the windmill turning in the wind, west (the lighthouse stands on its own islet, below)
+Block(Place(fkh + "House_Windmill_01_Optimized.prefab", -33f, -2f, 0.75f, 90f, buildings), 0.5f);
 // watchtowers either side of the gate, out of the inn's way
-Block(Place(vb + "SM_Bld_Guard_Tower_01.prefab", -20f, 35f, 1.4f, 180f, buildings));
-Block(Place(vb + "SM_Bld_Guard_Tower_01.prefab", 20f, 35f, 1.4f, 180f, buildings));
+
 
 // the gate up to the spire: the village entrance with stone stairs climbing behind it, flags and lamps
 Place(sv + "SM_Prop_Village_Entrance_01.prefab", 0f, 36f, 2.2f, 180f, buildings);
-for (var i = 0; i < 3; i++) Place(ve + "SM_Env_Stone_Stairs_0" + (1 + i % 3) + ".prefab", 0f, 41f + i * 4.5f, 2.2f, 180f, props, 0.4f);
+
 foreach (var side in new[] { -1f, 1f })
 {
-    Place(pr + "Props/SM_Prop_Flag_0" + (side < 0 ? 1 : 2) + ".prefab", side * 5f, 34.5f, 1.2f, 180f, props);
+    Place("Assets/PolygonFantasyKingdom/Prefabs/Props/Banners/SM_Prop_Banner_0" + (side < 0 ? 1 : 2) + ".prefab", side * 5.5f, 34.5f, 1.1f, 180f, props);
     Place(pr + "Props/SM_Prop_Lamp_Post_01.prefab", side * 3.4f, 34f, 1.1f, 180f, props);
     Lamp(side * 3.4f, 2.6f, 34f, warm, 9f, 1.6f);
 }
@@ -306,7 +329,7 @@ for (var i = 0; i < 4; i++)
 
 // Tinker Volt's shed: a timber shed, a workbench, coils of wire and jars, a lightning rod on a pole the storm likes
 var fx0 = -12f; var fz0 = 13f;
-var stall = Place(fv + "Bld_Preset_Shed_01.prefab", fx0 - 1f, fz0 + 4f, 0.7f, Facing(fx0, fz0, 0f, 0f), buildings);
+var stall = Place(fkh + "Blacksmith_01_Optimized.prefab", fx0 - 1.5f, fz0 + 4.5f, 0.55f, Facing(fx0, fz0, 0f, 0f), buildings);
 Place(vr + "SM_Prop_Furnace_01.prefab", fx0 - 3.2f, fz0 + 1.2f, 1.0f, Facing(fx0, fz0, 0f, 0f), props);
 Place(sv + "SM_Prop_Anvil_Stump_01.prefab", fx0 + 1.2f, fz0 + 0.3f, 1.2f, 30f, props);
 Place(vr + "SM_Prop_Grindstone_01.prefab", fx0 + 2.8f, fz0 + 2.2f, 1.1f, -1, props);
@@ -321,21 +344,189 @@ if (spark) spark.transform.position += UnityEngine.Vector3.up * 1.2f;
 Lamp(fx0 - 1f, 2f, fz0 + 1.5f, new UnityEngine.Color(0.6f, 0.75f, 1f), 10f, 2.2f);
 Block(stall, 0.8f);
 
-// the harbour: a long pier east out over the cloud sea, Captain Brisa's Gullwing moored along it, crates and rope
-var pierFoot = V(42f, -4f);
-var pierDir = new UnityEngine.Vector2(1f, 0f);
+// ---- the rock (made in Blender, tools/tower/blender/galewharf_rocks.py): the island's underside under the rim, the
+// lighthouse's islet, the spire. The FBX comes in turned half round (Unity's x and z are Blender's negated): each is
+// turned back. Materials by the names Blender gave them, made here from the terrain's own textures.
+UnityEngine.Material RockMat(string name, UnityEngine.Texture2D tex, UnityEngine.Texture2D normal, UnityEngine.Color tint, float smooth)
+{
+    var path = dataFolder + "/" + name + ".mat";
+    var m = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(path);
+    if (!m) { m = new UnityEngine.Material(UnityEngine.Shader.Find("Universal Render Pipeline/Lit")); UnityEditor.AssetDatabase.CreateAsset(m, path); }
+    if (tex) m.SetTexture("_BaseMap", tex);
+    m.SetColor("_BaseColor", tint);
+    if (normal) { m.SetTexture("_BumpMap", normal); m.EnableKeyword("_NORMALMAP"); }
+    m.SetFloat("_Smoothness", smooth);
+    UnityEditor.EditorUtility.SetDirty(m);
+    return m;
+}
+UnityEngine.Texture2D T(string path) { var t = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Texture2D>(path); if (!t) log.AppendLine("missing texture " + path); return t; }
+var vtex = "Assets/Synty/PolygonVikingRealm/Textures/Env/";
+var rockMats = new System.Collections.Generic.Dictionary<string, UnityEngine.Material>
+{
+    ["Rock"] = RockMat("IslandRock", T(vtex + "Rock_01.png"), T(vtex + "Rock_01_Normals.png"), new UnityEngine.Color(0.78f, 0.79f, 0.84f), 0.05f),
+    ["Earth"] = RockMat("IslandEarth", td.terrainLayers[3] ? td.terrainLayers[3].diffuseTexture : null, null, new UnityEngine.Color(0.82f, 0.72f, 0.62f), 0.05f),
+    ["Grass"] = RockMat("IslandGrass", td.terrainLayers[0] ? td.terrainLayers[0].diffuseTexture : null, null, UnityEngine.Color.white, 0.05f),
+    ["Stone"] = RockMat("IslandStone", T(vtex + "Rock_01.png"), T(vtex + "Rock_01_Normals.png"), new UnityEngine.Color(0.95f, 0.93f, 0.88f), 0.1f),
+    ["Root"] = RockMat("IslandRoot", null, null, new UnityEngine.Color(0.30f, 0.20f, 0.12f), 0.1f),
+};
+UnityEngine.GameObject Model(string name, UnityEngine.Vector3 local, float yaw, bool collide)
+{
+    var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/World/Tower/Galewharf/Models/" + name + ".fbx");
+    if (!prefab) { log.AppendLine("missing model " + name + " (run tools/tower/blender/galewharf_rocks.py)"); return null; }
+    var go = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(prefab, scene);
+    go.name = name;
+    go.transform.SetParent(buildings, true);
+    go.transform.SetPositionAndRotation(origin + local, UnityEngine.Quaternion.Euler(0f, 180f + yaw, 0f));
+    foreach (var r in go.GetComponentsInChildren<UnityEngine.MeshRenderer>())
+    {
+        var mats = r.sharedMaterials;
+        for (var i = 0; i < mats.Length; i++)
+        {
+            var key = mats[i] ? mats[i].name.Split(' ')[0].Split('.')[0] : "";
+            if (rockMats.TryGetValue(key, out var mm)) mats[i] = mm;
+        }
+        r.sharedMaterials = mats;
+        if (collide) r.gameObject.AddComponent<UnityEngine.MeshCollider>();
+    }
+    return go;
+}
+// the underside, its top ring just under the terrain's cut edge
+Model("GalewharfIsland", new UnityEngine.Vector3(0f, 0.05f, 0f), 0f, false);
+// the earth collar: a smooth band along the rim, just under the ground, out to the rock's top ring. The terrain's holes
+// can only cut in steps (one per heightmap cell); seen from above that edge was a saw blade with sky between the teeth.
+{
+    const int seg = 360;
+    var rockTop = 0.05f - 0.25f;
+    var rings = new[] { (-2.4f, true), (-0.5f, true), (0.65f, false) };
+    var verts = new System.Collections.Generic.List<UnityEngine.Vector3>();
+    var uvs = new System.Collections.Generic.List<UnityEngine.Vector2>();
+    for (var i = 0; i <= seg; i++)
+    {
+        var deg = i * 360f / seg;
+        var d = Dir(deg); var e = RimAt(deg);
+        foreach (var (off, onGround) in rings)
+        {
+            var p = d * (e + off);
+            var y = onGround ? GroundAt(p.x, p.y) - 0.05f : rockTop;
+            verts.Add(new UnityEngine.Vector3(p.x, y, p.y));
+            uvs.Add(new UnityEngine.Vector2(p.x, p.y) / 4f);
+        }
+    }
+    var tris = new System.Collections.Generic.List<int>();
+    var n = rings.Length;
+    for (var i = 0; i < seg; i++)
+        for (var k = 0; k < n - 1; k++)
+        {
+            int a = i * n + k, b = (i + 1) * n + k;
+            tris.AddRange(new[] { a, a + 1, b, b, a + 1, b + 1 });
+        }
+    var mesh = new UnityEngine.Mesh { name = "Galewharf Rim Collar" };
+    mesh.SetVertices(verts); mesh.SetUVs(0, uvs); mesh.SetTriangles(tris, 0);
+    // facing up (the winding runs the other way when the rim turns counter-clockwise)
+    mesh.RecalculateNormals();
+    if (mesh.normals[0].y < 0f) { tris.Reverse(); mesh.SetTriangles(tris, 0); mesh.RecalculateNormals(); }
+    mesh.RecalculateBounds();
+    var meshPath = dataFolder + "/RimCollar.asset";
+    UnityEditor.AssetDatabase.DeleteAsset(meshPath);
+    UnityEditor.AssetDatabase.CreateAsset(mesh, meshPath);
+    var collar = new UnityEngine.GameObject("Rim Collar");
+    collar.transform.SetParent(buildings, false);
+    collar.transform.position = origin;
+    collar.AddComponent<UnityEngine.MeshFilter>().sharedMesh = mesh;
+    // the terrain's own dirt (same texture, tiling and normals), untinted, so the seam does not show
+    var dirtLayer = td.terrainLayers[3];
+    var collarMat = RockMat("RimEarth", dirtLayer ? dirtLayer.diffuseTexture : null, dirtLayer ? dirtLayer.normalMapTexture : null, UnityEngine.Color.white, 0f);
+    collar.AddComponent<UnityEngine.MeshRenderer>().sharedMaterial = collarMat;
+    collar.AddComponent<UnityEngine.MeshCollider>().sharedMesh = mesh;
+}
+
+// the spire in the north, its foot lost in the clouds; a stone bridge from the gate to the foot of its stair
+var spireZ = RimAt(90f) + 39f;
+Model("GalewharfSpire", new UnityEngine.Vector3(0f, -1.9f, spireZ), 0f, true);
+var bridgeFrom = RimAt(90f) - 1.8f;
+var landing = spireZ - 22.5f;
+var bridgeY0 = GroundAt(0f, bridgeFrom);
+var bridgeT = new UnityEngine.GameObject("Spire Bridge").transform; bridgeT.SetParent(buildings, false);
+var spans = UnityEngine.Mathf.CeilToInt((landing - bridgeFrom) / 4.8f);
+for (var i = 0; i < spans; i++)
+{
+    var z = bridgeFrom + i * 4.8f;
+    var y = UnityEngine.Mathf.Lerp(bridgeY0, 0.1f, i / (float)UnityEngine.Mathf.Max(1, spans - 1));
+    var seg = Place("Assets/PolygonDungeonRealms/Prefabs/Buildings/SM_Bld_Ruin_Bridge_0" + (1 + i % 3) + ".prefab", 0f, z, 1.15f, 0f, bridgeT);
+    if (seg) seg.transform.position = origin + new UnityEngine.Vector3(0f, y - 0.15f, z);
+}
+var bridgePillar = Place("Assets/PolygonDungeonRealms/Prefabs/Buildings/SM_Bld_Ruin_Bridge_Pillar_Large_01.prefab", 0f, (bridgeFrom + landing) * 0.5f, 1.15f, 0f, bridgeT);
+if (bridgePillar) bridgePillar.transform.position = origin + new UnityEngine.Vector3(0f, -16f, (bridgeFrom + landing) * 0.5f);
+
+// the lighthouse's islet in the east, over a rope bridge (concept C's islet, the user's pick)
+var bridgeDeg = 15f;
+var bridgeDir = Dir(bridgeDeg);
+var bridgeStart = bridgeDir * (RimAt(bridgeDeg) - 1.2f);
+var isletC = bridgeDir * (RimAt(bridgeDeg) + 15.5f + 9.6f);
+Model("GalewharfIslet", new UnityEngine.Vector3(isletC.x, 0.3f, isletC.y), 0f, true);
+var rope = Place(pr + "Buildings/SM_Bld_Ropebridge_02.prefab", bridgeStart.x, bridgeStart.y, 1f, UnityEngine.Mathf.Atan2(bridgeDir.x, bridgeDir.y) * UnityEngine.Mathf.Rad2Deg, buildings);
+if (rope) { rope.name = "Rope Bridge"; rope.transform.position = origin + new UnityEngine.Vector3(bridgeStart.x, GroundAt(bridgeStart.x, bridgeStart.y) - 0.1f, bridgeStart.y); }
+var lighthouse = Place(pr + "Buildings/SM_Bld_Lighthouse_01.prefab", isletC.x + 2.5f, isletC.y + 1.5f, 0.6f, 250f, buildings);
+if (lighthouse)
+{
+    lighthouse.transform.position = origin + new UnityEngine.Vector3(isletC.x + 2.5f, 0.3f, isletC.y + 1.5f);
+    var beam = new UnityEngine.GameObject("Lighthouse Light"); beam.transform.SetParent(lights, false);
+    beam.transform.position = lighthouse.transform.position + UnityEngine.Vector3.up * 14.5f;
+    var bl = beam.AddComponent<UnityEngine.Light>(); bl.type = UnityEngine.LightType.Point; bl.color = new UnityEngine.Color(1f, 0.85f, 0.55f); bl.range = 26f; bl.intensity = 3.2f; bl.shadows = UnityEngine.LightShadows.None;
+}
+foreach (var (dx, dz, path) in new[] { (-3f, -2f, "Props/SM_Prop_Barrel_01"), (-4f, 1.5f, "Props/SM_Prop_Crate_01"), (1f, -4.5f, "Props/SM_Prop_Lamp_Post_01") })
+{
+    var o = Place(pr + path + ".prefab", isletC.x + dx, isletC.y + dz, 1f, -1, props);
+    if (o) o.transform.position = origin + new UnityEngine.Vector3(isletC.x + dx, 0.3f, isletC.y + dz);
+}
+
+// the harbour: a pier on stilts out over the cloud sea (south-east), Captain Brisa's Gullwing moored along it
+var pierDeg = -30f;
+var pierDir = Dir(pierDeg);
+var pierSide = new UnityEngine.Vector2(-pierDir.y, pierDir.x);
+var pierFoot = pierDir * (RimAt(pierDeg) - 2f);
 var pierY = GroundAt(pierFoot.x, pierFoot.y) + 0.15f;
+var pierYaw = UnityEngine.Mathf.Atan2(pierDir.x, pierDir.y) * UnityEngine.Mathf.Rad2Deg;
 var pier = new UnityEngine.GameObject("Pier").transform; pier.SetParent(buildings, false);
-for (var i = 0; i < 5; i++)
+for (var i = 0; i < 4; i++)
 {
     var p = pierFoot + pierDir * (i * 7.4f + 7.4f);
-    var seg = Place(pr + "Buildings/SM_Bld_Dock_Long_0" + (1 + rng.Next(3)) + ".prefab", p.x, p.y, 1f, 90f, pier);
+    var seg = Place(pr + "Buildings/SM_Bld_Dock_Long_01.prefab", p.x, p.y, 1f, pierYaw, pier);
     if (seg) seg.transform.position = origin + new UnityEngine.Vector3(p.x, pierY, p.y);
+    // stilts down into the clouds either side
+    if (i % 2 == 1)
+        foreach (var side in new[] { -1.2f, 1.2f })
+        {
+            var sp = p - pierDir * 3.7f + pierSide * side;
+            var stilt = Place(pr + "Props/SM_Prop_Flag_Post_02.prefab", sp.x, sp.y, 4f, pierYaw, pier);
+            if (stilt) { stilt.transform.position = origin + new UnityEngine.Vector3(sp.x, pierY - 8.6f, sp.y); stilt.transform.rotation = UnityEngine.Quaternion.Euler(0f, pierYaw, 90f); NoCollide(stilt); }
+        }
 }
-var gullwing = Place(pr + "Vehicles/SM_Veh_Preset_M_01.prefab", 0f, 0f, 0.6f, 90f, buildings);
-if (gullwing) { gullwing.transform.position = origin + new UnityEngine.Vector3(62f, pierY - 6.5f, 6.5f); NoCollide(gullwing); }
-foreach (var (dx, dz, path, sc) in new[] { (40f, -8.5f, "Props/SM_Prop_Crate_01", 1f), (41.5f, 1.2f, "Props/SM_Prop_Barrel_01", 1f), (39f, 1.8f, "Props/SM_Prop_Sails_Rolled_Pile_01", 1f), (37.5f, -9f, "Props/SM_Prop_Anchor_01", 1.2f) })
-    Place(pr + path + ".prefab", dx, dz, sc, -1, props);
+var shipAt = pierFoot + pierDir * 22f + pierSide * 6.5f;
+var gullwing = Place(pr + "Vehicles/SM_Veh_Preset_M_01.prefab", 0f, 0f, 0.6f, pierYaw, buildings);
+if (gullwing) { gullwing.name = "Gullwing"; gullwing.transform.position = origin + new UnityEngine.Vector3(shipAt.x, pierY - 6.5f, shipAt.y); NoCollide(gullwing); }
+foreach (var (along, side, path, sc) in new[] { (-3f, 3f, "Props/SM_Prop_Crate_01", 1f), (-4.5f, -2.5f, "Props/SM_Prop_Barrel_01", 1f), (-6f, -4f, "Props/SM_Prop_Sails_Rolled_Pile_01", 1f), (-6.5f, 4.5f, "Props/SM_Prop_Anchor_01", 1.2f) })
+{
+    var at = pierFoot + pierDir * along + pierSide * side;
+    Place(pr + path + ".prefab", at.x, at.y, sc, -1, props);
+}
+
+// waterfalls off the rim (springs in the rock), west and south-west, as in the concept
+foreach (var deg in new[] { 172f, 236f })
+{
+    var d = Dir(deg);
+    var at = d * (RimAt(deg) - 0.3f);
+    // our own waterfall (Synty's shader does not draw here): a strip arcing out over the rim and falling
+    var fallGo = new UnityEngine.GameObject("Waterfall"); fallGo.transform.SetParent(props, false);
+    fallGo.transform.SetPositionAndRotation(origin + new UnityEngine.Vector3(at.x, GroundAt(at.x, at.y) - 0.15f, at.y), UnityEngine.Quaternion.Euler(0f, UnityEngine.Mathf.Atan2(d.x, d.y) * UnityEngine.Mathf.Rad2Deg, 0f));
+    fallGo.AddComponent<TowerWaterfall>();
+    foreach (var side in new[] { -1.8f, 1.8f })
+    {
+        var rp = at - d * 1.5f + new UnityEngine.Vector2(-d.y, d.x) * side;
+        Place(pr + "Environment/SM_Env_Rock_Basalt_0" + (1 + rng.Next(2)) + ".prefab", rp.x, rp.y, 1.1f, -1, props, 0.3f);
+    }
+}
+
 // clouds under the pier and the ship, and the cloud sea round the rock
 var cloudPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/PolygonAdventure/Prefabs/Environments/SM_Env_Cloud_01.prefab");
 var cloudBase = cloudPrefab ? cloudPrefab.GetComponentInChildren<UnityEngine.Renderer>().sharedMaterial : null;
@@ -359,28 +550,18 @@ void Cloud(UnityEngine.Vector3 world, float scale)
     NoCollide(go);
     foreach (var r in go.GetComponentsInChildren<UnityEngine.Renderer>()) { if (seaMat) r.sharedMaterial = seaMat; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; }
 }
-Cloud(origin + new UnityEngine.Vector3(62f, pierY - 11f, 6.5f), 7f);
+
 for (var i = 0; i < 120; i++)
 {
     var a = R() * UnityEngine.Mathf.PI * 2f; var r = 56f + R() * R() * 170f;
     var cx = UnityEngine.Mathf.Cos(a) * r; var cz = UnityEngine.Mathf.Sin(a) * r;
     if (cz > 40f && UnityEngine.Mathf.Abs(cx) < 40f) continue; // the spire's wall
-    Cloud(origin + new UnityEngine.Vector3(cx, -14f - R() * 30f, cz), 5f + R() * 7f);
+    Cloud(origin + new UnityEngine.Vector3(cx, -52f - R() * 34f, cz), 6f + R() * 8f);
 }
-// grey cliffs under the rim, so the rock reads as rock
-for (var i = 0; i < 26; i++)
-{
-    var a = i / 26f * UnityEngine.Mathf.PI * 2f + R() * 0.1f;
-    var e = EdgeAt(UnityEngine.Mathf.Cos(a) * 40f, UnityEngine.Mathf.Sin(a) * 40f);
-    var x = UnityEngine.Mathf.Cos(a) * (e + 3f); var z = UnityEngine.Mathf.Sin(a) * (e + 3f);
-    if (z > 30f) continue; // the wall in the north
-    if (UnityEngine.Mathf.Abs(z - pierFoot.y) < 7f && x > 30f) continue; // the pier
-    var cliff = Place(ve + "SM_Env_Rock_Cliff_0" + (1 + rng.Next(5)) + ".prefab", x, z, 1.0f + R() * 0.5f, -a * UnityEngine.Mathf.Rad2Deg + 90f, props);
-    if (cliff) { cliff.transform.position = origin + new UnityEngine.Vector3(x, -10f - R() * 4f, z); NoCollide(cliff); }
-}
-
 // the square: a giant anchor in the middle (sky sailors' luck), benches round it
-Place(pr + "Props/SM_Prop_Anchor_01.prefab", 0f, 0f, 5f, 180f, props);
+Place("Assets/PolygonDungeonRealms/Prefabs/Buildings/SM_Bld_Ruin_Tiles_01.prefab", 0f, 0f, 0.75f, 0f, props, 1.05f);
+var anchorGo = Place(pr + "Props/SM_Prop_Anchor_01.prefab", 0f, 0f, 5f, 180f, props);
+if (anchorGo) anchorGo.transform.position += UnityEngine.Vector3.up * 0.35f;
 var statueBlock = new UnityEngine.GameObject("Block anchor"); statueBlock.transform.SetParent(blockers, false); statueBlock.transform.position = OnGround(0f, 0f) + UnityEngine.Vector3.up * 1.5f;
 statueBlock.AddComponent<UnityEngine.CapsuleCollider>().radius = 1.4f;
 for (var i = 0; i < 4; i++)
@@ -547,21 +728,23 @@ void Around(UnityEngine.Transform place, float cx, float cz, float r, int n, flo
         var along = pierFoot + pierDir * (k * 5f + 6f);
         foreach (var side in new[] { -1f, 1f })
         {
-            var st = along + new UnityEngine.Vector2(0f, side * 0.9f);
+            var st = along + pierSide * (side * 0.9f);
             var s3 = new UnityEngine.GameObject("Stand " + (place.childCount + 1)).transform; s3.SetParent(place, false);
             s3.position = origin + new UnityEngine.Vector3(st.x, pierY + 0.05f, st.y);
-            s3.rotation = UnityEngine.Quaternion.Euler(0f, side > 0 ? 0f : 180f, 0f);
+            var outward = pierSide * side;
+            s3.rotation = UnityEngine.Quaternion.Euler(0f, UnityEngine.Mathf.Atan2(outward.x, outward.y) * UnityEngine.Mathf.Rad2Deg, 0f);
             standCount++;
         }
     }
     var sail = WorkPlace("Sailing");
-    // two crates at the pier's root, facing the ship
-    foreach (var (lx, lz) in new[] { (40.5f, 4.5f), (44f, 5.5f) })
+    // two logs on the rock by the pier's root, facing the ship
+    foreach (var off in new[] { -3.5f, 3.5f })
     {
-        Seat(sail, "Stand " + (sail.childCount + 1), sv + "SM_Prop_Log_01.prefab", lx, lz, 62f, 6.5f, 0.9f, workProps);
+        var at = pierFoot - pierDir * 5f + pierSide * off;
+        Seat(sail, "Stand " + (sail.childCount + 1), sv + "SM_Prop_Log_01.prefab", at.x, at.y, shipAt.x, shipAt.y, 0.9f, workProps);
         standCount++;
     }
-    Zone(pierFoot.x - 2f, pierFoot.y + 1f, 6f);
+    Zone(pierFoot.x - pierDir.x * 4f, pierFoot.y - pierDir.y * 4f, 6f);
 }
 // Taming: a pen with two frostbitten cows and a snow hare
 {
@@ -613,22 +796,46 @@ for (var i = 0; i < 6; i++)
 Lane(1, 3f, V(0f, ringR - 0.2f), V(0f, 18f), V(0f, 28f), V(0f, 37f));
 Lane(2, 2.8f, OnRing(hallDoor), hallDoor);
 // the way in from the south
-Lane(1, 2.8f, V(0f, -60f), V(1.2f, -42f), V(-0.8f, -24f), V(0f, -ringR + 0.2f));
+Lane(1, 2.8f, V(0f, -RimAt(270f) + 3f), V(1.2f, -32f), V(-0.8f, -24f), V(0f, -ringR + 0.2f));
 // the forge, and on round the west to the woodcutters
 Lane(1, 2.2f, OnRing(V(-10f, 10f)), V(-10.2f, 10.8f));
 Lane(1, 2.2f, OnRing(V(-1f, -0.15f)), V(-18f, -1.5f), V(-27f, -3f), V(-30f, -2.5f));
 Lane(1, 1.8f, V(-27f, -3f), V(-29f, -9f), V(-31f, -14f));
 // the pond (Tove), the resting place and on to the farm
-Lane(1, 2.2f, OnRing(V(1f, -0.1f)), V(18f, -2f), V(30f, -3.5f), V(40f, -4f));
+Lane(1, 2.2f, OnRing(V(1f, -0.4f)), V(18f, -5f), pierFoot - pierDir * 3f + pierSide * 1.5f, pierFoot);
 Lane(1, 2.2f, OnRing(V(-1f, -1.3f)), V(-10f, -14f), V(-13.2f, -17.6f));
 Lane(1, 1.8f, V(-13.2f, -17.6f), V(-15f, -23f), V(-16f, -26f));
 // the training yard (melee, healing), on to the mines
 Lane(1, 2f, V(0f, 24f), V(-8f, 24.2f), V(-20f, 24.4f), V(-25f, 28f), V(-31f, 27.5f));
 // east: one lane that forks, north round the hall's south side to the archery range, east to the berries
-Lane(1, 2.2f, V(18f, -2f), V(28f, 2.5f), V(33.5f, 0.5f));
+Lane(1, 2.2f, V(18f, -5f), V(28f, 0.5f), V(33.5f, 0.5f));
+// out along the rim to the rope bridge and the lighthouse
+Lane(1, 2f, V(28f, 0.5f), V(38f, 6f), bridgeStart);
 Lane(1, 2f, V(15f, 3f), V(17f, 10.5f), V(23f, 17f), V(30f, 18.5f));
 // the cauldrons and the pen, off the south road
 Lane(1, 1.8f, V(0.4f, -31f), V(8.5f, -31.5f), V(18f, -29.5f), V(26.5f, -24.5f));
+
+// market stalls with awnings round the plaza (off the lanes), lantern posts, banners: a busy harbour square
+var market = new UnityEngine.GameObject("Market").transform; market.SetParent(root.transform, false);
+var stallKinds = new[] { 1, 3, 5, 7, 2, 6 };
+var stallN = 0;
+foreach (var deg in new[] { 28f, 160f, 200f, 320f, 248f, 118f })
+{
+    var d = Dir(deg); var at = d * (ringR + 4.2f);
+    if (!Free(at.x, at.y, 1.2f)) { log.AppendLine("no room for a stall at " + deg); continue; }
+    var st2 = Place("Assets/PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Market_Stall_0" + stallKinds[stallN % stallKinds.Length] + ".prefab", at.x, at.y, 1f, Facing(at.x, at.y, 0f, 0f), market);
+    Block(st2, 0.7f);
+    Zone(at.x, at.y, 2.6f);
+    stallN++;
+}
+for (var i = 0; i < 8; i++)
+{
+    var d = Dir(22.5f + i * 45f); var at = d * (ringR + 1.9f);
+    if (!Free(at.x, at.y, 0.4f)) continue;
+    Place(pr + "Props/SM_Prop_Lamp_Post_01.prefab", at.x, at.y, 1f, Facing(at.x, at.y, 0f, 0f), market);
+    Lamp(at.x, 2.6f, at.y, warm, 7f, 1.1f);
+}
+log.AppendLine("market stalls " + stallN);
 
 // wind-bent conifers and basalt round the edge of town (none in town: the camera looks down from behind)
 for (var i = 0; i < 70; i++)
@@ -637,7 +844,7 @@ for (var i = 0; i < 70; i++)
     var x = UnityEngine.Mathf.Cos(a) * r; var z = UnityEngine.Mathf.Sin(a) * r;
     if (z > 28f && UnityEngine.Mathf.Abs(x) < 12f) continue; // the stairs
     if (z < -28f && UnityEngine.Mathf.Abs(x) < 8f) continue; // the way in
-    if (r > EdgeAt(x, z) - 3f || !Free(x, z, 2f)) continue;
+    if (r > EdgeAt(x, z) - 3.5f || !Free(x, z, 2f)) continue;
     var k = rng.Next(4);
     Place(k < 2 ? pr + "Environment/SM_Env_Conifer_0" + (1 + k) + ".prefab" : pr + "Environment/SM_Env_Rock_Basalt_0" + (k - 1) + ".prefab", x, z, k < 2 ? 1.0f + R() * 0.5f : 0.9f + R() * 0.8f, -1, foliage, 0.2f);
 }
@@ -669,6 +876,19 @@ foreach (var group in new[] { props, buildings, workProps })
         nextProp:;
     }
 log.AppendLine("placed " + placed + ", work stands " + standCount);
+foreach (var st in work.GetComponentsInChildren<UnityEngine.Transform>())
+{
+    if (!st.name.StartsWith("Stand")) continue;
+    var lp = st.position - origin;
+    var margin = EdgeAt(lp.x, lp.z) - UnityEngine.Mathf.Sqrt(lp.x * lp.x + lp.z * lp.z);
+    if (margin < 2f && st.parent.name != "Fishing") log.AppendLine("near the rim: " + st.parent.name + "/" + st.name + " margin " + margin.ToString("F1"));
+}
+foreach (UnityEngine.Transform b in buildings)
+{
+    var lp = b.position - origin;
+    if (UnityEngine.Mathf.Sqrt(lp.x * lp.x + lp.z * lp.z) > EdgeAt(lp.x, lp.z) - 3f && !b.name.Contains("Pier") && !b.name.Contains("Gullwing") && !b.name.Contains("Island") && !b.name.Contains("Spire") && !b.name.Contains("Islet") && !b.name.Contains("Bridge") && !b.name.Contains("Lighthouse") && !b.name.Contains("Rope"))
+        log.AppendLine("building near the rim: " + b.name + " at " + lp.ToString("F1"));
+}
 
 // ---- roads: cobbles round the square, the lanes ----
 var roadsGo = new UnityEngine.GameObject("Roads"); roadsGo.transform.SetParent(root.transform, false);
