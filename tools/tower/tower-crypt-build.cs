@@ -21,13 +21,14 @@ UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(root, scene);
 root.transform.position = origin;
 var floor = root.AddComponent<TowerFloor>();
 floor.Radius = 110f;
-floor.SkyAmbient = new UnityEngine.Color(0.20f, 0.27f, 0.26f);
-floor.EquatorAmbient = new UnityEngine.Color(0.13f, 0.17f, 0.15f);
-floor.GroundAmbient = new UnityEngine.Color(0.07f, 0.08f, 0.07f);
-floor.FogColor = new UnityEngine.Color(0.05f, 0.08f, 0.07f);
-floor.FogDensity = 0.016f;
-floor.SunColor = new UnityEngine.Color(0.62f, 0.80f, 0.72f);
-floor.SunIntensity = 0.4f;
+floor.SkyAmbient = new UnityEngine.Color(0.30f, 0.30f, 0.27f);
+floor.EquatorAmbient = new UnityEngine.Color(0.22f, 0.19f, 0.16f);
+floor.GroundAmbient = new UnityEngine.Color(0.10f, 0.09f, 0.08f);
+// the cavern's walls show through a thinner, earthier dark (concept-crypt: warm torchlight on brown rock)
+floor.FogColor = new UnityEngine.Color(0.09f, 0.085f, 0.075f);
+floor.FogDensity = 0.0095f;
+floor.SunColor = new UnityEngine.Color(0.80f, 0.78f, 0.66f);
+floor.SunIntensity = 0.45f;
 floor.SunAngles = new UnityEngine.Vector3(70f, -20f, 0f);
 
 var e = "Assets/PolygonDungeon/Prefabs/Environments/";
@@ -159,6 +160,52 @@ UnityEditor.AssetDatabase.DeleteAsset(dataFolder + "/Void.mat");
 UnityEditor.AssetDatabase.CreateAsset(voidMat, dataFolder + "/Void.mat");
 voidPlane.GetComponent<UnityEngine.MeshRenderer>().sharedMaterial = voidMat;
 voidPlane.GetComponent<UnityEngine.MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+// the cavern round the rooms (tools/tower/blender/tower_caves.py, concept docs/mockups/tower/concept-crypt.jpg): a rubble
+// floor between the rooms, walls rising round them and a ceiling that shows from inside only (faces down), so the camera
+// over the players still sees the floor and no sky shows past the walls. Neither casts a shadow (the walls would put the
+// whole floor in shade). The FBX comes in turned half round: turned back.
+UnityEngine.Material CaveMat(string name, UnityEngine.Texture2D tex, UnityEngine.Texture2D normal, UnityEngine.Color tint, float smooth, UnityEngine.Color glow)
+{
+    var path = dataFolder + "/" + name + ".mat";
+    var m = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(path);
+    if (!m) { m = new UnityEngine.Material(UnityEngine.Shader.Find("Universal Render Pipeline/Lit")); UnityEditor.AssetDatabase.CreateAsset(m, path); }
+    m.SetTexture("_BaseMap", tex);
+    m.SetColor("_BaseColor", tint);
+    if (normal) { m.SetTexture("_BumpMap", normal); m.EnableKeyword("_NORMALMAP"); }
+    m.SetFloat("_Smoothness", smooth);
+    if (glow.maxColorComponent > 0f) { m.EnableKeyword("_EMISSION"); m.SetColor("_EmissionColor", glow); m.globalIlluminationFlags = UnityEngine.MaterialGlobalIlluminationFlags.None; }
+    UnityEditor.EditorUtility.SetDirty(m);
+    return m;
+}
+UnityEngine.Texture2D CaveTex(string path) { var t = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Texture2D>(path); if (!t) log.AppendLine("missing texture " + path); return t; }
+var caveRock = CaveTex("Assets/Synty/PolygonVikingRealm/Textures/Env/Rock_01.png");
+var caveRockN = CaveTex("Assets/Synty/PolygonVikingRealm/Textures/Env/Rock_01_Normals.png");
+var caveMud = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.TerrainLayer>("Assets/PolygonNatureBiomes/PNB_Meadow_Forest/Terrain/Terrain_Meadow_Mud_Debris_01.terrainlayer");
+var caveMats = new System.Collections.Generic.Dictionary<string, UnityEngine.Material>
+{
+    ["Rock"] = CaveMat("CaveRock", caveRock, caveRockN, new UnityEngine.Color(0.56f, 0.49f, 0.42f), 0.05f, UnityEngine.Color.black),
+    ["Earth"] = CaveMat("CaveEarth", caveMud ? caveMud.diffuseTexture : null, null, new UnityEngine.Color(0.62f, 0.55f, 0.48f), 0.05f, UnityEngine.Color.black),
+    ["Root"] = CaveMat("CaveRoot", null, null, new UnityEngine.Color(0.26f, 0.17f, 0.10f), 0.1f, UnityEngine.Color.black),
+};
+var cave = new UnityEngine.GameObject("Cavern").transform; cave.SetParent(root.transform, false);
+foreach (var part in new[] { "CryptCave", "CryptCeiling" })
+{
+    var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/World/Tower/Caves/Models/" + part + ".fbx");
+    if (!prefab) { log.AppendLine("missing model " + part + " (run tools/tower/blender/tower_caves.py)"); continue; }
+    var go = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(prefab, scene);
+    go.name = part;
+    go.transform.SetParent(cave, false);
+    go.transform.localPosition = UnityEngine.Vector3.zero;
+    go.transform.localRotation = UnityEngine.Quaternion.Euler(0f, 180f, 0f);
+    foreach (var r in go.GetComponentsInChildren<UnityEngine.MeshRenderer>())
+    {
+        var ms = r.sharedMaterials;
+        for (var i = 0; i < ms.Length; i++) { var key = ms[i] ? ms[i].name.Split(' ')[0].Split('.')[0] : ""; if (caveMats.TryGetValue(key, out var mm)) ms[i] = mm; }
+        r.sharedMaterials = ms;
+        r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+    }
+}
 
 // pillars: two rows down the hall, a ring in the throne hall, a few in the crypts
 void Pillar(float x, float z, bool broken)
@@ -296,6 +343,28 @@ Brazier(-6f, -64f, 14f, 2.2f); Brazier(6f, -64f, 14f, 2.2f);
 for (var z = -40f; z <= 0f; z += 20f) { Brazier(-12f, z, 15f, 2f); Brazier(12f, z + 10f, 15f, 2f); }
 Brazier(-30f, -32f, 16f, 2f); Brazier(30f, -18f, 16f, 2f);
 Brazier(-10f, 52f, 16f, 2.6f); Brazier(10f, 52f, 16f, 2.6f); Brazier(-24f, 20f, 16f, 2f); Brazier(24f, 20f, 16f, 2f);
+
+// fires out on the cavern's floor between the rooms, so its walls and rubble show in the dark (the concept's torchlight)
+{
+    var groundGo = cave.Find("CryptCave");
+    var probe = groundGo ? groundGo.GetComponentInChildren<UnityEngine.MeshFilter>() : null;
+    var probeCollider = probe ? probe.gameObject.AddComponent<UnityEngine.MeshCollider>() : null;
+    UnityEngine.Physics.SyncTransforms();
+    var caveFires = 0;
+    foreach (var (x, z) in new[] { (-20f, -56f), (20f, -56f), (-30f, -3f), (30f, -3f), (-38f, 20f), (38f, 22f), (0f, 66f), (-46f, -46f), (46f, -44f), (-22f, 64f), (24f, 65f) })
+    {
+        var from = origin + new UnityEngine.Vector3(x, 40f, z);
+        if (!probeCollider || !probeCollider.Raycast(new UnityEngine.Ray(from, UnityEngine.Vector3.down), out var hit, 80f)) continue;
+        var fire = Put(pr + "SM_Prop_Brazier_01.prefab", V(x, z), (x * 37f + z * 11f) % 360f, One(2.2f), props); // not R(): the props after keep their places
+        if (fire) fire.transform.position += UnityEngine.Vector3.up * (hit.point.y - origin.y);
+        var l = new UnityEngine.GameObject("Cave Fire Light"); l.transform.SetParent(lights, false); l.transform.position = hit.point + UnityEngine.Vector3.up * 2.4f;
+        var light = l.AddComponent<UnityEngine.Light>(); light.type = UnityEngine.LightType.Point; light.color = new UnityEngine.Color(1f, 0.58f, 0.26f); light.range = 22f; light.intensity = 4f; light.shadows = UnityEngine.LightShadows.None;
+        caveFires++;
+    }
+    if (probeCollider) UnityEngine.Object.DestroyImmediate(probeCollider);
+    log.AppendLine("cave fires " + caveFires);
+}
+
 foreach (var m in mushroomSpots.Take(6))
 {
     var l = new UnityEngine.GameObject("Mushroom Glow"); l.transform.SetParent(lights, false); l.transform.localPosition = m + UnityEngine.Vector3.up * 2.5f;

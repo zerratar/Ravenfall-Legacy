@@ -74,10 +74,23 @@ float GroundAt(float x, float z)
     // a raised lip just inside the edge, then the cliff: straight down into the clouds
     var lip = UnityEngine.Mathf.InverseLerp(edge - 10f, edge - 2f, r) * (1f - UnityEngine.Mathf.InverseLerp(edge - 2f, edge, r));
     h += lip * 1.2f;
-    var drop = UnityEngine.Mathf.InverseLerp(edge - 1f, edge + 9f, r);
-    drop = drop * drop;
-    h -= drop * (62f + Noise(x, z, 0.08f) * 6f);
+    // past the rim the terrain is cut (holes), the rock under it is Blender's
+    h -= 0.4f * UnityEngine.Mathf.InverseLerp(edge - 1.5f, edge, r);
     return h;
+}
+
+// the rim for Blender (tools/tower/blender/tower_islands.py makes the rock under it from this): [degrees from east toward
+// north, radius] every 5 degrees; the terrain is cut along the same line below
+{
+    var rimSb = new System.Text.StringBuilder("{\"note\": \"The Storm Spire rim: [degrees from east toward north, radius in metres]; written by tools/tower/tower-stormspire-build.cs\", \"rim\": [");
+    for (var i = 0; i < 72; i++)
+    {
+        var deg = i * 5f; var ra = deg * UnityEngine.Mathf.Deg2Rad;
+        var rr = Edge(UnityEngine.Mathf.Cos(ra) * 50f, UnityEngine.Mathf.Sin(ra) * 50f);
+        rimSb.Append((i > 0 ? ", " : "") + "[" + deg.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + ", " + rr.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) + "]");
+    }
+    rimSb.Append("]}");
+    System.IO.File.WriteAllText(System.IO.Path.GetFullPath("tools/tower/stormspire-rim.json"), rimSb.ToString());
 }
 
 // ---- terrain layers: the meadow pack's grass, rock and paths, used as they are ----
@@ -95,7 +108,7 @@ var lTiles = L("Terrain_Meadow_Ruin_Tiles_01");
 var lDirt = L("Terrain_Meadow_Dirt_Cracked_Pebbles_01");
 
 // ---- the terrain ----
-var res = 257;
+var res = 513;
 var td = new UnityEngine.TerrainData();
 td.heightmapResolution = res;
 td.size = new UnityEngine.Vector3(size, height, size);
@@ -128,7 +141,8 @@ for (var zi = 0; zi < amRes; zi++)
         // old flagstones over the whole top, worn to cracked ground in patches
         w[4] = 1.4f * UnityEngine.Mathf.Clamp01(1.25f - Noise(x + 13f, z, 0.07f));
         w[5] += UnityEngine.Mathf.Clamp01((Noise(x, z, 0.09f) - 0.55f) * 3f);
-        w[5] = UnityEngine.Mathf.Clamp01((r - (Edge(x, z) - 8f)) / 6f) * 1.5f;   // bare ground toward the wind-scoured edge
+        w[5] = UnityEngine.Mathf.Clamp01((r - (Edge(x, z) - 8f)) / 6f) * 1.5f   // bare ground toward the wind-scoured edge
+            + UnityEngine.Mathf.Clamp01((r - (Edge(x, z) - 3.4f)) / 1.2f) * 14f;   // all dirt at the cut, to meet the collar
         w[2] = UnityEngine.Mathf.Clamp01((steep - 26f) / 10f) * 4f;
         var dp = new UnityEngine.Vector2(x - plaza.x, z - plaza.z).magnitude;
         var ring = UnityEngine.Mathf.Clamp01((plazaRadius + 1f - dp) / 3f + (Noise(x, z, 0.3f) - 0.5f) * 0.6f);
@@ -139,6 +153,18 @@ for (var zi = 0; zi < amRes; zi++)
         for (var k = 0; k < w.Length; k++) maps[zi, xi, k] = w[k] / sum;
     }
 td.SetAlphamaps(0, 0, maps);
+// cut along the rim, well inside it: the earth collar runs smooth over the hole's steps, the rock (Blender) holds it up
+{
+    var holeRes = res - 1;
+    var solid = new bool[holeRes, holeRes];
+    for (var zi = 0; zi < holeRes; zi++)
+        for (var xi = 0; xi < holeRes; xi++)
+        {
+            var x = (xi + 0.5f) / holeRes * size - size / 2f; var z = (zi + 0.5f) / holeRes * size - size / 2f;
+            solid[zi, xi] = UnityEngine.Mathf.Sqrt(x * x + z * z) < Edge(x, z) - 1.2f;
+        }
+    td.SetHoles(0, 0, solid);
+}
 UnityEditor.EditorUtility.SetDirty(td);
 UnityEditor.AssetDatabase.SaveAssets();
 var terrainGo = UnityEngine.Terrain.CreateTerrainGameObject(td);
@@ -290,13 +316,92 @@ for (var i = 0; i < 90; i++)
     Bare(go);
     if (go) foreach (var rr in go.GetComponentsInChildren<UnityEngine.Renderer>()) rr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 }
-// cliffs dressing the edge, so the rock reads as rock and not a cut-off terrain
+// the rock under the rim (tools/tower/blender/tower_islands.py, concept docs/mockups/tower/concept-stormspire.jpg): a jagged
+// layered cone with roots, as Galewharf has; the terrain is cut along the rim and an earth collar runs over the cut's steps.
+// The FBX comes in turned half round: turned back. (The cliff props that dressed the old stretched cliffs are gone; their
+// random draws stay so everything after keeps its place.)
 for (var i = 0; i < 30; i++)
 {
-    var a = i / 30f * UnityEngine.Mathf.PI * 2f + R() * 0.1f;
-    var e = Edge(UnityEngine.Mathf.Cos(a) * 50f, UnityEngine.Mathf.Sin(a) * 50f);
-    var x = UnityEngine.Mathf.Cos(a) * (e + 3f); var z = UnityEngine.Mathf.Sin(a) * (e + 3f);
-    Bare(Place("Assets/Synty/PolygonVikingRealm/Prefabs/Environment/SM_Env_Rock_Cliff_0" + (1 + rng.Next(5)) + ".prefab", origin + new UnityEngine.Vector3(x, -10f - R() * 4f, z), 1.0f + R() * 0.5f, -a * UnityEngine.Mathf.Rad2Deg + 90f, props));
+    R(); rng.Next(5); R(); R();
+}
+UnityEngine.Material RockMat(string name, UnityEngine.Texture2D tex, UnityEngine.Texture2D normal, UnityEngine.Color tint, float smooth)
+{
+    var path = dataFolder + "/" + name + ".mat";
+    var m = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(path);
+    if (!m) { m = new UnityEngine.Material(UnityEngine.Shader.Find("Universal Render Pipeline/Lit")); UnityEditor.AssetDatabase.CreateAsset(m, path); }
+    m.SetTexture("_BaseMap", tex);
+    m.SetColor("_BaseColor", tint);
+    if (normal) { m.SetTexture("_BumpMap", normal); m.EnableKeyword("_NORMALMAP"); }
+    m.SetFloat("_Smoothness", smooth);
+    UnityEditor.EditorUtility.SetDirty(m);
+    return m;
+}
+var vtex = "Assets/Synty/PolygonVikingRealm/Textures/Env/";
+var rockTex = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Texture2D>(vtex + "Rock_01.png");
+var rockNormal = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Texture2D>(vtex + "Rock_01_Normals.png");
+var dirtLayer = td.terrainLayers[5];
+var rockMats = new System.Collections.Generic.Dictionary<string, UnityEngine.Material>
+{
+    ["Rock"] = RockMat("IslandRock", rockTex, rockNormal, new UnityEngine.Color(0.60f, 0.61f, 0.66f), 0.05f),
+    ["Earth"] = RockMat("IslandEarth", dirtLayer ? dirtLayer.diffuseTexture : null, null, new UnityEngine.Color(0.82f, 0.72f, 0.62f), 0.05f),
+    ["Root"] = RockMat("IslandRoot", null, null, new UnityEngine.Color(0.30f, 0.20f, 0.12f), 0.1f),
+};
+{
+    var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/World/Tower/Sky/Models/StormSpireRock.fbx");
+    if (!prefab) log.AppendLine("missing model StormSpireRock (run tools/tower/blender/tower_islands.py)");
+    else
+    {
+        var go = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(prefab, scene);
+        go.name = "StormSpireRock";
+        go.transform.SetParent(root.transform, false);
+        go.transform.localPosition = new UnityEngine.Vector3(0f, 0.05f, 0f);
+        go.transform.localRotation = UnityEngine.Quaternion.Euler(0f, 180f, 0f);
+        foreach (var r in go.GetComponentsInChildren<UnityEngine.MeshRenderer>())
+        {
+            var ms = r.sharedMaterials;
+            for (var k = 0; k < ms.Length; k++) { var key = ms[k] ? ms[k].name.Split(' ')[0].Split('.')[0] : ""; if (rockMats.TryGetValue(key, out var mm)) ms[k] = mm; }
+            r.sharedMaterials = ms;
+        }
+    }
+    // the earth collar: just under the ground out to the rock's top ring, smooth over the terrain hole's steps
+    const int seg = 360;
+    var rockTop = 0.05f - 0.25f;
+    var rings = new[] { (-2.4f, true), (-0.5f, true), (0.65f, false) };
+    var verts = new System.Collections.Generic.List<UnityEngine.Vector3>();
+    var uvs = new System.Collections.Generic.List<UnityEngine.Vector2>();
+    for (var i = 0; i <= seg; i++)
+    {
+        var ra = i * 2f * UnityEngine.Mathf.PI / seg;
+        var dx = UnityEngine.Mathf.Cos(ra); var dz = UnityEngine.Mathf.Sin(ra);
+        var e = Edge(dx * 50f, dz * 50f);
+        foreach (var (off, onGround) in rings)
+        {
+            var px = dx * (e + off); var pz = dz * (e + off);
+            verts.Add(new UnityEngine.Vector3(px, onGround ? GroundAt(px, pz) - 0.05f : rockTop, pz));
+            uvs.Add(new UnityEngine.Vector2(px, pz) / 4f);
+        }
+    }
+    var tris = new System.Collections.Generic.List<int>();
+    for (var i = 0; i < seg; i++)
+        for (var k = 0; k < rings.Length - 1; k++)
+        {
+            int a0 = i * rings.Length + k, b0 = (i + 1) * rings.Length + k;
+            tris.AddRange(new[] { a0, a0 + 1, b0, b0, a0 + 1, b0 + 1 });
+        }
+    var mesh = new UnityEngine.Mesh { name = "Rim Collar" };
+    mesh.SetVertices(verts); mesh.SetUVs(0, uvs); mesh.SetTriangles(tris, 0);
+    mesh.RecalculateNormals();
+    if (mesh.normals[0].y < 0f) { tris.Reverse(); mesh.SetTriangles(tris, 0); mesh.RecalculateNormals(); }
+    mesh.RecalculateBounds();
+    var meshPath = dataFolder + "/RimCollar.asset";
+    UnityEditor.AssetDatabase.DeleteAsset(meshPath);
+    UnityEditor.AssetDatabase.CreateAsset(mesh, meshPath);
+    var collar = new UnityEngine.GameObject("Rim Collar");
+    UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(collar, scene);
+    collar.transform.SetParent(root.transform, false);
+    collar.AddComponent<UnityEngine.MeshFilter>().sharedMesh = mesh;
+    collar.AddComponent<UnityEngine.MeshRenderer>().sharedMaterial = RockMat("RimEarth", dirtLayer ? dirtLayer.diffuseTexture : null, dirtLayer ? dirtLayer.normalMapTexture : null, UnityEngine.Color.white, 0f);
+    collar.AddComponent<UnityEngine.MeshCollider>().sharedMesh = mesh;
 }
 
 // the storm ring: four lightning rods (an iron pillar each), braziers with blue fire between
@@ -356,7 +461,7 @@ var spots = new System.Collections.Generic.List<UnityEngine.Vector3>();
 var tries = 0;
 while (spots.Count < 24 && tries++ < 4000)
 {
-    var a = R() * UnityEngine.Mathf.PI * 2f; var r = 14f + R() * 34f;
+    var a = R() * UnityEngine.Mathf.PI * 2f; var r = 14f + R() * 27f; // inside the colonnade (its raised ruin tiles made pockets)
     var x = UnityEngine.Mathf.Cos(a) * r; var z = UnityEngine.Mathf.Sin(a) * r - 2f;
     if (!Clear(x, z, 3f)) continue;
     if (spots.Any(s => (new UnityEngine.Vector3(x, 0, z) - s).magnitude < 7f)) continue;
