@@ -1639,7 +1639,11 @@ public sealed class TowerManager : MonoBehaviour
         SetLook(over);
         UpdateHaze(over, camera);
         SkyClouds.Place = null;
+        Ambience.Place = null;
+        WeatherEffects.PlaceStorm = null;
         if (!over) return;
+        WeatherEffects.PlaceStorm = over.Storm;
+        Ambience.Place = new Ambience.Life { Snow = over.Snow, Fireflies = over.Fireflies, Butterflies = over.Butterflies, Gulls = over.Gulls };
 
         // GameManager sets these from potato mode every frame, so they are switched off every frame while the camera is
         // over the floor; when it leaves, the next frame puts them back as the settings say
@@ -1681,7 +1685,8 @@ public sealed class TowerManager : MonoBehaviour
         if (sun)
         {
             sun.color = floor.SunColor;
-            sun.intensity = floor.SunIntensity;
+            // a stormy place's lightning lights the land for a moment
+            sun.intensity = floor.SunIntensity + (floor.Storm > 0f ? Weather.Flash * 5f : 0f);
             sun.transform.rotation = Quaternion.Euler(floor.SunAngles);
         }
     }

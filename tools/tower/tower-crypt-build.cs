@@ -27,6 +27,8 @@ floor.GroundAmbient = new UnityEngine.Color(0.10f, 0.09f, 0.08f);
 // the cavern's walls show through a thinner, earthier dark (concept-crypt: warm torchlight on brown rock)
 floor.FogColor = new UnityEngine.Color(0.09f, 0.085f, 0.075f);
 floor.FogDensity = 0.0095f;
+// its life (Ambience, with its setting): pale lights drifting in the dark (the fireflies)
+floor.Fireflies = 12f;
 floor.SunColor = new UnityEngine.Color(0.80f, 0.78f, 0.66f);
 floor.SunIntensity = 0.45f;
 floor.SunAngles = new UnityEngine.Vector3(70f, -20f, 0f);

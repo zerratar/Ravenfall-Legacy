@@ -43,6 +43,21 @@ public sealed class Ambience : MonoBehaviour
     /// <summary>The island the focus is on, by its identifier; null over the sea.</summary>
     public static string Island { get; private set; }
 
+    /// <summary>The life of a place that is no island (a tower floor or town): how many of each a second.</summary>
+    public struct Life
+    {
+        public float Snow;
+        public float Fireflies;
+        public float Butterflies;
+        public float Gulls;
+    }
+
+    /// <summary>
+    /// The life of the place the camera is over instead of the islands' (TowerManager sets it every frame); null on the
+    /// islands. Its own rates, day or night: a tower place keeps its own light.
+    /// </summary>
+    public static Life? Place { get; set; }
+
     private ParticleSystem snow, petals, fireflies, butterflies, gulls;
     private GameManager game;
     private DayNightCycle dayNight;
@@ -53,6 +68,8 @@ public sealed class Ambience : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Create()
     {
+        // a static: what the last play left (the editor keeps statics between plays)
+        Place = null;
         if (!Application.isPlaying || FindAnyObjectByType<Ambience>()) return;
         var go = new GameObject("Ambience") { hideFlags = HideFlags.HideInHierarchy };
         DontDestroyOnLoad(go);
@@ -336,6 +353,15 @@ public sealed class Ambience : MonoBehaviour
         }
 
         transform.position = focus;
+        if (Place is { } place)
+        {
+            Emit(snow, place.Snow);
+            Emit(petals, 0f);
+            Emit(fireflies, place.Fireflies);
+            Emit(butterflies, place.Butterflies);
+            Emit(gulls, place.Gulls);
+            return;
+        }
         var island = Island;
         var snowy = island == "Heim";
         // on Iceheim the weather's rain falls as a snowstorm

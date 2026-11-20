@@ -47,6 +47,8 @@ town.GroundAmbient = new UnityEngine.Color(0.20f, 0.18f, 0.12f);
 // clear golden afternoon air, the haze only far off (concept docs/mockups/tower/concept-mossgate.jpg)
 town.FogColor = new UnityEngine.Color(0.74f, 0.76f, 0.64f);
 town.FogDensity = 0.0034f;
+// its life (Ambience, with its setting): butterflies in the golden light, a few fireflies
+town.Butterflies = 4f; town.Fireflies = 6f;
 town.SunColor = new UnityEngine.Color(1f, 0.86f, 0.64f);
 town.SunIntensity = 1.35f;
 town.SunAngles = new UnityEngine.Vector3(32f, -55f, 0f);

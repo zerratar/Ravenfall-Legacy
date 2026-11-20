@@ -15,10 +15,13 @@ public sealed class FrozenPond : MonoBehaviour
     private const int MaxHoles = 8;
     private static readonly int HolesId = Shader.PropertyToID("_Holes");
     private static readonly int HoleCountId = Shader.PropertyToID("_HoleCount");
+    private static readonly int ReceiveShadowsId = Shader.PropertyToID("_ReceiveShadows");
 
     public float Radius = 12f;
     [Tooltip("Holes in the ice: x and z in this object's space, the radius in y.")]
     public List<Vector3> Holes = new List<Vector3>();
+    [Tooltip("Takes the sun's shadows. Off for a lake over a bumpy bed (a cave): its shadows showed through in blocks.")]
+    public bool ReceiveShadows = true;
 
     private Mesh mesh;
     private MaterialPropertyBlock block;
@@ -104,6 +107,7 @@ public sealed class FrozenPond : MonoBehaviour
         GrassRenderer.SetRoad(this, new[] { new Vector2(c.x, c.z), new Vector2(c.x + 0.01f, c.z) }, Radius * 0.9f * Mathf.Abs(transform.lossyScale.x) * 2f, null);
         block.SetVectorArray(HolesId, holes);
         block.SetFloat(HoleCountId, count);
+        block.SetFloat(ReceiveShadowsId, ReceiveShadows ? 1f : 0f);
         renderer.SetPropertyBlock(block);
     }
 }

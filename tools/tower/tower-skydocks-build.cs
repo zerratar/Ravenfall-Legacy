@@ -27,6 +27,8 @@ floor.EquatorAmbient = new UnityEngine.Color(0.38f, 0.40f, 0.50f);
 floor.GroundAmbient = new UnityEngine.Color(0.22f, 0.22f, 0.26f);
 floor.FogColor = new UnityEngine.Color(0.66f, 0.70f, 0.78f);
 floor.FogDensity = 0.0042f;
+// its life (Ambience, with its setting): gulls round the docks, a few butterflies
+floor.Gulls = 0.6f; floor.Butterflies = 1.5f;
 floor.SunColor = new UnityEngine.Color(0.86f, 0.89f, 1f);
 floor.SunIntensity = 0.95f;
 floor.SunAngles = new UnityEngine.Vector3(30f, -60f, 0f);

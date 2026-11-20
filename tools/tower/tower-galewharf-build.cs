@@ -31,6 +31,8 @@ town.EquatorAmbient = new UnityEngine.Color(0.42f, 0.44f, 0.52f);
 town.GroundAmbient = new UnityEngine.Color(0.24f, 0.24f, 0.28f);
 town.FogColor = new UnityEngine.Color(0.70f, 0.74f, 0.82f);
 town.FogDensity = 0.0040f;
+// its life (Ambience, with its setting): gulls over the harbor, a few butterflies
+town.Gulls = 0.5f; town.Butterflies = 1.5f;
 town.SunColor = new UnityEngine.Color(0.96f, 0.94f, 1f);
 town.SunIntensity = 1.05f;
 town.SunAngles = new UnityEngine.Vector3(32f, -55f, 0f);

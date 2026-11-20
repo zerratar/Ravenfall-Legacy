@@ -27,6 +27,8 @@ floor.GroundAmbient = new UnityEngine.Color(0.17f, 0.16f, 0.11f);
 // a green haze, thin enough that the drowned hall's walls show (concept-marsh)
 floor.FogColor = new UnityEngine.Color(0.40f, 0.52f, 0.42f);
 floor.FogDensity = 0.0058f;
+// its life (Ambience, with its setting): fireflies over the water
+floor.Fireflies = 40f; floor.Butterflies = 1f;
 floor.SunColor = new UnityEngine.Color(0.85f, 0.90f, 0.70f);
 floor.SunIntensity = 0.95f;
 floor.SunAngles = new UnityEngine.Vector3(48f, -35f, 0f);

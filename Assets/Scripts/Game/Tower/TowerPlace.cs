@@ -50,6 +50,18 @@ public abstract class TowerPlace : MonoBehaviour
     /// </summary>
     public GameObject MeshClouds;
 
+    /// <summary>
+    ///     The place's life (Ambience, with its setting and off in potato mode): snowflakes, fireflies, butterflies and
+    ///     gulls a second round the camera's focus. All none by default.
+    /// </summary>
+    public float Snow;
+    public float Fireflies;
+    public float Butterflies;
+    public float Gulls;
+
+    /// <summary>How stormy it is, 0 to 1: lightning in the clouds and thunder (WeatherEffects), none by default.</summary>
+    [Range(0f, 1f)] public float Storm;
+
     public Vector3 Centre => transform.position;
 
     public Vector3 Spawn => SpawnPoint ? SpawnPoint.position : transform.position;

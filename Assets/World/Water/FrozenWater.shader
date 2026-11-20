@@ -50,6 +50,8 @@ Shader "Ravenfall/Frozen Water"
             #pragma multi_compile_fog
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
+            #pragma multi_compile_fragment _ _ADDITIONAL_LIGHTS
+            #pragma multi_compile_fragment _ _CLUSTER_LIGHT_LOOP
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
@@ -71,6 +73,8 @@ Shader "Ravenfall/Frozen Water"
             // per pond (FrozenPond, a property block): the holes, world x, z and radius
             float4 _Holes[8];
             float _HoleCount;
+            // per pond: 0 where the sun's shadows would only show the bumpy bed under the ice in blocks (a cave lake)
+            float _ReceiveShadows;
 
             // the scene's ambient light (SceneAmbient)
             float4 _RavenfallSH[7];
@@ -90,6 +94,9 @@ Shader "Ravenfall/Frozen Water"
                 float2 uv : TEXCOORD0;
                 float3 positionWS : TEXCOORD1;
                 float fog : TEXCOORD2;
+                // the pond's own position: the patterns are worked out from it, as world positions 6 km out (the tower)
+                // lost enough precision in the hashes to show square blocks
+                float2 local : TEXCOORD3;
             };
 
             Varyings Vertex(Attributes input)
@@ -98,6 +105,7 @@ Shader "Ravenfall/Frozen Water"
                 output.positionWS = TransformObjectToWorld(input.positionOS.xyz);
                 output.positionCS = TransformWorldToHClip(output.positionWS);
                 output.uv = input.uv;
+                output.local = input.positionOS.xz;
                 output.fog = ComputeFogFactor(output.positionCS.z);
                 return output;
             }
@@ -206,7 +214,8 @@ Shader "Ravenfall/Frozen Water"
             half4 Fragment(Varyings input) : SV_Target
             {
                 float3 P = input.positionWS;
-                float2 xz = P.xz;
+                float2 xz = input.local;
+                float2 world = P.xz;
                 float r = length(input.uv);
                 float3 V = normalize(_WorldSpaceCameraPos - P);
                 float t = _Time.y;
@@ -240,7 +249,7 @@ Shader "Ravenfall/Frozen Water"
                 // ---- light
                 float4 shadowCoord = TransformWorldToShadowCoord(P);
                 Light sun = GetMainLight(shadowCoord);
-                half shadow = sun.shadowAttenuation;
+                half shadow = lerp(1.0, sun.shadowAttenuation, _ReceiveShadows);
                 float3 N = float3(0, 1, 0);
                 // the ice is not quite flat: a gentle unevenness breaks up the glint
                 float2 tilt = float2(Noise(xz * 1.7) - 0.5, Noise(xz * 1.7 + 31.0) - 0.5) * 0.08;
@@ -263,6 +272,24 @@ Shader "Ravenfall/Frozen Water"
                 float sparkle = step(0.985, Hash(sc + floor(V.xz * 6)));
                 frosted += sun.color * sparkle * shadow * 1.5 * nl;
 
+                #if defined(_ADDITIONAL_LIGHTS)
+                    // the lights near by (braziers, torches): they light the frost and the water under the ice, and glint
+                    // off the clear ice in warm spots
+                    InputData inputData = (InputData)0;
+                    inputData.positionWS = P;
+                    inputData.normalizedScreenSpaceUV = GetNormalizedScreenSpaceUV(input.positionCS);
+                    uint lightCount = GetAdditionalLightsCount();
+                    LIGHT_LOOP_BEGIN(lightCount)
+                        Light near = GetAdditionalLight(lightIndex, P, half4(1, 1, 1, 1));
+                        half3 lc = near.color * near.distanceAttenuation * near.shadowAttenuation;
+                        half nnl = saturate(dot(N, near.direction));
+                        frosted += _FrostColor.rgb * lc * nnl;
+                        ice += body * lc * (0.3 + 0.4 * nnl);
+                        float3 Hn = normalize(near.direction + V);
+                        ice += lc * (pow(saturate(dot(Ni, Hn)), 160) * 2.5 + pow(saturate(dot(Ni, Hn)), 24) * 0.12) * _Glint;
+                    LIGHT_LOOP_END
+                #endif
+
                 half3 color = lerp(ice, frosted, frost);
 
                 // ---- holes cut in the ice: open dark water, a slow ripple, a rim of slush
@@ -270,7 +297,7 @@ Shader "Ravenfall/Frozen Water"
                 {
                     if (k >= (int)_HoleCount) break;
                     float4 hole = _Holes[k];
-                    float d = length(xz - hole.xy) / max(hole.z, 0.01) + (Noise(xz * 6 + k) - 0.5) * 0.12;
+                    float d = length(world - hole.xy) / max(hole.z, 0.01) + (Noise(xz * 6 + k) - 0.5) * 0.12;
                     if (d > 1.5) continue;
                     // dark open water, a touch lighter toward its edge, the sky faintly in it, a slow shimmer
                     half3 water = _HoleColor.rgb * (ambient * 0.6 + 0.25) * (0.75 + 0.5 * smoothstep(0.3, 1.0, d));

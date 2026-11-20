@@ -34,6 +34,13 @@ public sealed class WeatherEffects : MonoBehaviour
     private const float RippleReach = 24f;    // metres round the focus
     private const float CloudBase = SkyClouds.Floor + 30f;
 
+    /// <summary>
+    /// How stormy the place the camera is over is, 0 to 1, where the world's weather does not reach (a tower floor; set
+    /// every frame by TowerManager); null on the islands. Its lightning flashes in the clouds and its thunder rolls as
+    /// the weather's would, with the changing weather setting on and the clouds drawn.
+    /// </summary>
+    public static float? PlaceStorm { get; set; }
+
     /// <summary>The setting: lightning flashes on or off.</summary>
     public static bool LightningFlashes { get; set; } = true;
 
@@ -70,6 +77,8 @@ public sealed class WeatherEffects : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Create()
     {
+        // a static: what the last play left
+        PlaceStorm = null;
         if (!Application.isPlaying) return;
         var go = new GameObject("Weather Effects") { hideFlags = HideFlags.HideInHierarchy };
         DontDestroyOnLoad(go);
@@ -355,6 +364,7 @@ public sealed class WeatherEffects : MonoBehaviour
     private void Lightning(bool outside, Vector3 focus)
     {
         var storm = Weather.Changing && outside ? Weather.Storm : 0f;
+        if (PlaceStorm is { } placeStorm) storm = Weather.Enabled && SkyClouds.Active && outside ? placeStorm : 0f;
         var time = Time.time;
         if (storm < 0.05f) nextLightning = -1f;
         else

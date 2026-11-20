@@ -27,6 +27,8 @@ floor.GroundAmbient = new UnityEngine.Color(0.17f, 0.16f, 0.11f);
 // clearer, golden air in the hall (concept-overgrown: sunlight pouring in, mist only low down)
 floor.FogColor = new UnityEngine.Color(0.66f, 0.70f, 0.56f);
 floor.FogDensity = 0.0042f;
+// its life (Ambience, with its setting): butterflies over the meadow, a few fireflies in the shade of the hall
+floor.Butterflies = 3.5f; floor.Fireflies = 10f;
 floor.SunColor = new UnityEngine.Color(1f, 0.88f, 0.68f);
 floor.SunIntensity = 1.3f;
 floor.SunAngles = new UnityEngine.Vector3(48f, -35f, 0f);

@@ -27,6 +27,9 @@ floor.EquatorAmbient = new UnityEngine.Color(0.31f, 0.32f, 0.42f);
 floor.GroundAmbient = new UnityEngine.Color(0.17f, 0.17f, 0.21f);
 floor.FogColor = new UnityEngine.Color(0.50f, 0.53f, 0.63f);
 floor.FogDensity = 0.0048f;
+// its storm (WeatherEffects, with the changing weather and lightning flash settings): lightning in the clouds round the
+// spire every ten seconds or so, thunder, a bolt now and then (0.55 put the strikes 3 km out, too far to see)
+floor.Storm = 0.85f;
 floor.SunColor = new UnityEngine.Color(0.78f, 0.83f, 1f);
 floor.SunIntensity = 0.75f;
 floor.SunAngles = new UnityEngine.Vector3(38f, -120f, 0f);

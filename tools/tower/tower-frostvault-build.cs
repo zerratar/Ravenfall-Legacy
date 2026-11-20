@@ -28,6 +28,8 @@ floor.EquatorAmbient = new UnityEngine.Color(0.28f, 0.35f, 0.48f);
 floor.GroundAmbient = new UnityEngine.Color(0.12f, 0.15f, 0.20f);
 floor.FogColor = new UnityEngine.Color(0.30f, 0.40f, 0.54f);
 floor.FogDensity = 0.011f;
+// its life (Ambience, with its setting): flakes drifting down from the ice overhead
+floor.Snow = 60f;
 floor.SunColor = new UnityEngine.Color(0.75f, 0.86f, 1f);
 floor.SunIntensity = 0.75f;
 floor.SunAngles = new UnityEngine.Vector3(70f, -20f, 0f);
@@ -184,10 +186,24 @@ UnityEngine.Texture2D CaveTex(string path) { var t = UnityEditor.AssetDatabase.L
 var caveRock = CaveTex("Assets/Synty/PolygonVikingRealm/Textures/Env/Rock_01.png");
 var caveRockN = CaveTex("Assets/Synty/PolygonVikingRealm/Textures/Env/Rock_01_Normals.png");
 var caveMud = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.TerrainLayer>("Assets/PolygonNatureBiomes/PNB_Meadow_Forest/Terrain/Terrain_Meadow_Mud_Debris_01.terrainlayer");
+UnityEngine.Material SolidIce(string path, UnityEngine.Color surface, UnityEngine.Color deep, UnityEngine.Color glow, float glowAmount)
+{
+    // solid ice (Assets/World/Water/Ice.shader): crystal facets, veins seen deep inside, a cold glow from within
+    var m = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(path);
+    var shader = UnityEngine.Shader.Find("Ravenfall/Ice");
+    if (!m) { m = new UnityEngine.Material(shader); UnityEditor.AssetDatabase.CreateAsset(m, path); }
+    m.shader = shader;
+    m.SetColor("_SurfaceColor", surface);
+    m.SetColor("_DeepColor", deep);
+    m.SetColor("_GlowColor", glow);
+    m.SetFloat("_Glow", glowAmount);
+    UnityEditor.EditorUtility.SetDirty(m);
+    return m;
+}
 var caveMats = new System.Collections.Generic.Dictionary<string, UnityEngine.Material>
 {
     // ice: pale blue, glossy, glowing a little from within; the floor packed snow over rock
-    ["Ice"] = CaveMat("CaveIce", null, caveRockN, new UnityEngine.Color(0.56f, 0.80f, 0.97f), 0.78f, new UnityEngine.Color(0.04f, 0.13f, 0.20f)),
+    ["Ice"] = SolidIce(dataFolder + "/CaveIce.mat", new UnityEngine.Color(0.60f, 0.83f, 0.98f), new UnityEngine.Color(0.05f, 0.20f, 0.38f), new UnityEngine.Color(0.12f, 0.48f, 1.0f), 0.8f),
     ["Earth"] = CaveMat("CaveSnow", caveRock, caveRockN, new UnityEngine.Color(0.80f, 0.86f, 0.93f), 0.25f, UnityEngine.Color.black),
     ["Rock"] = CaveMat("CaveRock", caveRock, caveRockN, new UnityEngine.Color(0.55f, 0.60f, 0.68f), 0.1f, UnityEngine.Color.black),
 };
@@ -208,6 +224,23 @@ foreach (var part in new[] { "FrostVaultCave", "FrostVaultCeiling" })
         r.sharedMaterials = ms;
         r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
     }
+}
+
+// a frozen lake under it all (FrozenPond, the Frozen Water shader): the rooms stand in it, the cavern's rubble pokes up
+// through it as rocks caught in the ice, and it runs up to a shore where the floor rises to the walls. Under the rooms'
+// tiles it is hidden. The cavern floor lies about -0.7 m, up to -0.4 between its rubble; the ice at -0.3 (lower, the floor's flat quads showed through it in squares).
+{
+    var path = "Assets/World/Water/Frozen Water.mat";
+    var iceMat = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(path);
+    if (!iceMat) { iceMat = new UnityEngine.Material(UnityEngine.Shader.Find("Ravenfall/Frozen Water")) { name = "Frozen Water" }; UnityEditor.AssetDatabase.CreateAsset(iceMat, path); }
+    var lake = new UnityEngine.GameObject("Frozen Lake");
+    lake.transform.SetParent(cave, false);
+    lake.transform.localPosition = new UnityEngine.Vector3(0f, -0.3f, -7.5f);
+    lake.AddComponent<UnityEngine.MeshFilter>();
+    lake.AddComponent<UnityEngine.MeshRenderer>().sharedMaterial = iceMat;
+    var lakeIce = lake.AddComponent<FrozenPond>();
+    lakeIce.Radius = 95f;
+    lakeIce.enabled = false; lakeIce.enabled = true;
 }
 
 // pillars: two rows down the hall, a ring in the throne hall, a few in the crypts
@@ -470,6 +503,13 @@ foreach (var target in new[] { W(0f, 38f), W(-30f, -25f), W(30f, -25f) })
 }
 
 var scenePath = folder + "/Tower_FrostVault.unity";
+// the icicle crystals are the cavern's ice too
+{
+    var crystals = 0;
+    foreach (var go in scene.GetRootGameObjects()) foreach (var r in go.GetComponentsInChildren<UnityEngine.MeshRenderer>(true))
+        if (r.name.StartsWith("SM_Env_Icicle")) { r.sharedMaterials = r.sharedMaterials.Select(_ => caveMats["Ice"]).ToArray(); crystals++; }
+    log.AppendLine("ice crystals " + crystals);
+}
 UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene, scenePath);
 UnityEditor.SceneManagement.EditorSceneManager.CloseScene(scene, true);
 UnityEngine.SceneManagement.SceneManager.SetActiveScene(main);

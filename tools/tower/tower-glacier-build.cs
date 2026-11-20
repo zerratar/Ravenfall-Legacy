@@ -207,6 +207,20 @@ for (var i = 0; i < 270; i++)
 // ice cliffs round the valley with snow on their tops, in front of the white hills. Faces up: they show from inside the
 // valley and from above. The FBX comes in turned half round: turned back. No shadows (they would shade the valley's edge).
 {
+UnityEngine.Material SolidIce(string path, UnityEngine.Color surface, UnityEngine.Color deep, UnityEngine.Color glow, float glowAmount)
+    {
+        // solid ice (Assets/World/Water/Ice.shader): crystal facets, veins seen deep inside, a cold glow from within
+        var m = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(path);
+        var shader = UnityEngine.Shader.Find("Ravenfall/Ice");
+        if (!m) { m = new UnityEngine.Material(shader); UnityEditor.AssetDatabase.CreateAsset(m, path); }
+        m.shader = shader;
+        m.SetColor("_SurfaceColor", surface);
+        m.SetColor("_DeepColor", deep);
+        m.SetColor("_GlowColor", glow);
+        m.SetFloat("_Glow", glowAmount);
+        UnityEditor.EditorUtility.SetDirty(m);
+        return m;
+    }
     UnityEngine.Material IceMat(string name, UnityEngine.Texture2D tex, UnityEngine.Texture2D normal, UnityEngine.Color tint, float smooth, UnityEngine.Color glow)
     {
         var path = dataFolder + "/" + name + ".mat";
@@ -222,7 +236,7 @@ for (var i = 0; i < 270; i++)
     }
     var iceMats = new System.Collections.Generic.Dictionary<string, UnityEngine.Material>
     {
-        ["Ice"] = IceMat("CliffIce", null, rockNormal, new UnityEngine.Color(0.55f, 0.78f, 0.96f), 0.7f, new UnityEngine.Color(0.03f, 0.09f, 0.14f)),
+        ["Ice"] = SolidIce(dataFolder + "/CliffIce.mat", new UnityEngine.Color(0.62f, 0.84f, 0.98f), new UnityEngine.Color(0.08f, 0.28f, 0.48f), new UnityEngine.Color(0.10f, 0.40f, 0.85f), 0.45f),
         ["Earth"] = IceMat("CliffSnow", snowTex, groundNormal, new UnityEngine.Color(1f, 1f, 1f), 0.15f, UnityEngine.Color.black), // the terrain's own snow
     };
     var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/World/Tower/Caves/Models/GlacierCliffs.fbx");
@@ -468,6 +482,14 @@ var scenePath = folder + "/Tower_Glacier.unity";
         grassFields++;
     }
     log.AppendLine("grass fields " + grassFields);
+}
+// the ice chunks are the cliffs' ice
+{
+    var cliffIce = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(dataFolder + "/CliffIce.mat");
+    var chunks = 0;
+    if (cliffIce) foreach (var go in scene.GetRootGameObjects()) foreach (var r in go.GetComponentsInChildren<UnityEngine.MeshRenderer>(true))
+        if (r.name.StartsWith("SM_Env_IceChunk")) { r.sharedMaterials = r.sharedMaterials.Select(_ => cliffIce).ToArray(); chunks++; }
+    log.AppendLine("ice chunks " + chunks);
 }
 UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene, scenePath);
 UnityEditor.SceneManagement.EditorSceneManager.CloseScene(scene, true);
