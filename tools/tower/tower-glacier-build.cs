@@ -203,6 +203,46 @@ for (var i = 0; i < 270; i++)
     var pineScale = kind < 4 ? 2.4f + R() * 1.0f : kind < 7 ? 1.1f + R() * 0.5f : 1.0f + R() * 0.6f;
     Place(name + ".prefab", OnGround(x, z) + UnityEngine.Vector3.down * 0.4f, pineScale, -1, foliage);
 }
+// the glacier's walls (tools/tower/blender/tower_caves.py, concept docs/mockups/tower/concept-glacier.jpg): a ring of blue
+// ice cliffs round the valley with snow on their tops, in front of the white hills. Faces up: they show from inside the
+// valley and from above. The FBX comes in turned half round: turned back. No shadows (they would shade the valley's edge).
+{
+    UnityEngine.Material IceMat(string name, UnityEngine.Texture2D tex, UnityEngine.Texture2D normal, UnityEngine.Color tint, float smooth, UnityEngine.Color glow)
+    {
+        var path = dataFolder + "/" + name + ".mat";
+        var m = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(path);
+        if (!m) { m = new UnityEngine.Material(UnityEngine.Shader.Find("Universal Render Pipeline/Lit")); UnityEditor.AssetDatabase.CreateAsset(m, path); }
+        m.SetTexture("_BaseMap", tex);
+        m.SetColor("_BaseColor", tint);
+        if (normal) { m.SetTexture("_BumpMap", normal); m.EnableKeyword("_NORMALMAP"); }
+        m.SetFloat("_Smoothness", smooth);
+        if (glow.maxColorComponent > 0f) { m.EnableKeyword("_EMISSION"); m.SetColor("_EmissionColor", glow); m.globalIlluminationFlags = UnityEngine.MaterialGlobalIlluminationFlags.None; }
+        UnityEditor.EditorUtility.SetDirty(m);
+        return m;
+    }
+    var iceMats = new System.Collections.Generic.Dictionary<string, UnityEngine.Material>
+    {
+        ["Ice"] = IceMat("CliffIce", null, rockNormal, new UnityEngine.Color(0.55f, 0.78f, 0.96f), 0.7f, new UnityEngine.Color(0.03f, 0.09f, 0.14f)),
+        ["Earth"] = IceMat("CliffSnow", snowTex, groundNormal, new UnityEngine.Color(1f, 1f, 1f), 0.15f, UnityEngine.Color.black), // the terrain's own snow
+    };
+    var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/World/Tower/Caves/Models/GlacierCliffs.fbx");
+    if (!prefab) log.AppendLine("missing model GlacierCliffs (run tools/tower/blender/tower_caves.py)");
+    else
+    {
+        var cliffsGo = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(prefab, scene);
+        cliffsGo.name = "Ice Cliffs";
+        cliffsGo.transform.SetParent(root.transform, false);
+        cliffsGo.transform.localPosition = UnityEngine.Vector3.zero;
+        cliffsGo.transform.localRotation = UnityEngine.Quaternion.Euler(0f, 180f, 0f);
+        foreach (var r in cliffsGo.GetComponentsInChildren<UnityEngine.MeshRenderer>())
+        {
+            var ms = r.sharedMaterials;
+            for (var k = 0; k < ms.Length; k++) { var key = ms[k] ? ms[k].name.Split(' ')[0].Split('.')[0] : ""; if (iceMats.TryGetValue(key, out var mm)) ms[k] = mm; }
+            r.sharedMaterials = ms;
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+    }
+}
 // cliffs on the rim (no SM_Env_Mountain: scaled up, it drew white streaks across the sky)
 for (var i = 0; i < 24; i++)
 {

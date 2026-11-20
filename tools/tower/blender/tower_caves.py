@@ -68,8 +68,10 @@ class Cave:
     """One cavern's shape: how far the floor runs out from the rooms (margin), how tall the walls are, the noise seed,
     and how spiky the walls and the ceiling are (ice is sharper than rock)."""
 
-    def __init__(self, margin, wall, seed, spikes):
+    def __init__(self, margin, wall, seed, spikes, shape=None):
         self.margin, self.wall, self.seed, self.spikes = margin, wall, seed, spikes
+        # the outline the cave grows from: distance to it, negative inside (the rooms by default)
+        self.shape = shape or sdf
         self.width = 8.0   # the wall's run from the cave floor to its top
 
     def m(self, x, y):
@@ -77,7 +79,7 @@ class Cave:
         return self.margin + 5.0 * noise.noise(Vector((x * 0.035, y * 0.035, self.seed)))
 
     def ground(self, x, y):
-        d = sdf(x, y)
+        d = self.shape(x, y)
         m = self.m(x, y)
         n = noise.noise(Vector((x * 0.12, y * 0.12, self.seed + 3.0)))
         floor = -0.7 + 0.3 * n
@@ -97,7 +99,7 @@ class Cave:
         return h
 
     def ceiling(self, x, y):
-        d = sdf(x, y)
+        d = self.shape(x, y)
         m = self.m(x, y)
         # a vault: highest over the middle of the cave, meeting the walls (and running on inside the rock past them)
         c = smooth((m + self.width - d) / 22.0)
@@ -175,7 +177,7 @@ def hanging(parent, cave, count, seed, kind):
         tries += 1
         x = rnd.uniform(-70, 70)
         y = rnd.uniform(-100, 85)
-        d = sdf(x, y)
+        d = cave.shape(x, y)
         if d > cave.m(x, y) + 2.0 or d < -6.0:
             continue
         top = cave.ceiling(x, y) + 0.5
@@ -256,14 +258,14 @@ for name, cave, wall_mat, hang, hang_count in (
 ):
     clear()
     walls = ROCK if wall_mat == "Rock" else ICE
-    keep_floor = lambda x, y, c=cave: sdf(x, y) < c.m(x, y) + c.width + 6.0
+    keep_floor = lambda x, y, c=cave: c.shape(x, y) < c.m(x, y) + c.width + 6.0
     ground = heightfield(name + "Cave", cave.ground, keep_floor)
     faceted(ground, 0.32)
     by_slope(ground, EARTH, walls)
     uv_box(ground, 6.0)
     report[name + "Cave"] = len(ground.data.polygons)
 
-    keep_ceiling = lambda x, y, c=cave: sdf(x, y) < c.m(x, y) + c.width + 4.0
+    keep_ceiling = lambda x, y, c=cave: c.shape(x, y) < c.m(x, y) + c.width + 4.0
     ceiling = heightfield(name + "Ceiling", cave.ceiling, keep_ceiling, step=2.5, down=True)
     faceted(ceiling, 0.4)
     ceiling.data.materials.append(walls)
@@ -275,5 +277,18 @@ for name, cave, wall_mat, hang, hang_count in (
     preview(name.lower() + "-cave-inside", (0, -95, 9), (0, 20, 6))
     export(ground, name + "Cave")
     export(ceiling, name + "Ceiling")
+
+# the Glacier (concept-glacier.jpg): no cavern, but a ring of blue ice cliffs round the valley, snow on their tops, in front
+# of the white hills; open to the sky, so no ceiling. Only the ring is kept (inside it is the terrain).
+clear()
+glacier = Cave(margin=9.0, wall=27.0, seed=5.3, spikes=0.7, shape=lambda x, y: math.hypot(x, y) - 64.0)
+keep_ring = lambda x, y, c=glacier: c.m(x, y) - 3.0 < c.shape(x, y) < c.m(x, y) + c.width + 7.0
+cliffs = heightfield("GlacierCliffs", glacier.ground, keep_ring, x0=-105.0, x1=105.0, y0=-105.0, y1=105.0)
+faceted(cliffs, 0.32)
+by_slope(cliffs, EARTH, ICE)
+uv_box(cliffs, 6.0)
+report["GlacierCliffs"] = len(cliffs.data.polygons)
+preview("glacier-cliffs-inside", (0, -40, 10), (0, 60, 10))
+export(cliffs, "GlacierCliffs")
 
 print("CAVES", report)
