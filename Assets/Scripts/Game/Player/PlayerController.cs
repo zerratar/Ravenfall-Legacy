@@ -380,6 +380,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     public PlayerSessionStats SessionStats => sessionStats;
     public DateTime LastDungeonAutoJoinFailUtc { get; internal set; }
     public DateTime LastRaidAutoJoinFailUtc { get; internal set; }
+    /// <summary>The UTC day this player was last told their own auto join limit stopped them (told once a day).</summary>
+    public DateTime AutoJoinLimitNoticeDay { get; internal set; }
     public GameInventoryItem LastEnchantedItem { get; internal set; }
     public DateTime LastEnchantedItemExpire { get; internal set; }
     public PlayerSkinObject ActiveFullBodySkin { get; private set; }

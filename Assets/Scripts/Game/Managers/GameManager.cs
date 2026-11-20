@@ -3063,6 +3063,31 @@ public class GameManager : MonoBehaviour, IGameManager
         foreach (var plr in players) plr.LastDungeonAutoJoinFailUtc = DateTime.UtcNow;
     }
 
+    /// <summary>
+    /// Players whose own daily auto join limit stopped them: told once a day each, so a stream running raids and
+    /// dungeons back to back does not repeat it every few minutes.
+    /// </summary>
+    internal void AnnounceAutoJoinLimitReached(List<PlayerController> players)
+    {
+        if (players == null || players.Count == 0) return;
+        var today = DateTime.UtcNow.Date;
+        var toTell = players.Where(x => x && x.AutoJoinLimitNoticeDay != today).ToList();
+        foreach (var plr in toTell) plr.AutoJoinLimitNoticeDay = today;
+        if (toTell.Count == 0) return;
+        if (toTell.Count == 1)
+        {
+            RavenBot.SendReply(toTell[0], Localization.MSG_AUTOJOIN_LIMIT_REACHED);
+        }
+        else if (toTell.Count < 10)
+        {
+            RavenBot.Announce(Localization.MSG_AUTOJOIN_LIMIT_REACHED_NAMES, string.Join(", ", toTell.Select(x => "@" + x.Name)));
+        }
+        else
+        {
+            RavenBot.Announce(Localization.MSG_AUTOJOIN_LIMIT_REACHED_COUNT, toTell.Count.ToString());
+        }
+    }
+
     internal void AnnounceAutoRaidJoinFailed(List<PlayerController> players)
     {
         if (players.Count == 0) return;

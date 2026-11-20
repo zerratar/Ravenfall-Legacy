@@ -235,8 +235,10 @@ public class RaidManager : MonoBehaviour, IEvent
     }
 
 
-    // Everyone with auto join on is charged in one call when the raid starts, and only those the server took the coins
-    // from join. The server used to work it out from the join counts in the saves, which was not reliable.
+    // Everyone with auto join on is charged in one call when the raid starts, and only those the server let join do
+    // (paid, or free: patrons get some free a day). The server used to work it out from the join counts in the saves,
+    // which was not reliable. Players short of coins are asked too, since a patron's free join needs none; if they
+    // could not join they are left out quietly as before.
     private async void AutoJoinPlayers()
     {
         var autoJoinCost = gameManager.SessionSettings.AutoJoinRaidCost;
@@ -246,8 +248,7 @@ public class RaidManager : MonoBehaviour, IEvent
             // a regatta racer finishes the race first (the raid would put the boat away and knock them out)
             if (player.IsBot || Regatta.InRace(player) ||
                 CanJoin(player) != RaidJoinResult.CanJoin || Initiator == player
-                || player.raidHandler.AutoJoinCounter <= 0
-                || autoJoinCost > player.Resources.Coins)
+                || player.raidHandler.AutoJoinCounter <= 0)
             {
                 continue;
             }
@@ -260,10 +261,10 @@ public class RaidManager : MonoBehaviour, IEvent
             return;
         }
 
-        bool[] paid = null;
+        int[] results = null;
         try
         {
-            paid = await gameManager.RavenNest.Players.AutoJoinRaid(candidates.Select(x => x.Id).ToArray());
+            results = await gameManager.RavenNest.Players.AutoJoinRaidResults(candidates.Select(x => x.Id).ToArray());
         }
         catch (Exception exc)
         {
@@ -272,6 +273,7 @@ public class RaidManager : MonoBehaviour, IEvent
 
         var playersToJoin = new List<PlayerController>();
         var playersFailed = new List<PlayerController>();
+        var playersAtLimit = new List<PlayerController>();
         for (var i = 0; i < candidates.Count; ++i)
         {
             var player = candidates[i];
@@ -280,9 +282,23 @@ public class RaidManager : MonoBehaviour, IEvent
                 continue;
             }
 
-            if (paid != null && (i >= paid.Length || !paid[i]))
+            if (results != null)
             {
-                playersFailed.Add(player);
+                var result = i < results.Length ? results[i] : AutoJoinResult.NotEnoughCoins;
+                if (result == AutoJoinResult.PersonalLimitReached)
+                {
+                    playersAtLimit.Add(player);
+                    continue;
+                }
+                if (!AutoJoinResult.Joined(result))
+                {
+                    if (player.Resources.Coins >= autoJoinCost) playersFailed.Add(player);
+                    continue;
+                }
+            }
+            else if (player.Resources.Coins < autoJoinCost)
+            {
+                // the server could not be asked: everyone joins free, as before only those who could have paid
                 continue;
             }
 
@@ -308,6 +324,8 @@ public class RaidManager : MonoBehaviour, IEvent
         {
             gameManager.AnnounceAutoRaidJoinFailed(playersFailed);
         }
+
+        gameManager.AnnounceAutoJoinLimitReached(playersAtLimit);
     }
 
     public bool ForceStartRaid()

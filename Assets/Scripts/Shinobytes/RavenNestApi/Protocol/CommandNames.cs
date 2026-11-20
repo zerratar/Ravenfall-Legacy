@@ -153,6 +153,15 @@ namespace RavenNest.Protocol
         /// <summary>() -> int</summary>
         public const string AutoJoinRaidCost = "autojoin.raid-cost";
 
+        /// <summary>(Guid[] characterIds) -> int[]: per character 0 not enough coins, 1 paid, 2 free (a patron's free auto join for the day), 3 the account's own limit reached</summary>
+        public const string AutoJoinRaidResults = "autojoin.raid-results";
+
+        /// <summary>(Guid[] characterIds) -> int[], as autojoin.raid-results</summary>
+        public const string AutoJoinDungeonResults = "autojoin.dungeon-results";
+
+        /// <summary>(Guid characterId, string limit) -> long[] { paid today, paid in 7 days, own limit or -1, free raids left today, free dungeons left today, free raids a day, free dungeons a day, discount percent, raid price, dungeon price }; an empty limit only reads, "off" removes it; null when the limit could not be read</summary>
+        public const string AutoJoinLimit = "autojoin.limit";
+
         // Other
 
         /// <summary>(Guid characterId, string skill) -> int (rank)</summary>

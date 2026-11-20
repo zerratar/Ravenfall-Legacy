@@ -474,8 +474,7 @@ public class DungeonManager : MonoBehaviour, IEvent
             if (player.IsBot || Regatta.InRace(player) ||
                 CanJoin(player) != DungeonJoinResult.CanJoin ||
                 Initiator == player ||
-                player.dungeonHandler.AutoJoinCounter <= 0 ||
-                player.Resources.Coins < autoJoinCost)
+                player.dungeonHandler.AutoJoinCounter <= 0)
             {
                 continue;
             }
@@ -488,12 +487,14 @@ public class DungeonManager : MonoBehaviour, IEvent
             return;
         }
 
-        bool[] paid = null;
+        // players short of coins are asked too, since a patron's free join needs none; if they could not join they
+        // are left out quietly as before
+        int[] results = null;
         try
         {
             var ids = new Guid[candidates.Count];
             for (var i = 0; i < ids.Length; ++i) ids[i] = candidates[i].Id;
-            paid = await gameManager.RavenNest.Players.AutoJoinDungeon(ids);
+            results = await gameManager.RavenNest.Players.AutoJoinDungeonResults(ids);
         }
         catch (Exception exc)
         {
@@ -502,6 +503,7 @@ public class DungeonManager : MonoBehaviour, IEvent
 
         var playersToJoin = new List<PlayerController>();
         var playersFailed = new List<PlayerController>();
+        var playersAtLimit = new List<PlayerController>();
         for (var i = 0; i < candidates.Count; ++i)
         {
             var player = candidates[i];
@@ -510,9 +512,23 @@ public class DungeonManager : MonoBehaviour, IEvent
                 continue;
             }
 
-            if (paid != null && (i >= paid.Length || !paid[i]))
+            if (results != null)
             {
-                playersFailed.Add(player);
+                var result = i < results.Length ? results[i] : AutoJoinResult.NotEnoughCoins;
+                if (result == AutoJoinResult.PersonalLimitReached)
+                {
+                    playersAtLimit.Add(player);
+                    continue;
+                }
+                if (!AutoJoinResult.Joined(result))
+                {
+                    if (player.Resources.Coins >= autoJoinCost) playersFailed.Add(player);
+                    continue;
+                }
+            }
+            else if (player.Resources.Coins < autoJoinCost)
+            {
+                // the server could not be asked: everyone joins free, as before only those who could have paid
                 continue;
             }
 
@@ -537,6 +553,8 @@ public class DungeonManager : MonoBehaviour, IEvent
         {
             gameManager.AnnounceAutoDungeonJoinFailed(playersFailed);
         }
+
+        gameManager.AnnounceAutoJoinLimitReached(playersAtLimit);
     }
 
     public async Task<bool> ForceActivateDungeon()

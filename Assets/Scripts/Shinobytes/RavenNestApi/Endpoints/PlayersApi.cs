@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using RavenNest.Models;
 using RavenNest.Protocol;
@@ -368,6 +369,45 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<bool[]>(
                     ApiRequestTarget.Players,
                     ApiRequestType.Post, true);
+        }
+
+        /// <summary>
+        /// Auto joins a raid with why each one did or did not join: 0 not enough coins, 1 paid, 2 free (a patron's free
+        /// join for the day), 3 their own daily limit reached (<see cref="AutoJoinResult"/>).
+        /// </summary>
+        public async Task<int[]> AutoJoinRaidResults(Guid[] characterIds)
+        {
+            if (client.UseV2)
+            {
+                return await client.V2.Commands.CallAsync<int[]>(Commands.AutoJoinRaidResults, CommandArgs.Pack(characterIds));
+            }
+            var joined = await AutoJoinRaid(characterIds);
+            return joined?.Select(x => x ? AutoJoinResult.Paid : AutoJoinResult.NotEnoughCoins).ToArray();
+        }
+
+        /// <summary>As <see cref="AutoJoinRaidResults"/>, for a dungeon.</summary>
+        public async Task<int[]> AutoJoinDungeonResults(Guid[] characterIds)
+        {
+            if (client.UseV2)
+            {
+                return await client.V2.Commands.CallAsync<int[]>(Commands.AutoJoinDungeonResults, CommandArgs.Pack(characterIds));
+            }
+            var joined = await AutoJoinDungeon(characterIds);
+            return joined?.Select(x => x ? AutoJoinResult.Paid : AutoJoinResult.NotEnoughCoins).ToArray();
+        }
+
+        /// <summary>
+        /// The character's account's auto join spending and patron perk: { paid today, paid in 7 days, own limit (-1
+        /// none), free raids left, free dungeons left, free raids a day, free dungeons a day, discount percent, raid
+        /// price, dungeon price }. A limit (as typed: 50k, 1.5m, off) is set first; empty only reads. Null when it failed.
+        /// </summary>
+        public Task<long[]> AutoJoinLimit(Guid characterId, string limit)
+        {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<long[]>(Commands.AutoJoinLimit, CommandArgs.Pack(characterId, limit ?? ""));
+            }
+            return Task.FromResult<long[]>(null);
         }
 
         public Task<bool[]> AutoJoinDungeon(Guid[] characterId)

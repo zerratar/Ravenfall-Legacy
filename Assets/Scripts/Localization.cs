@@ -3081,6 +3081,15 @@ public static class Localization
     public static string MSG_AUTOJOIN_RAID_FAILED = Meta("raid", "join", "auto", "fail") + "You have failed to join the raid. Make sure you have enough coins to automatically join.";
     public static string MSG_AUTOJOIN_RAID_FAILED_NAMES = Meta("raid", "join", "auto", "fail") + "{playerNames} failed to join the raid. You may not have enough coins.";
     public static string MSG_AUTOJOIN_RAID_FAILED_COUNT = Meta("raid", "join", "auto", "fail") + "{playerCount} players failed to join the raid.";
+    public static string MSG_AUTOJOIN_LIMIT_REACHED = Meta("auto join", "limit") + "Auto join reached your daily coin limit and is paused until midnight UTC. Change it with !auto limit.";
+    public static string MSG_AUTOJOIN_LIMIT_REACHED_NAMES = Meta("auto join", "limit") + "{playerNames}: auto join reached your daily coin limit and is paused until midnight UTC. Change it with !auto limit.";
+    public static string MSG_AUTOJOIN_LIMIT_REACHED_COUNT = Meta("auto join", "limit") + "{playerCount} players reached their daily auto join limit. It is paused for them until midnight UTC.";
+    public static string MSG_AUTOJOIN_LIMIT_STATUS = Meta("auto join", "limit") + "Auto join today: {paidToday} coins paid, daily limit {limit}. Last 7 days: {paidWeek} coins.";
+    public static string MSG_AUTOJOIN_LIMIT_STATUS_PATRON = Meta("auto join", "limit") + "Auto join today: {paidToday} coins paid, daily limit {limit}. Free left today: {freeRaids} raids, {freeDungeons} dungeons, then {discount}% off. Last 7 days: {paidWeek} coins.";
+    public static string MSG_AUTOJOIN_LIMIT_SET = Meta("auto join", "limit") + "Auto join may now spend up to {limit} coins a day, for all your characters together. Paid today: {paidToday}.";
+    public static string MSG_AUTOJOIN_LIMIT_REMOVED = Meta("auto join", "limit") + "Your daily auto join limit is removed. Paid today: {paidToday}.";
+    public static string MSG_AUTOJOIN_LIMIT_INVALID = Meta("auto join", "limit", "fail") + "Use !auto limit with an amount of coins, like !auto limit 50k, or !auto limit off to remove it.";
+    public static string MSG_AUTOJOIN_LIMIT_FAILED = Meta("auto join", "limit", "fail") + "Your auto join limit could not be reached right now. Try again in a moment.";
     public static string MSG_AUTOJOIN_RAID_JOINED_COUNTER = Meta("raid", "join", "auto") + "You have automatically joined the raid! You will join {counter} more.";
     public static string MSG_AUTOJOIN_RAID_JOINED = Meta("raid", "join", "auto") + "You have automatically joined the raid!";
     public static string MSG_AUTOJOIN_RAID_JOINED_NAMES = Meta("raid", "join", "auto") + "{playerNames} have automatically joined the raid!";
