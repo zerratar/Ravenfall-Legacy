@@ -6,6 +6,7 @@
 // treasure chest shows), so a robe has no pauldrons here either; the material comes from ItemManager.GetMaterial.
 // Framed like the icons of the metal tiers: a chest is the torso with its sleeves and shoulders in the T pose, gloves
 // are one hand with its forearm, leggings the hips, boots the pair, a head piece seen from the front quarter.
+// A piece is drawn with what its tier wears (plumes, wings, pouches, pauldrons), except a chest's back piece.
 //
 // Written to Assets/Resources/Items/<slug>.png (imported as sprites with the settings of rune-chest.png) and copied
 // to RavenNest's wwwroot/imgs/items/<slug>.png; slug = the item's name ("<Tier> <piece name>") in lower case,
@@ -45,6 +46,15 @@ if (trialOut == null && !System.IO.Directory.Exists(websiteFolder)) return "no w
 // ---- the items ------------------------------------------------------------------------------------------------------
 var lines = new[] { "Mage", "Healer", "Ranger", "Melee", "Tank" };
 var icons = new System.Collections.Generic.List<string[]>(); // slug, type, material, male ids, mask
+// a row is for the tiers its last column names ("3-5", "8"), or for all of them without one
+bool RowIsFor(string[] row, int tier)
+{
+    if (row.Length < 7 || row[6].Length == 0) return true;
+    var range = row[6].Split('-');
+    var from = int.Parse(range[0]);
+    var to = range.Length > 1 ? int.Parse(range[1]) : from;
+    return tier >= from && tier <= to;
+}
 for (var li = 0; li < lines.Length; li++)
 {
     for (var tier = 1; tier <= 8; tier++)
@@ -55,9 +65,9 @@ for (var li = 0; li < lines.Length; li++)
             var line = raw.Trim();
             if (line.Length == 0 || line[0] == '#') continue;
             var c = line.Split('|');
-            if (c.Length != 6) return "bad row in class-gear-parts.txt: " + line;
+            if (c.Length != 6 && c.Length != 7) return "bad row in class-gear-parts.txt: " + line;
             for (var i = 0; i < c.Length; i++) c[i] = c[i].Trim();
-            if (!string.Equals(c[0], lines[li], System.StringComparison.OrdinalIgnoreCase)) continue;
+            if (!string.Equals(c[0], lines[li], System.StringComparison.OrdinalIgnoreCase) || !RowIsFor(c, tier)) continue;
             var name = material + " " + c[2];
             var slug = name.ToLowerInvariant().Replace("'", "").Replace(" ", "-");
             if (only != null && !slug.Contains(only)) continue;
@@ -131,11 +141,13 @@ void RenderIcon(string[] icon)
     pru.AddSingleGO(model);
     try
     {
-        // what is drawn: every part of the item; of gloves, the left hand and forearm only, like the other glove icons
+        // what is drawn: every part of the item (the plume on a helm, the pouches on a belt); of gloves, the left hand
+        // and forearm only, like the other glove icons; of a chest, not what it wears on the back (a cloak or a pack
+        // is behind the torso from here, and a cloak is so long that the chest would be a third of its picture)
         var drawn = new System.Collections.Generic.List<UnityEngine.SkinnedMeshRenderer>();
         foreach (var r in model.GetComponentsInChildren<UnityEngine.SkinnedMeshRenderer>(true))
         {
-            var show = type != RavenNest.Models.ItemType.Gloves || r.name.Contains("Left");
+            var show = (type != RavenNest.Models.ItemType.Gloves || r.name.Contains("Left")) && !r.name.StartsWith("Chr_BackAttachment_");
             r.enabled = show;
             r.updateWhenOffscreen = true;
             if (show) drawn.Add(r);

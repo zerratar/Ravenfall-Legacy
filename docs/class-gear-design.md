@@ -43,6 +43,76 @@ Only the Tank's helms are of type Helmet. The other head pieces are hats and hea
 take no gems and give no armor health (`ItemExtension.TryGetGemSlot`, `CombatMath.IsArmorPiece`): a small price for
 the look, and the same for both head pieces of a line.
 
+## Attachments: higher tiers wear more
+
+The tiers of a line differ by color (the material) and, since 2026-11-21, by silhouette: tiers 1 and 2 are plain, the
+middle tiers gain one or two things, tiers 7 and 8 the most. What is added comes from the character kit's attachment
+parts: plumes, wings, antlers, crowns and crosses on the head, pouches, bottles, a scroll and a rope on the belt,
+pauldrons and knee pads, and a cloak, a pack or a pelt on the back.
+
+| Line | Piece | Tiers 1-2 | Tiers 3-5 | Tiers 6-8 |
+|---|---|---|---|---|
+| Mage | Wizard Hat / Hood | plain | a crystal pin (8) | a crown band / circlet (7) |
+| Mage | Robe | plain | plain | a long trimmed cloak (back 4) |
+| Mage | Robe Skirt | 1 plain; 2: a scroll (belt 7) | 3: scroll; 4-5: scroll and a pouch (belt 0) | scroll and pouch |
+| Healer | Cowl / Cap | plain | a cross (10) | 6: a crown (7); 7-8: wings (2) |
+| Healer | Tabard | 1 plain; 2: a healer's kit (belt 2) | 3: kit; 4-5: kit and a bottle (belt 8) | kit and bottle |
+| Ranger | Cap | plain | 3-4 plain; 5: long feathers (11) | long feathers |
+| Ranger | Hood | plain | a feather (12) | antlers (3) |
+| Ranger | Jerkin | plain | 4: leather pauldrons (15); 5: and a pack (back 1) | 6: pack; 7-8: a bedroll pack (back 0) |
+| Ranger | Trousers | 1 plain; 2: a coiled rope (belt 3) | 3: rope; 4-5: rope and knee guards (4) | rope, knee guards and a game bag (belt 6) |
+| Melee | Helm | plain | a plume (1) | horns (6) |
+| Melee | Coif | plain | a spike (8) | a crown (7) |
+| Melee | Hauberk | round pauldrons (13) | 3: round; 4-5: spiked pauldrons (9) | 6: spiked; 7-8: wolf heads (8) and a pelt (back 3) |
+| Melee | Tassets | 1 plain; 2: a coin pouch (belt 0) | 3: pouch; 4-5: pouch, a sheath (belt 9) and knee cops (8) | pouch, sheath and knee cops |
+| Tank | Greathelm | plain | a great plume (0) | 6: plume and cross (10); 7: wings (2); 8: wings and a crown (7) |
+| Tank | Visor Helm | plain | a tail plume (1) | 6: plume and cross; 7: wings; 8: wings and a crown |
+| Tank | Cuirass | flat pauldrons (12) | round pauldrons (10) | tall pauldrons (11) and a heraldic cloak (back 9) |
+| Tank | Greaves | round knee cops (7) | shield knee cops (6) | shield knee cops |
+
+Gloves, boots and the healer's vestment are the same in every tier. The numbers are the part indices in the model ids.
+The exact ids of every tier are in `tools/items/class-gear-parts.txt` (the game's table: icons and previews are made
+from it) and in the server's `ClassGearPieces`, where a piece says its tier 1 look and `.From(tier, ids, mask)` for the
+tiers that have more. The two must agree; item ids do not change with the look (they are made from line, tier and key).
+
+### Where the parts go in the model ids
+
+| Item type | Model ids, in order | New in 0.9.7 |
+|---|---|---|
+| Helmet, Hat, Mask, HeadCovering | the piece, then any number of head attachments (0-12) | nothing: this is how the metal helmets carry their horns |
+| Chest | torso, shoulder pads, upper arms, elbow pads, **back piece** (0-9) | the fifth position |
+| Leggings | hips, knee pads, **belt parts** (0-11), any number | the third position and on |
+| Gloves, Boots | as before | nothing |
+
+The belt parts (`Chr_HipsAttachment_01` to `12`) and the back parts (`Chr_BackAttachment_01` to `10`) are in the Player
+prefab but in none of `SyntyPlayerAppearance`'s lists. The game finds them by where they are, next to the capes, the
+first time an item wears one (`FindLooseAttachments`); the prefab is unchanged. An index is the part's number less one,
+as for every attachment. Index 0 to 5 hang on the right hip, 6 to 11 on the left, so one of each side fits together.
+
+Rules the code keeps:
+- **One owner per slot.** The belt belongs to the leggings and the back to the chest: putting on other leggings or
+  another chest takes the old one's parts off, with or without a full rebuild, and so does taking the piece off.
+- **A cape wins the back.** A player who wears a cape (their own or their clan's) keeps it and the armor's back piece
+  stays off: both hang from the same bone and cut through each other. So clan members see no cloak, pack or pelt.
+- **The helmet toggle** hides the head piece with everything on it.
+- **Transmogrification** takes all of it from the look item: its parts with their attachments, its material and its mask.
+- **The item on its own** (`SyntyPlayerAppearance.Get`: treasure chests, the icon scene) has its attachments too. The
+  icons leave a chest's back piece out: from the front it is behind the torso, and a cloak would shrink the chest to a
+  third of its picture.
+- **An index the model set does not have** is skipped, in every position.
+- Attachments are drawn in the tier's material like the rest of the piece. Feathers, wolf heads, the green bottle and
+  the bedroll keep the colors of their texture.
+
+Looked at on both bodies and left out: the other cloaks (back 5 to 8: plain, one color with the robe from behind) and
+the tattered one (back 2); the fan of feathers, the helmet fin and the single big feather (head 4, 5, 9: too close to
+the plumes); the other pauldrons (one change of pauldron a line was enough, and the metal sets use several); the other
+knee pads; the elbow pads other than the tank's (too small to tell apart from the game's camera); the round bottle,
+the horn and the small bags on the belt (belt 1, 4, 5, 10, 11: lost against the cloth, or a third thing on one hip).
+The tank's belt stays empty: its helm, pauldrons and cloak already change.
+
+To try parts: `tools/items/class-gear-preview.cs` dresses a character through the game's own equip code, with
+`custom <ItemType> <Material> <ids joined by +> [mask flags joined by +]` for a piece that is in no table.
+
 ## Stats
 
 **Armor** (the classic `ArmorPower` column) is the line's factor times the armor of the best plate piece of that slot
@@ -238,12 +308,16 @@ whatever each side counts.
 ## Games before 0.9.7
 
 They get the same items and must not break on them:
-- **Model ids** are read by every version the same way (each number parsed and used as an index), so every id is a
-  valid part index, and "no part" is never said with a missing or negative number.
+- **Model ids** are parsed by every version the same way (each one as a whole number), and an old game uses the ones it
+  knows as part indices: all of a head piece's (the piece, then head attachments), a chest's first four (torso,
+  pauldrons, upper arms, elbow pads) and the leggings' first two (hips, knee pads). So every id is a whole number, never
+  negative or missing, and those positions always hold a real index. The positions 0.9.7 added (a chest's fifth: the
+  back piece; the leggings' third and on: the belt) are only parsed by an old game, never used. Leggings with a belt
+  and no knee pads say knee pad 10 and `NoKneePads`: an old game shows that small knee pad, 0.9.7 none.
 - **What a piece hides or leaves off** is in `HeadMask`, a flags number saved on every item and sent to the game, which
   no game before 0.9.7 reads. For a head piece: Hair, Brows, Beard, Ears, Head (a hood hides hair and ears, a closed
   helm everything). For a body piece: NoShoulderPads (32), NoElbowPads (64), NoForearms (128), NoKneePads (256). An old
-  game shows its default pauldrons on a robe: acceptable.
+  game shows its default pauldrons on a robe, and has the head attachments but no belt or back parts: acceptable.
 - **Materials** past `ElderAtlarus` are new numbers. 0.9.7 loads a material by its name when the number is beyond its
   own list; never reorder or insert in `ItemMaterial`.
 - **The stats** are in `Item.Stats` text, which old games do not read: there the pieces are low armor and nothing else.
@@ -258,6 +332,8 @@ list has the 40 new materials.
 
 ## Open
 
+- The attachments (belt, back, the tiers' plumes and wings) are tested through the equip code in the editor, not in
+  play: the combined mesh with a belt or back part on, and how a cloak moves, are still to be seen in the game.
 - Not played yet: how the numbers feel, and how fast Flax and Hide come in at low and high levels.
 - The server's task for a character follows the game's saves, so right after `!train` it can be a moment behind the
   game when `!equip all` is used.

@@ -22,7 +22,7 @@
 //   yaw=28 / pitch=6                  the character turned from the camera, the camera looking down
 //   bg=#22252B                        the background, or "clear" for a transparent one
 //   pose=idle                         a frame of the idle animation, or "tpose" for the prefab's own pose
-//   gender=male hair=2 head=0 brows=0 beard=0 skinColor=#C99A7A hairColor=#4A3524 eyeColor=#2B2622
+//   gender=male hair=2 head=0 brows=0 beard=0 cape=-1 skinColor=#C99A7A hairColor=#4A3524 eyeColor=#2B2622
 //   v0=label | key=value | do=action, action, ...     one character per v line, side by side (at most 10);
 //                                     its keys override the ones above
 // Actions (an item is "<Line> <tier> [piece name]" or "plate <Material> [Helmet|Chest|Gloves|Leggings|Boots]";
@@ -68,9 +68,18 @@ foreach (var raw in System.IO.File.ReadAllLines(partsPath))
     var line = raw.Trim();
     if (line.Length == 0 || line[0] == '#') continue;
     var cells = line.Split('|');
-    if (cells.Length != 6) return "bad row in class-gear-parts.txt: " + line;
+    if (cells.Length != 6 && cells.Length != 7) return "bad row in class-gear-parts.txt: " + line;
     for (var i = 0; i < cells.Length; i++) cells[i] = cells[i].Trim();
     pieces.Add(cells);
+}
+// a row is for the tiers its last column names ("3-5", "8"), or for all of them without one
+bool RowIsFor(string[] row, int tier)
+{
+    if (row.Length < 7 || row[6].Length == 0) return true;
+    var range = row[6].Split('-');
+    var from = int.Parse(range[0]);
+    var to = range.Length > 1 ? int.Parse(range[1]) : from;
+    return tier >= from && tier <= to;
 }
 var allItems = new System.Collections.Generic.List<RavenNest.Models.Item>();
 var lookup = new System.Collections.Generic.Dictionary<System.Guid, RavenNest.Models.Item>();
@@ -94,7 +103,8 @@ for (var li = 0; li < lines.Length; li++)
         var material = (RavenNest.Models.ItemMaterial)((int)RavenNest.Models.ItemMaterial.Apprentice + li * 8 + tier - 1);
         foreach (var p in pieces)
         {
-            if (!string.Equals(p[0], lines[li], System.StringComparison.OrdinalIgnoreCase)) continue;
+            if (!string.Equals(p[0], lines[li], System.StringComparison.OrdinalIgnoreCase) || !RowIsFor(p, tier)) continue;
+            if (itemByKey.ContainsKey(lines[li] + " " + tier + " " + p[2])) return "two rows in class-gear-parts.txt for " + lines[li] + " tier " + tier + " " + p[2];
             var type = (RavenNest.Models.ItemType)System.Enum.Parse(typeof(RavenNest.Models.ItemType), p[1]);
             var mask = RavenNest.Models.HeadMask.None;
             foreach (var flag in p[5].Split(',')) mask |= (RavenNest.Models.HeadMask)System.Enum.Parse(typeof(RavenNest.Models.HeadMask), flag.Trim());
@@ -150,7 +160,7 @@ System.Collections.Generic.List<RavenNest.Models.Item> Items(string spec)
     var head = false;
     foreach (var p in pieces)
     {
-        if (!string.Equals(p[0], t[0], System.StringComparison.OrdinalIgnoreCase)) continue;
+        if (!string.Equals(p[0], t[0], System.StringComparison.OrdinalIgnoreCase) || !RowIsFor(p, int.Parse(t[1]))) continue;
         var isHead = p[1] == "Helmet" || p[1] == "Hat" || p[1] == "Mask" || p[1] == "HeadCovering";
         if (isHead && head) continue; // the main head piece only
         head |= isHead;
@@ -259,6 +269,9 @@ void Render(System.Collections.Generic.Dictionary<string, string> baseJob)
         }
         if (isNew)
         {
+            // the belt and back parts are in no list until an item wears one (the game finds them then)
+            foreach (var t in character.GetComponentsInChildren<UnityEngine.Transform>(true))
+                if (t.name.StartsWith("Chr_HipsAttachment_") || t.name.StartsWith("Chr_BackAttachment_")) partObjects.Add(t.gameObject);
             foreach (var r in character.GetComponentsInChildren<UnityEngine.Renderer>(true)) if (!partObjects.Contains(r.gameObject)) r.enabled = false;
             foreach (var c in character.GetComponentsInChildren<UnityEngine.Light>(true)) c.enabled = false;
             foreach (var c in character.GetComponentsInChildren<UnityEngine.Canvas>(true)) c.enabled = false;
@@ -270,7 +283,7 @@ void Render(System.Collections.Generic.Dictionary<string, string> baseJob)
         var look = new RavenNest.Models.SyntyAppearance
         {
             Gender = male ? RavenNest.Models.Gender.Male : RavenNest.Models.Gender.Female,
-            Hair = JI("hair", 2), Head = JI("head", 0), Eyebrows = JI("brows", 0), FacialHair = JI("beard", male ? 0 : -1), Cape = -1,
+            Hair = JI("hair", 2), Head = JI("head", 0), Eyebrows = JI("brows", 0), FacialHair = JI("beard", male ? 0 : -1), Cape = JI("cape", -1),
             SkinColor = J("skinColor", "#C99A7A"), HairColor = J("hairColor", "#4A3524"), BeardColor = J("hairColor", "#4A3524"),
             EyeColor = J("eyeColor", "#2B2622"), StubbleColor = J("stubbleColor", "#B98C70"), ScarColor = J("scarColor", "#BD8F72"),
             WarPaintColor = J("warPaintColor", "#C99A7A"), HelmetVisible = true,

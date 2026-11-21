@@ -1,43 +1,95 @@
-# The class gear's pieces (v0.9.7): what each one is made of. Read by tools/items/class-gear-preview.cs and
-# tools/items/class-gear-icons.cs; the server's item rows must say the same (model ids and HeadMask).
+# The class gear's pieces (v0.9.7): what each one is made of, tier by tier. Read by tools/items/class-gear-preview.cs
+# and tools/items/class-gear-icons.cs; the server's item rows (RavenNest's GameData.ClassGear.cs) must say the same
+# (model ids and HeadMask). docs/class-gear-design.md has the table for people.
 #
-# Line | ItemType | name after the tier | male model ids | female model ids | HeadMask
+# Line | ItemType | name after the tier | male model ids | female model ids | HeadMask | tiers
 #
-# Model ids: the main part first, then the others in the game's order:
-#   Chest: torso, shoulder pads, upper arms, elbow pads     Gloves: hands, lower arms
-#   Leggings: hips, knee pads                               head pieces: the piece, then head attachments
-# A slot the piece has nothing in is named in the HeadMask (NoShoulderPads, NoElbowPads, NoForearms, NoKneePads)
-# and still holds a valid index, because games before 0.9.7 read every index and know nothing of the mask.
+# Tiers: the tiers the row is for ("3-5", "8"); every tier when empty. Each piece has exactly one row for each tier.
+#
+# Model ids: the main part first, then the others in the game's order (SyntyPlayerAppearance.EquipArmor):
+#   head pieces: the piece, then any number of head attachments (0 to 12: plume, wings, antlers, crown, cross ...)
+#   Chest:       torso, shoulder pads, upper arms, elbow pads, then what is worn on the back (0 to 9: Chr_BackAttachment_01
+#                to 10; left off on a player who wears a cape)
+#   Gloves:      hands, lower arms
+#   Leggings:    hips, knee pads, then any number of things on the belt (0 to 11: Chr_HipsAttachment_01 to 12)
+#   Boots:       legs
+# A game before 0.9.7 reads all of a head piece's ids, a chest's first four and the leggings' first two as part indices,
+# and only parses the rest as numbers. So every id is a whole number, and those positions always hold a real index:
+# a slot the piece has nothing in is named in the HeadMask (NoShoulderPads, NoElbowPads, NoForearms, NoKneePads) and
+# still holds one (leggings with a belt and no knee pads say knee pad 10, the least seen, and NoKneePads).
 # On a head piece the HeadMask is what it hides of the player's head: Hair, Brows, Beard, Ears, Head (All = a helmet).
 # The first head piece of a line is its main one (the one the review sheets show).
 #
-Mage   | Hat          | Wizard Hat | 1          | 1          | None
-Mage   | HeadCovering | Hood       | 6          | 6          | Hair, Ears
-Mage   | Chest        | Robe       | 27,20,20,0 | 27,20,20,0 | NoShoulderPads, NoElbowPads
-Mage   | Gloves       | Gloves     | 9,18       | 9,18       | None
-Mage   | Leggings     | Robe Skirt | 9          | 9          | None
-Mage   | Boots        | Boots      | 11         | 11         | None
-Healer | HeadCovering | Cowl       | 4          | 4          | Hair, Ears
-Healer | HeadCovering | Cap        | 0          | 0          | Hair, Ears
-Healer | Chest        | Vestment   | 10,20,20,0 | 10,20,20,0 | NoShoulderPads, NoElbowPads
-Healer | Gloves       | Gloves     | 13,18      | 13,18      | None
-Healer | Leggings     | Tabard     | 8          | 8          | None
-Healer | Boots        | Boots      | 11         | 11         | None
-Ranger | Hat          | Cap        | 4          | 4          | None
-Ranger | HeadCovering | Hood       | 5          | 5          | Hair, Ears
-Ranger | Chest        | Jerkin     | 14,20,10,0 | 14,20,10,0 | NoShoulderPads, NoElbowPads
-Ranger | Gloves       | Gloves     | 3,3        | 3,3        | None
-Ranger | Leggings     | Trousers   | 6          | 6          | None
-Ranger | Boots        | Boots      | 19         | 19         | None
-Melee  | HeadCovering | Helm       | 1          | 1          | Hair, Ears
-Melee  | HeadCovering | Coif       | 11         | 11         | Hair, Ears
-Melee  | Chest        | Hauberk    | 17,13,19,0 | 17,13,19,0 | NoElbowPads
-Melee  | Gloves       | Gauntlets  | 5,17       | 5,17       | None
-Melee  | Leggings     | Tassets    | 10         | 10         | None
-Melee  | Boots        | Boots      | 4          | 4          | None
-Tank   | Helmet       | Greathelm  | 6          | 6          | All
-Tank   | Helmet       | Visor Helm | 10         | 10         | All
-Tank   | Chest        | Cuirass    | 20,10,14,3 | 20,10,14,3 | None
-Tank   | Gloves       | Gauntlets  | 12,4       | 12,4       | None
-Tank   | Leggings     | Greaves    | 20,6       | 20,6       | None
-Tank   | Boots        | Sabatons   | 13         | 13         | None
+Mage   | Hat          | Wizard Hat | 1              | 1              | None                        | 1-2
+Mage   | Hat          | Wizard Hat | 1,8            | 1,8            | None                        | 3-5
+Mage   | Hat          | Wizard Hat | 1,7            | 1,7            | None                        | 6-8
+Mage   | HeadCovering | Hood       | 6              | 6              | Hair, Ears                  | 1-2
+Mage   | HeadCovering | Hood       | 6,8            | 6,8            | Hair, Ears                  | 3-5
+Mage   | HeadCovering | Hood       | 6,7            | 6,7            | Hair, Ears                  | 6-8
+Mage   | Chest        | Robe       | 27,20,20,0     | 27,20,20,0     | NoShoulderPads, NoElbowPads | 1-5
+Mage   | Chest        | Robe       | 27,20,20,0,4   | 27,20,20,0,4   | NoShoulderPads, NoElbowPads | 6-8
+Mage   | Gloves       | Gloves     | 9,18           | 9,18           | None                        |
+Mage   | Leggings     | Robe Skirt | 9              | 9              | None                        | 1
+Mage   | Leggings     | Robe Skirt | 9,10,7         | 9,10,7         | NoKneePads                  | 2-3
+Mage   | Leggings     | Robe Skirt | 9,10,7,0       | 9,10,7,0       | NoKneePads                  | 4-8
+Mage   | Boots        | Boots      | 11             | 11             | None                        |
+Healer | HeadCovering | Cowl       | 4              | 4              | Hair, Ears                  | 1-2
+Healer | HeadCovering | Cowl       | 4,10           | 4,10           | Hair, Ears                  | 3-5
+Healer | HeadCovering | Cowl       | 4,7            | 4,7            | Hair, Ears                  | 6
+Healer | HeadCovering | Cowl       | 4,2            | 4,2            | Hair, Ears                  | 7-8
+Healer | HeadCovering | Cap        | 0              | 0              | Hair, Ears                  | 1-2
+Healer | HeadCovering | Cap        | 0,10           | 0,10           | Hair, Ears                  | 3-5
+Healer | HeadCovering | Cap        | 0,7            | 0,7            | Hair, Ears                  | 6
+Healer | HeadCovering | Cap        | 0,2            | 0,2            | Hair, Ears                  | 7-8
+Healer | Chest        | Vestment   | 10,20,20,0     | 10,20,20,0     | NoShoulderPads, NoElbowPads |
+Healer | Gloves       | Gloves     | 13,18          | 13,18          | None                        |
+Healer | Leggings     | Tabard     | 8              | 8              | None                        | 1
+Healer | Leggings     | Tabard     | 8,10,2         | 8,10,2         | NoKneePads                  | 2-3
+Healer | Leggings     | Tabard     | 8,10,2,8       | 8,10,2,8       | NoKneePads                  | 4-8
+Healer | Boots        | Boots      | 11             | 11             | None                        |
+Ranger | Hat          | Cap        | 4              | 4              | None                        | 1-4
+Ranger | Hat          | Cap        | 4,11           | 4,11           | None                        | 5-8
+Ranger | HeadCovering | Hood       | 5              | 5              | Hair, Ears                  | 1-2
+Ranger | HeadCovering | Hood       | 5,12           | 5,12           | Hair, Ears                  | 3-5
+Ranger | HeadCovering | Hood       | 5,3            | 5,3            | Hair, Ears                  | 6-8
+Ranger | Chest        | Jerkin     | 14,20,10,0     | 14,20,10,0     | NoShoulderPads, NoElbowPads | 1-3
+Ranger | Chest        | Jerkin     | 14,15,10,0     | 14,15,10,0     | NoElbowPads                 | 4
+Ranger | Chest        | Jerkin     | 14,15,10,0,1   | 14,15,10,0,1   | NoElbowPads                 | 5-6
+Ranger | Chest        | Jerkin     | 14,15,10,0,0   | 14,15,10,0,0   | NoElbowPads                 | 7-8
+Ranger | Gloves       | Gloves     | 3,3            | 3,3            | None                        |
+Ranger | Leggings     | Trousers   | 6              | 6              | None                        | 1
+Ranger | Leggings     | Trousers   | 6,10,3         | 6,10,3         | NoKneePads                  | 2-3
+Ranger | Leggings     | Trousers   | 6,4,3          | 6,4,3          | None                        | 4-5
+Ranger | Leggings     | Trousers   | 6,4,3,6        | 6,4,3,6        | None                        | 6-8
+Ranger | Boots        | Boots      | 19             | 19             | None                        |
+Melee  | HeadCovering | Helm       | 1              | 1              | Hair, Ears                  | 1-2
+Melee  | HeadCovering | Helm       | 1,1            | 1,1            | Hair, Ears                  | 3-5
+Melee  | HeadCovering | Helm       | 1,6            | 1,6            | Hair, Ears                  | 6-8
+Melee  | HeadCovering | Coif       | 11             | 11             | Hair, Ears                  | 1-2
+Melee  | HeadCovering | Coif       | 11,8           | 11,8           | Hair, Ears                  | 3-5
+Melee  | HeadCovering | Coif       | 11,7           | 11,7           | Hair, Ears                  | 6-8
+Melee  | Chest        | Hauberk    | 17,13,19,0     | 17,13,19,0     | NoElbowPads                 | 1-3
+Melee  | Chest        | Hauberk    | 17,9,19,0      | 17,9,19,0      | NoElbowPads                 | 4-6
+Melee  | Chest        | Hauberk    | 17,8,19,0,3    | 17,8,19,0,3    | NoElbowPads                 | 7-8
+Melee  | Gloves       | Gauntlets  | 5,17           | 5,17           | None                        |
+Melee  | Leggings     | Tassets    | 10             | 10             | None                        | 1
+Melee  | Leggings     | Tassets    | 10,10,0        | 10,10,0        | NoKneePads                  | 2-3
+Melee  | Leggings     | Tassets    | 10,8,0,9       | 10,8,0,9       | None                        | 4-8
+Melee  | Boots        | Boots      | 4              | 4              | None                        |
+Tank   | Helmet       | Greathelm  | 6              | 6              | All                         | 1-2
+Tank   | Helmet       | Greathelm  | 6,0            | 6,0            | All                         | 3-5
+Tank   | Helmet       | Greathelm  | 6,0,10         | 6,0,10         | All                         | 6
+Tank   | Helmet       | Greathelm  | 6,2            | 6,2            | All                         | 7
+Tank   | Helmet       | Greathelm  | 6,2,7          | 6,2,7          | All                         | 8
+Tank   | Helmet       | Visor Helm | 10             | 10             | All                         | 1-2
+Tank   | Helmet       | Visor Helm | 10,1           | 10,1           | All                         | 3-5
+Tank   | Helmet       | Visor Helm | 10,1,10        | 10,1,10        | All                         | 6
+Tank   | Helmet       | Visor Helm | 10,2           | 10,2           | All                         | 7
+Tank   | Helmet       | Visor Helm | 10,2,7         | 10,2,7         | All                         | 8
+Tank   | Chest        | Cuirass    | 20,12,14,3     | 20,12,14,3     | None                        | 1-2
+Tank   | Chest        | Cuirass    | 20,10,14,3     | 20,10,14,3     | None                        | 3-5
+Tank   | Chest        | Cuirass    | 20,11,14,3,9   | 20,11,14,3,9   | None                        | 6-8
+Tank   | Gloves       | Gauntlets  | 12,4           | 12,4           | None                        |
+Tank   | Leggings     | Greaves    | 20,7           | 20,7           | None                        | 1-2
+Tank   | Leggings     | Greaves    | 20,6           | 20,6           | None                        | 3-8
+Tank   | Boots        | Sabatons   | 13             | 13             | None                        |

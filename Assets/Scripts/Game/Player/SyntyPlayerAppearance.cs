@@ -37,6 +37,16 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
     [SerializeField] private GameObject[] elbowsRight;
     [SerializeField] private GameObject[] elbowsLeft;
     //[SerializeField] private GameObject[] hipsAttachments;
+
+    // Two sets of parts the prefab has but none of the lists above names: what is worn on the belt
+    // (Chr_HipsAttachment_01..12: pouches, bottles, a scroll, a horn) and on the back (Chr_BackAttachment_01..10:
+    // packs, a pelt, cloaks; 11 to 15 are the capes). Found by where they are in the prefab, next to the capes, the
+    // first time an item wears one (FindLooseAttachments); never null, so everything that walks the part lists
+    // can walk these. An item's model ids name them by number less one, as every attachment: belt 0 is
+    // Chr_HipsAttachment_01.
+    private GameObject[] beltAttachments = Array.Empty<GameObject>();
+    private GameObject[] backAttachments = Array.Empty<GameObject>();
+    private bool looseAttachmentsFound;
     [SerializeField] private GameObject[] kneeAttachmentsRight;
     [SerializeField] private GameObject[] kneeAttachmentsLeft;
 
@@ -712,7 +722,56 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
         equippedHeadAttachments.Clear();
         hairUnderHat = -1;
 
+        // the generated reset does not know the belt and back parts
+        SwitchOff(beltAttachments);
+        SwitchOff(backAttachments);
+
         InitAppearance();
+    }
+
+    /// <summary>
+    /// Fills <see cref="beltAttachments"/> and <see cref="backAttachments"/> from the prefab's own groups: the back
+    /// parts are the capes' siblings that are not capes, the belt parts the children of the group named
+    /// "..Hips_Attachment" beside them.
+    /// </summary>
+    private void FindLooseAttachments()
+    {
+        if (looseAttachmentsFound) return;
+        looseAttachmentsFound = true;
+
+        var cape = capes != null && capes.Length > 0 ? capes[0] : null;
+        var backGroup = cape ? cape.transform.parent : null;
+        if (!backGroup) return;
+        backAttachments = NumberedParts(backGroup, "Chr_BackAttachment_", capes);
+
+        var groups = backGroup.parent;
+        if (!groups) return;
+        for (var i = 0; i < groups.childCount; ++i)
+        {
+            var group = groups.GetChild(i);
+            if (group.name.IndexOf("Hips_Attachment", StringComparison.OrdinalIgnoreCase) < 0) continue;
+            beltAttachments = NumberedParts(group, "Chr_HipsAttachment_", null);
+            break;
+        }
+    }
+
+    /// <summary>
+    /// The children of a group named prefix + a number, each at its number less one (Chr_HipsAttachment_03 at 2),
+    /// without the ones in <paramref name="except"/>: those places stay empty.
+    /// </summary>
+    private static GameObject[] NumberedParts(Transform group, string prefix, GameObject[] except)
+    {
+        var found = new List<GameObject>();
+        for (var i = 0; i < group.childCount; ++i)
+        {
+            var child = group.GetChild(i);
+            if (!child.name.StartsWith(prefix, StringComparison.Ordinal)) continue;
+            if (!int.TryParse(child.name.Substring(prefix.Length), out var number) || number < 1 || number > 99) continue;
+            if (except != null && Array.IndexOf(except, child.gameObject) >= 0) continue;
+            while (found.Count < number) found.Add(null);
+            found[number - 1] = child.gameObject;
+        }
+        return found.ToArray();
     }
 
     public SyntyAppearance ToSyntyAppearanceData()
@@ -818,6 +877,13 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
                     AddCopy(elbowsLeft, ids[3], output.transform);
                     AddCopy(elbowsRight, ids[3], output.transform);
                 }
+
+                // what it wears on the back
+                if (ids.Length > 4 && ids[4] >= 0)
+                {
+                    FindLooseAttachments();
+                    AddCopy(backAttachments, ids[4], output.transform);
+                }
                 break;
 
             case ItemType.Gloves:
@@ -866,6 +932,16 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
                 {
                     AddCopy(kneeAttachmentsLeft, ids[1], output.transform);
                     AddCopy(kneeAttachmentsRight, ids[1], output.transform);
+                }
+
+                // what hangs on its belt
+                if (ids.Length > 2)
+                {
+                    FindLooseAttachments();
+                    for (var i = 2; i < ids.Length; ++i)
+                    {
+                        AddCopy(beltAttachments, ids[i], output.transform);
+                    }
                 }
                 break;
         }
@@ -985,9 +1061,13 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
                         }
                         EquipAttachments(elbowsLeft, elbowsRight, elbowIndex, newMaterial);
                     }
+
+                    // 3: what is worn on the back (a pack, a pelt), or nothing
+                    EquipBack(additionalIndices.Length > 3 ? additionalIndices[3] : -1, newMaterial);
                 }
                 else
                 {
+                    EquipBack(-1, newMaterial);
                     EquipPairItems(
                         maleArmUpperLeft, maleArmUpperRight,
                         femaleArmUpperLeft, femaleArmUpperRight, 0, newMaterial);
@@ -1090,8 +1170,49 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
                     SwitchOff(kneeAttachmentsLeft);
                     SwitchOff(kneeAttachmentsRight);
                 }
+
+                // 1 and on: what hangs on the belt (a pouch, bottles, a scroll), or nothing
+                EquipBelt(additionalIndices, 1, newMaterial);
                 break;
         }
+    }
+
+    /// <summary>
+    /// The belt of a pair of leggings: the parts its model ids name from <paramref name="first"/> on, in its
+    /// material, and none of the leggings worn before. Model ids: hips, knee pads, then these. A game before 0.9.7
+    /// reads the first two only, so the knee position always holds a real knee pad index (with NoKneePads when the
+    /// leggings have none).
+    /// </summary>
+    private void EquipBelt(int[] ids, int first, Material material)
+    {
+        if (ids.Length <= first && !looseAttachmentsFound) return; // nothing to put on, nothing was ever on
+        FindLooseAttachments();
+        SwitchOff(beltAttachments);
+        for (var i = first; i < ids.Length; ++i)
+        {
+            Equip(PartAt(beltAttachments, ids[i]), material, false);
+        }
+    }
+
+    /// <summary>
+    /// What a chest piece wears on the back, in its material, and nothing of the chest worn before. Model ids:
+    /// torso, pauldrons, upper arms, elbow pads, then this (-1 or absent for nothing; no game before 0.9.7 reads it).
+    /// </summary>
+    private void EquipBack(int index, Material material)
+    {
+        if (index < 0 && !looseAttachmentsFound) return;
+        FindLooseAttachments();
+        SwitchOff(backAttachments);
+        if (BackPieceFits()) Equip(PartAt(backAttachments, index), material, false);
+    }
+
+    /// <summary>
+    /// The back is the cape's place first: a player who wears one (their own or their clan's) keeps it and the
+    /// armor's back piece stays off. Both hang from the same bone and cut through each other.
+    /// </summary>
+    private bool BackPieceFits()
+    {
+        return !PartAt(capes, Cape);
     }
 
     /// <summary>
