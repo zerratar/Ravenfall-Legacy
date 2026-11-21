@@ -6,7 +6,12 @@ using UnityEngine;
 ///     Makes a battle pet's model (docs/battle-pets-design.md, section 9): a tamed creature uses the model of the enemy
 ///     it was tamed from ("enemy:Red Metalon", found among the world's enemies and copied without its scripts), scaled
 ///     to the pet's size at its stage; a woken pet item uses the item's own prefab ("Pets/Raven"), grown a little per
-///     stage. The copy keeps only transforms, renderers and the animator, so nothing in it thinks it is an enemy.
+///     stage; a hatched pet uses a prefab from Resources by its species' model key, scaled like a tamed one: the cute
+///     series ("pet:Pets/Cute/Wolf Pup" is Resources/Pets/Cute/Wolf Pup) and the animal pack ("pet:Pets/Animals/Tiger"
+///     is Resources/Pets/Animals/Tiger, named as the pack names its prefabs; the keys are in RavenNest.Combat's
+///     PetSpeciesList). A prefab only needs its renderers and an Animator whose controller holds its clips
+///     (PetClipPlayer finds idle, run or walk, attack and death by name). A key whose prefab is missing shows a raven.
+///     The copy keeps only transforms, renderers and the animator, so nothing in it thinks it is an enemy.
 /// </summary>
 public static class PetModels
 {

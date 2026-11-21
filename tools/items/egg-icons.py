@@ -29,6 +29,25 @@ EGGS = {
     "snakelet": ("Snakelet Egg", (240, 196, 150), (150, 40, 40), "bands"),
     "bomb": ("Bomb Egg", (70, 78, 92), (250, 196, 70), "spots"),
     "dragon-spark": ("Dragon Spark Egg", (236, 120, 60), (255, 220, 90), "spots"),
+    # the animals (RavenNest.Combat PetSpeciesList, "the animals"): the shell takes after what is inside
+    "panda": ("Panda Egg", (240, 240, 236), (40, 40, 44), "spots"),
+    "boar": ("Boar Egg", (150, 112, 84), (84, 58, 42), "stripes"),
+    "horse": ("Pony Egg", (150, 104, 70), (60, 40, 30), "bands"),
+    "dog": ("Pupper Egg", (232, 200, 150), (150, 100, 60), "spots"),
+    "capybara": ("Capybara Egg", (176, 132, 92), (120, 190, 220), "bands"),
+    "sheep": ("Lamb Egg", (240, 236, 224), (250, 210, 80), "spots"),
+    "tiger": ("Tiger Egg", (240, 140, 50), (40, 30, 28), "stripes"),
+    "eagle": ("Storm Eagle Egg", (226, 222, 210), (110, 90, 70), "spots"),
+    "goose": ("Goose Egg", (244, 242, 232), (240, 150, 50), "bands"),
+    "parrot": ("Parrot Egg", (70, 150, 220), (250, 210, 60), "bands"),
+    "rat": ("Rat Egg", (150, 140, 136), (220, 150, 160), "spots"),
+    "lion": ("Lion Egg", (226, 180, 110), (140, 90, 50), "spots"),
+    "spider": ("Spider Egg", (220, 224, 214), (90, 170, 70), "bands"),
+    "penguin": ("Penguin Egg", (228, 236, 244), (40, 48, 64), "bands"),
+    "reindeer": ("Reindeer Egg", (140, 100, 76), (220, 50, 50), "spots"),
+    "cat": ("Kitten Egg", (60, 56, 64), (240, 150, 60), "stripes"),
+    "pig": ("Piglet Egg", (240, 180, 180), (200, 120, 130), "spots"),
+    "chicken": ("Chick Egg", (236, 214, 180), (250, 220, 90), "spots"),
 }
 
 OUTLINE = (24, 20, 22, 255)
@@ -189,6 +208,9 @@ def main():
                 pet = matte(Image.open(os.path.join(src, f + "-black.png")), Image.open(os.path.join(src, f + "-white.png")))
                 website_picture(pet, os.path.join(web, "pets", f + ".webp"))
     for species in EGGS:
+        if not os.path.exists(os.path.join(src, species + "-black.png")):
+            print("no render for", species, "(skipped)")
+            continue
         black = Image.open(os.path.join(src, species + "-black.png"))
         white = Image.open(os.path.join(src, species + "-white.png"))
         pet = matte(black, white)

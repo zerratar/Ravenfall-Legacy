@@ -36,12 +36,18 @@ public sealed class PetClipPlayer
 
         // "W Root" clips move the model themselves (the cute series has both); "In Place" ones are what code moves.
         // " to " clips are the moves between two states ("Rest to Idle"), not the states.
-        Pick(Kind.Idle, available, new[] { "idle_a", "idle01", "idle_1", "idle" }, new[] { "sit", "eat", "lie", " to ", "happy" });
+        // The animal pack names its clips "Tiger_Idle_Breathing", "Tiger_Idle_To_Walk", "Eagle_Fly_Idle", "Parrot_Fly".
+        Pick(Kind.Idle, available, new[] { "idle_a", "idle01", "idle_1", "idle" }, new[] { "sit", "eat", "lie", " to ", "_to_", "happy" });
+        // "Tiger_Idle_Breathing" and "Dog-GreatDane_Idle" have "eat" in them and are no meal: an animal whose only idle
+        // was left out for it gets it here, where only eating as a word of its own is left out
+        if (!clips.ContainsKey(Kind.Idle)) Pick(Kind.Idle, available, new[] { "idle" }, new[] { "sit", "_eat", " eat", "eating", "lie", " to ", "_to_", "happy" });
         Pick(Kind.Move, available, new[] { "run forward", "run_forward", "run", "walk forward", "walk_forward", "walk", "move", "jump_walk",
-            "fly forward", "slither", "roll forward", "forward" }, new[] { "left", "right", "back", "w root", "attack", "dash" });
+            "fly forward", "slither", "roll forward", "forward", "fly" }, new[] { "left", "right", "back", "w root", "attack", "dash", " to ", "_to_", "idle" });
         if (bolt) Pick(Kind.Attack, available, new[] { "projectile attack", "projectile", "fireball", "cast spell", "spell" }, new[] { "w root", "upward", "trajectory", "low" });
         if (!clips.ContainsKey(Kind.Attack))
-            Pick(Kind.Attack, available, new[] { "bite", "stab", "attack_01", "attack-r1", "attack", "fireball" }, new[] { "w root", "long range" });
+            Pick(Kind.Attack, available, new[] { "bite", "stab", "attack_01", "attack-r1", "attack", "fireball" }, new[] { "w root", "long range", "_to_" });
+        // no attack clip at all: a dog barks and a penguin shakes itself when it casts or throws (the strike itself is code)
+        if (!clips.ContainsKey(Kind.Attack)) Pick(Kind.Attack, available, new[] { "bark", "shake" }, new string[0]);
         Pick(Kind.Hit, available, new[] { "damage_01", "damage", "gethit", "hit" }, new string[0]);
         Pick(Kind.Down, available, new[] { "die", "death" }, new string[0]);
         Pick(Kind.Sleep, available, new[] { "sleep" }, new[] { "begin", "end", "eyes" });
