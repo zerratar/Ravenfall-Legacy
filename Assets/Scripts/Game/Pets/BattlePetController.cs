@@ -11,6 +11,9 @@ using UnityEngine;
 ///     the shared combat rules from the species' sheet and land as its owner's (threat, kills and experience go to the
 ///     owner; status effects too). A tank pet takes a share of the blows on its owner (all of them while it guards); at
 ///     0 health a pet is knocked out for 30 s, with no penalty.
+///     Its owner's Beastmaster tree (docs/combat-skills-design.md) makes it stronger, tougher and quicker back up,
+///     gives it a skill slot, lets its owner command it (Sic 'Em, Mend Pet, Call of the Wild), and at the top brings a
+///     packmate: a second controller for the same pet at half strength (<see cref="IsTwin"/>).
 /// </summary>
 public sealed class BattlePetController : MonoBehaviour
 {
@@ -28,11 +31,29 @@ public sealed class BattlePetController : MonoBehaviour
     public bool KnockedOut => Time.time < knockedUntil;
 
     /// <summary>
+    ///     Pack Leader's packmate: the same pet a second time at half strength, on its owner's other side. It fights
+    ///     and uses the pet's skills, but it is nobody's target, guards nobody and earns nothing: the pet in the stable
+    ///     is the one that counts.
+    /// </summary>
+    public bool IsTwin { get; private set; }
+    public const float TwinStrength = 0.5f;
+
+    // from its owner's skill tree (Beastmaster), read whenever the pet or the build changes
+    private float bondPower = 1f, bondRecovery, bondGuard;
+    private int bondSlots;
+    private bool bondShared;
+    // Call of the Wild: more damage for a while
+    private float commandDamageUntil, commandDamage;
+
+    /// <summary>How much harder it hits and heals than its sheet says: Fang and Claw, a command, half for a packmate.</summary>
+    private float Power => bondPower * (IsTwin ? TwinStrength : 1f) * (Time.time < commandDamageUntil ? 1f + commandDamage : 1f);
+
+    /// <summary>
     ///     Enemies can go for it (docs/battle-pets-design.md, "Enemies and pets"): out, drawn and standing with its
     ///     owner. Unseen pets (the setting off, potato mode) still fight but are never attacked, so no enemy swings
     ///     at nothing; their tank share of the owner's blows stays.
     /// </summary>
-    public bool Targetable => this && !KnockedOut && placed && Shown && Owner && !Owner.isDestroyed && Owner.Stats != null && !Owner.Stats.IsDead;
+    public bool Targetable => this && !IsTwin && !KnockedOut && placed && Shown && Owner && !Owner.isDestroyed && Owner.Stats != null && !Owner.Stats.IsDead;
 
     /// <summary>How much threat its blows and heals make: its species' multiplier (tanks 2.5).</summary>
     public double ThreatMultiplier => sheet != null && sheet.ThreatMultiplier > 0 ? sheet.ThreatMultiplier : 1;
@@ -81,14 +102,32 @@ public sealed class BattlePetController : MonoBehaviour
     private System.Action moveHit;
     private Vector3 baseScale = Vector3.one;
 
-    public static BattlePetController Spawn(PlayerController owner, BattlePet data)
+    public static BattlePetController Spawn(PlayerController owner, BattlePet data, bool twin = false)
     {
         var species = BattlePets.GetSpecies(data?.Species);
         if (!owner || species == null) return null;
-        var go = new GameObject("Battle pet: " + owner.PlayerName + "'s " + data.Name);
+        var go = new GameObject("Battle pet: " + owner.PlayerName + "'s " + data.Name + (twin ? " (packmate)" : ""));
         var pet = go.AddComponent<BattlePetController>();
+        pet.IsTwin = twin;
         pet.Setup(owner, data, species);
         return pet;
+    }
+
+    /// <summary>The model for its stage; a packmate's is a little smaller than the pet's own.</summary>
+    private void MakeModel()
+    {
+        model = PetModels.Create(Species, Data.Stage, Data.Prefab);
+        if (model == null) return;
+        model.Root.transform.SetParent(transform, false);
+        model.Root.transform.localPosition = Vector3.zero;
+        model.Root.transform.localRotation = Quaternion.identity;
+        if (IsTwin)
+        {
+            model.Root.transform.localScale *= 0.85f;
+            model.Height *= 0.85f;
+        }
+        baseScale = model.Root.transform.localScale;
+        clips = new PetClipPlayer(model.Animator, model.Clips, Species.Strike == PetStrike.Bolt);
     }
 
     private void Setup(PlayerController owner, BattlePet data, PetSpecies species)
@@ -96,15 +135,7 @@ public sealed class BattlePetController : MonoBehaviour
         Owner = owner;
         Data = data;
         Species = species;
-        model = PetModels.Create(species, data.Stage, data.Prefab);
-        if (model != null)
-        {
-            model.Root.transform.SetParent(transform, false);
-            model.Root.transform.localPosition = Vector3.zero;
-            model.Root.transform.localRotation = Quaternion.identity;
-            baseScale = model.Root.transform.localScale;
-            clips = new PetClipPlayer(model.Animator, model.Clips, Species.Strike == PetStrike.Bolt);
-        }
+        MakeModel();
         Refresh(data);
         Health = MaxHealth;
     }
@@ -116,21 +147,24 @@ public sealed class BattlePetController : MonoBehaviour
         Data = data ?? Data;
         syncedTo = SyncLevel();
         sheet = Species.Sheet(EffectiveLevel(syncedTo), Data.Stage);
+        // its owner's skill tree (Beastmaster): Fang and Claw, Thick Hide, Back on Its Feet, Guardian's Oath, Trick
+        // Training, Shared Mending
+        var build = Owner ? Owner.SkillBuild : null;
+        var bond = build != null && CombatRules.Enabled ? build.Passives() : new GearStats();
+        bondPower = 1f + Mathf.Max(0f, (float)bond[GearStat.PetPower]);
+        bondRecovery = Mathf.Clamp((float)bond[GearStat.PetRecovery], 0f, 0.75f);
+        bondGuard = Mathf.Max(0f, (float)bond[GearStat.PetGuard]);
+        bondSlots = build != null && CombatRules.Enabled ? build.ExtraPetSkillSlots : 0;
+        bondShared = build != null && CombatRules.Enabled && build.HealsReachPet;
         var share = MaxHealth > 0 ? (float)Health / MaxHealth : 1f;
-        MaxHealth = Mathf.Max(1, sheet.MaxHealth);
+        MaxHealth = Mathf.Max(1, Mathf.RoundToInt(sheet.MaxHealth * (1f + Mathf.Max(0f, (float)bond[GearStat.PetHealth])) * (IsTwin ? TwinStrength : 1f)));
         Health = Mathf.Clamp(Mathf.RoundToInt(MaxHealth * share), 1, MaxHealth);
         if (stageChanged)
         {
             // the next model (or the same one bigger)
             if (model != null && model.Root) Destroy(model.Root);
             clips?.Dispose();
-            model = PetModels.Create(Species, Data.Stage, Data.Prefab);
-            if (model != null)
-            {
-                model.Root.transform.SetParent(transform, false);
-                baseScale = model.Root.transform.localScale;
-                clips = new PetClipPlayer(model.Animator, model.Clips, Species.Strike == PetStrike.Bolt);
-            }
+            MakeModel();
             PetFx.Burst(transform.position, Mathf.Max(0.6f, Height), PetFx.ElementColor(Species.Element));
         }
     }
@@ -167,13 +201,16 @@ public sealed class BattlePetController : MonoBehaviour
             var away = position - from;
             away.y = 0f;
             if (away.sqrMagnitude < 0.01f) away = Owner.Position - from;
+            // a packmate takes the enemy from another side than the pet, so the two do not stand in each other
+            var first = IsTwin ? Owner.BattlePets.Controller : null;
+            if (first) away = Quaternion.Euler(0f, 55f, 0f) * (first.transform.position - from);
             away.y = 0f;
             goal = from + (away.sqrMagnitude > 0.0001f ? away.normalized : Vector3.forward) * standoff;
             slack = 0.4f;
         }
         else
         {
-            goal = Owner.transform.TransformPoint(new Vector3(-0.9f, 0f, -0.8f));
+            goal = Owner.transform.TransformPoint(Heel);
             slack = FollowSlack;
         }
 
@@ -187,6 +224,9 @@ public sealed class BattlePetController : MonoBehaviour
             if (d.magnitude <= reach) Attack(target);
         }
     }
+
+    /// <summary>Where it walks beside its owner: behind and to the left, a packmate to the right.</summary>
+    private Vector3 Heel => new Vector3(IsTwin ? 0.9f : -0.9f, 0f, IsTwin ? -1.1f : -0.8f);
 
     private EnemyController FightTarget()
     {
@@ -208,7 +248,7 @@ public sealed class BattlePetController : MonoBehaviour
         var dt = Mathf.Max(Time.deltaTime, 0.0001f);
         if (!placed || (goal - position).sqrMagnitude > SnapDistance * SnapDistance)
         {
-            position = Owner.transform.TransformPoint(new Vector3(-0.9f, 0f, -0.8f));
+            position = Owner.transform.TransformPoint(Heel);
             rotation = Owner.transform.rotation;
             groundY = Owner.Position.y;
             placed = true;
@@ -250,7 +290,9 @@ public sealed class BattlePetController : MonoBehaviour
     private float AttackInterval()
     {
         var faster = Time.time < frenzyUntil ? frenzyAmount : 0f;
-        return (float)Species.Stats.AttackInterval / (1f + faster);
+        // Shared Mending: what quickens its owner (Rapid Fire, a Howl) quickens it too
+        var shared = bondShared && Owner ? Mathf.Max(1f, CombatEffects.AttackSpeedFactor(Owner)) : 1f;
+        return (float)Species.Stats.AttackInterval / ((1f + faster) * shared);
     }
 
     // level sync on a tower floor (docs/tower-design.md): a pet fights at most at its owner's synced level, as the owner does
@@ -412,7 +454,7 @@ public sealed class BattlePetController : MonoBehaviour
         if (!e || e.Stats == null || e.Stats.IsDead || !Owner) return;
         var defender = CombatRules.Sheet(e);
         if (defender == null) return;
-        var result = CombatMath.Attack(sheet, Species.Stats.Style, defender, random, new AttackOptions { Multiplier = multiplier, Element = element, ArmorIgnored = armorIgnored });
+        var result = CombatMath.Attack(sheet, Species.Stats.Style, defender, random, new AttackOptions { Multiplier = multiplier * Power, Element = element, ArmorIgnored = armorIgnored });
         CombatRules.BlowLanded?.Invoke(Owner, e, result, defender);
         Owner.SessionStats.AddDamageDealt(result.Total);
         if (e.TakeDamageFromPet(this, result.Total)) Owner.Combat.Defeated(e);
@@ -423,10 +465,16 @@ public sealed class BattlePetController : MonoBehaviour
     private bool UseSkill(EnemyController target)
     {
         var slots = (Data.Slots ?? "").Split(',');
-        foreach (var id in slots)
+        // as many slots as its owner's Taming, its stage and Trick Training give (a slot taken back by a respec is
+        // not used, whatever the pet still has in it)
+        var allowed = BattlePets.SkillSlots(Owner.Stats?.Taming != null ? (int)Owner.Stats.Taming.Level : 1, Data.Stage) + bondSlots;
+        for (var slot = 0; slot < slots.Length && slot < allowed; ++slot)
         {
+            var id = slots[slot];
             var skill = BattlePets.GetSkill(id);
             if (skill == null || !skill.IsActive) continue;
+            // a packmate guards nobody: no taunts from it
+            if (IsTwin && System.Array.Exists(skill.Active.Effects, e => e.Kind == SkillEffectKind.Taunt)) continue;
             if (readyAt.TryGetValue(skill.Id, out var ready) && Time.time < ready) continue;
             var active = skill.Active;
             if (!Fits(active, target)) continue;
@@ -645,10 +693,68 @@ public sealed class BattlePetController : MonoBehaviour
     private double TypicalHit()
     {
         var s = sheet.Style(Species.Stats.Style);
-        return CombatMath.MaxHit(s.DamageLevel, s.EffectivePower) * 0.7 * sheet.DamageMultiplier;
+        return CombatMath.MaxHit(s.DamageLevel, s.EffectivePower) * 0.7 * sheet.DamageMultiplier * Power;
     }
 
-    private int HealAmount(double multiplier) => Mathf.Max(1, CombatMath.Heal(sheet, random, multiplier).Amount);
+    private int HealAmount(double multiplier) => Mathf.Max(1, CombatMath.Heal(sheet, random, multiplier * bondPower * (IsTwin ? TwinStrength : 1f)).Amount);
+
+    // ---------------------------------------------------------------- its owner's commands (Beastmaster's actives)
+
+    /// <summary>
+    ///     One effect of an active its owner used on it (CombatSkillRunner, SkillTargeting.Pet): damage is its own blow
+    ///     on the owner's target, a heal gets it back up when it is knocked out, the rest is a buff for a while.
+    /// </summary>
+    public void Command(SkillEffect effect, EnemyController target)
+    {
+        if (effect == null) return;
+        var seconds = (float)effect.Seconds;
+        switch (effect.Kind)
+        {
+            case SkillEffectKind.Damage:
+                if (KnockedOut || !target || target.Stats == null || target.Stats.IsDead) return;
+                // with its strike when it is free and shown, at once when it is in the middle of one
+                if (move == Move.None && placed) Play(target, () => Hit(target, effect.Amount, effect.Element, effect.ArmorIgnored));
+                else Hit(target, effect.Amount, effect.Element, effect.ArmorIgnored);
+                nextAttack = Mathf.Max(nextAttack, Time.time + 0.6f);
+                break;
+            case SkillEffectKind.HealPercent:
+                {
+                    var amount = Mathf.Max(1, Mathf.RoundToInt(MaxHealth * (float)effect.Amount));
+                    if (KnockedOut)
+                    {
+                        GetUp();
+                        Health = Mathf.Min(MaxHealth, amount);
+                    }
+                    else Health = Mathf.Min(MaxHealth, Health + amount);
+                    if (Shown && placed) PetFx.Ring(position, Mathf.Max(0.6f, Height), PetFx.HealColor);
+                    break;
+                }
+            case SkillEffectKind.AttackSpeed:
+                frenzyUntil = Mathf.Max(frenzyUntil, Time.time + seconds);
+                frenzyAmount = Mathf.Max(Time.time < frenzyUntil ? frenzyAmount : 0f, (float)effect.Amount);
+                if (Shown && placed) PetFx.Ring(position, Mathf.Max(0.6f, Height), PetFx.ElementColor(Species.Element));
+                break;
+            case SkillEffectKind.DamageDealt:
+                commandDamageUntil = Time.time + seconds;
+                commandDamage = (float)effect.Amount;
+                break;
+            case SkillEffectKind.DamageTaken:
+                hardenUntil = Time.time + seconds;
+                hardenAmount = (float)effect.Amount;
+                break;
+        }
+    }
+
+    /// <summary>Shared Mending: its owner was healed by this share of the owner's health, and so is the pet.</summary>
+    public void HealShare(float share)
+    {
+        if (!bondShared || KnockedOut || share <= 0f || Health >= MaxHealth) return;
+        Health = Mathf.Min(MaxHealth, Health + Mathf.Max(1, Mathf.RoundToInt(MaxHealth * Mathf.Min(1f, share))));
+    }
+
+    /// <summary>For tests and the details window: what its owner's skill tree gives it now.</summary>
+    public string BondText => "power x" + Power.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + ", up after " + ((float)BattlePets.KnockoutSeconds * (1f - bondRecovery)).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)
+        + " s, guard +" + bondGuard.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + ", slots +" + bondSlots + (bondShared ? ", shared mending" : "") + (IsTwin ? ", packmate" : "");
 
     /// <summary>Enemies fighting the one it healed take note of the pet: half the heal, shared, as a player healer's.</summary>
     private void HealingThreat(IAttackable healed, int amount)
@@ -666,9 +772,10 @@ public sealed class BattlePetController : MonoBehaviour
     /// <summary>The share of a blow on its owner this pet takes: a tank takes half, all while it guards; others none.</summary>
     public float GuardShare()
     {
-        if (KnockedOut || Species.Role != PetRole.Tank || !placed) return 0f;
+        if (IsTwin || KnockedOut || Species.Role != PetRole.Tank || !placed) return 0f;
         if ((position - Owner.Position).sqrMagnitude > 8f * 8f) return 0f;
-        return Time.time < guardUntil ? 1f : 0.5f;
+        // half, and Guardian's Oath's share on top (never all of them without a guard)
+        return Time.time < guardUntil ? 1f : Mathf.Min(0.9f, 0.5f + bondGuard);
     }
 
     /// <summary>
@@ -690,6 +797,12 @@ public sealed class BattlePetController : MonoBehaviour
     {
         if (KnockedOut || damage <= 0) return;
         if (Time.time < hardenUntil) damage = Mathf.Max(0, Mathf.RoundToInt(damage * (1f + hardenAmount)));
+        // Shared Mending: what makes its owner take less (Shield Wall, a Rally) does the same for it
+        if (bondShared && Owner)
+        {
+            var owners = CombatRules.Sheet(Owner);
+            if (owners != null && owners.DamageTakenMultiplier < 1) damage = Mathf.Max(0, Mathf.RoundToInt(damage * (float)owners.DamageTakenMultiplier));
+        }
         lastFight = Time.time;
         Health -= damage;
         if (GraphicsToggler.GraphicsEnabled)
@@ -704,9 +817,10 @@ public sealed class BattlePetController : MonoBehaviour
     private void KnockOut()
     {
         Health = 0;
-        knockedUntil = Time.time + (float)BattlePets.KnockoutSeconds;
+        knockedUntil = Time.time + (float)BattlePets.KnockoutSeconds * (1f - bondRecovery); // sooner with Back on Its Feet
         move = Move.None;
         End();
+        if (!IsTwin && Owner) Owner.BattlePets.PetStateChanged();
         if (clips == null || !clips.Hold(PetClipPlayer.Kind.Down))
         {
             // no clip for it: it lies on its side
@@ -732,6 +846,7 @@ public sealed class BattlePetController : MonoBehaviour
         if (model != null && model.Root) model.Root.transform.localRotation = Quaternion.identity;
         clips?.Release(PetClipPlayer.Kind.Idle);
         PetFx.Ring(position, Mathf.Max(0.6f, Height), PetFx.HealColor);
+        if (!IsTwin && Owner) Owner.BattlePets.PetStateChanged();
     }
 
     // ---------------------------------------------------------------- words over it

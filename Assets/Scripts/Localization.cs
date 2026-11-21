@@ -1165,7 +1165,7 @@ public static class Localization
     public static string UI_WHATSNEW_4_TITLE = "Combat skills";
     public static string UI_WHATSNEW_4_TEXT = "Every combat skill has a skill tree. Spend points with !learn, set your loadout with !loadout, and your character uses the skills by itself. Enemies now attack whoever worries them most, so a tank with the Bulwark tree and Taunt can hold them while the others deal damage and heal. !tree shows your points, !respec starts over.";
     public static string UI_WHATSNEW_5_TITLE = "Battle pets";
-    public static string UI_WHATSNEW_5_TEXT = "Pets fight beside you now: they level up, learn skills and evolve. Pick a first pet with !pets starter fox, bear or fawn, tame creatures you fight with !tame bunny, and hatch eggs from quests, raids and the tower with !pets hatch. !pets shows yours.";
+    public static string UI_WHATSNEW_5_TEXT = "Pets fight beside you now: they level up, learn skills and evolve. Pick a first pet with !pets starter fox, bear or fawn, tame creatures you fight with !tame bunny, and hatch eggs from quests, raids and the tower with !pets hatch. !pets shows yours. Taming has a skill tree of its own, Beastmaster, for your pet: !tree beastmaster.";
     public static string UI_WHATSNEW_6_TITLE = "Gems and sockets";
     public static string UI_WHATSNEW_6_TEXT = "Raw gems come from mining and gathering, more from the tower, raids and dungeons. Your clan enchants them, !socket puts one into your gear for stats or an element, !gems combine turns three into a better one, and !unsocket takes one out.";
     public static string UI_WHATSNEW_7_TITLE = "The tower";
@@ -1534,7 +1534,7 @@ public static class Localization
     public static string UI_QUEST_REWARD_ITEM = " and a {0}";
     public static string UI_DETAILS_SKILL_COOLDOWN = "Cooldown";
     public static string UI_DETAILS_SKILL_READY = "Ready";
-    public static string MSG_SKILLS_SHOW = Meta("skills", "info") + "{free} of {earned} skill points to spend (you earn 1 for every 10 levels across your combat skills, 1 for every 40 past 1,000). Loadout: {loadout}. !tree Might (or another tree) lists its skills, !learn <skill> spends points, !loadout <slot> <skill> changes the loadout. Plan a build at ravenfall.stream/skill-trees";
+    public static string MSG_SKILLS_SHOW = Meta("skills", "info") + "{free} of {earned} skill points to spend (you earn 1 for every 10 levels across your combat skills, 1 for every 40 past 1,000, and Taming's levels add their own). Loadout: {loadout}. !tree Might (or another tree) lists its skills, !learn <skill> spends points, !loadout <slot> <skill> changes the loadout. Plan a build at ravenfall.stream/skill-trees";
     public static string MSG_SKILLS_TREE = Meta("skills", "info") + "{tree} ({skill}): {nodes}. The number in brackets is the {skill} level a skill needs. !tree <skill> tells you about one.";
     public static string MSG_SKILLS_INFO = Meta("skills", "info") + "{name} ({tree}, {kind}): {description}{effect} Needs {skill} {level}, {cost}.{path}";
     public static string MSG_SKILLS_COST_ACTIVE = "costs {0} point(s)";
@@ -1543,15 +1543,17 @@ public static class Localization
     public static string MSG_SKILLS_PATH = " Learn {0} first.";
     public static string MSG_SKILLS_KIND_ACTIVE = "active, every {0} s, used {1}";
     public static string MSG_SKILLS_KIND_NEEDS = ", needs {0} equipped";
+    public static string MSG_SKILLS_KIND_NEEDS_PET = ", needs a battle pet out";
     public static string MSG_SKILLS_LOADOUT_NEEDS = " (needs {0})";
     public static string MSG_SKILLS_LOADOUT_EMPTY = "empty";
     public static string MSG_SKILLS_KIND_PASSIVE = "passive";
     public static string MSG_SKILLS_KIND_RANKS = "passive, {0} ranks";
-    public static string MSG_SKILLS_UNKNOWN = Meta("skills", "fail") + "There is no skill or tree called {name}. The trees are Bulwark, Restoration, Might, Precision, Marksman, Elements, Vitality and Hunter.";
+    public static string MSG_SKILLS_UNKNOWN = Meta("skills", "fail") + "There is no skill or tree called {name}. The trees are Bulwark, Restoration, Might, Precision, Marksman, Elements, Vitality, Hunter and Beastmaster.";
     public static string MSG_SKILLS_LEARNED = Meta("skills", "success") + "You learned {name}. {free} skill point(s) left.";
     public static string MSG_SKILLS_LEARNED_ACTIVE = Meta("skills", "success") + "You learned {name}: it is in loadout slot {slot} and is used {when}. {free} skill point(s) left.";
     public static string MSG_SKILLS_LEARNED_FULL = Meta("skills", "success") + "You learned {name}, but your loadout is full: !loadout <slot> {name} puts it in a slot (!loadout shows them). {free} skill point(s) left.";
     public static string MSG_SKILLS_LEARNED_NEEDS = " It is only used with {0} equipped.";
+    public static string MSG_SKILLS_LEARNED_NEEDS_PET = " It is only used with a battle pet out.";
     public static string MSG_SKILLS_LEARN_USAGE = Meta("skills", "fail") + "Use !learn <skill>, for example !learn cleave. !tree Might lists a tree's skills.";
     public static string MSG_SKILLS_LOADOUT = Meta("skills", "info") + "Loadout: {loadout}. The first one that fits is used first.";
     public static string MSG_SKILLS_LOADOUT_USAGE = Meta("skills", "fail") + "Use !loadout <slot> <skill>, for example !loadout 1 cleave, or !loadout clear 3.";

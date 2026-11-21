@@ -688,6 +688,14 @@ always gives an egg (a play streak's) cannot give more: there the animals share 
   takes 8% of its share instead of 92%, and a pet without armor takes nothing. It makes every tank pet much tougher
   than the simulator's numbers; fixing it changes how often tanks are knocked out, so it is the owner's call.
 
+### Beastmaster: Taming's skill tree (2026-11-21)
+
+Taming has a skill tree of its own, paid from the same points as the combat trees, and its levels earn points:
+stronger and tougher pets, commands for the loadout (Sic 'Em, Mend Pet, Call of the Wild), one more skill slot, the
+tank's larger share of blows, stronger gathering skills, and at Taming 999 a packmate. The nodes, the numbers, what
+was decided about a second pet from the stable and what was tested are in
+[combat-skills-design.md](combat-skills-design.md), "Beastmaster: Taming's tree".
+
 ### Not yet done
 
 - The eagle idles on a perching clip (its tail fans out on the ground) and runs rather than flies; a hovering eagle

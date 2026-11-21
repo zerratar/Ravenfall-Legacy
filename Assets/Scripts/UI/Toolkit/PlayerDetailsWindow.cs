@@ -1719,7 +1719,7 @@ namespace Shinobytes.UI
                     if (skill != null) skills.Add(new AttrRow(skill.Name, skill.IsActive ? Localization.UI_PET_SKILL_ACTIVE : Localization.UI_PET_SKILL_PASSIVE));
                 }
                 if (skills.Count == 0) skills.Add(new AttrRow(Localization.UI_PET_NO_SKILLS, string.Empty));
-                skills.Add(new AttrRow(Localization.UI_PET_SLOTS, RavenNest.Combat.BattlePets.SkillSlots(taming, pet.Stage).ToString(CultureInfo.InvariantCulture)));
+                skills.Add(new AttrRow(Localization.UI_PET_SLOTS, (RavenNest.Combat.BattlePets.SkillSlots(taming, pet.Stage) + (player.SkillBuild != null ? player.SkillBuild.ExtraPetSkillSlots : 0)).ToString(CultureInfo.InvariantCulture)));
                 right.Add((Localization.UI_PET_GROUP_SKILLS, skills));
 
                 // the rest of the stable

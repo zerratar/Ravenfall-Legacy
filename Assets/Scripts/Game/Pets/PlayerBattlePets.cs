@@ -47,6 +47,12 @@ public sealed class PlayerBattlePets
     }
     public BattlePetController Controller { get; private set; }
 
+    /// <summary>Pack Leader (the Beastmaster tree's capstone): the pet that is out a second time, at half strength.</summary>
+    public BattlePetController Twin { get; private set; }
+
+    /// <summary>A pet out and on its feet: what Kinship, Elemental Bond and the owner's commands ask for.</summary>
+    public bool Standing => Controller && !Controller.KnockedOut;
+
     /// <summary>
     ///     Experience a pet has earned that is not sent yet, with the Rookery's bonus the server will add: the details
     ///     window's bar moves with it instead of once a minute.
@@ -105,7 +111,7 @@ public sealed class PlayerBattlePets
     {
         var species = BattlePets.GetSpecies(speciesId);
         if (species == null) return null;
-        var slots = species.SkillsAt(level, stage).Select(s => s.Id).Take(BattlePets.SkillSlots(owner.Stats?.Taming?.Level ?? 1, stage)).ToArray();
+        var slots = species.SkillsAt(level, stage).Select(s => s.Id).Take(BattlePets.SkillSlots(owner.Stats?.Taming?.Level ?? 1, stage) + (owner.SkillBuild?.ExtraPetSkillSlots ?? 0)).ToArray();
         foreach (var p in stable) p.Active = false;
         var pet = new BattlePet
         {
@@ -125,15 +131,81 @@ public sealed class PlayerBattlePets
         {
             if (Controller) UnityEngine.Object.Destroy(Controller.gameObject);
             Controller = null;
+            SyncTwin();
+            PetStateChanged();
             return;
         }
         if (Controller && Controller.Data != null && Controller.Data.Id == active.Id)
         {
             Controller.Refresh(active);
+            SyncTwin();
             return;
         }
         if (Controller) UnityEngine.Object.Destroy(Controller.gameObject);
         Controller = BattlePetController.Spawn(owner, active);
+        SyncTwin();
+        PetStateChanged();
+    }
+
+    /// <summary>The packmate follows the pet that is out: there with Pack Leader learned, the same pet at the same stage, gone otherwise.</summary>
+    private void SyncTwin()
+    {
+        var wanted = Controller && CombatRules.Enabled && owner.SkillBuild != null && owner.SkillBuild.HasPetTwin;
+        var data = wanted ? Controller.Data : null;
+        if (Twin && (!wanted || Twin.Data == null || Twin.Data.Id != data.Id))
+        {
+            UnityEngine.Object.Destroy(Twin.gameObject);
+            Twin = null;
+        }
+        if (!wanted) return;
+        if (Twin) Twin.Refresh(data);
+        else Twin = BattlePetController.Spawn(owner, data, true);
+    }
+
+    /// <summary>
+    ///     The pet came, went, fell or got up: its owner's own stats follow when the skill tree ties them to it
+    ///     (Kinship's health, Elemental Bond's element on the owner's hits).
+    /// </summary>
+    public void PetStateChanged()
+    {
+        if (owner && owner.SkillBuild != null && owner.SkillBuild.FollowsPet) owner.UpdateEquipmentEffect();
+    }
+
+    /// <summary>
+    ///     The owner's skill build changed (!learn, !respec, the website): the pet's numbers follow at once, the
+    ///     packmate comes or goes, and when Trick Training's slot was learned or taken back the stable is read again
+    ///     (the server fills the new slot, or empties the one that is gone).
+    /// </summary>
+    public void BuildChanged(RavenNest.Combat.SkillBuild before)
+    {
+        if (Controller) Controller.Refresh(Controller.Data);
+        SyncTwin();
+        var slotsBefore = before != null ? before.ExtraPetSkillSlots : 0;
+        if (owner.SkillBuild != null && slotsBefore != owner.SkillBuild.ExtraPetSkillSlots && stable.Count > 0 && !owner.IsBot && stable.Any(p => p.CharacterId == owner.Id))
+            ReadStable();
+    }
+
+    private async void ReadStable()
+    {
+        try
+        {
+            var result = await owner.GameManager.RavenNest.Players.PetListAsync(owner.Id);
+            if (!owner || owner.Removed || result == null || result.Status != PetResultStatus.Ok) return;
+            Apply(result);
+        }
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogError("Pet stable for " + owner.PlayerName + ": " + exc.Message);
+        }
+    }
+
+    /// <summary>Shared Mending: the owner was healed; the pet (and its packmate) by the same share of their health.</summary>
+    public void OwnerHealed(int amount, int ownerMaxHealth)
+    {
+        if (amount <= 0 || ownerMaxHealth <= 0 || !Controller) return;
+        var share = amount / (float)ownerMaxHealth;
+        Controller.HealShare(share);
+        if (Twin) Twin.HealShare(share);
     }
 
     /// <summary>The owner leaves the game: the pet's unsent experience is sent (the owner is gone by the answer), and the pet goes.</summary>
@@ -155,6 +227,8 @@ public sealed class PlayerBattlePets
     {
         if (Controller) UnityEngine.Object.Destroy(Controller.gameObject);
         Controller = null;
+        if (Twin) UnityEngine.Object.Destroy(Twin.gameObject);
+        Twin = null;
         ShowCosmetic(true);
     }
 

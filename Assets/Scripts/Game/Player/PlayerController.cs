@@ -2856,8 +2856,11 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     /// <summary>The server changed the skill build (!learn, !loadout, !respec): passives and the loadout follow.</summary>
     public void ApplySkillBuild(string build)
     {
+        var before = SkillBuild;
         SkillBuild = RavenNest.Combat.SkillBuild.Parse(build);
         UpdateEquipmentEffect();
+        // the battle pet follows its owner's Beastmaster nodes
+        if (battlePets != null) battlePets.BuildChanged(before);
     }
 
     public void AddShield(int amount, float seconds)
@@ -2894,6 +2897,10 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
         if (Stats.Health != null)
             Stats.Health.Add(amount);
+
+        // Shared Mending (Beastmaster): what heals the owner heals the pet by the same share
+        if (CombatRules.Enabled && amount > 0 && battlePets != null && SkillBuild != null && SkillBuild.HealsReachPet && Stats.Health != null)
+            battlePets.OwnerHealed(amount, Stats.Health.MaxValue);
 
         if (healthBar != null && healthBar) healthBar.UpdateHealth();
         return true;
@@ -3251,7 +3258,13 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         }
 
         // the skill trees' passives count like gear stats (combat v2)
-        if (CombatRules.Enabled && SkillBuild != null) extras.Add(SkillBuild.Passives());
+        if (CombatRules.Enabled && SkillBuild != null)
+        {
+            // with a battle pet out and on its feet, Kinship counts and Elemental Bond puts its element on the owner's hits
+            var petOut = battlePets != null && battlePets.Standing;
+            extras.Add(SkillBuild.Passives(petOut));
+            if (petOut) extras.Add(SkillBuild.PetElementBonus(battlePets.Controller.Species.Element));
+        }
 
         EquipmentStats.Extras = extras;
         EquipmentStats.WeaponExtras = weaponExtras;

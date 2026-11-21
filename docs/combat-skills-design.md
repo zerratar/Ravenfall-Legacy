@@ -13,7 +13,7 @@ Decided with Zerratar (2026-11-06):
 
 ## 1. The shape: trees, points, a loadout
 
-- **Skill trees,** one per combat skill. A tree holds **actives** (skills used in combat on a cooldown) and
+- **Skill trees,** one per combat skill (and Beastmaster for Taming, see the end of this document). A tree holds **actives** (skills used in combat on a cooldown) and
   **passives** (always on: more armour, more crit, longer burns, cheaper threat...).
 - **Skill points** come from combat levels and are spent in any tree. A node also needs a level in its
   tree's skill: "Whirlwind" needs Strength 120, so points alone do not open a tree you never trained.
@@ -224,3 +224,132 @@ the player's level, as a multiple of no build, levels 100/300/600/999): Might 1.
 Marksman 1.32-1.49x, Elements 1.44-1.83x (was 1.53-2.00x), Hunter against bosses 1.68-1.76x (was 1.77-1.86x, for 43
 points but bosses only). Elements still grows with level because element damage takes only half of armour's share and
 armour grows with level; the simulator's enemies resist nothing, while many real ones resist an element.
+
+---
+
+## Beastmaster: Taming's tree (2026-11-21)
+
+Zerratar asked whether the skill trees should grow with Taming ("it does somewhat count as a support combat skill,
+its like summoner in a way") and decided: **"yes start with beastmaster and make it earn points to use"**.
+
+- **A ninth tree, Beastmaster**, gated by **Taming** the way every tree is gated by its own skill (tiers at Taming 1,
+  100, 300, 600 and 999), paid from the **same pool** as the others: points in your pet instead of in yourself is the
+  summoner's trade.
+- **Taming's levels earn points** at the rate of one combat skill: one per 10 levels for the first 125 (an eighth of
+  the first 1,000 combat levels), one per 40 after (`SkillTrees.TamingPoints`). Taming 76 gives 7, 300 gives 16, 999
+  gives 34, on top of the combat levels' points (274 with all eight at 999, 308 with Taming). It is counted apart, so
+  nobody's points from combat change, and it is worked out from the level each time: a character that already had
+  Taming levels has its points the next time anything looks, with no migration. Taming stays out of the combat level.
+- **The whole tree costs 118 points** (Bulwark 111, Restoration 101): twelve nodes, three a tier, and the capstone.
+  Three actives for the loadout. Every role of pet has something: a tank's guard, a healer's and a damage pet's
+  power, a support pet through its owner's buffs, a gatherer's skills.
+
+| Tier (Taming) | Node | Kind, cost | What it does | For |
+|---|---|---|---|---|
+| 1 | **Fang and Claw** | passive, 5 ranks x 1 | the pet's blows and heals 4% stronger a rank (20%) | damage, healer, support |
+| 1 | **Thick Hide** | passive, 5 ranks x 1 | 5% more health for the pet a rank (25%) | tank, every pet |
+| 1 | **Sic 'Em** | active, 3 | every 12 s in any fight: the pet strikes your target for 250% of its hit. Needs a battle pet out | damage, any pet |
+| 100 | **Back on Its Feet** | passive, 5 ranks x 2 | a knocked out pet gets up 10% sooner a rank (30 s to 15 s) | tank, every pet |
+| 100 | **Kinship** | passive, 5 ranks x 2 | you: 2% more health a rank (10%) while a pet is out and on its feet | the owner |
+| 100 | **Mend Pet** | active, 5 | every 30 s when the pet is below half health or knocked out: 30% of its health back, and back on its feet | tank, every pet |
+| 300 | **Trick Training** | special, 8 | one more skill slot for the pet | support, healer, gatherer |
+| 300 | **Shared Mending** | special, 8 | healing you receive heals the pet by the same share of its health; what makes you attack faster or take less damage does the same for it | every pet in a group |
+| 300 | **Keen Senses** | passive, 3 ranks x 3 | a gatherer pet's skills 10% stronger a rank (Forage 5% to 6.5%, Keen Nose 10% to 13%, Dig 1% to 1.3%) | gatherer |
+| 600 | **Elemental Bond** | passive, 5 ranks x 4 | with the pet out, 3% of each of your hits more a rank (15%) as the pet's element; a pet without an element gives half as much crit chance (7.5%) | the owner |
+| 600 | **Guardian's Oath** | passive, 10 | a tank pet takes 70% of the blows meant for you instead of half | tank |
+| 600 | **Call of the Wild** | active, 10 | every 40 s on bosses: the pet attacks 50% faster and deals 30% more for 8 s. Needs a battle pet out | damage, any pet |
+| 999 | **Pack Leader** | capstone, 15 | a packmate of the pet's own kind fights beside it at half strength | every pet |
+
+Paths: Back on Its Feet from Thick Hide; Kinship from Thick Hide or Fang and Claw; Mend Pet from Sic 'Em or Fang and
+Claw; Trick Training from Mend Pet or Kinship; Shared Mending from Mend Pet or Back on Its Feet; Keen Senses from
+Kinship or Back on Its Feet; Elemental Bond from Trick Training or Keen Senses; Guardian's Oath from Shared Mending
+or Keen Senses; Call of the Wild from Trick Training or Shared Mending; Pack Leader from any tier 600 node.
+
+**In line with the other trees:** first-tier passives are 4% and 5% a rank (Brute Force 4%, Thick Skin 4%, Hardy 3%);
+Sic 'Em is 250% of the pet's hit every 12 s, about 0.6 of its owner's hit (Cleave is 0.8 on three enemies every 8 s);
+Mend Pet's 30% is Second Wind's quarter for the pet; Kinship's 10% health needs a pet out where Hardy's 15% does not;
+Elemental Bond is 15% for 20 points at tier 600 and meets resistances; Guardian's Oath is one rank for 10 like Titan
+and Apex Predator; the capstone costs 15 like every capstone.
+
+### The capstone, and the second pet from the stable
+
+The sketch's capstone was "a second pet out at once, at reduced strength". Looked at honestly, a second pet **from the
+stable** is not something to bolt on:
+
+- **The server knows one pet out per character** in six places: `GameData.GetActivePet` (the gatherer bonus), `pets.use`
+  (it clears every other pet's flag), the hatch and the tame that go "straight out when none is", the woken pet whose
+  item is gone, the experience report, and `Stable`'s order. A second needs a field of its own on the `Pet` row and a
+  rule for each of those.
+- **The game holds one controller per player**, read by 51 places: the enemies' threat and taunts, the tank's share
+  of blows, the details window's chip, the cosmetic pet that hides, `!pets` and its answers, the tower's level sync,
+  the experience share.
+- **Both bots' `!pets` grammar** has no word for "the other one": `!pets use`, `away`, `rename`, `skills`, `slot`
+  and `evolve` all mean the pet that is out. The website's stable shows one pet out, the details window one chip.
+- **Questions that are the owner's:** does the second gather (two Forages)? Two tanks, one share of the blows or two?
+  Which one does `!pets away` send home? Half the experience each, or the second none?
+
+So the capstone is built as **Pack Leader: a packmate of the pet's own kind** (the same pet a second time, a little
+smaller, at half strength), which keeps the fantasy (two animals at your heels and in the fight) and the weight (a
+pet and a half), and touches none of the above: the stable still has one pet out, the packmate is the game's alone.
+It fights the owner's target and uses the pet's skills at half strength (no taunts), follows on the owner's other
+side, takes a command with the pet (Sic 'Em, Mend Pet, Call of the Wild), is nobody's target, takes no blows for
+its owner, earns no experience and gathers nothing.
+
+**Proposal, not built: a second pet from the stable** as a later step on top of Pack Leader. `!pets second (name)`
+and `!pets second off`; a `Second` flag on the `Pet` row beside `Active`; the second at half strength with its own
+skills and its own knocked-out state; the experience share split in two rather than doubled; no gathering and no
+guard from the second (so two gatherers or two tanks do not double); both in the details window, in `!pets` and on
+the website's stable. It replaces the packmate when one is chosen and falls back to it when none is.
+
+### Built (2026-11-21)
+
+- **Library** (RavenNest.Combat): `SkillTree.Beastmaster`, `CombatSkill.Taming`, the thirteen nodes and their paths
+  (`SkillTrees`), `TamingPoints` and `EarnedPoints(combat, taming)`. Three small additions for a pet's actives: the
+  targeting `Pet` (the effects are the pet's: damage is its own blow on the target), the use rule `PetHurt` and the
+  need `Pet` ("a battle pet out"). Five stats the pet reads from its owner's build (`PetPower`, `PetHealth`,
+  `PetRecovery`, `PetGathering`, `PetGuard`). `SkillBuild` says what a build does for the pet (`Passives(petOut)`,
+  `PetElementBonus`, `ExtraPetSkillSlots`, `HealsReachPet`, `HasPetTwin`). Tests.
+- **Server**: Taming opens the tree and earns the points (`SkillTreeManager`); a pet's slots count Trick Training
+  (`BattlePetManager`: the slot command, filling, and `pets.list` fills a new slot or empties one that a respec took
+  back); Keen Senses makes the gatherer bonus stronger. A respec and a Tome of Forgetting cover the tree like any other.
+- **Game**: the pet reads its owner's build whenever the pet or the build changes (`BattlePetController.Refresh`):
+  power, health, knockout time, the tank's share, the slots it may use, Shared Mending. The owner's own stats follow
+  the pet (`PlayerController.UpdateEquipmentEffect`: Kinship and Elemental Bond count with a pet out and on its
+  feet, and are worked out again when it comes, goes, falls or gets up). The actives run through the loadout like
+  any other (`CombatSkillRunner`: the pet does what the skill says, `BattlePetController.Command`). The packmate is
+  a second controller for the same pet (`PlayerBattlePets.Twin`).
+- **Chat**: `!tree beastmaster` (or `!tree taming`), `!tree sic 'em`, `!learn`, `!loadout` and `!respec` work as
+  for every tree; the texts say "needs a battle pet out" instead of "equipped", and `!tree` says Taming earns points.
+- **Website**: the map has nine wedges (the script takes any number; on a phone the names by the top met, so the one
+  nearest the pole steps outwards), the planner has a Taming level and counts its points, old shared links with
+  eight levels still open, the stable tab counts Trick Training's slot, /combat and /pets explain the tree. The
+  emblem and five icons are stand-ins made from the game's own pet pictures (`tools/website/beastmaster-icons.py`);
+  **wanting drawn icons later:** the tree's emblem, Sic 'Em, Mend Pet, Call of the Wild, Trick Training, Shared
+  Mending.
+- **Older games**: a 0.9.6 game has no skill trees at all (it reads no build and has no handler for the build
+  event), so Beastmaster nodes do nothing there, like every node. A 0.9.7 test build from before the tree drops the
+  node ids it does not know when it reads a build and keeps the rest (a test). The game never writes a build back;
+  the server is the one that saves.
+
+### Tested
+
+- Library: 133 tests pass (five new: the points, the tree's shape and gate, the texts, what a build carries, unknown
+  nodes).
+- **The test character** (zerratar: Taming 76, a Disco Raven support pet out) through the real chat handlers with
+  the game cut off from the bot: 252 points (245 from combat levels, 7 from Taming, no migration); `!tree beastmaster`
+  and `!tree taming` list the tree; two ranks each of Fang and Claw and Thick Hide took the pet from 870 to 957 health
+  and its power to x1.08; `!learn mend pet` was refused ("needs Taming 100"); Sic 'Em went into slot 1 and was used
+  three times in 45 s against Ironhill's dragons; `!respec confirm` gave all 7 points back (it took one of the
+  character's Tomes of Forgetting, which the server then gave back; task and pet as before).
+- **With bots and local pets** (a build put on a bot directly: the game follows a build whatever the levels, the
+  server is what checks them), for the nodes from Taming 100 up: a Tiger went from 620 to 775 health and x1.20;
+  knocked out, it was up after 15.1 s; its owner's health went from 4,360 to 4,796 with it standing and back while it
+  lay (Kinship), and the owner's hits carried 15% fire (Elemental Bond; 7.5% crit with a Panda); a heal of a fifth
+  on the owner healed the pet a fifth, and the owner attacking twice as fast halved the pet's 1.8 s (Shared Mending);
+  Call of the Wild took it to x1.56 and 1.2 s; Mend Pet had it up 1.8 s after a knockout with 233 of 775; a first-stage
+  Tiger had three slots instead of two (Trick Training); a Panda's share went from 0.5 to 0.7 and a blow of 1,000 on
+  its owner left 300 (Guardian's Oath); the packmate was there at half health and x0.60, fought, could not be
+  targeted, guarded nobody, and was gone with the build.
+- **Not exercised in play:** Keen Senses and the server's side of Trick Training (the slot command and `pets.list`
+  filling the slot) need Taming 300 on a real character; they compile and read right, no more. The website's
+  character page signed in. Call of the Wild's "on bosses" rule against a real boss (it was put on "in any fight").

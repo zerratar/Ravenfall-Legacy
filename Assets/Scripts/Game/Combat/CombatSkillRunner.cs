@@ -63,6 +63,7 @@ public sealed class CombatSkillRunner
             case SkillGear.MeleeWeapon: return inventory.GetMeleeWeapon() != null;
             case SkillGear.Bow: return inventory.GetEquipmentOfType(ItemCategory.Weapon, ItemType.TwoHandedBow) != null;
             case SkillGear.Staff: return inventory.GetEquipmentOfType(ItemCategory.Weapon, ItemType.TwoHandedStaff) != null;
+            case SkillGear.Pet: return owner.BattlePets.Standing; // Beastmaster's commands: a battle pet out and on its feet
             default: return true;
         }
     }
@@ -100,6 +101,11 @@ public sealed class CombatSkillRunner
                 foreach (var e in EnemyController.Active)
                     if (Near(e, owner.Position, radius) && e.TargetPlayer && e.TargetPlayer != owner && !e.TargetPlayer.Stats.IsDead) return true;
                 return false;
+            case SkillUse.PetHurt:
+                {
+                    var pet = owner.BattlePets.Controller;
+                    return pet && (pet.KnockedOut || pet.Health < pet.MaxHealth / 2);
+                }
             default: return false;
         }
     }
@@ -139,6 +145,11 @@ public sealed class CombatSkillRunner
         {
             case SkillTargeting.Self:
                 targets.Add(owner);
+                break;
+            case SkillTargeting.Pet:
+                // a command for the battle pet: there has to be one out (the owner stands in for it in the list), and
+                // an enemy when the command is a blow
+                if (owner.BattlePets.Controller && (Enemy(target) || !System.Array.Exists(active.Effects, e => e.Kind == SkillEffectKind.Damage))) targets.Add(owner);
                 break;
             case SkillTargeting.Target:
                 if (Enemy(target)) targets.Add(target);
@@ -236,6 +247,18 @@ public sealed class CombatSkillRunner
     private void Run(SkillNode node, ActiveSkill active, IAttackable target)
     {
         var ccBonus = 1f + (float)owner.EquipmentStats.Gear(GearStat.CrowdControlDuration);
+        if (active.Targeting == SkillTargeting.Pet)
+        {
+            // Beastmaster: the pet does it (and its packmate with it, at its own strength)
+            var pet = owner.BattlePets.Controller;
+            var twin = owner.BattlePets.Twin;
+            foreach (var effect in active.Effects)
+            {
+                if (pet) pet.Command(effect, target as EnemyController);
+                if (twin) twin.Command(effect, target as EnemyController);
+            }
+            return;
+        }
         foreach (var effect in active.Effects)
         {
             foreach (var t in targets)

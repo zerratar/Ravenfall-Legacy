@@ -7,7 +7,7 @@ using RavenNest.Models;
 using UnityEngine;
 
 /// <summary>
-/// The skill trees from chat (combat v2, docs/combat-skills-design.md, section 6). The bot sends "skills_command" with
+/// The skill trees from chat (combat v2, docs/combat-skills-design.md, section 6), Taming's Beastmaster among them. The bot sends "skills_command" with
 /// the action first: !tree (points and loadout), !tree Might (a tree's nodes), !tree cleave (one node),
 /// !learn cleave, !loadout (the loadout), !loadout 1 cleave, !loadout clear 3, !respec (the price) and !respec confirm.
 /// The server saves every change and answers with the build, which the character then follows.
@@ -90,7 +90,8 @@ public class SkillsCommand : ChatBotCommandHandler<string>
             // it out without a word), when it is used and what it needs equipped
             var slot = build.Loadout.FindIndex(x => string.Equals(x, learned.Id, StringComparison.OrdinalIgnoreCase));
             var needs = SkillTrees.NeedsText(learned.Active.Needs);
-            var needsText = needs.Length > 0 ? string.Format(Localization.MSG_SKILLS_LEARNED_NEEDS, needs) : "";
+            // a weapon is equipped; a battle pet (Beastmaster's commands) is out
+            var needsText = learned.Active.Needs == SkillGear.Pet ? Localization.MSG_SKILLS_LEARNED_NEEDS_PET : needs.Length > 0 ? string.Format(Localization.MSG_SKILLS_LEARNED_NEEDS, needs) : "";
             if (slot < 0) client.SendReply(gm, Localization.MSG_SKILLS_LEARNED_FULL + needsText, learned.Name, free);
             else client.SendReply(gm, Localization.MSG_SKILLS_LEARNED_ACTIVE + needsText, learned.Name, slot + 1, SkillTrees.UseText(build.RuleOf(learned)), free);
             return;
@@ -196,7 +197,8 @@ public class SkillsCommand : ChatBotCommandHandler<string>
         {
             kind = string.Format(Localization.MSG_SKILLS_KIND_ACTIVE, node.Active.Cooldown, SkillTrees.UseText(player.SkillBuild != null ? player.SkillBuild.RuleOf(node) : node.Active.Use));
             var needs = SkillTrees.NeedsText(node.Active.Needs);
-            if (needs.Length > 0) kind += string.Format(Localization.MSG_SKILLS_KIND_NEEDS, needs);
+            if (node.Active.Needs == SkillGear.Pet) kind += Localization.MSG_SKILLS_KIND_NEEDS_PET;
+            else if (needs.Length > 0) kind += string.Format(Localization.MSG_SKILLS_KIND_NEEDS, needs);
         }
         // the path: one of the skills linked below it (none on the first tier)
         var path = node.Requires.Length > 0 ? string.Format(Localization.MSG_SKILLS_PATH, string.Join(" or ", node.Requires.Select(r => SkillTrees.Get(r)?.Name ?? r))) : "";

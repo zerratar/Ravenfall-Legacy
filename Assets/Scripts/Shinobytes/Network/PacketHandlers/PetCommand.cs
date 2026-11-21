@@ -198,7 +198,7 @@ public class PetCommand : ChatBotCommandHandler<string>
         var pet = player.BattlePets.Active;
         if (pet == null) { client.SendReply(gm, Localization.MSG_PET_NONE_OUT, List(player)); return; }
         var species = BattlePets.GetSpecies(pet.Species);
-        var count = BattlePets.SkillSlots(player.Stats.Taming.Level, pet.Stage);
+        var count = BattlePets.SkillSlots(player.Stats.Taming.Level, pet.Stage) + (player.SkillBuild?.ExtraPetSkillSlots ?? 0); // Trick Training
         var slots = (pet.Slots ?? "").Split(',');
         var shown = Enumerable.Range(0, count).Select(i => (i + 1) + ". " + (i < slots.Length ? BattlePets.GetSkill(slots[i])?.Name ?? "empty" : "empty"));
         var learned = species.SkillsAt(pet.Level, pet.Stage).Select(s => s.Name).ToList();
