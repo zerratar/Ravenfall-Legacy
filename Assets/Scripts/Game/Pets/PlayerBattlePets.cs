@@ -380,6 +380,7 @@ public sealed class PlayerBattlePets
         if (owner.IsBot)
         {
             AddLocal(species.Id);
+            Taming = null;
             Tamed(e.Position, species);
             return;
         }
@@ -403,6 +404,9 @@ public sealed class PlayerBattlePets
             }
             if (result.Status != PetResultStatus.Ok) return;
             Apply(result);
+            // one !tame, one pet: the next one takes another !tame, so pets are not farmed like ore (the user's call,
+            // 2026-11-21). A try that fails keeps going. Another kind chosen while the server answered stays chosen.
+            if (Taming == species) Taming = null;
             Tamed(e ? e.Position : owner.Position, species);
         }
         catch (Exception exc)
@@ -427,9 +431,9 @@ public sealed class PlayerBattlePets
     {
         PetFx.Burst(where, 1.2f, PetFx.ElementColor(species.Element));
         if (owner.GameManager?.RavenBot == null) return;
-        if (Time.time < nextAnnounce) { owner.GameManager.RavenBot.SendReply(owner, Localization.MSG_PET_TAMED_YOU, species.NameAt(0)); return; }
+        if (Time.time < nextAnnounce) { owner.GameManager.RavenBot.SendReply(owner, Localization.MSG_PET_TAMED_YOU, species.NameAt(0), species.CreatureName.ToLowerInvariant()); return; }
         nextAnnounce = Time.time + AnnounceEvery;
-        owner.GameManager.RavenBot.Announce(Localization.MSG_PET_TAMED, owner.PlayerName, species.NameAt(0));
+        owner.GameManager.RavenBot.Announce(Localization.MSG_PET_TAMED, owner.PlayerName, species.NameAt(0), species.CreatureName.ToLowerInvariant());
     }
 
     // ---------------------------------------------------------------- blows on the owner

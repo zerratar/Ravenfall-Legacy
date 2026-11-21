@@ -274,7 +274,7 @@ public class UseItem : ChatBotCommandHandler<string>
 /// <summary>
 /// Experience books (v0.9.7): what a quest gives in place of experience for a skill that is at the top level already.
 /// A book belongs to a category of skills and is read for one of them: !use gathering book fishing, with a number or
-/// "all" after it for more than one, and "small" or "large" before it to pick a size (the small ones go first). A
+/// "all" after it for more than one, and "small", "medium" or "large" before it to pick a size (the smallest go first). A
 /// book is a share of a level, not an amount of experience: each one gives that share of the next level of the skill
 /// it is read for, so a book earned at level 999 does not send a low skill up dozens of levels.
 /// </summary>
@@ -299,8 +299,10 @@ public static class ExperienceBooks
     public const string ItemWord = "Book";
 
     // the shares the server's books carry, only to work out how many it takes to reach the top level
-    private const double SmallShare = 0.15;
-    private const double LargeShare = 0.5;
+    private static readonly double[] Shares = { 0.15, 0.5, 0.9 };
+
+    /// <summary>The sizes, smallest first, as the items are named ("Medium Gathering Book").</summary>
+    private static readonly string[] SizeWords = { "small", "medium", "large" };
 
     /// <summary>The most books one !use reads (the server's limit too).</summary>
     private const int MaxPerUse = 100;
@@ -329,12 +331,15 @@ public static class ExperienceBooks
         if (string.IsNullOrEmpty(itemName) || !itemName.EndsWith(" " + ItemWord, StringComparison.OrdinalIgnoreCase)) return null;
         foreach (var c in Categories)
         {
-            if (itemName.Equals(ItemName(c, false), StringComparison.OrdinalIgnoreCase) || itemName.Equals(ItemName(c, true), StringComparison.OrdinalIgnoreCase)) return c;
+            for (var size = 0; size < SizeWords.Length; ++size)
+            {
+                if (itemName.Equals(ItemName(c, size), StringComparison.OrdinalIgnoreCase)) return c;
+            }
         }
         return null;
     }
 
-    private static string ItemName(Category category, bool large) => (large ? "large " : "small ") + category.Key + " book";
+    private static string ItemName(Category category, int size) => SizeWords[size] + " " + category.Key + " book";
 
     /// <summary>"Woodcutting, Mining, Fishing or Gathering": a category's skills as players see them, without one of them.</summary>
     public static string SkillNames(Category category, Skill except = Skill.None)
@@ -361,7 +366,7 @@ public static class ExperienceBooks
     }
 
     /// <summary>
-    /// !use [small|large] (category) book (skill) [number|all]. The category may be left out when the skill says it
+    /// !use [small|medium|large] (category) book (skill) [number|all]. The category may be left out when the skill says it
     /// ("!use book fishing"). Says why when the skill is missing, is not one of the book's, or is at the top level too.
     /// </summary>
     public static async System.Threading.Tasks.Task UseAsync(GameManager game, PlayerController player, string query, GameMessage gm, GameClient client)
@@ -369,13 +374,13 @@ public static class ExperienceBooks
         Category category = null;
         var skill = Skill.None;
         var count = 1;
-        var sized = false;
-        var large = false;
+        var asked = -1; // the size named, or -1
         foreach (var word in query.ToLowerInvariant().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries))
         {
             if (word == "book" || word == "books" || word == "of" || word == "on" || word == "for" || word == "to" || word == "the" || word == "a") continue;
-            if (word == "small" || word == "little") { sized = true; large = false; continue; }
-            if (word == "large" || word == "big") { sized = true; large = true; continue; }
+            if (word == "small" || word == "little") { asked = 0; continue; }
+            if (word == "medium" || word == "middle") { asked = 1; continue; }
+            if (word == "large" || word == "big") { asked = 2; continue; }
             if (word == "all" || word == "max") { count = MaxPerUse; continue; }
             // a number is how many, never a skill (a number alone would parse as the skill with that index)
             if (int.TryParse(word, out var number)) { count = Math.Min(Math.Max(number, 1), MaxPerUse); continue; }
@@ -401,18 +406,22 @@ public static class ExperienceBooks
             return;
         }
 
-        // the small ones first, unless a size is named
-        GameInventoryItem small = null, big = null;
+        // the smallest ones first, unless a size is named
+        var owned = new GameInventoryItem[SizeWords.Length];
         foreach (var item in player.Inventory.GetBackpackItems().ToArray())
         {
             if (item == null || item.Amount <= 0 || item.Item == null || item.Item.Name == null) continue;
-            if (item.Item.Name.Equals(ItemName(category, false), StringComparison.OrdinalIgnoreCase)) small = item;
-            else if (item.Item.Name.Equals(ItemName(category, true), StringComparison.OrdinalIgnoreCase)) big = item;
+            for (var s = 0; s < owned.Length; ++s)
+            {
+                if (item.Item.Name.Equals(ItemName(category, s), StringComparison.OrdinalIgnoreCase)) owned[s] = item;
+            }
         }
-        var book = sized ? (large ? big : small) : (small ?? big);
+        var size = asked;
+        if (size < 0) size = Array.FindIndex(owned, o => o != null);
+        var book = size >= 0 ? owned[size] : null;
         if (book == null)
         {
-            client.SendReply(gm, Localization.MSG_BOOK_NONE, sized ? (large ? "large " : "small ") + category.Key : category.Key);
+            client.SendReply(gm, Localization.MSG_BOOK_NONE, asked >= 0 ? SizeWords[asked] + " " + category.Key : category.Key);
             return;
         }
 
@@ -434,9 +443,8 @@ public static class ExperienceBooks
         }
 
         // no more than the stack has, and no more than it takes to reach the top level: the rest would be wasted
-        var isLarge = book == big;
         count = (int)Math.Min(count, book.Amount);
-        count = BooksToTop(stat, isLarge ? LargeShare : SmallShare, count);
+        count = BooksToTop(stat, Shares[size], count);
 
         var bookName = book.Item.Name;
         // the server reads "Fishing" or "Fishing-3"

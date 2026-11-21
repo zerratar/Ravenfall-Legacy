@@ -424,8 +424,8 @@ public class TameCommand : ChatBotCommandHandler<string>
             else client.SendReply(gm, Localization.MSG_TAME_NOT_HERE, creature, player.Island ? player.Island.Identifier : "this island", string.Join(" or ", islands), chance, treatText);
             return;
         }
-        if (player.ActiveSkill.IsCombatSkill()) client.SendReply(gm, Localization.MSG_TAME_STARTED, creature, chance, level, treatText);
-        else client.SendReply(gm, Localization.MSG_TAME_NOT_FIGHTING, creature, chance, treatText);
+        if (player.ActiveSkill.IsCombatSkill()) client.SendReply(gm, Localization.MSG_TAME_STARTED, creature, chance, level, creature.ToLowerInvariant(), treatText);
+        else client.SendReply(gm, Localization.MSG_TAME_NOT_FIGHTING, creature, chance, creature.ToLowerInvariant(), treatText);
     }
 
     private static string ChanceText(int level, PetSpecies species, bool treat = false)

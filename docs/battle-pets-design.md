@@ -61,6 +61,8 @@ per role, a mix of elements) is plenty to launch with.
 2. **Taming creatures on the islands: the main way.** Started like training, `!tame metalon`: the character
    fights that kind of creature as usual, and when one is nearly beaten it has a chance to tame it instead of
    killing it. A failed try is a normal kill with its usual experience.
+   - **One `!tame`, one pet** (2026-11-21): taming stops when a creature is tamed, and the next one takes another
+     `!tame`. Unlike `!mine rune ore`, it does not keep going: pets are not meant to be farmed while away.
    - **The chance** comes from your Taming level against the creature's, and a **treat** raises it (cooked or
      farmed, so Cooking and Farming get a new use). Rare enough to matter, about like a Slayer drop.
    - **Only creatures:** beasts, insects, spirits and dragons. People (goblins, pirates, vikings, gladiators,

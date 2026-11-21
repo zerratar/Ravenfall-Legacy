@@ -1906,7 +1906,7 @@ public static class Localization
     public static string MSG_PET_NEXT_PLACE = " Your next place opens at Taming {0}.";
     public static string MSG_PET_WHICH = Meta("pets", "fail") + "Which pet? !pets {action} (name or number): {pets}.";
     public static string MSG_PET_WAKE_NOT_WORN = Meta("pets", "fail") + "You are not wearing a pet. !pets wake (pet name) wakes one from your bag, for example !pets wake raven.";
-    public static string MSG_PET_TAMED_YOU = Meta("pets") + "You tamed a {kind}! !pets stable lists your pets.";
+    public static string MSG_PET_TAMED_YOU = Meta("pets") + "You tamed a {kind}! Taming stops there: !tame {creature} again for another. !pets stable lists your pets.";
     public static string MSG_PET_HATCHED_YOU = Meta("pets") + "Your {egg} hatched into a {kind}! !pets use {kind} sends it out.";
     public static string MSG_PET_ABOUT_STARTER = "Yours with !pets starter {0}, while your stable is empty.";
     public static string MSG_PET_ABOUT_WHERE = " Found on {0}.";
@@ -1951,12 +1951,12 @@ public static class Localization
     public static string MSG_PET_STARTER_PICK = Meta("pets", "fail") + "Pick a first pet: !pets starter fox (damage), !pets starter bear (tank) or !pets starter fawn (healer).";
     public static string MSG_PET_STARTER_HAVE = Meta("pets", "fail") + "Starter pets are for an empty stable, and yours has pets in it already. !pets stable lists them.";
     public static string MSG_PET_ERROR = Meta("pets", "fail") + "Your pet did not hear you. Try again in a moment.";
-    public static string MSG_PET_TAMED = Meta("pets") + "{player} tamed a {kind}!";
+    public static string MSG_PET_TAMED = Meta("pets") + "{player} tamed a {kind}! Taming stops with a tame: !tame {creature} again for another.";
     public static string MSG_PET_STABLE_FULL = Meta("pets", "fail") + "You could have tamed a {kind}, but your stable is full ({size}), so taming has stopped. !pets release (name) frees a place.{next}";
     public static string MSG_PET_KNOCKED_OUT_SHORT = "Knocked out!";
     public static string MSG_PET_LEVEL_SHORT = "Level {0}!";
-    public static string MSG_TAME_STARTED = Meta("pets") + "Taming {kind}: each one you defeat is a try ({chance} each, Taming {level}), and every try trains Taming. It goes on after a tame until !tame stop or a full stable. {treat}";
-    public static string MSG_TAME_NOT_FIGHTING = Meta("pets") + "Taming {kind}: train a combat skill and each one you defeat is a try ({chance} each). It goes on after a tame until !tame stop or a full stable. {treat}";
+    public static string MSG_TAME_STARTED = Meta("pets") + "Taming {kind}: each one you defeat is a try ({chance} each, Taming {level}), and every try trains Taming. It stops when you tame one; !tame {kind2} again for another. {treat}";
+    public static string MSG_TAME_NOT_FIGHTING = Meta("pets") + "Taming {kind}: train a combat skill and each one you defeat is a try ({chance} each). It stops when you tame one; !tame {kind2} again for another. {treat}";
     public static string MSG_TAME_NOT_HERE = Meta("pets") + "There is no {kind} to fight on {island}: they live on {islands}. Sail there and train a combat skill; each one you defeat is then a try ({chance} each). {treat}";
     public static string MSG_TAME_NOWHERE = Meta("pets") + "There is no {kind} on any island right now (some creatures only turn up in events). Taming is set for when you meet one: {chance} a try. {treat}";
     public static string MSG_TAME_STATUS = Meta("pets") + "You are taming {kind}: {chance} a try at Taming {level}.";

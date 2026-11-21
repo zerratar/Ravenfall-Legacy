@@ -42,7 +42,8 @@ follows them from stream to stream; it only moves while they play in some stream
 
 - **Daily quests.** Every day each player is offered three, from a pool scaled to their levels (a level 20 miner is
   not asked for 500 adamantite). They take one or more with `!quest accept`. Unfinished dailies expire at the day's
-  end. A small reward, and a daily streak that grows it.
+  end. A small reward, and a daily streak that grows it: 10% more coins and experience for each day in a row, up to
+  50% after five days. (Shown since the start but only paid since 2026-11-21: the server paid the plain reward.)
 - **Weekly quest.** One bigger quest a week per player (a raid streak, a crafting order, a long gathering goal), with
   a bigger reward, outside the three active slots.
 - **Seasonal quests.** Offered only while an event runs (Christmas, Halloween, later others): themed objectives and
@@ -407,12 +408,14 @@ seasonal quests, chains and the Ravebridge quests).
 - **Per category**, and the reader picks the skill: Combat (Attack, Defense, Strength, Vitality, Ranged, Magic,
   Healing), Gathering (Woodcutting, Mining, Fishing, Farming, Gathering), Artisan (Crafting, Cooking, Alchemy),
   Adventure (Slayer, Sailing, Taming).
-- **A share of a level, not an amount**: a Small book is 15% of the next level of the skill it is read for (a daily's
-  reward), a Large one 50% (a chain's). A weekly is six small ones, a grand chain two large ones, a seasonal quest
-  two small ones. So a book earned at 999 does not send a low skill up dozens of levels.
-- **Items**: "Small Gathering Book", "Large Combat Book" and so on (eight), made at startup, soulbound by their item
+- **A share of a level, not an amount**, and each size is one quest's whole reward (the user, 2026-11-21: the sizes
+  should be what the quests give): a Small book is 15% of the next level of the skill it is read for (a daily's
+  reward), a Medium one 50% (a chain's), a Large one 90% (a weekly's). A grand chain is two medium ones, a seasonal
+  quest two small ones, and a daily with the streak bonus at its highest (22.5%) two small ones. So a book earned at
+  999 does not send a low skill up dozens of levels.
+- **Items**: "Small Gathering Book", "Medium Artisan Book", "Large Combat Book" and so on (twelve), made at startup, soulbound by their item
   (no trading, gifting, marketplace or clan bank), worth 0 at the vendor, stackable.
-- **Reading**: `!use gathering book fishing`, with `small` or `large` before it to pick a size (small ones go first)
+- **Reading**: `!use gathering book fishing`, with `small`, `medium` or `large` before it to pick a size (the smallest go first)
   and a number or `all` after it for more than one. The category may be left out (`!use book fishing`). The replies
   say when the skill is missing, is not in the book's category, or is at the top level too. The server takes the
   books (`PlayerManager.UseItem`) and the game adds the experience, as it does for a quest's reward.

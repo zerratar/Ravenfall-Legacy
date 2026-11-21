@@ -1212,6 +1212,11 @@
 
 .rf-raid--tower {
     border-top-color: #7FB069;
+    /* as wide as its longest line needs (a long boss or quest name, another language), never narrower than the raid
+       panel; the ellipsis on its lines is only for what would not fit the widest it gets */
+    width: auto;
+    min-width: 780px;
+    max-width: 1240px;
 }
 
 .rf-raid--tower .rf-live-dot {
