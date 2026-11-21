@@ -695,3 +695,25 @@ always gives an egg (a play streak's) cannot give more: there the animals share 
 - The animals have no clip for being hit, and the dogs none for being knocked out (the pack has none).
 - `TakeHit`'s armor share (above), if the owner wants tank pets to take their real share.
 
+## Tank pets take their blows (2026-11-21)
+
+A tank pet near its owner takes half of every blow meant for the owner, all of it while it guards. Its own armor then
+takes its cut and the pet takes the rest. The code had it backwards (`BattlePetController.TakeHit` multiplied by the
+armor's cut instead of by what is left), so a level 30 tank took 7% of its share and tank pets were close to immortal
+while halving all damage on their owner. Fixed on the owner's word ("fix the tank pets"), who asked whether they
+last longer as they level: they do, twice over.
+
+| Pet level (stage) | Health | Armor | Takes of its share | What it can soak before it drops | Owner's own pool at that Vitality |
+|---|---|---|---|---|---|
+| 10 (first) | 140 | 14 | 98% | 143 | 80 and armor health |
+| 30 (second) | 480 | 48 | 93% | 516 | 240 and armor health |
+| 100 (third) | 1,820 | 182 | 78% | 2,338 | 800 and armor health |
+| 300 | 5,460 | 546 | 54% | 10,118 | 2,400 and armor health |
+| 600 | 10,920 | 1,092 | 37% | 29,552 | 4,800 and armor health |
+| 999 | 18,180 | 1,818 | 26% | 69,823 | 7,992 and armor health |
+
+The pet and the owner each take half of a blow, so a tank pet at its owner's level outlasts its owner at every
+level, and by more the higher it gets. The case that changes is a young pet beside a strong owner (a pet's level
+cannot pass the owner's Taming): it goes down in a few blows, lies out for 30 seconds and comes back, which is the
+reason to train Taming. Not played yet. If low level tanks feel too fragile in the playtest, the gentlest knob is
+the share they take while not guarding (0.5 in `GuardShare`), not the armor rule.

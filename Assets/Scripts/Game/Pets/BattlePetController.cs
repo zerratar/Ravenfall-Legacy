@@ -671,11 +671,18 @@ public sealed class BattlePetController : MonoBehaviour
         return Time.time < guardUntil ? 1f : 0.5f;
     }
 
-    /// <summary>Its share of a blow meant for its owner (worked out against the owner): its own armour takes its cut.</summary>
+    /// <summary>
+    ///     Its share of a blow meant for its owner (worked out against the owner): its own armour takes its cut, and the
+    ///     pet takes what is left. Until 2026-11-21 it took the cut instead of what was left (the "1 -" was missing):
+    ///     a level 30 tank took 7% of its share where it should take 93%, and tank pets were almost never knocked out
+    ///     while halving every blow on their owner. A tank's armour grows with its level (1.4 a level, more with each
+    ///     evolution), so it takes 93% of its share at level 30, 78% at 100, 54% at 300 and 26% at 999, on a health
+    ///     pool that grows too: at its owner's level a tank pet still outlasts its owner.
+    /// </summary>
     public void TakeHit(int damage)
     {
         if (KnockedOut || damage <= 0) return;
-        TakeBlow(Mathf.Max(0, Mathf.RoundToInt(damage * (float)CombatMath.ArmorReduction(sheet.Armor))));
+        TakeBlow(Mathf.Max(0, Mathf.RoundToInt(damage * (1f - (float)CombatMath.ArmorReduction(sheet.Armor)))));
     }
 
     /// <summary>An enemy's blow on the pet itself, worked out against its sheet (armour already counted).</summary>
