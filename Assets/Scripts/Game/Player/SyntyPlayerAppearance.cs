@@ -89,6 +89,11 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
 
     private readonly List<Material> capeLogoMaterials = new List<Material>();
 
+    // A tier's material with this player's skin color in it, for the armor parts that show skin (WithSkin): one for
+    // each tier material such a part of theirs has worn, kept while the player lives.
+    private readonly Dictionary<Material, Material> skinMaterials = new Dictionary<Material, Material>();
+    private static readonly int SkinColorId = Shader.PropertyToID("_Color_Skin");
+
     [Header("Character Setup")]
     public Gender Gender;
     public int Hair;
@@ -634,6 +639,8 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
                 if (material && material.name.EndsWith("(Instance)")) Destroy(material);
             }
         }
+        foreach (var own in skinMaterials.Values) if (own) Destroy(own);
+        skinMaterials.Clear();
     }
 
     public Transform GetCombinedMesh()
@@ -782,6 +789,9 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
         SwitchOff(backAttachments);
 
         InitAppearance();
+
+        // armor that shows skin follows the skin color of the appearance just set
+        UpdateSkinMaterials();
 
         // a hidden cape (!toggle cape): the one InitAppearance put on comes off again. Its material stays in
         // capeLogoMaterials, so the clan's image is on it when the cape shows again.
@@ -1047,7 +1057,8 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
     private void AddCopy(GameObject[] parts, int index, Transform parent)
     {
         var part = PartAt(parts, index);
-        if (part) ActivateAndInstantiate(part, parent);
+        // not the body's own parts (the bare arms a sleeveless top is worn with): they are not the item
+        if (part && !IsBodyPart(part)) ActivateAndInstantiate(part, parent);
     }
 
     private void ActivateAndInstantiate(GameObject obj, Transform parent)
@@ -1365,12 +1376,49 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
 
         item.SetActive(true);
         var renderer = RendererOf(item);
-        if (material && renderer)
+        // The body's own parts (bare arms under a sleeveless top: index 0, named ..._00) keep the body's material,
+        // which has the player's skin; an item's material is for the parts that are the item.
+        if (material && renderer && !IsBodyPart(item))
         {
-            renderer.sharedMaterial = material;
+            renderer.sharedMaterial = WithSkin(item, material);
         }
 
         return item;
+    }
+
+    private static bool IsBodyPart(GameObject part)
+    {
+        return part.name.EndsWith("_00", StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The material an armor part is drawn with: the tier's own, shared by everyone, or for a part that shows skin
+    /// (a harness over a bare chest, fingerless gloves, sandals: <see cref="SkinParts"/>) this player's copy of it
+    /// with their skin color, so the skin on the armor is the skin of the body next to it.
+    /// </summary>
+    /// <remarks>
+    /// One copy for each tier material, not for each part: the mesh combiner makes one mesh a material, so all of a
+    /// set's skin-showing parts stay one mesh. A set without such parts makes no copy.
+    /// </remarks>
+    private Material WithSkin(GameObject part, Material material)
+    {
+        if (!SkinParts.Contains(part.name)) return material;
+        if (!skinMaterials.TryGetValue(material, out var own) || !own)
+        {
+            own = new Material(material) { name = material.name + " (Skin)" };
+            skinMaterials[material] = own;
+        }
+        own.SetColor(SkinColorId, SkinColor);
+        return own;
+    }
+
+    /// <summary>The skin color as it is now on every copy made for this player (it changes with the appearance).</summary>
+    private void UpdateSkinMaterials()
+    {
+        foreach (var own in skinMaterials.Values)
+        {
+            if (own) own.SetColor(SkinColorId, SkinColor);
+        }
     }
 
 
@@ -1524,6 +1572,9 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
         { 1, new HashSet<int> { 0, 3, 4, 5, 6, 8, 12, 13, 15, 18, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 37 } },
         // hats[4], the feathered cap
         { 4, new HashSet<int> { 0, 3, 4, 5, 8, 12, 13, 15, 18, 22, 23, 24, 25, 26, 27, 28, 29, 31, 32, 37 } },
+        // hats[8], the witch hunter's buckle hat
+        { 8, new HashSet<int> { 0, 3, 4, 5, 6, 8, 12, 13, 18, 22, 23, 24, 25, 26, 27, 28, 29, 31, 32, 33, 36, 37 } },
+        // hats[0], the monk's headband, is a band around the head: hair is meant to show over it, nothing is swapped
     };
 
     /// <summary>The hair style to show under a head piece: the player's own, or the flat one that fits under that hat.</summary>

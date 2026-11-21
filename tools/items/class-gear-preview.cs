@@ -40,7 +40,11 @@
 //   capeimage         a picture on the cape, as a clan's cape image is put on (SyntyPlayerAppearance.SetCapeTexture);
 //                     the log then says whether it is still on the cape's material ("capeImage=kept")
 //   rebuild           everything off and on again (PlayerEquipment.UpdateAppearance)
-// The log's "state:" says what the game would ask the appearance: CapeVisible, HasCape, BackPieceShows.
+//   skincolor <hex>   another skin color arrives from the server (an appearance update, as after a change on the
+//                     website: SetAppearance, then everything is put on again)
+// The log's "state:" says what the game would ask the appearance: CapeVisible, HasCape, BackPieceShows; and for armor
+// that shows skin: skinMats (how many materials of the player's own are on, one a tier material at most) and
+// skinMatch (whether each has the player's skin color; "none" when no part on shows skin).
 var project = System.IO.Path.GetFullPath(System.IO.Path.Combine(UnityEngine.Application.dataPath, ".."));
 var jobPath = System.IO.Path.Combine(project, "Temp", "class-gear-preview.job");
 var donePath = jobPath + ".done";
@@ -67,7 +71,8 @@ var jobs = new System.Collections.Generic.List<System.Collections.Generic.Dictio
 if (jobs.Count == 0) return "no jobs in " + jobPath;
 
 // ---- the pieces and the items made from them ------------------------------------------------------------------------
-var lines = new[] { "Mage", "Healer", "Ranger", "Melee", "Tank" };
+// in the order of their materials in ItemMaterial (eight a line, from Apprentice on)
+var lines = new[] { "Mage", "Healer", "Ranger", "Melee", "Tank", "Rogue", "Barbarian", "Samurai", "Paladin", "DarkKnight", "WitchHunter", "Monk" };
 var pieces = new System.Collections.Generic.List<string[]>(); // line, type, name, male ids, female ids, mask
 foreach (var raw in System.IO.File.ReadAllLines(partsPath))
 {
@@ -388,6 +393,11 @@ void Render(System.Collections.Generic.Dictionary<string, string> baseJob)
                         app.SetCapeTexture(capeImage);
                         break;
                     case "rebuild": Rebuild(); break;
+                    case "skincolor":
+                        look.SkinColor = what;
+                        app.SetAppearance(look, null, false);
+                        Rebuild();
+                        break;
                     default: throw new System.Exception("unknown action: " + action);
                 }
             }
@@ -404,7 +414,7 @@ void Render(System.Collections.Generic.Dictionary<string, string> baseJob)
             {
                 if (!arr[i] || !arr[i].activeInHierarchy) continue;
                 var r = arr[i].GetComponent<UnityEngine.Renderer>();
-                var m = r && r.sharedMaterial ? r.sharedMaterial.name.Replace(" (Instance)", "") : "-";
+                var m = r && r.sharedMaterial ? r.sharedMaterial.name.Replace(" (Instance)", "").Replace(" (Skin)", "+skin") : "-";
                 log.Append(f.Name + "[" + i + "]" + (m == "FantasyHero" ? "" : ":" + m) + ((isMale && !male) || (isFemale && male) ? "(WRONG GENDER)" : "") + " ");
             }
         }
@@ -419,7 +429,18 @@ void Render(System.Collections.Generic.Dictionary<string, string> baseJob)
             imageState = capeRenderer && capeRenderer.sharedMaterial && capeRenderer.sharedMaterial.GetTexture("_Texture") == capeImage
                 && capeMaterials.Contains(capeRenderer.sharedMaterial) ? "kept" : "lost";
         }
-        log.Append("| state: capeVisible=" + app.CapeVisible + " hasCape=" + app.HasCape + " backPiece=" + app.BackPieceShows + " capeImage=" + imageState + " ");
+        // armor that shows skin: the player's own copies of the tier materials that are on, and their skin color
+        var skinMaterials = new System.Collections.Generic.HashSet<UnityEngine.Material>();
+        foreach (var r in character.GetComponentsInChildren<UnityEngine.SkinnedMeshRenderer>(false))
+            if (r.enabled && r.sharedMaterial && r.sharedMaterial.name.EndsWith(" (Skin)")) skinMaterials.Add(r.sharedMaterial);
+        var skinMatch = "none";
+        foreach (var m in skinMaterials)
+        {
+            var c = (UnityEngine.Color32)m.GetColor("_Color_Skin"); var want = (UnityEngine.Color32)app.SkinColor;
+            if (skinMatch == "none") skinMatch = "True";
+            if (c.r != want.r || c.g != want.g || c.b != want.b) skinMatch = "False";
+        }
+        log.Append("| state: skinMats=" + skinMaterials.Count + " skinMatch=" + skinMatch + " capeVisible=" + app.CapeVisible + " hasCape=" + app.HasCape + " backPiece=" + app.BackPieceShows + " capeImage=" + imageState + " ");
         log.Append("| material copies logged: " + materialCopies + " | worn: ");
         foreach (var e in worn) log.Append(e.Name + (e.Skin != null ? " as " + e.Skin.Name : "") + " <" + e.LookType + "," + e.Material + "," + e.HeadMask + ">; ");
         log.Append("\n");
@@ -523,6 +544,11 @@ void Finish(string outcome)
         if (!c) continue;
         foreach (var r in c.GetComponentsInChildren<UnityEngine.Renderer>(true))
             foreach (var m in r.sharedMaterials) if (m && !UnityEditor.EditorUtility.IsPersistent(m)) UnityEngine.Object.DestroyImmediate(m);
+        // and the copies of tier materials made for armor that shows skin (the game frees them in OnDestroy, which
+        // edit mode does not call)
+        var appearance = c.GetComponentInChildren<SyntyPlayerAppearance>(true);
+        var own = appearance ? typeof(SyntyPlayerAppearance).GetField("skinMaterials", bf).GetValue(appearance) as System.Collections.Generic.Dictionary<UnityEngine.Material, UnityEngine.Material> : null;
+        if (own != null) foreach (var m in own.Values) if (m) UnityEngine.Object.DestroyImmediate(m);
     }
     foreach (var o in temp) if (o) UnityEngine.Object.DestroyImmediate(o);
     temp.Clear();

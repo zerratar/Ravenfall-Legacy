@@ -1,7 +1,7 @@
 // Run with: unity command eval_file --file tools/items/class-gear-icons.cs (edit mode; never in play mode)
 //
 // The icons of the class gear (v0.9.7): one 256 px picture with a transparent background for every piece of every
-// tier of every line (tools/items/class-gear-parts.txt, 240 items), rendered from the item's real parts in its tier
+// tier of every line (tools/items/class-gear-parts.txt: 576 items in twelve lines), rendered from the item's real parts in its tier
 // material. The parts come from SyntyPlayerAppearance.Get, the game's own model of an item on its own (what a
 // treasure chest shows), so a robe has no pauldrons here either; the material comes from ItemManager.GetMaterial.
 // Framed like the icons of the metal tiers: a chest is the torso with its sleeves and shoulders in the T pose, gloves
@@ -44,7 +44,8 @@ if (System.IO.File.Exists(jobPath))
 if (trialOut == null && !System.IO.Directory.Exists(websiteFolder)) return "no website folder: " + websiteFolder;
 
 // ---- the items ------------------------------------------------------------------------------------------------------
-var lines = new[] { "Mage", "Healer", "Ranger", "Melee", "Tank" };
+// in the order of their materials in ItemMaterial (eight a line, from Apprentice on)
+var lines = new[] { "Mage", "Healer", "Ranger", "Melee", "Tank", "Rogue", "Barbarian", "Samurai", "Paladin", "DarkKnight", "WitchHunter", "Monk" };
 var icons = new System.Collections.Generic.List<string[]>(); // slug, type, material, male ids, mask
 // a row is for the tiers its last column names ("3-5", "8"), or for all of them without one
 bool RowIsFor(string[] row, int tier)

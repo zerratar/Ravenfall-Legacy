@@ -1,14 +1,15 @@
 # Class gear
 
 Part of [combat-v2-design.md](combat-v2-design.md), v0.9.7. Plate (the 28 metal tiers, Bronze to Elder Atlarus) is
-armor and nothing else, so every path wore the same thing. Class gear is armor for a path: five lines that trade armor
-for the stats of what a player trains, and look the part. Approved 2026-11-21, to be expanded later (more lines,
-socketed tower drops).
+armor and nothing else, so every path wore the same thing. Class gear is armor for a path: lines that trade armor
+for the stats of what a player trains, and look the part. Approved 2026-11-21: five lines first, then seven more and
+class gear in the tower's chests with a gem already in it (the same day; "The second seven" and "From the tower" below).
 
 This file says what exists now. Server: `RavenNest.BusinessLogic/Data/GameData.ClassGear.cs` makes all of it at
 startup from two tables (the pieces, and what each line gives); the code is the record, a row that differs is put right
-at the next start. Shared: `RavenNest.Models/ItemLines.cs` (lines, tiers, levels, armor factors) and
-`RavenNest.Models/GearScore.cs` (the auto-equip rule).
+at the next start. Shared: `RavenNest.Models/ItemLines.cs` (lines, tiers, levels, armor factors, which lines fit a
+skill), `RavenNest.Models/GearScore.cs` (the auto-equip rule) and `RavenNest.Combat/TowerLoot.cs` (the tower chest's
+numbers).
 
 ## The lines
 
@@ -19,12 +20,21 @@ at the next start. Shared: `RavenNest.Models/ItemLines.cs` (lines, tiers, levels
 | Ranger | Ranged | 60% | Ranged | ranged power, crit chance, attack speed, evasion |
 | Melee | Attack or Strength | 75% | Attack | melee power, crit damage, attack speed, armor penetration |
 | Tank | Defense | 100% | Defense | max health, threat, damage reduction |
+| Rogue | Attack | 60% | Attack | crit chance, attack speed, melee power, evasion |
+| Barbarian | Strength | 50% | Attack | melee power, crit damage, max health |
+| Samurai | Attack or Strength | 75% | Attack | melee power, accuracy, armor penetration, crit chance |
+| Paladin | Defense or Healing | 90% | Defense | max health, healing power, damage reduction, threat |
+| Dark Knight | Defense or Strength | 90% | Defense | life steal, thorns, melee power, max health |
+| Witch Hunter | Ranged | 60% | Ranged | ranged power, boss damage, undead damage, crit chance |
+| Monk | Healing | 40% | Magic (Healing passes it) | healing power, cooldown reduction, combat regen, max health, evasion |
 
-Eight tiers a line. The tier's name is its material (`ItemMaterial`, 40 values after `ElderAtlarus`) and the first word
+Several lines can fit one skill, and a line can fit two: see "Auto-equip respects the path".
+
+Eight tiers a line. The tier's name is its material (`ItemMaterial`, 96 values after `ElderAtlarus`) and the first word
 of every piece: "Adept Robe", "Tracker Jerkin". The level a tier needs, tier 1 first: 1, 30, 70, 120, 200, 400, 650,
 900, the levels of Bronze/Iron, Mithril, Rune, Abraxas, Lionsbane, Atlarus, Elder Mithril and Elder Ether.
 
-Six pieces a tier, 240 items in all (5 x 8 x 6): two head pieces to choose a look from (same stats, usable for
+Six pieces a tier, 576 items in all (12 x 8 x 6; 240 in the first five lines): two head pieces to choose a look from (same stats, usable for
 transmogrification), chest, gloves, leggings and boots. Category Armor, no prefabs: a piece is character parts
 (`MaleModelId` / `FemaleModelId`, the game's part indices) in the tier's material.
 
@@ -35,13 +45,34 @@ transmogrification), chest, gloves, leggings and boots. Category Armor, no prefa
 | Ranger | Cap (Hat), Hood (HeadCovering) | Jerkin | Gloves | Trousers | Boots |
 | Melee | Helm, Coif (HeadCovering) | Hauberk | Gauntlets | Tassets | Boots |
 | Tank | Greathelm, Visor Helm (Helmet) | Cuirass | Gauntlets | Greaves | Sabatons |
+| Rogue | Hood (HeadCovering), Mask (Mask) | Tunic | Gloves | Breeches | Boots |
+| Barbarian | Bear Hood, Wolf Hood (HeadCovering) | Harness | Bracers | Kilt | Fur Boots |
+| Samurai | Kabuto (Helmet), Jingasa (HeadCovering) | Yoroi | Kote | Haidate | Suneate |
+| Paladin | Helm (HeadCovering), Armet (Helmet) | Breastplate | Gauntlets | Cuisses | Sabatons |
+| Dark Knight | Dread Helm (Helmet), Horned Helm (HeadCovering) | Chestplate | Gauntlets | Legplates | Warboots |
+| Witch Hunter | Buckle Hat (Hat), Plague Mask (Helmet) | Coat | Gloves | Coat Skirt | Boots |
+| Monk | Headband (Hat), Hood (HeadCovering) | Wrap | Handwraps | Leg Wraps | Footwraps |
+
+The seven lines of 2026-11-21 got their looks the same day (parts chosen on both bodies, attachments by tier, 56
+materials, icons): see "The second seven: looks" below. Their materials are
+Cutpurse, Footpad, Prowler, Shadowblade, Nightstalker, Assassin, Wraithwalker, Nightfall (Rogue);
+Brute, Raider, Marauder, Berserker, Ravager, Warchief, Stormborn, Worldbreaker (Barbarian);
+Ashigaru, Ronin, Bushi, Hatamoto, Kensei, Daimyo, Shogun, Tenno (Samurai);
+Initiate, Crusader, Justicar, Vindicator, Protector, Exemplar, Lightsworn, Archon (Paladin);
+Blackguard, Dreadknight, Oathbreaker, Doomguard, Deathlord, Nightlord, Voidknight, Abyssal (Dark Knight);
+Seeker, Inquisitor, Purifier, Exorcist, Witchfinder, Demonhunter, Nightwatch, Vanquisher (Witch Hunter);
+Novice, Disciple, Ascetic, Sage, Mystic, Enlightened, Transcendent, Celestial (Monk).
 
 An item's id is fixed (made from line, tier and the piece's key: `GameData.ClassGearItemId`), so it is the same in
 every database and a piece can be renamed, or a head piece given another part or type, by changing its row.
 
-Only the Tank's helms are of type Helmet. The other head pieces are hats and head coverings, and those two types
-take no gems and give no armor health (`ItemExtension.TryGetGemSlot`, `CombatMath.IsArmorPiece`): a small price for
-the look, and the same for both head pieces of a line.
+Every class gear head piece takes gems, whatever its type (`GemManager.TryGetSlot`, `ItemExtension.TryGetGemSlot`).
+Only pieces of type Helmet give armor health (`CombatMath.IsArmorPiece`): the hats, masks and head coverings do not,
+which is the same for both head pieces of a line except where one of the two is a Helmet and the other is not: the
+Samurai's (Kabuto, Jingasa), the Paladin's (Armet, Helm), the Dark Knight's (Dread Helm, Horned Helm) and the Witch
+Hunter's (Plague Mask, Buckle Hat). A helmet is a whole head of its own in the character kit and the others sit on the
+player's head, so the type follows the part; if the two should be equal there too, `IsArmorPiece` has to count class
+gear head pieces alike.
 
 ## Attachments: higher tiers wear more
 
@@ -124,7 +155,8 @@ Rules the code keeps:
   combined mesh), because capes and back pieces are part of the combined mesh.
 - Nothing else draws a second copy of a player: the details window and hero mode show the player itself.
 
-Looked at on both bodies and left out: the other cloaks (back 5 to 8: plain, one color with the robe from behind) and
+Looked at on both bodies and left out of the first five lines (the plain cloaks, the tattered one and most of the
+belt's bags found their place in the second seven, below): the other cloaks (back 5 to 8: plain, one color with the robe from behind) and
 the tattered one (back 2); the fan of feathers, the helmet fin and the single big feather (head 4, 5, 9: too close to
 the plumes); the other pauldrons (one change of pauldron a line was enough, and the metal sets use several); the other
 knee pads; the elbow pads other than the tank's (too small to tell apart from the game's camera); the round bottle,
@@ -133,6 +165,82 @@ The tank's belt stays empty: its helm, pauldrons and cloak already change.
 
 To try parts: `tools/items/class-gear-preview.cs` dresses a character through the game's own equip code, with
 `custom <ItemType> <Material> <ids joined by +> [mask flags joined by +]` for a piece that is in no table.
+
+### The second seven: looks
+
+Chosen from the kit's parts on both bodies, so that each reads as its own class from the game's camera and no two of
+the twelve can be taken for each other. What tells them apart first is the silhouette, then the palette.
+
+| Line | Reads as | Head pieces | Body | Palette (tier 1 to 8) |
+|---|---|---|---|---|
+| Rogue | hooded, slim, no pauldrons, a long cloak late | leather hood (12, hides hair); face scarf (masks 3, hides the beard, hair shows) | tunic with a cowl collar (7), banded arms, fingerless gloves, breeches (24), tall boots | dark greys and blacks with one muted accent: drab, grey-green, slate, teal, plum, deep red, ghost grey, black and dull gold |
+| Barbarian | bare chest and arms, fur and bone | bear hood (8); wolf hood (9) | harness with fur (2), arm straps, loincloth (1), fur boots: the skin is the player's own | furs from brown to black, bone trim, a warpaint color on the cloth: hide, rust, woad blue, blood red, moss, ochre, storm blue, lava |
+| Samurai | striped skirt, wide flat shoulder plates, kabuto | kabuto with a neck guard (helmets 12); wide war hat (2) | banded cuirass with a strap (26), sode (15, then 16), striped haidate (26), shin guards (10) | lacquer: dull red, worn grey, red and black, indigo and white, black and silver, green and gold, purple and gold, white and gold with red |
+| Paladin | bright plate with a long tabard, open face | open helm (3, the face shows); closed armet (helmets 7) | breastplate (24), tabard over plate legs (22), winged greaves (14) | silver and white plate with light blues and gold: steel, white with blue, sky, teal and gold, white with azure, gold, pale blue and gold, white and gold with royal blue |
+| Dark Knight | black plate, spikes, a red visor slit, flame greaves | visored helm with a red slit (helmets 3); horned open helm (10) | banded plate (21), spiked pauldrons (2, 7, then 4), plate legs (13), flame greaves (12) | blackened steel with one grim accent and never gold: iron, dull red, sickly green, ember, bone silver, purple, void blue, crimson |
+| Witch Hunter | buckle hat and a long double-breasted coat | buckle hat (hats 8, hides nothing); plague doctor's mask (helmets 0) | coat (4) with quilted sleeves, long coat skirt (5), buckled boots (4) | dun, grey, oxblood, slate with pale trim, brown and brass, black and red, midnight and silver, bone white and oxblood |
+| Monk | one-shoulder wrap, bare arms, headband | headband (hats 0, hair shows over it); plain hood (7) | wrap (8), hand and forearm wraps, apron over wide trousers (23), wrapped feet (3) | undyed hemp, ochre, rust, saffron and maroon, maroon and saffron, gold and white, white and saffron, white and gold |
+
+The pairs that could have been confused, and what keeps them apart: **Paladin and Tank** (the Tank is all plate with a
+closed helm and deep heraldic colors; the Paladin has a tabard to the knees, an open face on its main helm and light
+blues), **Monk and Healer** (the Healer is covered from hood to ankle in pale robes; the Monk has bare arms, a headband
+and saffron), **Dark Knight and Melee** (Melee is mail and a nasal helm with the face open, in reds and steel; the Dark
+Knight is closed black plate with spikes and one accent color).
+
+What the tiers add (the numbers are part indices; tiers 1 and 2 are plain):
+
+| Line | Piece | Tiers 1-2 | Tiers 3-5 | Tiers 6-8 |
+|---|---|---|---|---|
+| Rogue | Hood / Mask | plain | plain | plain (nothing in the kit suits a hood that hides) |
+| Rogue | Tunic | plain | plain | a long dark cloak (back 5) |
+| Rogue | Breeches | 1 plain; 2: a satchel (belt 5) | 3: and knee guards (2); 4-5: and a sheath (belt 9) | satchel, sheath and knee guards |
+| Barbarian | Bear Hood / Wolf Hood | plain | plain | horns (6) |
+| Barbarian | Harness | its own fur collar | spiked fur pauldrons (5) | and a pelt (back 3) |
+| Barbarian | Kilt | 1 plain; 2: a drinking horn (belt 11) | 3: horn; 4-5: horn and a pouch (belt 0) | horn and pouch |
+| Samurai | Kabuto | plain | a crest (5) | antlers (3) |
+| Samurai | Jingasa | plain | plain | a tall feather (9) |
+| Samurai | Yoroi | layered leather sode (15) | wide plate sode (16) | wide plate sode |
+| Samurai | Haidate | 1 plain; 2: a sheath (belt 9) | 3: sheath; 4-5: sheath, a canteen (belt 4) and knee guards (5) | the same |
+| Paladin | Helm / Armet | plain | a tail plume (1) | wings (2) |
+| Paladin | Breastplate | curved pauldrons (1) | broad pauldrons (3) | and a shoulder cape (back 8) |
+| Paladin | Cuisses | 1 plain; 2: a scroll case (belt 7) | scroll case | scroll case |
+| Dark Knight | Dread Helm | plain | a dark plume (1) | horns (6) |
+| Dark Knight | Horned Helm | plain | plain | a crown (7) |
+| Dark Knight | Chestplate | spiked pauldrons (2) | banded spikes (7) | heavy spikes (4) and a tattered cloak (back 2) |
+| Dark Knight | Legplates | small knee cops (1) | banded knee cops (2) | banded knee cops |
+| Witch Hunter | Buckle Hat | plain | a feather (12) | a great feather (9) |
+| Witch Hunter | Plague Mask | plain | plain | plain |
+| Witch Hunter | Coat | plain | plain | a shoulder cape (back 8) |
+| Witch Hunter | Coat Skirt | 1 plain; 2: a bottle (belt 1) | 3: bottle; 4-5: bottle and a bag (belt 10) | bottle and bag |
+| Monk | Headband / Hood | plain | plain | a circlet (7) |
+| Monk | Wrap | bare arms | arm straps (upper arms 3) | arm straps |
+| Monk | Leg Wraps | 1 plain; 2: a gourd (belt 4) | gourd | gourd |
+| Monk | Footwraps | wrapped feet (3) | wrapped feet | sandals (17) |
+
+Gloves and the pieces not listed are the same in every tier. The Dark Knight's belt stays empty, like the Tank's.
+Hair under the Witch Hunter's buckle hat follows the hat rule (22 styles are swapped for a flat one while it shows);
+the Monk's headband is a band around the head, hair is meant to show over it and nothing is swapped.
+
+### Skin on armor is the player's own
+
+Some parts show skin: the Barbarian's harness, kilt, bracers and arm straps, the Monk's and the Rogue's fingerless hands
+and feet, the Plague Mask, an open collar here and there (134 of the kit's 712 parts). An armor part is drawn in its
+tier's material, which has one fixed skin color for everybody, so on anyone but a tan character the armor's skin did
+not match the body's.
+
+- `tools/items/skin-parts.cs` finds those parts (the shader's skin mask, looked up on each mesh's triangles; more than
+  1% of the surface) and writes `SyntyPlayerAppearance.SkinParts.cs`. Forearms 10 and 15 are left out by hand: their
+  4% is caps inside the joints, never seen, and 15 is the forearm of every woman in plate.
+- When an item puts such a part on, the part gets the player's own copy of the tier's material with their skin color
+  (`SyntyPlayerAppearance.WithSkin`): **one copy for each tier material the player wears skin parts of**, not one a
+  part, because the mesh combiner makes one mesh a material. A set without skin parts makes none, so plate and robes
+  cost what they did.
+- The copies follow the appearance: `UpdateAppearance` sets the skin color on them again, so a color changed on the
+  website shows at once. They are freed with the player.
+- The body's own parts (index 0: the bare arms under the Monk's wrap) keep the body's material when an item names
+  them; an item's material is only for the parts that are the item. The item on its own (treasure chests, icons)
+  leaves them out and shows skin parts in the material's neutral tone.
+- Games before 0.9.7 show the material's neutral skin on these parts, and paint the Monk's bare upper arms with it.
 
 ## Stats
 
@@ -163,6 +271,11 @@ What each stat does, as the game applies it (`CombatRules.Sheet`, `GearStats.App
 | Threat | `THREAT` | everything you do builds 2% more threat. |
 | Damage reduction | `DAMAGE_REDUCTION` | 2% off all damage taken (50% at most). |
 | Evasion | `EVASION` | a rating, not a share: see below. |
+| Life steal | `LIFE_STEAL` | 2% of the damage you deal heals you (25% at most). |
+| Thorns | `THORNS` | 2% of every melee blow you take hurts the attacker back (50% at most). |
+| Boss damage | `BOSS_DAMAGE` | 2% more damage to bosses. |
+| Undead damage | `UNDEAD_DAMAGE` | 2% more damage to the undead. |
+| Combat regen | `COMBAT_REGEN` | 2% of all your health back every second in a fight: a big number, so the sets give tenths of one percent. |
 
 Two stats are not what the spec named, because the named ones do not exist as gear stats:
 - **Magic accuracy as a share** does not exist (only the flat `MAGIC_ACCURACY`): the Mage line has `ACCURACY_BONUS`,
@@ -170,6 +283,16 @@ Two stats are not what the spec named, because the named ones do not exist as ge
 - **Evasion is a rating** (2 per Defense level plus gear; an attacker hits half the time against an equal rating).
   The Ranger line's "1% to 6%" is given as the rating that takes about that many points off the hit chance of an enemy
   of the tier's level: 4 x level x the share, at least 1 (`GameData.ClassGearEvasion`).
+
+For the second seven lines:
+- **Accuracy** on the Samurai is `ACCURACY_BONUS` too, and **evasion** on the Rogue and the Monk is the Ranger's rating.
+- **Thorns** had no range in the spec: 3% to 20% for a set. One THORNS enchantment gives 2% to 15% on a single item,
+  so a whole set is a little more than one good enchantment.
+- **Combat regen** had none either: 0.1% to 0.6% of health a second for a set (the Vitality tree's Regeneration gives
+  0.2% a rank, its capstone 0.6%). Too small for halves and tenths: its totals go in steps of 0.05% and a piece's part
+  in hundredths (a Novice Headband has 0.01%), the only stat that does.
+- **Healing power** on the Paladin works on the healing power of the gear, which is a staff's: with a sword and shield
+  it gives nothing. It is there for the Paladin who heals.
 
 The tables: a set's total in bold, then one piece's share as (chest / leggings / each of head, gloves and boots).
 
@@ -248,6 +371,115 @@ Armor is 100% of plate. Pieces: Greathelm, Visor Helm, Cuirass, Gauntlets, Greav
 | 7 Ironclad | 650 | 327 / 358 / 258 / 312 / 229 | **10.5%** (3.1 / 2.6 / 1.6) | **26.5%** (7.9 / 6.6 / 4) | **4.5%** (1.3 / 1.1 / 0.7) |
 | 8 Aegis | 900 | 433 / 474 / 342 / 412 / 303 | **12%** (3.6 / 3 / 1.8) | **30%** (9 / 7.5 / 4.5) | **5%** (1.6 / 1.3 / 0.7) |
 
+### The second seven
+
+Added 2026-11-21. The armor is each line's share of the same plate numbers.
+
+#### Rogue
+
+Armor is 60% of plate. Pieces: Hood, Mask, Tunic, Gloves, Breeches, Boots.
+
+| Tier | Level | Armor head / chest / gloves / leggings / boots | Crit chance | Attack speed | Melee power | Evasion (rating) |
+|---|---|---|---|---|---|---|
+| 1 Cutpurse | 1 | 4 / 12 / 5 / 6 / 6 | **1%** (0.4 / 0.3 / 0.1) | **1%** (0.4 / 0.3 / 0.1) | **1%** (0.4 / 0.3 / 0.1) | **1** (1 / 0 / 0) |
+| 2 Footpad | 30 | 8 / 27 / 11 / 14 / 14 | **1.5%** (0.5 / 0.4 / 0.2) | **2%** (0.6 / 0.5 / 0.3) | **2%** (0.6 / 0.5 / 0.3) | **2** (1 / 1 / 0) |
+| 3 Prowler | 70 | 18 / 48 / 23 / 30 / 27 | **2.5%** (0.7 / 0.6 / 0.4) | **3%** (1 / 0.8 / 0.4) | **3%** (1 / 0.8 / 0.4) | **7** (2 / 2 / 1) |
+| 4 Shadowblade | 120 | 44 / 77 / 48 / 50 / 53 | **3%** (1 / 0.8 / 0.4) | **4%** (1.2 / 1 / 0.6) | **4%** (1.2 / 1 / 0.6) | **14** (4 / 4 / 2) |
+| 5 Nightstalker | 200 | 65 / 95 / 63 / 69 / 64 | **4%** (1.2 / 1 / 0.6) | **5%** (1.6 / 1.3 / 0.7) | **5%** (1.6 / 1.3 / 0.7) | **32** (9 / 8 / 5) |
+| 6 Assassin | 400 | 114 / 125 / 90 / 109 / 80 | **4.5%** (1.3 / 1.1 / 0.7) | **6%** (1.8 / 1.5 / 0.9) | **6%** (1.8 / 1.5 / 0.9) | **72** (21 / 18 / 11) |
+| 7 Wraithwalker | 650 | 197 / 215 / 155 / 188 / 138 | **5.5%** (1.7 / 1.4 / 0.8) | **7%** (2.2 / 1.8 / 1) | **7%** (2.2 / 1.8 / 1) | **143** (44 / 36 / 21) |
+| 8 Nightfall | 900 | 260 / 285 / 206 / 248 / 182 | **6%** (1.8 / 1.5 / 0.9) | **8%** (2.4 / 2 / 1.2) | **8%** (2.4 / 2 / 1.2) | **216** (66 / 54 / 32) |
+
+#### Barbarian
+
+Armor is 50% of plate. Pieces: Bear Hood, Wolf Hood, Harness, Bracers, Kilt, Fur Boots.
+
+| Tier | Level | Armor head / chest / gloves / leggings / boots | Melee power | Crit damage | Max health |
+|---|---|---|---|---|---|
+| 1 Brute | 1 | 3 / 10 / 4 / 5 / 5 | **2%** (0.6 / 0.5 / 0.3) | **3%** (1 / 0.8 / 0.4) | **1%** (0.4 / 0.3 / 0.1) |
+| 2 Raider | 30 | 7 / 22 / 9 / 11 / 12 | **4%** (1.2 / 1 / 0.6) | **5.5%** (1.7 / 1.4 / 0.8) | **2%** (0.6 / 0.5 / 0.3) |
+| 3 Marauder | 70 | 15 / 40 / 19 / 25 / 23 | **6%** (1.8 / 1.5 / 0.9) | **8%** (2.4 / 2 / 1.2) | **3%** (1 / 0.8 / 0.4) |
+| 4 Berserker | 120 | 37 / 64 / 40 / 42 / 44 | **8%** (2.4 / 2 / 1.2) | **10.5%** (3.1 / 2.6 / 1.6) | **4%** (1.2 / 1 / 0.6) |
+| 5 Ravager | 200 | 54 / 79 / 53 / 58 / 53 | **10%** (3 / 2.5 / 1.5) | **12.5%** (3.7 / 3.1 / 1.9) | **5%** (1.6 / 1.3 / 0.7) |
+| 6 Warchief | 400 | 95 / 104 / 75 / 91 / 67 | **12%** (3.6 / 3 / 1.8) | **15%** (4.6 / 3.8 / 2.2) | **6%** (1.8 / 1.5 / 0.9) |
+| 7 Stormborn | 650 | 164 / 179 / 129 / 156 / 115 | **14%** (4.2 / 3.5 / 2.1) | **17.5%** (5.3 / 4.4 / 2.6) | **7%** (2.2 / 1.8 / 1) |
+| 8 Worldbreaker | 900 | 217 / 237 / 171 / 206 / 152 | **16%** (4.8 / 4 / 2.4) | **20%** (6 / 5 / 3) | **8%** (2.4 / 2 / 1.2) |
+
+#### Samurai
+
+Armor is 75% of plate. Pieces: Kabuto, Jingasa, Yoroi, Kote, Haidate, Suneate.
+
+| Tier | Level | Armor head / chest / gloves / leggings / boots | Melee power | Accuracy | Armor penetration | Crit chance |
+|---|---|---|---|---|---|---|
+| 1 Ashigaru | 1 | 5 / 15 / 6 / 8 / 8 | **2%** (0.6 / 0.5 / 0.3) | **1%** (0.4 / 0.3 / 0.1) | **2%** (0.6 / 0.5 / 0.3) | **0.5%** (0.1 / 0.1 / 0.1) |
+| 2 Ronin | 30 | 10 / 33 / 14 / 17 / 18 | **3.5%** (1.1 / 0.9 / 0.5) | **2%** (0.6 / 0.5 / 0.3) | **3.5%** (1.1 / 0.9 / 0.5) | **1%** (0.4 / 0.3 / 0.1) |
+| 3 Bushi | 70 | 23 / 60 / 29 / 37 / 34 | **5%** (1.6 / 1.3 / 0.7) | **3%** (1 / 0.8 / 0.4) | **5.5%** (1.7 / 1.4 / 0.8) | **1%** (0.4 / 0.3 / 0.1) |
+| 4 Hatamoto | 120 | 55 / 96 / 60 / 63 / 66 | **6.5%** (1.9 / 1.6 / 1) | **4%** (1.2 / 1 / 0.6) | **7%** (2.2 / 1.8 / 1) | **1.5%** (0.5 / 0.4 / 0.2) |
+| 5 Kensei | 200 | 81 / 118 / 79 / 87 / 80 | **7.5%** (2.3 / 1.9 / 1.1) | **5%** (1.6 / 1.3 / 0.7) | **9%** (2.8 / 2.3 / 1.3) | **2%** (0.6 / 0.5 / 0.3) |
+| 6 Daimyo | 400 | 143 / 156 / 113 / 136 / 100 | **9%** (2.8 / 2.3 / 1.3) | **6%** (1.8 / 1.5 / 0.9) | **10.5%** (3.1 / 2.6 / 1.6) | **2.5%** (0.7 / 0.6 / 0.4) |
+| 7 Shogun | 650 | 246 / 269 / 194 / 234 / 172 | **10.5%** (3.1 / 2.6 / 1.6) | **7%** (2.2 / 1.8 / 1) | **12.5%** (3.7 / 3.1 / 1.9) | **2.5%** (0.7 / 0.6 / 0.4) |
+| 8 Tenno | 900 | 325 / 356 / 257 / 309 / 228 | **12%** (3.6 / 3 / 1.8) | **8%** (2.4 / 2 / 1.2) | **14%** (4.2 / 3.5 / 2.1) | **3%** (1 / 0.8 / 0.4) |
+
+#### Paladin
+
+Armor is 90% of plate. Pieces: Crested Helm, Winged Helm, Breastplate, Gauntlets, Cuisses, Sabatons.
+
+| Tier | Level | Armor head / chest / gloves / leggings / boots | Max health | Healing power | Damage reduction | Threat |
+|---|---|---|---|---|---|---|
+| 1 Initiate | 1 | 6 / 18 / 7 / 9 / 9 | **1%** (0.4 / 0.3 / 0.1) | **1%** (0.4 / 0.3 / 0.1) | **1%** (0.4 / 0.3 / 0.1) | **3%** (1 / 0.8 / 0.4) |
+| 2 Crusader | 30 | 12 / 40 / 17 / 20 / 21 | **2%** (0.6 / 0.5 / 0.3) | **2.5%** (0.7 / 0.6 / 0.4) | **1.5%** (0.5 / 0.4 / 0.2) | **4.5%** (1.3 / 1.1 / 0.7) |
+| 3 Justicar | 70 | 27 / 72 / 35 / 45 / 41 | **3%** (1 / 0.8 / 0.4) | **3.5%** (1.1 / 0.9 / 0.5) | **2%** (0.6 / 0.5 / 0.3) | **6.5%** (1.9 / 1.6 / 1) |
+| 4 Vindicator | 120 | 66 / 116 / 72 / 75 / 80 | **4%** (1.2 / 1 / 0.6) | **5%** (1.6 / 1.3 / 0.7) | **2.5%** (0.7 / 0.6 / 0.4) | **8%** (2.4 / 2 / 1.2) |
+| 5 Protector | 200 | 98 / 142 / 95 / 104 / 96 | **5%** (1.6 / 1.3 / 0.7) | **6%** (1.8 / 1.5 / 0.9) | **2.5%** (0.7 / 0.6 / 0.4) | **10%** (3 / 2.5 / 1.5) |
+| 6 Exemplar | 400 | 171 / 188 / 135 / 163 / 120 | **6%** (1.8 / 1.5 / 0.9) | **7.5%** (2.3 / 1.9 / 1.1) | **3%** (1 / 0.8 / 0.4) | **11.5%** (3.5 / 2.9 / 1.7) |
+| 7 Lightsworn | 650 | 295 / 323 / 233 / 281 / 207 | **7%** (2.2 / 1.8 / 1) | **8.5%** (2.5 / 2.1 / 1.3) | **3.5%** (1.1 / 0.9 / 0.5) | **13.5%** (4.1 / 3.4 / 2) |
+| 8 Archon | 900 | 390 / 427 / 308 / 371 / 273 | **8%** (2.4 / 2 / 1.2) | **10%** (3 / 2.5 / 1.5) | **4%** (1.2 / 1 / 0.6) | **15%** (4.6 / 3.8 / 2.2) |
+
+#### Dark Knight
+
+Armor is 90% of plate. Pieces: Dread Helm, Barbute, Chestplate, Gauntlets, Legplates, Warboots.
+
+| Tier | Level | Armor head / chest / gloves / leggings / boots | Life steal | Thorns | Melee power | Max health |
+|---|---|---|---|---|---|---|
+| 1 Blackguard | 1 | 6 / 18 / 7 / 9 / 9 | **0.5%** (0.1 / 0.1 / 0.1) | **3%** (1 / 0.8 / 0.4) | **1%** (0.4 / 0.3 / 0.1) | **1%** (0.4 / 0.3 / 0.1) |
+| 2 Dreadknight | 30 | 12 / 40 / 17 / 20 / 21 | **1%** (0.4 / 0.3 / 0.1) | **5.5%** (1.7 / 1.4 / 0.8) | **2%** (0.6 / 0.5 / 0.3) | **2%** (0.6 / 0.5 / 0.3) |
+| 3 Oathbreaker | 70 | 27 / 72 / 35 / 45 / 41 | **1.5%** (0.5 / 0.4 / 0.2) | **8%** (2.4 / 2 / 1.2) | **3%** (1 / 0.8 / 0.4) | **3%** (1 / 0.8 / 0.4) |
+| 4 Doomguard | 120 | 66 / 116 / 72 / 75 / 80 | **2%** (0.6 / 0.5 / 0.3) | **10.5%** (3.1 / 2.6 / 1.6) | **4%** (1.2 / 1 / 0.6) | **4%** (1.2 / 1 / 0.6) |
+| 5 Deathlord | 200 | 98 / 142 / 95 / 104 / 96 | **2.5%** (0.7 / 0.6 / 0.4) | **12.5%** (3.7 / 3.1 / 1.9) | **5%** (1.6 / 1.3 / 0.7) | **5%** (1.6 / 1.3 / 0.7) |
+| 6 Nightlord | 400 | 171 / 188 / 135 / 163 / 120 | **3%** (1 / 0.8 / 0.4) | **15%** (4.6 / 3.8 / 2.2) | **6%** (1.8 / 1.5 / 0.9) | **6%** (1.8 / 1.5 / 0.9) |
+| 7 Voidknight | 650 | 295 / 323 / 233 / 281 / 207 | **3.5%** (1.1 / 0.9 / 0.5) | **17.5%** (5.3 / 4.4 / 2.6) | **7%** (2.2 / 1.8 / 1) | **7%** (2.2 / 1.8 / 1) |
+| 8 Abyssal | 900 | 390 / 427 / 308 / 371 / 273 | **4%** (1.2 / 1 / 0.6) | **20%** (6 / 5 / 3) | **8%** (2.4 / 2 / 1.2) | **8%** (2.4 / 2 / 1.2) |
+
+#### Witch Hunter
+
+Armor is 60% of plate. Pieces: Buckle Hat, Tricorne, Coat, Gloves, Coat Skirt, Boots.
+
+| Tier | Level | Armor head / chest / gloves / leggings / boots | Ranged power | Boss damage | Undead damage | Crit chance |
+|---|---|---|---|---|---|---|
+| 1 Seeker | 1 | 4 / 12 / 5 / 6 / 6 | **2%** (0.6 / 0.5 / 0.3) | **1%** (0.4 / 0.3 / 0.1) | **2%** (0.6 / 0.5 / 0.3) | **0.5%** (0.1 / 0.1 / 0.1) |
+| 2 Inquisitor | 30 | 8 / 27 / 11 / 14 / 14 | **3.5%** (1.1 / 0.9 / 0.5) | **2%** (0.6 / 0.5 / 0.3) | **3.5%** (1.1 / 0.9 / 0.5) | **1%** (0.4 / 0.3 / 0.1) |
+| 3 Purifier | 70 | 18 / 48 / 23 / 30 / 27 | **5%** (1.6 / 1.3 / 0.7) | **3%** (1 / 0.8 / 0.4) | **5%** (1.6 / 1.3 / 0.7) | **1%** (0.4 / 0.3 / 0.1) |
+| 4 Exorcist | 120 | 44 / 77 / 48 / 50 / 53 | **6.5%** (1.9 / 1.6 / 1) | **4%** (1.2 / 1 / 0.6) | **6.5%** (1.9 / 1.6 / 1) | **1.5%** (0.5 / 0.4 / 0.2) |
+| 5 Witchfinder | 200 | 65 / 95 / 63 / 69 / 64 | **7.5%** (2.3 / 1.9 / 1.1) | **5%** (1.6 / 1.3 / 0.7) | **7.5%** (2.3 / 1.9 / 1.1) | **2%** (0.6 / 0.5 / 0.3) |
+| 6 Demonhunter | 400 | 114 / 125 / 90 / 109 / 80 | **9%** (2.8 / 2.3 / 1.3) | **6%** (1.8 / 1.5 / 0.9) | **9%** (2.8 / 2.3 / 1.3) | **2.5%** (0.7 / 0.6 / 0.4) |
+| 7 Nightwatch | 650 | 197 / 215 / 155 / 188 / 138 | **10.5%** (3.1 / 2.6 / 1.6) | **7%** (2.2 / 1.8 / 1) | **10.5%** (3.1 / 2.6 / 1.6) | **2.5%** (0.7 / 0.6 / 0.4) |
+| 8 Vanquisher | 900 | 260 / 285 / 206 / 248 / 182 | **12%** (3.6 / 3 / 1.8) | **8%** (2.4 / 2 / 1.2) | **12%** (3.6 / 3 / 1.8) | **3%** (1 / 0.8 / 0.4) |
+
+#### Monk
+
+Armor is 40% of plate. Pieces: Headband, Cap, Wrap, Handwraps, Leg Wraps, Sandals.
+
+| Tier | Level | Armor head / chest / gloves / leggings / boots | Healing power | Cooldown reduction | Combat regen | Max health | Evasion (rating) |
+|---|---|---|---|---|---|---|---|
+| 1 Novice | 1 | 3 / 8 / 3 / 4 / 4 | **1%** (0.4 / 0.3 / 0.1) | **1%** (0.4 / 0.3 / 0.1) | **0.1%** (0.04 / 0.03 / 0.01) | **1%** (0.4 / 0.3 / 0.1) | **1** (1 / 0 / 0) |
+| 2 Disciple | 30 | 6 / 18 / 8 / 9 / 10 | **2.5%** (0.7 / 0.6 / 0.4) | **1.5%** (0.5 / 0.4 / 0.2) | **0.15%** (0.05 / 0.04 / 0.02) | **1.5%** (0.5 / 0.4 / 0.2) | **2** (1 / 1 / 0) |
+| 3 Ascetic | 70 | 12 / 32 / 16 / 20 / 18 | **3.5%** (1.1 / 0.9 / 0.5) | **2.5%** (0.7 / 0.6 / 0.4) | **0.25%** (0.07 / 0.06 / 0.04) | **2.5%** (0.7 / 0.6 / 0.4) | **7** (2 / 2 / 1) |
+| 4 Sage | 120 | 30 / 52 / 32 / 34 / 36 | **5%** (1.6 / 1.3 / 0.7) | **3%** (1 / 0.8 / 0.4) | **0.3%** (0.1 / 0.08 / 0.04) | **3%** (1 / 0.8 / 0.4) | **14** (4 / 4 / 2) |
+| 5 Mystic | 200 | 44 / 63 / 42 / 46 / 43 | **6%** (1.8 / 1.5 / 0.9) | **4%** (1.2 / 1 / 0.6) | **0.4%** (0.12 / 0.1 / 0.06) | **4%** (1.2 / 1 / 0.6) | **32** (9 / 8 / 5) |
+| 6 Enlightened | 400 | 76 / 84 / 60 / 73 / 54 | **7.5%** (2.3 / 1.9 / 1.1) | **4.5%** (1.3 / 1.1 / 0.7) | **0.45%** (0.13 / 0.11 / 0.07) | **4.5%** (1.3 / 1.1 / 0.7) | **72** (21 / 18 / 11) |
+| 7 Transcendent | 650 | 131 / 144 / 104 / 125 / 92 | **8.5%** (2.5 / 2.1 / 1.3) | **5.5%** (1.7 / 1.4 / 0.8) | **0.55%** (0.17 / 0.14 / 0.08) | **5.5%** (1.7 / 1.4 / 0.8) | **143** (44 / 36 / 21) |
+| 8 Celestial | 900 | 174 / 190 / 137 / 165 / 122 | **10%** (3 / 2.5 / 1.5) | **6%** (1.8 / 1.5 / 0.9) | **0.6%** (0.18 / 0.15 / 0.09) | **6%** (1.8 / 1.5 / 0.9) | **216** (66 / 54 / 32) |
+
 ## How it is made
 
 Two new cloths, one of each for every tier (the higher tiers take more of it):
@@ -275,6 +507,17 @@ takes the bar of the tier's level: Bronze, Mithril, Rune, Abraxas, Lionite, Atla
 | Ranger | 4 x tier Leather + 1 bar | 3 x tier Leather + 1 bar | 2 x tier Leather + 1 bar |
 | Melee | 4 bars + tier Leather | 3 bars + tier Leather | 2 bars + tier Leather |
 | Tank | 6 bars + tier Leather | 5 bars + tier Leather | 3 bars + tier Leather |
+| Rogue | 4 x tier Leather + 1 bar | 3 x tier Leather + 1 bar | 2 x tier Leather + 1 bar |
+| Barbarian | 4 x tier Leather + 2 bars | 3 x tier Leather + 1 bar | 2 x tier Leather, no bar |
+| Samurai | 4 bars + tier Leather | 3 bars + tier Leather | 2 bars + tier Leather |
+| Paladin | 5 bars + tier Linen | 4 bars + tier Linen | 3 bars + tier Linen |
+| Dark Knight | 5 bars + tier Leather | 4 bars + tier Leather | 3 bars + tier Leather |
+| Witch Hunter | 3 x tier Leather + tier Linen + 1 bar | 2 x tier Leather + tier Linen + 1 bar | tier Leather + tier Linen + 1 bar |
+| Monk | 4 x tier Linen + 1 bar | 3 x tier Linen + 1 bar | 2 x tier Linen + 1 bar |
+
+The Barbarian's hood, bracers and boots are the only pieces without metal (the spec: "Leather, bars for chest and
+leggings"), so they are far cheaper than any other piece of their tier; only the Crafting level holds them back. The
+Witch Hunter's "Leather + Linen" has the one bar of trim every other piece has.
 
 A Sorcerer Robe (tier 4) is 16 Linen and 1 Abraxas Bar at Crafting 120; an Aegis Cuirass (tier 8) is 6 Elder Ethereum
 Bars and 8 Leather at Crafting 900.
@@ -286,25 +529,82 @@ No vendor buy price. The sell price follows the recipe as for everything crafted
 ingredients sell for, plus 5%), so making a piece and selling it never pays; cloth pieces sell for less than plate
 of their level because less metal goes into them. Flax sells for 5, Hide 5, Linen and Leather 10.
 
-Socketed class gear as tower drops comes later.
+## From the tower
+
+A tower clear's chest (docs/tower-design.md, section 5) can hold a class gear piece besides its other items, with a
+gem already in it. No new items: the same 576, handed out by `GameManager.RollTowerGear` from
+`TowerManager.BossWon`, with the numbers in `RavenNest.Combat/TowerLoot.cs` (tested in `TowerLootTests`).
+
+- **Who gets one:** everyone who fought, on the stream's first clear of a floor. That is every clear that pays today:
+  a stream clears each floor once and bosses on floors below it are training. Should a floor ever pay again, a repeat
+  clear gives one in ten (`TowerLoot.RepeatClearChance`). With 30 floors a player who is there for every clear gets 30
+  pieces over the whole climb, about a set a band with doubles to trade.
+- **Which line:** one that fits the skill the character trains, by the lines auto-equip counts as fitting (so
+  someone training Defense gets Tank, Paladin or Dark Knight). When the skill names no line ("all", not fighting), a
+  line the character wears; when it wears none either, any line.
+- **Which piece:** one of the five slots, each as likely; for the head one of the two looks.
+- **Which tier:** the highest whose level is at or below the floor's level (ten a floor: floor 7 is level 70, the
+  third tier), lowered to the highest the character can wear. Floors 1-2 give tier 1, 3-6 tier 2, 7-11 tier 3, 12-19
+  tier 4, 20-39 tier 5, 40-64 tier 6, 65-89 tier 7, 90 and up tier 8.
+- **The gem** sits in the first socket when the piece has sockets (item level 25 and up, so not tier 1). It is the
+  gem of the band's element: Emerald in the Overgrown Halls (poison), Sapphire in the Frozen Vault (ice), Topaz in the
+  Storm Spire (lightning), Ruby for fire. In armor that is resistance to what the band hits with. A band without an
+  element would give the line's role gem, by its armor: Onyx for nine tenths of plate and up, Amethyst for four tenths
+  and less, Diamond between.
+- **The gem's tier** grows with the floor along the tower's milestone floors: Chipped to floor 10, Flawed to 25,
+  Polished to 50, Flawless to 75, Perfect above; a band's last floor (every tenth) gives one better.
+- It is an ordinary gem: it can be taken out or socketed over with the usual chance to keep it, and the piece can be
+  traded like a crafted one.
+
+| Floor | Band | A mage gets, for example | The gem gives |
+|---|---|---|---|
+| 2 | Overgrown Halls | Apprentice Robe (tier 1 has no socket) | - |
+| 7 | Overgrown Halls | Conjurer Robe with a Chipped Emerald | +1.5% poison resistance |
+| 10 | Overgrown Halls | Conjurer Robe with a Flawed Emerald | +3% poison resistance |
+| 15 | Frozen Vault | Sorcerer Robe with a Flawed Sapphire | +3% ice resistance |
+| 20 | Frozen Vault | Warlock Robe with a Polished Sapphire | +5.3% ice resistance |
+| 24 | Storm Spire | Warlock Robe with a Flawed Topaz | +3% lightning resistance |
+| 28 | Storm Spire | Warlock Robe with a Polished Topaz | +5.3% lightning resistance |
+| 30 | Storm Spire | Warlock Robe with a Flawless Topaz | +9% lightning resistance |
+
+**The announcement.** The server says which gems a reward came with (`EventItemReward.Sockets`, the inventory item's
+own text), and the game's drop announcement names them with the chest's other items: "Sorcerer Robe with a Flawed
+Sapphire" (`GameManager.AddItems`, `Gems.SocketedName`). The stack itself, gem and all, comes through the inventory
+feed as every item the server gives.
 
 ## Auto-equip respects the path
 
 "Equip the best" (`!equip all`, an item that arrives and may replace what is worn) used to add up the seven classic
 columns, so class gear would always lose to plate. Now each side still works out that sum, with the enchantments it
-counts, and passes it through one shared rule, `RavenNest.Models.GearScore.Value(material, classic value, line that fits)`:
+counts, and passes it through one shared rule, `RavenNest.Models.GearScore.Value(material, classic value, lines that fit)`:
 
 - **Everything that is not class gear:** the sum, as before.
 - **Class gear whose line fits:** the sum divided by the line's armor factor (that is the plate piece of its level),
   plus 25%. It beats plate of its level and the next metals up, and loses to plate many tiers above.
-- **Class gear whose line does not fit:** its own, lower armor. The Tank line has the armor of plate, so it counts as
-  95% of it (and at least one point less): nobody ends up in threat gear by accident.
+- **Class gear whose line does not fit:** its own, lower armor. A line with more than 95% of plate's armor (the Tank's
+  has all of it) counts as 95% of plate (and at least one point less): nobody ends up in threat gear by accident.
 
-The line that fits is the skill being trained: Magic is Mage, Healing is Healer, Ranged is Ranger, Attack or Strength
-is Melee, Defense is Tank. "All" names no line (the game trains it as Health and the server keeps it as "All", so
-Health cannot mean Tank), and neither does a skill that is not combat. When the skill names no line, the line of the
-class piece already worn in that slot is the one that fits: what a player wears is kept, a better tier of it is taken,
-and with plate or nothing worn it is plain armor that wins.
+The lines that fit come from the skill being trained (`ItemLines.Fits(skill)`, a set of lines):
+
+| Training | Lines that fit |
+|---|---|
+| Magic | Mage |
+| Healing | Healer, Paladin, Monk |
+| Ranged | Ranger, Witch Hunter |
+| Attack | Melee, Rogue, Samurai |
+| Strength | Melee, Barbarian, Samurai, Dark Knight |
+| Defense | Tank, Paladin, Dark Knight |
+
+"All" names no line (the game trains it as Health and the server keeps it as "All", so Health cannot mean Tank), and
+neither does a skill that is not combat. When the skill names no line, the line of the class piece already worn in
+that slot is the one that fits: what a player wears is kept, a better tier of it is taken, and with plate or nothing
+worn it is plain armor that wins.
+
+**Between two fitting pieces of different lines and the same tier the one already worn stays**
+(`GearScore.Beats`): a Paladin's or a Tank's chest for someone training Defense is the player's choice, not the
+ranking's. Without this the rounding of the armor would decide (a Doomguard Chestplate counts 161 and a Bastion Cuirass
+160). A higher tier of another fitting line still replaces a lower one, and two pieces of the same line are compared
+as ever.
 
 Only the ranking changed. When something is replaced is as before on both sides.
 
@@ -315,12 +615,21 @@ Two examples, chest pieces for a player at level 120:
    as 52 and the plate stays.
 2. Training Attack in an Abraxas Chest (128), and a Bastion Cuirass (Tank, 128 armor) arrives. It does not fit:
    128 x 0.95 = 121, less than 128, so it stays in the bag. Training Defense it counts as 128 x 1.25 = 160 and goes on.
+3. Training Defense in that Bastion Cuirass, and a Doomguard Chestplate (Dark Knight, the same tier, 116 armor)
+   arrives: both fit, the tier is the same, the cuirass stays. A Deathlord Chestplate (the next tier, 142 armor) counts
+   142 / 0.9 x 1.25 = 197 and goes on. Training Strength instead, the cuirass does not fit (121) and the Doomguard
+   piece does (161): it goes on.
 
 Where it is called: the server in `PlayerInventory.EquipBestItems` (the trained skill is the character state's task
-"Fighting" and its argument, `GearScore.LineFor(task, argument)`), the game in `Inventory.EquipBestItem` and
-`PlayerController.EquipIfBetter` (`GearScore.LineFor(ActiveSkill, worn material)`, through
-`ItemExtension.GetGearScore`). The game's "equip best" skipped every hat and mask as a look; class gear's hats (the
-Wizard Hat, the Ranger's Cap) are no longer skipped.
+"Fighting" and its argument, `GearScore.FitsFor(task, argument)`; "atk" and "str" are Attack and Strength), the game
+in `Inventory.EquipBestItem` and `PlayerController.EquipIfBetter` (`GearScore.FitsFor(ActiveSkill, worn material)`,
+then `GearScore.Beats`, in `PlayerController` through `ItemExtension.BeatsWorn`). The game's "equip best" skipped every
+hat and mask as a look; class gear's hats and masks (the Wizard Hat, the Ranger's Cap, the Rogue's Mask) are no longer
+skipped.
+
+`RavenNest.Models` is loaded by the game's own runtime, which does not have every type the server's has
+(`MidpointRounding` made "equip best" throw in the first play test): `GearScore` and `ItemLines` use plain numbers
+only, and a set of lines is a number with one bit a line (`ItemLines.Bit`, `Has`), not a new type.
 
 Not changed: the server's own sum for an enchanted item is only the enchantments' share (`GetItemValue` replaces the
 total instead of adding to it), so the two sides already ranked enchanted gear differently. The rule sits on top of
@@ -349,7 +658,8 @@ They get the same items and must not break on them:
 The public items list says the stats for people ("+1.2% Magic Power", one chip a stat) and a Slayer drop as
 "Fighting, Slayer level 1". The rarity color of a class gear piece follows the metal of its tier's level (the new
 materials come after the Elder ones, which would have made an Apprentice Robe mythic). The admin item editor's material
-list has the 40 new materials.
+list has the 96 new materials. A material is still guessed from the first word of an item without one, but only a
+metal: the Monk's last tier is Celestial, and Celestial Logs are not class gear.
 
 ## Open
 
@@ -359,3 +669,10 @@ list has the 40 new materials.
 - The server's task for a character follows the game's saves, so right after `!train` it can be a moment behind the
   game when `!equip all` is used.
 - The second head pieces' parts and masks are first picks; they are one row each in `ClassGearPieces`.
+- The second seven lines are not played: their looks, attachments, the skin color on armor and the 336 icons are
+  tested in the editor through the equip code, not in the game (the combined mesh with a skin copy in it above all).
+- The two head pieces of four lines differ in type (see "The lines"), so one gives armor health and the other does not.
+- Class gear from the tower is not played: the roll on a real clear, the gem on the stack as the game gets it, and the
+  announcement's wording in chat. A game whose inventory is not fed by the server (`Inventory.FedByServer` off) adds
+  the piece without its gem until the next inventory sync.
+- The Barbarian's three metal-free pieces may be too cheap at high tiers.

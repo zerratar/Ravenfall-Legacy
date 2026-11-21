@@ -93,3 +93,84 @@ Tank   | Gloves       | Gauntlets  | 12,4           | 12,4           | None     
 Tank   | Leggings     | Greaves    | 20,7           | 20,7           | None                        | 1-2
 Tank   | Leggings     | Greaves    | 20,6           | 20,6           | None                        | 3-8
 Tank   | Boots        | Sabatons   | 13             | 13             | None                        |
+Rogue       | HeadCovering | Hood        | 12             | 12             | Hair, Ears                  |
+Rogue       | Mask         | Mask        | 3              | 3              | Beard                       |
+Rogue       | Chest        | Tunic       | 7,20,2,0       | 7,20,2,0       | NoShoulderPads, NoElbowPads | 1-5
+Rogue       | Chest        | Tunic       | 7,20,2,0,5     | 7,20,2,0,5     | NoShoulderPads, NoElbowPads | 6-8
+Rogue       | Gloves       | Gloves      | 4,8            | 4,8            | None                        |
+Rogue       | Leggings     | Breeches    | 24             | 24             | None                        | 1
+Rogue       | Leggings     | Breeches    | 24,10,5        | 24,10,5        | NoKneePads                  | 2
+Rogue       | Leggings     | Breeches    | 24,2,5         | 24,2,5         | None                        | 3
+Rogue       | Leggings     | Breeches    | 24,2,5,9       | 24,2,5,9       | None                        | 4-8
+Rogue       | Boots        | Boots       | 18             | 18             | None                        |
+Barbarian   | HeadCovering | Bear Hood   | 8              | 8              | Hair, Ears                  | 1-5
+Barbarian   | HeadCovering | Bear Hood   | 8,6            | 8,6            | Hair, Ears                  | 6-8
+Barbarian   | HeadCovering | Wolf Hood   | 9              | 9              | Hair, Ears                  | 1-5
+Barbarian   | HeadCovering | Wolf Hood   | 9,6            | 9,6            | Hair, Ears                  | 6-8
+Barbarian   | Chest        | Harness     | 2,5,3,0        | 2,5,3,0        | NoShoulderPads, NoElbowPads | 1-2
+Barbarian   | Chest        | Harness     | 2,5,3,0        | 2,5,3,0        | NoElbowPads                 | 3-5
+Barbarian   | Chest        | Harness     | 2,5,3,0,3      | 2,5,3,0,3      | NoElbowPads                 | 6-8
+Barbarian   | Gloves       | Bracers     | 16,2           | 16,2           | None                        |
+Barbarian   | Leggings     | Kilt        | 1              | 1              | None                        | 1
+Barbarian   | Leggings     | Kilt        | 1,10,11        | 1,10,11        | NoKneePads                  | 2-3
+Barbarian   | Leggings     | Kilt        | 1,10,0,11      | 1,10,0,11      | NoKneePads                  | 4-8
+Barbarian   | Boots        | Fur Boots   | 9              | 9              | None                        |
+Samurai     | Helmet       | Kabuto      | 12             | 12             | All                         | 1-2
+Samurai     | Helmet       | Kabuto      | 12,5           | 12,5           | All                         | 3-5
+Samurai     | Helmet       | Kabuto      | 12,3           | 12,3           | All                         | 6-8
+Samurai     | HeadCovering | Jingasa     | 2              | 2              | Hair, Ears                  | 1-5
+Samurai     | HeadCovering | Jingasa     | 2,9            | 2,9            | Hair, Ears                  | 6-8
+Samurai     | Chest        | Yoroi       | 26,15,9,0      | 26,15,9,0      | NoElbowPads                 | 1-2
+Samurai     | Chest        | Yoroi       | 26,16,9,0      | 26,16,9,0      | NoElbowPads                 | 3-8
+Samurai     | Gloves       | Kote        | 11,10          | 11,10          | None                        |
+Samurai     | Leggings     | Haidate     | 26             | 26             | None                        | 1
+Samurai     | Leggings     | Haidate     | 26,10,9        | 26,10,9        | NoKneePads                  | 2-3
+Samurai     | Leggings     | Haidate     | 26,5,4,9       | 26,5,4,9       | None                        | 4-8
+Samurai     | Boots        | Suneate     | 10             | 10             | None                        |
+Paladin     | HeadCovering | Helm        | 3              | 3              | Hair, Ears                  | 1-2
+Paladin     | HeadCovering | Helm        | 3,1            | 3,1            | Hair, Ears                  | 3-5
+Paladin     | HeadCovering | Helm        | 3,2            | 3,2            | Hair, Ears                  | 6-8
+Paladin     | Helmet       | Armet       | 7              | 7              | All                         | 1-2
+Paladin     | Helmet       | Armet       | 7,1            | 7,1            | All                         | 3-5
+Paladin     | Helmet       | Armet       | 7,2            | 7,2            | All                         | 6-8
+Paladin     | Chest        | Breastplate | 24,1,6,1       | 24,1,6,1       | None                        | 1-2
+Paladin     | Chest        | Breastplate | 24,3,6,1       | 24,3,6,1       | None                        | 3-5
+Paladin     | Chest        | Breastplate | 24,3,6,1,8     | 24,3,6,1,8     | None                        | 6-8
+Paladin     | Gloves       | Gauntlets   | 1,7            | 1,7            | None                        |
+Paladin     | Leggings     | Cuisses     | 22,3           | 22,3           | None                        | 1
+Paladin     | Leggings     | Cuisses     | 22,3,7         | 22,3,7         | None                        | 2-8
+Paladin     | Boots        | Sabatons    | 14             | 14             | None                        |
+DarkKnight  | Helmet       | Dread Helm  | 3              | 3              | All                         | 1-2
+DarkKnight  | Helmet       | Dread Helm  | 3,1            | 3,1            | All                         | 3-5
+DarkKnight  | Helmet       | Dread Helm  | 3,6            | 3,6            | All                         | 6-8
+DarkKnight  | HeadCovering | Horned Helm | 10             | 10             | Hair, Ears                  | 1-5
+DarkKnight  | HeadCovering | Horned Helm | 10,7           | 10,7           | Hair, Ears                  | 6-8
+DarkKnight  | Chest        | Chestplate  | 21,2,15,5      | 21,2,15,5      | None                        | 1-2
+DarkKnight  | Chest        | Chestplate  | 21,7,15,5      | 21,7,15,5      | None                        | 3-5
+DarkKnight  | Chest        | Chestplate  | 21,4,15,5,2    | 21,4,15,5,2    | None                        | 6-8
+DarkKnight  | Gloves       | Gauntlets   | 1,12           | 1,12           | None                        |
+DarkKnight  | Leggings     | Legplates   | 13,1           | 13,1           | None                        | 1-2
+DarkKnight  | Leggings     | Legplates   | 13,2           | 13,2           | None                        | 3-8
+DarkKnight  | Boots        | Warboots    | 12             | 12             | None                        |
+WitchHunter | Hat          | Buckle Hat  | 8              | 8              | None                        | 1-2
+WitchHunter | Hat          | Buckle Hat  | 8,12           | 8,12           | None                        | 3-5
+WitchHunter | Hat          | Buckle Hat  | 8,9            | 8,9            | None                        | 6-8
+WitchHunter | Helmet       | Plague Mask | 0              | 0              | All                         |
+WitchHunter | Chest        | Coat        | 4,20,18,0      | 4,20,18,0      | NoShoulderPads, NoElbowPads | 1-5
+WitchHunter | Chest        | Coat        | 4,20,18,0,8    | 4,20,18,0,8    | NoShoulderPads, NoElbowPads | 6-8
+WitchHunter | Gloves       | Gloves      | 1,14           | 1,14           | None                        |
+WitchHunter | Leggings     | Coat Skirt  | 5              | 5              | None                        | 1
+WitchHunter | Leggings     | Coat Skirt  | 5,10,1         | 5,10,1         | NoKneePads                  | 2-3
+WitchHunter | Leggings     | Coat Skirt  | 5,10,1,10      | 5,10,1,10      | NoKneePads                  | 4-8
+WitchHunter | Boots        | Boots       | 4              | 4              | None                        |
+Monk        | Hat          | Headband    | 0              | 0              | None                        | 1-5
+Monk        | Hat          | Headband    | 0,7            | 0,7            | None                        | 6-8
+Monk        | HeadCovering | Hood        | 7              | 7              | Hair, Ears                  | 1-5
+Monk        | HeadCovering | Hood        | 7,7            | 7,7            | Hair, Ears                  | 6-8
+Monk        | Chest        | Wrap        | 8,20,0,0       | 8,20,0,0       | NoShoulderPads, NoElbowPads | 1-2
+Monk        | Chest        | Wrap        | 8,20,3,0       | 8,20,3,0       | NoShoulderPads, NoElbowPads | 3-8
+Monk        | Gloves       | Handwraps   | 8,14           | 8,14           | None                        |
+Monk        | Leggings     | Leg Wraps   | 23             | 23             | None                        | 1
+Monk        | Leggings     | Leg Wraps   | 23,10,4        | 23,10,4        | NoKneePads                  | 2-8
+Monk        | Boots        | Footwraps   | 3              | 3              | None                        | 1-5
+Monk        | Boots        | Footwraps   | 17             | 17             | None                        | 6-8
