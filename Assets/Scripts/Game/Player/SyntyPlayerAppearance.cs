@@ -126,6 +126,29 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
 
     public bool HelmetVisible;
 
+    /// <summary>
+    /// Whether the player's cape shows, their own or their clan's (!toggle cape; the server keeps the choice as
+    /// SyntyAppearance.CapeHidden). <see cref="Cape"/> still says which cape they have. While it is hidden the
+    /// armor's own back piece shows, if the chest has one. Change it with <see cref="SetCapeVisible"/>.
+    /// </summary>
+    [NonSerialized] public bool CapeVisible = true;
+
+    /// <summary>The player has a cape to show or hide: their own or their clan's.</summary>
+    public bool HasCape => PartAt(capes, Cape);
+
+    /// <summary>The armor's own back piece (a cloak, a pack, a pelt) is on.</summary>
+    public bool BackPieceShows
+    {
+        get
+        {
+            foreach (var part in backAttachments)
+            {
+                if (part && part.activeSelf) return true;
+            }
+            return false;
+        }
+    }
+
     //public Color EyebrowsColor;
     //public int HelmetAttachment;
     //public int HipsAttachment;
@@ -283,6 +306,9 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
         }
 
         LoadAppearance(appearance);
+        // the player's choice to hide their cape comes with every appearance the server sends (here and not in the
+        // generated LoadAppearance, so generating that again does not lose it)
+        CapeVisible = !appearance.CapeHidden;
         // the server always says cape 0 for clan members (older clients only have that one ready for a logo);
         // the shape is the clan's or the role's
         Cape = ClanCape(Cape);
@@ -312,6 +338,10 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
     {
         if (!player || !player.clanHandler || !player.clanHandler.InClan || player.clanHandler.ClanInfo == null || gameManager == null)
             return;
+
+        // a hidden cape is not drawn, so another shape needs no dressing: it is the one that shows when the cape
+        // does again. The cape's image is still fetched and set, so it is there then.
+        if (!CapeVisible) Cape = ClanCape(Cape);
 
         // another shape is another mesh, and capes are part of the combined mesh: dressing again, which comes
         // back here with the right one
@@ -355,6 +385,31 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
             if (!this || !player || !player.clanHandler.InClan || capeRequest != logoRequest) return;
             SetCapeTexture(logos.DefaultCape(logo));
         });
+    }
+
+    /// <summary>Hides the player's cape, or shows it again (!toggle cape).</summary>
+    public void ToggleCapeVisibility()
+    {
+        SetCapeVisible(!CapeVisible);
+    }
+
+    /// <summary>
+    /// Shows or hides the player's cape, their own or their clan's, and dresses the player again: capes and back
+    /// pieces are part of the combined mesh, and the chest's back piece takes the cape's place while it is hidden.
+    /// </summary>
+    public void SetCapeVisible(bool visible)
+    {
+        if (CapeVisible == visible) return;
+        CapeVisible = visible;
+
+        // everything off and on again, as when armor comes off: the cape or not (UpdateAppearance), then the worn
+        // items, whose chest puts its back piece on or leaves it off (EquipBack), then one new combined mesh
+        var equipment = player && player.Equipment ? player.Equipment : GetComponent<PlayerEquipment>();
+        if (equipment) equipment.UpdateAppearance();
+        else UpdateAppearance();
+
+        // back with the clan's shape and image as they are now
+        if (visible) UpdateClanCape();
     }
 
     /// <summary>The cape mesh for a clan member: the clan's or the role's shape. Anyone else keeps what they have.</summary>
@@ -727,6 +782,10 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
         SwitchOff(backAttachments);
 
         InitAppearance();
+
+        // a hidden cape (!toggle cape): the one InitAppearance put on comes off again. Its material stays in
+        // capeLogoMaterials, so the clan's image is on it when the cape shows again.
+        if (!CapeVisible) SwitchOff(capes);
     }
 
     /// <summary>
@@ -777,6 +836,9 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
     public SyntyAppearance ToSyntyAppearanceData()
     {
         var appearance = new SyntyAppearance();
+        // not a field of the same name as the others below: a hidden cape stays hidden when the player is dressed
+        // again from this (another clan cape shape), and for whoever reads the appearance (the overlay)
+        appearance.CapeHidden = !CapeVisible;
         var props = FieldsLookup;
         foreach (var prop in SyntyProperties)
         {
@@ -1207,12 +1269,13 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
     }
 
     /// <summary>
-    /// The back is the cape's place first: a player who wears one (their own or their clan's) keeps it and the
-    /// armor's back piece stays off. Both hang from the same bone and cut through each other.
+    /// The back is the cape's place first: a player whose cape shows (their own or their clan's) keeps it and the
+    /// armor's back piece stays off. Both hang from the same bone and cut through each other. A player without a
+    /// cape, or who has hidden theirs (!toggle cape), wears the back piece.
     /// </summary>
     private bool BackPieceFits()
     {
-        return !PartAt(capes, Cape);
+        return !CapeVisible || !HasCape;
     }
 
     /// <summary>

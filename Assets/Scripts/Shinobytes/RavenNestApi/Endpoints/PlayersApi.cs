@@ -579,6 +579,21 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
+        /// <summary>
+        /// Hides the character's cape or shows it again; true when it shows now. Only over the V2 connection: there
+        /// is no older web call for it, and a server that does not know the command answers false, which the caller
+        /// does not act on (the game has already toggled, and the next appearance from the server says how it is).
+        /// </summary>
+        public Task<bool> ToggleCapeAsync(Guid characterId)
+        {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<bool>(Commands.ToggleCape, CommandArgs.Pack(characterId));
+            }
+
+            return Task.FromResult(false);
+        }
+
         public Task<bool> UpdateAppearanceAsync(Guid characterId, int[] appearance)
         {
             return request.Create()

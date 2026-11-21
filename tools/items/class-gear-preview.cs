@@ -22,7 +22,9 @@
 //   yaw=28 / pitch=6                  the character turned from the camera, the camera looking down
 //   bg=#22252B                        the background, or "clear" for a transparent one
 //   pose=idle                         a frame of the idle animation, or "tpose" for the prefab's own pose
-//   gender=male hair=2 head=0 brows=0 beard=0 cape=-1 skinColor=#C99A7A hairColor=#4A3524 eyeColor=#2B2622
+//   gender=male hair=2 head=0 brows=0 beard=0 skinColor=#C99A7A hairColor=#4A3524 eyeColor=#2B2622
+//   cape=-1 / capeHidden=0            the player's cape (0 to 4, as from the server) and whether the server says it
+//                                     is hidden (SyntyAppearance.CapeHidden)
 //   v0=label | key=value | do=action, action, ...     one character per v line, side by side (at most 10);
 //                                     its keys override the ones above
 // Actions (an item is "<Line> <tier> [piece name]" or "plate <Material> [Helmet|Chest|Gloves|Leggings|Boots]";
@@ -34,7 +36,11 @@
 //   puton <item>      only SyntyPlayerAppearance.Equip on top of what is shown (no rebuild): the part switching
 //   takeoff <slot>    Head, Chest, Gloves, Leggings or Boots (PlayerEquipment.Unequip with a rebuild)
 //   toggle            the helmet toggle (!toggle helmet)
+//   capetoggle        the cape toggle (!toggle cape: SyntyPlayerAppearance.ToggleCapeVisibility)
+//   capeimage         a picture on the cape, as a clan's cape image is put on (SyntyPlayerAppearance.SetCapeTexture);
+//                     the log then says whether it is still on the cape's material ("capeImage=kept")
 //   rebuild           everything off and on again (PlayerEquipment.UpdateAppearance)
+// The log's "state:" says what the game would ask the appearance: CapeVisible, HasCape, BackPieceShows.
 var project = System.IO.Path.GetFullPath(System.IO.Path.Combine(UnityEngine.Application.dataPath, ".."));
 var jobPath = System.IO.Path.Combine(project, "Temp", "class-gear-preview.job");
 var donePath = jobPath + ".done";
@@ -287,8 +293,16 @@ void Render(System.Collections.Generic.Dictionary<string, string> baseJob)
             SkinColor = J("skinColor", "#C99A7A"), HairColor = J("hairColor", "#4A3524"), BeardColor = J("hairColor", "#4A3524"),
             EyeColor = J("eyeColor", "#2B2622"), StubbleColor = J("stubbleColor", "#B98C70"), ScarColor = J("scarColor", "#BD8F72"),
             WarPaintColor = J("warPaintColor", "#C99A7A"), HelmetVisible = true,
+            CapeHidden = J("capeHidden", "0") == "1",
         };
         var worn = new System.Collections.Generic.List<ItemController>(); // PlayerEquipment.equippedObjects
+        // the character's PlayerEquipment was never woken (edit mode): given what Awake would have found, and the
+        // list above as its worn items, its own UpdateAppearance is what rebuilds here, as in the game
+        var equipment = app.GetComponent<PlayerEquipment>();
+        if (!equipment) throw new System.Exception("the Player prefab has no PlayerEquipment next to its appearance");
+        typeof(PlayerEquipment).GetField("equippedObjects", bf).SetValue(equipment, worn);
+        typeof(PlayerEquipment).GetField("appearance", bf).SetValue(equipment, app);
+        UnityEngine.Texture2D capeImage = null;
         ItemController Controller(string spec)
         {
             // "X as Y": X with Y's look (transmogrified)
@@ -302,9 +316,8 @@ void Render(System.Collections.Generic.Dictionary<string, string> baseJob)
         }
         void Rebuild()
         {
-            // PlayerEquipment.EquipAll / UpdateAppearance, less the mesh combiner
-            app.UpdateAppearance();
-            foreach (var e in worn) app.Equip(e);
+            // everything off, the player's own look on, every worn item on again (the mesh combiner is off)
+            equipment.UpdateAppearance();
         }
         void TakeOff(string slot, bool rebuild)
         {
@@ -368,6 +381,12 @@ void Render(System.Collections.Generic.Dictionary<string, string> baseJob)
                         break;
                     case "takeoff": TakeOff(what, true); break;
                     case "toggle": app.ToggleHelmVisibility(); break;
+                    case "capetoggle": app.ToggleCapeVisibility(); break;
+                    case "capeimage":
+                        capeImage = new UnityEngine.Texture2D(4, 4) { name = "Preview Cape Image", hideFlags = UnityEngine.HideFlags.HideAndDontSave };
+                        temp.Add(capeImage);
+                        app.SetCapeTexture(capeImage);
+                        break;
                     case "rebuild": Rebuild(); break;
                     default: throw new System.Exception("unknown action: " + action);
                 }
@@ -389,6 +408,18 @@ void Render(System.Collections.Generic.Dictionary<string, string> baseJob)
                 log.Append(f.Name + "[" + i + "]" + (m == "FantasyHero" ? "" : ":" + m) + ((isMale && !male) || (isFemale && male) ? "(WRONG GENDER)" : "") + " ");
             }
         }
+        // the cape's picture: still on the material the cape is drawn with (or would be, while it is hidden)
+        var imageState = "none";
+        if (capeImage)
+        {
+            var capeMaterials = (System.Collections.Generic.List<UnityEngine.Material>)typeof(SyntyPlayerAppearance).GetField("capeLogoMaterials", bf).GetValue(app);
+            var capeParts = (UnityEngine.GameObject[])typeof(SyntyPlayerAppearance).GetField("capes", bf).GetValue(app);
+            var capePart = app.Cape >= 0 && app.Cape < capeParts.Length ? capeParts[app.Cape] : null;
+            var capeRenderer = capePart ? capePart.GetComponent<UnityEngine.Renderer>() : null;
+            imageState = capeRenderer && capeRenderer.sharedMaterial && capeRenderer.sharedMaterial.GetTexture("_Texture") == capeImage
+                && capeMaterials.Contains(capeRenderer.sharedMaterial) ? "kept" : "lost";
+        }
+        log.Append("| state: capeVisible=" + app.CapeVisible + " hasCape=" + app.HasCape + " backPiece=" + app.BackPieceShows + " capeImage=" + imageState + " ");
         log.Append("| material copies logged: " + materialCopies + " | worn: ");
         foreach (var e in worn) log.Append(e.Name + (e.Skin != null ? " as " + e.Skin.Name : "") + " <" + e.LookType + "," + e.Material + "," + e.HeadMask + ">; ");
         log.Append("\n");

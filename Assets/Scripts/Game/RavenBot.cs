@@ -31,6 +31,7 @@ public class RavenBot : System.IDisposable
         Connection.Register<ObservePlayer>("observe");
         Connection.Register<MonsterPlayer>("monster");
         Connection.Register<ToggleHelmetVisibility>("toggle_helmet");
+        Connection.Register<ToggleCapeVisibility>("toggle_cape");
         Connection.Register<CycleEquippedPet>("toggle_pet");
 
         Connection.Register<BuyItemFromMarket>("buy_item");

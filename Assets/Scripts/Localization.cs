@@ -1737,6 +1737,11 @@ public static class Localization
 
     public static string MSG_EQUIPPED = Meta("info", "equipment", "equip") + "You have equipped {itemName}.";
     public static string MSG_EQUIPPED_ALL = Meta("info", "equipment", "equip") + "You have equipped all of your best items.";
+    public static string MSG_CAPE_HIDDEN = Meta("info", "equipment", "cape") + "Your cape is hidden. !toggle cape shows it again.";
+    public static string MSG_CAPE_HIDDEN_BACK_PIECE = Meta("info", "equipment", "cape") + "Your cape is hidden, and your armor's own cloak or pack shows instead. !toggle cape brings the cape back.";
+    public static string MSG_CAPE_SHOWN = Meta("info", "equipment", "cape") + "Your cape shows again.";
+    public static string MSG_CAPE_NONE_HIDDEN = Meta("info", "equipment", "cape") + "You have no cape to hide. If you get one it will stay hidden until you use !toggle cape again.";
+    public static string MSG_CAPE_NONE_SHOWN = Meta("info", "equipment", "cape") + "You have no cape to show. If you get one it will show.";
 
     public static string MSG_ITEM_COUNT_MISSING_ARGS = Meta("info", "item count", "fail") + "You must specify an item. Use !items (item name) or !count (item name)";
     public static string MSG_ITEM_EXAMINE_MISSING_ARGS = Meta("info", "examine", "fail") + "You must specify an item. Use !examine (item name)";

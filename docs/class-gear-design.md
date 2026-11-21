@@ -92,8 +92,11 @@ as for every attachment. Index 0 to 5 hang on the right hip, 6 to 11 on the left
 Rules the code keeps:
 - **One owner per slot.** The belt belongs to the leggings and the back to the chest: putting on other leggings or
   another chest takes the old one's parts off, with or without a full rebuild, and so does taking the piece off.
-- **A cape wins the back.** A player who wears a cape (their own or their clan's) keeps it and the armor's back piece
-  stays off: both hang from the same bone and cut through each other. So clan members see no cloak, pack or pelt.
+- **A cape wins the back, unless it is hidden.** A player whose cape shows (their own or their clan's) keeps it and the
+  armor's back piece stays off: both hang from the same bone and cut through each other. `!toggle cape` hides the
+  cape, as `!toggle helmet` hides the helmet: then the chest's back piece shows, or a bare back when the chest has
+  none, and `!toggle cape` again brings the cape back with its clan image. The default is shown, so a clan member sees
+  no cloak, pack or pelt until they hide their cape. See "The cape toggle" below.
 - **The helmet toggle** hides the head piece with everything on it.
 - **Transmogrification** takes all of it from the look item: its parts with their attachments, its material and its mask.
 - **The item on its own** (`SyntyPlayerAppearance.Get`: treasure chests, the icon scene) has its attachments too. The
@@ -102,6 +105,24 @@ Rules the code keeps:
 - **An index the model set does not have** is skipped, in every position.
 - Attachments are drawn in the tier's material like the rest of the piece. Feathers, wolf heads, the green bottle and
   the bedroll keep the colors of their texture.
+
+### The cape toggle
+
+- **The choice** is the character's, kept by the server (a user property for each character) and sent with every
+  appearance as `SyntyAppearance.CapeHidden`. The game holds it as `SyntyPlayerAppearance.CapeVisible`, set wherever
+  an appearance is applied (`SetAppearance`: joining, and every later appearance update), and hands it back in
+  `ToSyntyAppearanceData`, so dressing a player again from their own appearance (another clan cape shape) keeps it.
+- **The command:** the bot sends `toggle_cape`; `ToggleCapeVisibility` (the packet handler) tells the server
+  (`equipment.toggle-cape`, V2 only: there is no older web call, and a server without it changes nothing), toggles at
+  once and answers in chat: hidden with the armor's own cloak or pack showing, hidden with nothing in its place, shown
+  again, or no cape to hide or show (the choice is still kept, for a cape the player gets later).
+- **Hidden** means no cape is drawn, own or clan. `Cape` still says which one the player has, the clan's shape and
+  image are still kept up to date on the cape's material (without dressing the player again), and
+  `UpdateAppearance` takes the cape off after every rebuild. So equipping, unequipping, the helmet toggle,
+  transmogrification, a clan's new cape shape or image, and joining or leaving a clan do not bring it back.
+- **Toggling** dresses the player again (`PlayerEquipment.UpdateAppearance`: everything off, the worn items on, one new
+  combined mesh), because capes and back pieces are part of the combined mesh.
+- Nothing else draws a second copy of a player: the details window and hero mode show the player itself.
 
 Looked at on both bodies and left out: the other cloaks (back 5 to 8: plain, one color with the robe from behind) and
 the tattered one (back 2); the fan of feathers, the helmet fin and the single big feather (head 4, 5, 9: too close to
