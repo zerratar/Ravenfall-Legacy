@@ -1458,7 +1458,57 @@ public class Inventory : MonoBehaviour
         }
     }
 
+    /// <summary>The fitting line chosen for a whole "equip best", while it runs (GearScore.OneLine); null otherwise.</summary>
+    private int? outfitFits;
+
+    /// <summary>
+    ///     The lines that fit what the player trains, narrowed to one for a whole outfit when several fit: the line
+    ///     whose pieces, worn or in the bag and wearable, are worth the most together (GearScore.OneLine, the server's
+    ///     rule too). Without it the slots were filled from whichever line scored a point more each, and a healer
+    ///     came out in a paladin's helm over a monk's wrap.
+    /// </summary>
+    /// <param name="arriving">An item that is not in the bag yet (one that was just found), counted too.</param>
+    public int OutfitFits(GameInventoryItem arriving = null)
+    {
+        var fits = ItemLines.Fits(player.ActiveSkill);
+        if (ItemLines.In(fits).Length < 2) return fits;
+        var materials = new List<ItemMaterial>();
+        var classics = new List<int>();
+        var slots = new List<int>();
+        var worn = new List<bool>();
+        void Count(GameInventoryItem item, bool isWorn)
+        {
+            if (item == null || item.Item == null || !ItemLines.IsClassGear(item.Item.Material)) return;
+            if (!isWorn && !CanEquipItem(item)) return;
+            materials.Add(item.Item.Material);
+            classics.Add(GetItemValue(item));
+            slots.Add((int)GetEquipmentSlot(item.Item.Type));
+            worn.Add(isWorn);
+        }
+        lock (mutex)
+        {
+            for (var i = 0; i < equipped.Count; ++i) Count(equipped[i], true);
+            for (var i = 0; i < backpack.Count; ++i) Count(backpack[i], false);
+        }
+        Count(arriving, false);
+        return GearScore.OneLine(fits, materials.ToArray(), classics.ToArray(), slots.ToArray(), worn.ToArray());
+    }
+
     public void EquipBestItems()
+    {
+        // one line for the whole outfit, decided before the first slot so it cannot change half way
+        outfitFits = OutfitFits();
+        try
+        {
+            EquipBestItemsOfEachKind();
+        }
+        finally
+        {
+            outfitFits = null;
+        }
+    }
+
+    private void EquipBestItemsOfEachKind()
     {
         EquipBestItem(ItemCategory.Amulet);
         EquipBestItem(ItemCategory.Ring);
@@ -1498,7 +1548,7 @@ public class Inventory : MonoBehaviour
 
         // class gear is ranked by what the player trains; training nothing that names a line keeps the line worn here
         // (several lines can fit one skill: a set of lines)
-        var fits = GearScore.FitsFor(player.ActiveSkill, equippedItem != null ? equippedItem.Item.Material : ItemMaterial.None);
+        var fits = GearScore.KeepWorn(outfitFits ?? OutfitFits(), equippedItem != null ? equippedItem.Item.Material : ItemMaterial.None);
 
         // what a candidate has to beat: what is worn, then the best found so far (nothing worn is worth nothing)
         var bestMaterial = equippedItem != null ? equippedItem.Item.Material : ItemMaterial.None;

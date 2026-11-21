@@ -3051,7 +3051,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
         // class gear is ranked by what is trained (GearScore, the server's rule too); everything else as before
         // several lines can fit one skill: between two of them of the same tier what is worn stays
-        var fits = GearScore.FitsFor(ActiveSkill, currentEquipment.Item.Material);
+        // and one line for the outfit: a piece of another fitting line does not break up the set that is worn
+        var fits = GearScore.KeepWorn(Inventory.OutfitFits(item), currentEquipment.Item.Material);
         if (item.BeatsWorn(currentEquipment, fits))
         {
             // cosmetic ones should not be replaced.

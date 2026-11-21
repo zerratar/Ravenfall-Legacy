@@ -486,7 +486,7 @@ Two new cloths, one of each for every tier (the higher tiers take more of it):
 
 | Item | From | How |
 |---|---|---|
-| Flax | Farming level 5 | a farming drop like any crop (20 s cooldown, 15% a round and more with level) |
+| Flax | Farming level 5 | a farming drop like any crop (20 s cooldown, 15% a round and more with level). A high level farmer's rounds mostly go to the higher crops, so Flax wants to be the target, as any crop does: `!farm flax` (played 2026-11-21: none in four minutes of plain farming at Farming 700, one within three minutes when aimed) |
 | Linen | 2 Flax | Crafting level 1 |
 | Hide | training a combat skill | see below |
 | Leather | 2 Hide | Crafting level 1 |
@@ -600,6 +600,17 @@ neither does a skill that is not combat. When the skill names no line, the line 
 that slot is the one that fits: what a player wears is kept, a better tier of it is taken, and with plate or nothing
 worn it is plain armor that wins.
 
+**One line for a whole outfit** (`GearScore.OneLine`, 2026-11-21). Several lines fit one skill, and filled slot by
+slot the best piece came from whichever line rounded a point higher: the first play test dressed a healer in a
+paladin's helm over a monk's wrap, and a defender in half a tank's and half a dark knight's set. So before the slots
+are filled the fitting lines are narrowed to one: the line whose pieces, worn or in the bag and wearable, are worth
+the most together (the best piece per slot). Lines within a hundredth of each other count as equal, and then the one
+worn more stays, or the first named, which is the skill's own line (Tank for Defense, Healer for Healing, Melee for
+Attack). The other fitting lines then rank as lines that do not fit. Played after the change: Attack gave a full
+Nightfall set, Strength Worldbreaker, Defense Aegis, Healing Archon (the bag had no tier 8 Healer set), Magic
+Starcaller. The same call narrows the lines when a single piece arrives (`Inventory.OutfitFits(item)`), so a found
+piece of another fitting line does not break up the set that is worn.
+
 **Between two fitting pieces of different lines and the same tier the one already worn stays**
 (`GearScore.Beats`): a Paladin's or a Tank's chest for someone training Defense is the player's choice, not the
 ranking's. Without this the rounding of the armor would decide (a Doomguard Chestplate counts 161 and a Bastion Cuirass
@@ -665,7 +676,11 @@ metal: the Monk's last tier is Celestial, and Celestial Logs are not class gear.
 
 - The attachments (belt, back, the tiers' plumes and wings) are tested through the equip code in the editor, not in
   play: the combined mesh with a belt or back part on, and how a cloak moves, are still to be seen in the game.
-- Not played yet: how the numbers feel, and how fast Flax and Hide come in at low and high levels.
+- Played 2026-11-21 on the development character: the cape choice held through a rejoin; Hide dropped while
+  fighting (one in four minutes); Flax when aimed at; 8 Flax became 4 Linen and those with a Bronze Bar an Apprentice
+  Robe; a real tower clear of floor 5 (the test landed the last blow) gave a Footpad Mask with a Chipped Emerald in
+  its socket ("+1.5% Poison Resistance") to a player training Attack. Not played: how the numbers feel, and how fast
+  Flax and Hide come in at low levels.
 - The server's task for a character follows the game's saves, so right after `!train` it can be a moment behind the
   game when `!equip all` is used.
 - The second head pieces' parts and masks are first picks; they are one row each in `ClassGearPieces`.
