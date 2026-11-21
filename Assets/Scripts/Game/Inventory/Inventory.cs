@@ -1496,8 +1496,11 @@ public class Inventory : MonoBehaviour
             ? GetEquipmentBySlot(slot)
             : GetEquipmentOfCategory(category);
 
+        // class gear is ranked by what the player trains; training nothing that names a line keeps the line worn here
+        var fits = GearScore.LineFor(player.ActiveSkill, equippedItem != null ? equippedItem.Item.Material : ItemMaterial.None);
+
         var bestValue = equippedItem != null
-            ? equippedItem.GetTotalStats()
+            ? equippedItem.GetGearScore(fits)
             : 0;
 
         if ((category == ItemCategory.Pet && equippedItem != null) ||
@@ -1517,8 +1520,9 @@ public class Inventory : MonoBehaviour
             {
                 var item = backpack[i];
 
+                // hats and masks are looks, except class gear's (a Wizard Hat is the mage's head piece)
                 if (item.Item.Category == ItemCategory.Skin || item.Item.Category == ItemCategory.Cosmetic ||
-                    item.Item.Type == ItemType.Hat || item.Item.Type == ItemType.Mask)
+                    ((item.Item.Type == ItemType.Hat || item.Item.Type == ItemType.Mask) && !ItemLines.IsClassGear(item.Item.Material)))
                 {
                     continue;
                 }
@@ -1527,7 +1531,7 @@ public class Inventory : MonoBehaviour
                 if (eqSlot == slot || item.Item.Category == category && (type == null || item.Item.Type == type))
                 {
 
-                    var itemValue = GetItemValue(item);
+                    var itemValue = GearScore.Value(item.Item.Material, GetItemValue(item), fits);
 
                     var canEquip = CanEquipItem(item);
 

@@ -121,6 +121,11 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
     //public int HipsAttachment;
 
     private GameObject equippedHelmet;
+    // what the worn head piece hides while it shows (hair, brows, beard, ears, head), and the attachments on it
+    private HeadMask equippedHeadHides;
+    private readonly List<GameObject> equippedHeadAttachments = new List<GameObject>();
+    // the hair style shown instead of the player's own under a hat it would poke through, or -1
+    private int hairUnderHat = -1;
     public GameManager gameManager;
     public PlayerController player;
 
@@ -700,6 +705,13 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
     {
         ResetAppearance();
 
+        // every part is off now: there is no head piece until the items are put on again (one taken off used to
+        // come back, and the head go, at the next helmet toggle)
+        equippedHelmet = null;
+        equippedHeadHides = HeadMask.None;
+        equippedHeadAttachments.Clear();
+        hairUnderHat = -1;
+
         InitAppearance();
     }
 
@@ -747,41 +759,30 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
             ? item.MaleModelID
             : item.FemaleModelID;
 
-        int[] additionalIndex = Gender == Gender.Male
+        int[] additionalIndex = (Gender == Gender.Male
             ? item.MaleAdditionalIndex
-            : item.FemaleAdditionalIndex;
+            : item.FemaleAdditionalIndex) ?? Array.Empty<int>();
 
         if (itemIndex >= 0)
         {
-            EquipArmor(item.Type, itemIndex, (int)item.Material - 1, additionalIndex);
+            // a transmogrified item is drawn as its look: the look's parts and material, its kind of head piece
+            // (a hat over a helmet), and what the look hides or leaves off
+            EquipArmor(item.LookType, itemIndex, (int)item.Material - 1, item.HeadMask, additionalIndex);
         }
     }
 
-    internal GameObject Get(ItemType type, ItemMaterial material, string maleModelId)
+    /// <summary>
+    /// A model of an armor item on its own (a treasure chest's loot, the icon scene): copies of the parts it is made
+    /// of, in its material. <paramref name="mask"/> is the item's HeadMask: the pauldrons or forearms it has none of
+    /// are left out, as on a player.
+    /// </summary>
+    internal GameObject Get(ItemType type, ItemMaterial material, string maleModelId, HeadMask mask = HeadMask.None)
     {
-        var itemMaterial = (gameManager ? gameManager.Items : itemManager).GetMaterial((int)material - 1);
-        var itemIndex = -1;
-        var ids = new int[0];
-        //var headCovering_no_hair = false; // 
-        if (!string.IsNullOrEmpty(maleModelId))
-        {
-            //if (maleModelId.ToLower().StartsWith("c"))
-            //{
-            //    maleModelId = maleModelId.Substring(1);
-            //}
-            if (maleModelId.Contains(','))
-            {
-                ids = maleModelId.Split(',').Select(int.Parse).ToArray();
-                itemIndex = ids[0];
-            }
-            else
-            {
-                if (!int.TryParse(maleModelId, out itemIndex)) return null;
-                ids = new int[1] { itemIndex };
-            }
-        }
-
+        var items = gameManager ? gameManager.Items : itemManager;
+        var itemMaterial = items ? items.GetMaterial((int)material - 1) : null;
+        var ids = ParseModelIds(maleModelId);
         if (ids.Length == 0) return null;
+        var itemIndex = ids[0];
 
         var shoulderIndex = 20;
         var upperArmIndex = 13;
@@ -792,42 +793,52 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
         {
 
             case ItemType.Boots:
-                ActivateAndInstantiate(maleLegsLeft[itemIndex], output.transform);
-                ActivateAndInstantiate(maleLegsRight[itemIndex], output.transform);
+                AddCopy(maleLegsLeft, itemIndex, output.transform);
+                AddCopy(maleLegsRight, itemIndex, output.transform);
                 break;
 
             case ItemType.Chest:
-                ActivateAndInstantiate(maleTorso[itemIndex], output.transform);
+                AddCopy(maleTorso, itemIndex, output.transform);
 
-                if (ids.Length > 1)
+                if (ids.Length > 1) shoulderIndex = ids[1];
+                if (ids.Length > 2) upperArmIndex = ids[2];
+
+                if ((mask & HeadMask.NoShoulderPads) == 0)
                 {
-                    shoulderIndex = ids[1];
-                    upperArmIndex = ids[2];
+                    AddCopy(shoulderPadsLeft, shoulderIndex, output.transform);
+                    AddCopy(shoulderPadsRight, shoulderIndex, output.transform);
                 }
 
-                ActivateAndInstantiate(shoulderPadsLeft[shoulderIndex], output.transform);
-                ActivateAndInstantiate(shoulderPadsRight[shoulderIndex], output.transform);
+                AddCopy(maleArmUpperLeft, upperArmIndex, output.transform);
+                AddCopy(maleArmUpperRight, upperArmIndex, output.transform);
 
-                ActivateAndInstantiate(maleArmUpperLeft[upperArmIndex], output.transform);
-                ActivateAndInstantiate(maleArmUpperRight[upperArmIndex], output.transform);
+                // the elbow pads the item names (not the default ones a player gets with a plain plate chest)
+                if (ids.Length > 3 && (mask & HeadMask.NoElbowPads) == 0)
+                {
+                    AddCopy(elbowsLeft, ids[3], output.transform);
+                    AddCopy(elbowsRight, ids[3], output.transform);
+                }
                 break;
 
             case ItemType.Gloves:
-                ActivateAndInstantiate(maleHandsLeft[itemIndex], output.transform);
-                ActivateAndInstantiate(maleHandsRight[itemIndex], output.transform);
+                AddCopy(maleHandsLeft, itemIndex, output.transform);
+                AddCopy(maleHandsRight, itemIndex, output.transform);
 
                 if (ids.Length > 1)
                 {
                     armLowerIndex = ids[1];
                 }
 
-                ActivateAndInstantiate(maleArmLowerLeft[armLowerIndex], output.transform);
-                ActivateAndInstantiate(maleArmLowerRight[armLowerIndex], output.transform);
+                if ((mask & HeadMask.NoForearms) == 0)
+                {
+                    AddCopy(maleArmLowerLeft, armLowerIndex, output.transform);
+                    AddCopy(maleArmLowerRight, armLowerIndex, output.transform);
+                }
                 break;
             case ItemType.LeftShoulder:
             case ItemType.RightShoulder:
-                ActivateAndInstantiate(shoulderPadsLeft[itemIndex], output.transform);
-                ActivateAndInstantiate(shoulderPadsRight[itemIndex], output.transform);
+                AddCopy(shoulderPadsLeft, itemIndex, output.transform);
+                AddCopy(shoulderPadsRight, itemIndex, output.transform);
                 break;
 
             case ItemType.Hat:
@@ -841,22 +852,21 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
 
                 var itemObjs = isHelmet ? maleHelmets : isMask ? masks : isHat ? hats : headCoverings;
 
-                ActivateAndInstantiate(itemObjs[itemIndex], output.transform);
+                AddCopy(itemObjs, itemIndex, output.transform);
 
-                if (ids.Length > 1)
+                for (var i = 1; i < ids.Length; ++i)
                 {
-                    foreach (var headAttachment in ids.Skip(1))
-                    {
-                        if (headAttachment < 0) continue;
-                        if (headAttachments.Length > headAttachment)
-                        {
-                            ActivateAndInstantiate(headAttachments[headAttachment], output.transform);
-                        }
-                    }
+                    AddCopy(headAttachments, ids[i], output.transform);
                 }
                 break;
             case ItemType.Leggings:
-                ActivateAndInstantiate(maleHips[itemIndex], output.transform);
+                AddCopy(maleHips, itemIndex, output.transform);
+
+                if (ids.Length > 1 && (mask & HeadMask.NoKneePads) == 0)
+                {
+                    AddCopy(kneeAttachmentsLeft, ids[1], output.transform);
+                    AddCopy(kneeAttachmentsRight, ids[1], output.transform);
+                }
                 break;
         }
 
@@ -870,6 +880,38 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
         return output;
     }
 
+    /// <summary>
+    /// The indices of a model id ("27,20,20,0"): the main part first. A token that is not a number is -1, which no
+    /// part has, so it is left out and the others keep their places. Empty when the first one is not a number.
+    /// </summary>
+    private static int[] ParseModelIds(string modelId)
+    {
+        if (string.IsNullOrEmpty(modelId)) return Array.Empty<int>();
+        var tokens = modelId.Split(',');
+        var ids = new int[tokens.Length];
+        for (var i = 0; i < tokens.Length; ++i)
+        {
+            if (!int.TryParse(tokens[i], out ids[i]))
+            {
+                if (i == 0) return Array.Empty<int>();
+                ids[i] = -1;
+            }
+        }
+        return ids;
+    }
+
+    /// <summary>The part at an index, or null when the set has no such part (an item made for a newer model set).</summary>
+    private static GameObject PartAt(GameObject[] parts, int index)
+    {
+        return parts != null && index >= 0 && index < parts.Length ? parts[index] : null;
+    }
+
+    private void AddCopy(GameObject[] parts, int index, Transform parent)
+    {
+        var part = PartAt(parts, index);
+        if (part) ActivateAndInstantiate(part, parent);
+    }
+
     private void ActivateAndInstantiate(GameObject obj, Transform parent)
     {
         obj.SetActive(true);
@@ -877,7 +919,7 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
         Instantiate(obj, parent);
     }
 
-    private void EquipArmor(ItemType itemType, int itemIndex, int material, params int[] additionalIndices)
+    private void EquipArmor(ItemType itemType, int itemIndex, int material, HeadMask mask, params int[] additionalIndices)
     {
 
         var newMaterial = itemManager.GetMaterial(material);
@@ -898,17 +940,23 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
                 // equip or unequip upper arms
                 if (itemIndex > 0)
                 {
-                    // 0: shoulder
-                    var shoulderIndex = Gender == Gender.Male ? 20 : 14;
-                    if (additionalIndices.Length > 0)
+                    // 0: shoulder. A robe or a jerkin has no pauldrons (NoShoulderPads): none are put on, and the
+                    // ones of the armor worn before go
+                    if ((mask & HeadMask.NoShoulderPads) != 0)
                     {
-                        shoulderIndex = additionalIndices[0];
+                        SwitchOff(shoulderPadsLeft);
+                        SwitchOff(shoulderPadsRight);
                     }
+                    else
+                    {
+                        var shoulderIndex = Gender == Gender.Male ? 20 : 14;
+                        if (additionalIndices.Length > 0)
+                        {
+                            shoulderIndex = additionalIndices[0];
+                        }
 
-                    EquipPair(
-                        shoulderPadsLeft[shoulderIndex],
-                        shoulderPadsRight[shoulderIndex],
-                        newMaterial);
+                        EquipAttachments(shoulderPadsLeft, shoulderPadsRight, shoulderIndex, newMaterial);
+                    }
 
                     // upper arm
                     var upperArmIndex = Gender == Gender.Male ? 13 : 12;
@@ -922,13 +970,21 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
                         femaleArmUpperLeft, femaleArmUpperRight,
                         upperArmIndex, newMaterial);
 
-                    // elbows
-                    var elbowIndex = 0;
-                    if (additionalIndices.Length > 2)
+                    // elbows, or none (NoElbowPads)
+                    if ((mask & HeadMask.NoElbowPads) != 0)
                     {
-                        elbowIndex = additionalIndices[2];
+                        SwitchOff(elbowsLeft);
+                        SwitchOff(elbowsRight);
                     }
-                    EquipPair(elbowsLeft[elbowIndex], elbowsRight[elbowIndex], newMaterial);
+                    else
+                    {
+                        var elbowIndex = 0;
+                        if (additionalIndices.Length > 2)
+                        {
+                            elbowIndex = additionalIndices[2];
+                        }
+                        EquipAttachments(elbowsLeft, elbowsRight, elbowIndex, newMaterial);
+                    }
                 }
                 else
                 {
@@ -946,7 +1002,15 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
                     femaleHandsRight,
                     itemIndex, newMaterial);
 
-                if (itemIndex > 0)
+                if (itemIndex > 0 && (mask & HeadMask.NoForearms) != 0)
+                {
+                    // gloves that end at the wrist: the body's own forearms, in the skin they have
+                    EquipPairItems(
+                        maleArmLowerLeft, maleArmLowerRight,
+                        femaleArmLowerLeft, femaleArmLowerRight,
+                        0, null);
+                }
+                else if (itemIndex > 0)
                 {
                     var lowerArm = Gender == Gender.Male ? 5 : 15;
                     if (additionalIndices.Length > 0)
@@ -981,39 +1045,82 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
                 var isMask = itemType == ItemType.Mask;
                 var isHat = itemType == ItemType.Hat;
 
+                // one head piece at a time, whichever set of parts it is from: the one worn before goes, with its
+                // attachments
+                SwitchOff(maleHelmets);
+                SwitchOff(femaleHelmets);
+                SwitchOff(hats);
+                SwitchOff(masks);
+                SwitchOff(headCoverings);
+                SwitchOff(headAttachments);
+                equippedHeadAttachments.Clear();
+
                 equippedHelmet = EquipItems(
                     isHelmet ? maleHelmets : isMask ? masks : isHat ? hats : headCoverings,
                     isHelmet ? femaleHelmets : isMask ? masks : isHat ? hats : headCoverings,
                     itemIndex, newMaterial);
+                equippedHeadHides = HeadHides(itemType, mask);
 
-                if (additionalIndices.Length > 0)
+                if (!equippedHelmet)
                 {
-                    var i = 0;
-                    foreach (var headAttachment in additionalIndices)
-                    {
-                        Equip(headAttachments[headAttachment], newMaterial, i++ == 0);
-                    }
+                    // a head piece this model set does not have: the head as it is without one
+                    ShowHead(HeadMask.None);
+                    break;
+                }
+
+                foreach (var headAttachment in additionalIndices)
+                {
+                    var attachment = PartAt(headAttachments, headAttachment);
+                    if (!attachment) continue;
+                    Equip(attachment, newMaterial, false);
+                    equippedHeadAttachments.Add(attachment);
                 }
                 UpdateHelmetVisibility();
                 break;
             case ItemType.Leggings:
                 EquipItems(maleHips, femaleHips, itemIndex, newMaterial);
-                if (additionalIndices.Length > 0)
+                // knee pads: the item's own, or none (NoKneePads, or leggings without any: the ones of the leggings
+                // worn before go)
+                if (additionalIndices.Length > 0 && (mask & HeadMask.NoKneePads) == 0)
                 {
-                    var kneepadIndex = additionalIndices[0];
-                    EquipItems(kneeAttachmentsLeft, kneeAttachmentsLeft, kneepadIndex, newMaterial);
-                    EquipItems(kneeAttachmentsRight, kneeAttachmentsRight, kneepadIndex, newMaterial);
+                    EquipAttachments(kneeAttachmentsLeft, kneeAttachmentsRight, additionalIndices[0], newMaterial);
+                }
+                else
+                {
+                    SwitchOff(kneeAttachmentsLeft);
+                    SwitchOff(kneeAttachmentsRight);
                 }
                 break;
         }
     }
+
+    /// <summary>
+    /// What a head piece hides while it shows. A helmet is a whole head of its own (Chr_Head_No_Elements) and every
+    /// helmet made before the mask was read says None: those hide everything, as they always did. Hats, masks and
+    /// head coverings sit on the player's head and hide what their mask says (a hat nothing, a hood the hair).
+    /// </summary>
+    private static HeadMask HeadHides(ItemType itemType, HeadMask mask)
+    {
+        var hides = mask & HeadMask.All;
+        return itemType == ItemType.Helmet && hides == HeadMask.None ? HeadMask.All : hides;
+    }
+
+    private static void SwitchOff(GameObject[] parts)
+    {
+        if (parts == null) return;
+        for (var i = 0; i < parts.Length; ++i)
+        {
+            if (parts[i]) parts[i].SetActive(false);
+        }
+    }
+
     private GameObject EquipItems(
         GameObject[] male,
         GameObject[] female,
         int newItemIndex,
         Material material)
     {
-        return Equip(Gender == Gender.Male ? male[newItemIndex] : female[newItemIndex], material);
+        return Equip(PartAt(Gender == Gender.Male ? male : female, newItemIndex), material);
     }
 
     private void EquipPairItems(
@@ -1022,7 +1129,17 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
         int newItemIndex,
         Material material)
     {
-        EquipPair(genericLeft[newItemIndex], genericRight[newItemIndex], material);
+        EquipPair(PartAt(genericLeft, newItemIndex), PartAt(genericRight, newItemIndex), material);
+    }
+
+    /// <summary>
+    /// A pair of attachments (pauldrons, elbow pads, knee pads) at an index, or none on a side whose set has no such
+    /// part: the ones of the armor worn before do not stay.
+    /// </summary>
+    private void EquipAttachments(GameObject[] left, GameObject[] right, int index, Material material)
+    {
+        if (!Equip(PartAt(left, index), material)) SwitchOff(left);
+        if (!Equip(PartAt(right, index), material)) SwitchOff(right);
     }
 
     private void EquipPairItems(
@@ -1033,13 +1150,8 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
         int newItemIndex,
         Material material)
     {
-        var leftNew = Gender == Gender.Male
-            ? maleLeft[newItemIndex]
-            : femaleLeft[newItemIndex];
-
-        var rightNew = Gender == Gender.Male
-            ? maleRight[newItemIndex]
-            : femaleRight[newItemIndex];
+        var leftNew = PartAt(Gender == Gender.Male ? maleLeft : femaleLeft, newItemIndex);
+        var rightNew = PartAt(Gender == Gender.Male ? maleRight : femaleRight, newItemIndex);
 
         EquipPair(leftNew, rightNew, material);
     }
@@ -1056,6 +1168,9 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
     }
     private GameObject Equip(GameObject item, Material material, bool deactivateOthers = true)
     {
+        // no such part (an index this model set does not have): nothing changes
+        if (!item) return null;
+
         if (item.transform.parent && deactivateOthers)
         {
             for (var i = 0; i < item.transform.parent.childCount; ++i)
@@ -1142,69 +1257,99 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
     {
         try
         {
-            var helmets = Gender == Gender.Female ? femaleHelmets : maleHelmets;
-
             if (!equippedHelmet && Helmet < 0)
             {
                 return;
             }
 
-            //var toggleHair = true;
-            //var toggleHead = true;
-            //var toggleFacials = true;
-
-            if (equippedHelmet)
-            {
-                if (equippedHelmet.name.IndexOf("no_elements", StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    // Toggle All off
-                }
-                else // Check if _Base_Hair (Hat), _No_FacialHair (Mask), _No_Hair (HeadCovering)
-                {
-                    // ...
-                }
-            }
-
-            if (Gender == Gender.Male)
-            {
-                Head = Mathf.Clamp(Head, 0, maleHeads.Length - 1);
-                FacialHair = Mathf.Clamp(FacialHair, 0, maleFacialHairs.Length - 1);
-                Eyebrows = Mathf.Clamp(Eyebrows, 0, maleEyebrows.Length - 1);
-
-                if (FacialHair < maleFacialHairs.Length)
-                    maleFacialHairs[FacialHair].gameObject.SetActive(!HelmetVisible);
-
-                maleHeads[Head].gameObject.SetActive(!HelmetVisible);
-
-                if (Eyebrows < maleEyebrows.Length)
-                    maleEyebrows[Eyebrows].gameObject.SetActive(!HelmetVisible);
-            }
-            else
-            {
-                Head = Mathf.Clamp(Head, 0, femaleHeads.Length - 1);
-                Eyebrows = Mathf.Clamp(Eyebrows, 0, femaleEyebrows.Length - 1);
-
-                femaleHeads[Head].gameObject.SetActive(!HelmetVisible);
-                if (Eyebrows < femaleEyebrows.Length)
-                    femaleEyebrows[Eyebrows].gameObject.SetActive(!HelmetVisible);
-            }
-
-            Hair = Mathf.Clamp(Hair, 0, hairs.Length - 1);
-
-            if (Hair < hairs.Length)
-            {
-                hairs[Hair].gameObject.SetActive(!HelmetVisible);
-            }
+            // A head piece that shows hides what it says: a helmet everything (it is a head of its own), a hat
+            // nothing, a hood the hair. One the player has switched off hides nothing. Without an item, the helmet
+            // of the appearance itself (the item creator's) is a whole head too.
+            var hides = !HelmetVisible ? HeadMask.None : equippedHelmet ? equippedHeadHides : HeadMask.All;
+            ShowHead(hides, HelmetVisible ? equippedHelmet : null);
 
             if (equippedHelmet)
             {
                 equippedHelmet.SetActive(HelmetVisible);
             }
+
+            // the plumes and wings on it go with it
+            foreach (var attachment in equippedHeadAttachments)
+            {
+                if (attachment) attachment.SetActive(HelmetVisible);
+            }
         }
         catch (Exception exc)
         {
-            Shinobytes.Debug.LogError("Failed to toggle helmet visibility for " + this.player.Name + ": " + exc);
+            Shinobytes.Debug.LogError("Failed to toggle helmet visibility for " + (player ? player.Name : name) + ": " + exc);
         }
+    }
+
+    /// <summary>
+    /// Shows the player's own head, brows, beard and hair, less what <paramref name="hides"/> names. Under
+    /// <paramref name="hat"/> (the head piece that shows, if any) a hair style that would come through it is
+    /// swapped for a flat one.
+    /// </summary>
+    private void ShowHead(HeadMask hides, GameObject hat = null)
+    {
+        var male = Gender == Gender.Male;
+        ShowPart(male ? maleHeads : femaleHeads, Head, (hides & HeadMask.Head) == 0);
+        ShowPart(male ? maleEyebrows : femaleEyebrows, Eyebrows, (hides & HeadMask.Brows) == 0);
+        ShowPart(male ? maleFacialHairs : femaleFacialHairs, FacialHair, (hides & HeadMask.Beard) == 0);
+
+        var showHair = (hides & HeadMask.Hair) == 0;
+        var under = showHair ? HairUnder(hat, Hair) : Hair;
+        if (under != Hair && !RendererOf(PartAt(hairs, Hair))) under = Hair; // no hair of their own: none under a hat
+        if (hairUnderHat >= 0 && hairUnderHat != under) ShowPart(hairs, hairUnderHat, false);
+        hairUnderHat = under != Hair ? under : -1;
+        ShowPart(hairs, Hair, showHair && under == Hair);
+        if (under != Hair)
+        {
+            // the stand-in is worn in the color of the player's own hair (on a material of its own, as every
+            // hair has: sharing the other's would leave one behind when the player changes hair style)
+            var standIn = RendererOf(PartAt(hairs, under));
+            var own = RendererOf(PartAt(hairs, Hair));
+            if (standIn && own.sharedMaterial) standIn.material.SetColor("_Color_Hair", own.sharedMaterial.GetColor("_Color_Hair"));
+            ShowPart(hairs, under, true);
+        }
+
+        // elf ears are not part of an appearance yet; if they ever are, a hood covers them
+        if ((hides & HeadMask.Ears) != 0) SwitchOff(ears);
+    }
+
+    private void ShowPart(GameObject[] parts, int index, bool show)
+    {
+        var part = PartAt(parts, index);
+        if (!part) return;
+        if (show) RendererOf(part);
+        part.SetActive(show);
+    }
+
+    // Hair under a hat. A hat (Chr_HeadCoverings_Base_Hair) sits on the head and hides nothing, and many of the 38
+    // hair styles come through it: top knots, quiffs, mohawks, big hair. Every style was measured under the hats
+    // that items use (tools/items/class-gear-hair-under-hats.py: hair seen above the hat's lower edge, from 16
+    // sides; listed when it covers 1% of the hat or more in the worst view). A listed style is swapped, only while
+    // the hat shows, for a flat one of about its length that fits under every hat: the short hair 2, or the
+    // neck-length hair 19 for the styles that reach below the jaw. A hat that has not been measured swaps nothing.
+    private const int FlatShortHair = 2;
+    private const int FlatLongHair = 19;
+    private static readonly HashSet<int> LongHair = new HashSet<int> { 1, 19, 20, 22, 23, 24, 25, 27, 28, 29, 30, 31, 33, 34, 35, 37 };
+    private static readonly Dictionary<int, HashSet<int>> HairThroughHat = new Dictionary<int, HashSet<int>>
+    {
+        // hats[1], the wizard hat
+        { 1, new HashSet<int> { 0, 3, 4, 5, 6, 8, 12, 13, 15, 18, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 37 } },
+        // hats[4], the feathered cap
+        { 4, new HashSet<int> { 0, 3, 4, 5, 8, 12, 13, 15, 18, 22, 23, 24, 25, 26, 27, 28, 29, 31, 32, 37 } },
+    };
+
+    /// <summary>The hair style to show under a head piece: the player's own, or the flat one that fits under that hat.</summary>
+    private int HairUnder(GameObject headPiece, int hair)
+    {
+        if (!headPiece) return hair;
+        var hat = Array.IndexOf(hats, headPiece);
+        if (hat < 0 || !HairThroughHat.TryGetValue(hat, out var through) || !through.Contains(hair)) return hair;
+        var flat = LongHair.Contains(hair) ? FlatLongHair : FlatShortHair;
+        return PartAt(hairs, flat) ? flat : hair;
     }
 
     public void SetFullBodySkinMesh(GameObject prefab)

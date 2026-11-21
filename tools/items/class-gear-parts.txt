@@ -1,0 +1,43 @@
+# The class gear's pieces (v0.9.7): what each one is made of. Read by tools/items/class-gear-preview.cs and
+# tools/items/class-gear-icons.cs; the server's item rows must say the same (model ids and HeadMask).
+#
+# Line | ItemType | name after the tier | male model ids | female model ids | HeadMask
+#
+# Model ids: the main part first, then the others in the game's order:
+#   Chest: torso, shoulder pads, upper arms, elbow pads     Gloves: hands, lower arms
+#   Leggings: hips, knee pads                               head pieces: the piece, then head attachments
+# A slot the piece has nothing in is named in the HeadMask (NoShoulderPads, NoElbowPads, NoForearms, NoKneePads)
+# and still holds a valid index, because games before 0.9.7 read every index and know nothing of the mask.
+# On a head piece the HeadMask is what it hides of the player's head: Hair, Brows, Beard, Ears, Head (All = a helmet).
+# The first head piece of a line is its main one (the one the review sheets show).
+#
+Mage   | Hat          | Wizard Hat | 1          | 1          | None
+Mage   | HeadCovering | Hood       | 6          | 6          | Hair, Ears
+Mage   | Chest        | Robe       | 27,20,20,0 | 27,20,20,0 | NoShoulderPads, NoElbowPads
+Mage   | Gloves       | Gloves     | 9,18       | 9,18       | None
+Mage   | Leggings     | Robe Skirt | 9          | 9          | None
+Mage   | Boots        | Boots      | 11         | 11         | None
+Healer | HeadCovering | Cowl       | 4          | 4          | Hair, Ears
+Healer | HeadCovering | Cap        | 0          | 0          | Hair, Ears
+Healer | Chest        | Vestment   | 10,20,20,0 | 10,20,20,0 | NoShoulderPads, NoElbowPads
+Healer | Gloves       | Gloves     | 13,18      | 13,18      | None
+Healer | Leggings     | Tabard     | 8          | 8          | None
+Healer | Boots        | Boots      | 11         | 11         | None
+Ranger | Hat          | Cap        | 4          | 4          | None
+Ranger | HeadCovering | Hood       | 5          | 5          | Hair, Ears
+Ranger | Chest        | Jerkin     | 14,20,10,0 | 14,20,10,0 | NoShoulderPads, NoElbowPads
+Ranger | Gloves       | Gloves     | 3,3        | 3,3        | None
+Ranger | Leggings     | Trousers   | 6          | 6          | None
+Ranger | Boots        | Boots      | 19         | 19         | None
+Melee  | HeadCovering | Helm       | 1          | 1          | Hair, Ears
+Melee  | HeadCovering | Coif       | 11         | 11         | Hair, Ears
+Melee  | Chest        | Hauberk    | 17,13,19,0 | 17,13,19,0 | NoElbowPads
+Melee  | Gloves       | Gauntlets  | 5,17       | 5,17       | None
+Melee  | Leggings     | Tassets    | 10         | 10         | None
+Melee  | Boots        | Boots      | 4          | 4          | None
+Tank   | Helmet       | Greathelm  | 6          | 6          | All
+Tank   | Helmet       | Visor Helm | 10         | 10         | All
+Tank   | Chest        | Cuirass    | 20,10,14,3 | 20,10,14,3 | None
+Tank   | Gloves       | Gauntlets  | 12,4       | 12,4       | None
+Tank   | Leggings     | Greaves    | 20,6       | 20,6       | None
+Tank   | Boots        | Sabatons   | 13         | 13         | None

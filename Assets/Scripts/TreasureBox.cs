@@ -128,7 +128,7 @@ public class TreasureBox : MonoBehaviour
                 // 
                 if (playerAppereance && item != null)
                 {
-                    var syntyItem = playerAppereance.Get(item.Type, item.Material, item.MaleModelId);
+                    var syntyItem = playerAppereance.Get(item.Type, item.Material, item.MaleModelId, item.HeadMask);
                     if (syntyItem)
                     {
                         syntyItem.transform.SetParent(transform);

@@ -37,6 +37,27 @@ public class ItemController : MonoBehaviour
 
     public ItemMaterial Material;
 
+    /// <summary>
+    /// What the item's look hides or leaves off (the look item's <see cref="RavenNest.Models.Item.HeadMask"/>): for
+    /// a head piece the hair, brows, beard, ears or the whole head; for a body piece the pauldrons, elbow pads,
+    /// forearms or knee pads it has none of. A transmogrified item has its look's.
+    /// </summary>
+    public HeadMask HeadMask;
+
+    // the look item's type: the same as Type unless the item is transmogrified
+    private ItemType lookType;
+
+    /// <summary>
+    /// The type the item is drawn as. The head pieces share one slot but are different sets of parts (helmets,
+    /// hats, masks, head coverings), so a helmet transmogrified into a hat is drawn from the hats.
+    /// </summary>
+    public ItemType LookType => IsHeadPiece(lookType) && IsHeadPiece(Type) ? lookType : Type;
+
+    private static bool IsHeadPiece(ItemType type)
+    {
+        return type == ItemType.Helmet || type == ItemType.Hat || type == ItemType.Mask || type == ItemType.HeadCovering;
+    }
+
     public int MaleModelID;
     public int FemaleModelID;
 
@@ -165,6 +186,8 @@ public class ItemController : MonoBehaviour
         var indices = itemManager.GetModelIndices(item.Id);
 
         Material = item.Material;
+        HeadMask = item.HeadMask;
+        lookType = item.Type;
 
         MaleModelID = indices.Item1.Item1;
         MaleAdditionalIndex = indices.Item1.Item2;

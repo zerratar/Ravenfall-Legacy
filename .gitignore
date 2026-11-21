@@ -236,6 +236,10 @@ Assets/Village/Derived.meta
 # profile), docs/lumbridge-move-plan.md
 !Assets/World/Lumbridge.meta
 !Assets/World/Lumbridge/**
+# The class gear's materials (one per tier of each line, named as the ItemMaterial), made by
+# tools/items/class-gear-materials.cs and loaded from Resources by ItemManager.GetMaterial.
+!Assets/World/ClassGear.meta
+!Assets/World/ClassGear/**
 
 # Local safety copies made before reshaping terrain or scenes.
 Backups/

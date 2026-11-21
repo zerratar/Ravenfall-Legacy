@@ -197,9 +197,26 @@ public class ItemManager : MonoBehaviour
         return redeemableItems;
     }
 
+    // materials newer than the list on the scene's object, loaded by name when first asked for
+    private readonly Dictionary<int, Material> namedMaterials = new Dictionary<int, Material>();
+
+    /// <summary>
+    /// The material of an <see cref="ItemMaterial"/>, by its value less one. The metal tiers (Bronze to Elder
+    /// Atlarus) are the list set on this object; the ones after it (the class gear's: Apprentice to Aegis) are
+    /// Resources/ClassGear/&lt;the value's name&gt;, made by tools/items/class-gear-materials.cs.
+    /// </summary>
     public Material GetMaterial(int material)
     {
-        return material >= 0 && itemMaterials.Length > material ? itemMaterials[material] : null;
+        if (material < 0) return null;
+        if (itemMaterials != null && material < itemMaterials.Length) return itemMaterials[material];
+        if (namedMaterials.TryGetValue(material, out var named)) return named;
+
+        var value = (ItemMaterial)(material + 1);
+        named = Enum.IsDefined(typeof(ItemMaterial), value)
+            ? UnityEngine.Resources.Load<Material>("ClassGear/" + value)
+            : null;
+        namedMaterials[material] = named;
+        return named;
     }
 
     public ItemController Create(Item item, bool useMalePrefab)

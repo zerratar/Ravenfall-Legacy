@@ -420,6 +420,13 @@ Phase 1 (foundation), started 2026-11-07:
   trail. Refreshed once a second for every player. Settings > Graphics > Weapon effects, off in potato mode. Seen in
   play mode on bots (katanas, a 2H sword, a Pickle Rick).
 
+- [x] Class gear, server and shared side (2026-11-21, [class-gear-design.md](class-gear-design.md)): five armor lines
+  for the paths (Mage, Healer, Ranger, Melee, Tank), eight tiers each from level 1 to 900, six pieces a tier (240
+  items), made at server start by `GameData.ClassGear.cs`. They trade armor (40% to 100% of plate) for the path's
+  stats in `ExtraStats`; crafted from Linen (Flax, a new farming crop) or Leather (Hide, a Slayer resource drop while
+  a combat skill is trained) and the bar of the tier's level. "Equip the best" ranks them by the trained skill with
+  one rule for the server and the game (`RavenNest.Models.GearScore`). Not played yet.
+
 ## For later
 
 - ~~Weapon effects you can see~~ built 2026-11-10, see "Weapon effects" in Progress.
