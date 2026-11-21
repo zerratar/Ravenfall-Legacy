@@ -153,6 +153,14 @@ public sealed class PetClipPlayer
             oneShotUntil = 0f;
             Play(oneShotReturn, 0.15f, true);
         }
+        // a clip imported without loop time (the animal pack's Panda_Idle, Reindeer_Run, the hen's) stops on its last
+        // frame: a standing, moving or sleeping pet starts it again instead of freezing mid-stride
+        if (current >= 0 && oneShotUntil <= 0f && (playing == Kind.Idle || playing == Kind.Move || playing == Kind.Sleep))
+        {
+            var p = playables[current];
+            var clip = p.GetAnimationClip();
+            if (clip && !clip.isLooping && clip.length > 0.05f && p.GetTime() >= clip.length) p.SetTime(p.GetTime() % clip.length);
+        }
         var dt = Time.deltaTime * fadeSpeed;
         var total = 0f;
         for (var i = 0; i < weights.Length; ++i)

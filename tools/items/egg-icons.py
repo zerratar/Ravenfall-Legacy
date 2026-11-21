@@ -5,10 +5,16 @@ out of a cracked egg, or a seed husk for the plants, with the dark outline the g
 The pet pictures come from the game: tools/items/egg-renders.cs (eval_file in play mode) renders every species' first
 stage alone against black and against white, and the difference gives a clean alpha. Run:
 
-    python tools/items/egg-icons.py <folder with the renders>
+    python tools/items/egg-icons.py <folder with the renders> [folder with the renders for the pictures]
 
 and the icons land in Assets/Resources/Items as "<egg-name>.png" (the game finds item icons by their name), and in the
 website's imgs/items; the pets' pictures at each stage go to the website's imgs/pets ("wolf-pup.webp", "wolf-pup-1.webp").
+
+The animals' pictures are rendered a second time, turned further from the camera (yaw.txt 40 for egg-renders.cs): a
+horse seen from the front fits an egg but shows little of the horse. Give that folder as the second argument and the
+pictures come from it; the icons always come from the first. A species with no render in a folder is skipped there.
+
+Afterwards tools/items/egg-icons-import.cs (eval_file in edit mode) imports the new icons as sprites.
 """
 import math
 import os
@@ -49,6 +55,10 @@ EGGS = {
     "pig": ("Piglet Egg", (240, 180, 180), (200, 120, 130), "spots"),
     "chicken": ("Chick Egg", (236, 214, 180), (250, 220, 90), "spots"),
 }
+
+# the animals whose model only grows with its stages: the website shows their one picture at every stage
+# (PetLook.SameLookEveryStage), so no "-1" and "-2" pictures are written for them
+GROWS = {"panda", "boar", "capybara", "tiger", "eagle", "goose", "parrot", "rat", "penguin", "reindeer", "pig"}
 
 OUTLINE = (24, 20, 22, 255)
 
@@ -198,14 +208,17 @@ def website_picture(pet, path):
 
 def main():
     src = sys.argv[1]
+    pictures = sys.argv[2] if len(sys.argv) > 2 else src
     here = os.path.dirname(os.path.abspath(__file__))
     out = os.path.join(here, "..", "..", "Assets", "Resources", "Items")
     web = os.path.join(here, "..", "..", "..", "RavenNest", "src", "RavenNest.Blazor", "wwwroot", "imgs")
     for species in EGGS:
+        if species in GROWS:
+            continue
         for stage in (1, 2):
             f = species + "-" + str(stage)
-            if os.path.exists(os.path.join(src, f + "-black.png")):
-                pet = matte(Image.open(os.path.join(src, f + "-black.png")), Image.open(os.path.join(src, f + "-white.png")))
+            if os.path.exists(os.path.join(pictures, f + "-black.png")):
+                pet = matte(Image.open(os.path.join(pictures, f + "-black.png")), Image.open(os.path.join(pictures, f + "-white.png")))
                 website_picture(pet, os.path.join(web, "pets", f + ".webp"))
     for species in EGGS:
         if not os.path.exists(os.path.join(src, species + "-black.png")):
@@ -215,7 +228,9 @@ def main():
         white = Image.open(os.path.join(src, species + "-white.png"))
         pet = matte(black, white)
         name, img = icon(species, pet, random.Random(species))
-        website_picture(pet, os.path.join(web, "pets", species + ".webp"))
+        if os.path.exists(os.path.join(pictures, species + "-black.png")):
+            shown = pet if pictures == src else matte(Image.open(os.path.join(pictures, species + "-black.png")), Image.open(os.path.join(pictures, species + "-white.png")))
+            website_picture(shown, os.path.join(web, "pets", species + ".webp"))
         path = os.path.normpath(os.path.join(out, slug(name) + ".png"))
         img.save(path)
         img.save(os.path.join(web, "items", slug(name) + ".png"))

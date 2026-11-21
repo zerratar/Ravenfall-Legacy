@@ -484,8 +484,8 @@ the events or a stream quest actually giving one (chance-based, and their messag
 
 Zerratar imported polyperfect's *Low Poly Animated Animals* and wanted the pets widened with it. The animals are
 realistic low poly rather than fantasy, but the style fits. Phase 1 (this section) is everything without the editor:
-the species, their eggs, where the eggs are found, five new skills and the game's clip picking. Phase 2 makes the
-prefabs, pictures and egg icons (the work list below). Until then an animal hatched on a test server shows a raven.
+the species, their eggs, where the eggs are found, five new skills and the game's clip picking. Phase 2 (the same
+day, "Phase 2, done in the editor" below) made the prefabs, pictures and egg icons and looked at every one in the game.
 
 **All 18 hatch from eggs.** None of these animals is an enemy on the islands, and taming needs a creature to fight.
 **Not used, because they are pets already:** bear (the starter and two pet items), wolf (the Wolf Pup line and a pet
@@ -562,10 +562,13 @@ The game already carried every one of these effects for pets (`BattlePetControll
 from the numbers. No new gatherer skill: the server only knows Forage, Keen Nose and Dig (a speed bonus is in the
 library's enum but nothing reads it).
 
-**Where the eggs are found** (`PetEggs`, weights beside the cute series' 10/10/6/6/5/4/1). The chances per source
-are unchanged, so every egg already there is a little rarer than before: a raid's eggs were 28% Wolf Pup and 2.8%
-Dragon Spark, now 16% and 1.6%; an easy dungeon's were 38% Wolf Pup, now 19%. Raising the chances would keep the old
-eggs as common as they were; that is the owner's call (they were lowered on purpose on 2026-11-09).
+**Where the eggs are found** (`PetEggs`, weights beside the cute series' 10/10/6/6/5/4/1). **The old eggs stay as
+common as they were** (Zerratar, 2026-11-21: "raise the eggs chance so the old ones stay common"): a source's chance
+is widened by the animals' share of its table (`PetEggs.Widened`: the whole table's weight over the weight of the
+eggs that were there before), so each old egg is exactly as likely as before and the animal eggs come on top. A raid
+gives an egg 3.5% of the time instead of 2%, an easy dungeon about 4.2% instead of 2%, a tower chest about 3.9%
+instead of 2.5%; the quests' and events' rolls are widened the same way (`PetEggRewards.Roll`). Only a source that
+always gives an egg (a play streak's) cannot give more: there the animals share the egg with the old kinds.
 
 | Source | Animals (weight) |
 |---|---|
@@ -594,69 +597,101 @@ eggs as common as they were; that is the owner's call (they were lowered on purp
   penguin), and "fly" is a way to move for a model with no run or walk. `tools/items/egg-icons.py` knows the 18 eggs'
   shells and skips a species without renders.
 
-**Phase 2, in the editor** (per species below)
+**Phase 2, done in the editor** (2026-11-21)
 
-1. **Prefabs** in `Assets/Resources/Pets/Animals/<name>.prefab`, named exactly as the model keys (the pack's own
-   prefab names). Make each from the pack's prefab under `Assets/Low Poly Animated Animals/- Prefabs/Animals/` and
-   keep only the model, its renderers and the Animator with its controller: take the pack's scripts (wander, sounds),
-   AudioSources, the NavMeshAgent and colliders off, so the build does not pull the pack's sounds in through Resources
-   (the game strips them at runtime anyway). Root scale 1; the game scales to the stage's height. Resources and the
-   pack are gitignored, so the prefabs live on the dev PC like the cute series.
-2. **Materials**: only the three dogs need a fix (their old materials point to the missing shader): give them the URP
-   ones from `Assets/polyperfect/Low Poly Animated Animals/Materials/Animals/` (`Dog_Chihauhau`, `Dog_GoldenRetriever`,
-   `Dog_GreatDane_Brown`). Everything else already uses URP Lit. `Cat_Orange` has no material set on its prefab (it
-   takes the model's own): check that it is orange. Like the cute series, smoothness 0 and no highlights may suit the
-   game's look better; judge in a close-up.
-3. **Clips**: nothing to set up; the prefab's own controller holds them, and the clip player picks by name:
+- **Prefabs**: `tools/pets/animal-prefabs.cs` (eval_file, edit mode, one prefab per editor frame, built in a preview
+  scene) makes the 30 prefabs in `Assets/Resources/Pets/Animals/`, named exactly as the model keys, from the pack's
+  prefabs of the same name. Each keeps the model, its renderer and the Animator with its controller at scale one; the
+  pack's scripts (missing in this project), colliders, navigation and sounds are taken off, so a build does not pull
+  the pack's sounds in through Resources. Nothing in the pack is changed. **Assets/Resources and the pack are not in
+  git**: the prefabs live on this machine, and the script is how they are made again on the build machine.
+- **Materials**: the three dogs' old materials point to a shader that is not in the project; their prefabs carry the
+  pack's URP ones (`Dog_Chihauhau`, `Dog_GoldenRetriever`, `Dog_GreatDane_Brown`). `Cat_Orange` had the plain default
+  "Lit" material (a grey cat); it has the pack's `Cat_Orange` now. Every one of the 30 renders with URP Lit.
+- **Two controllers of the prefabs' own**, saved beside them:
+  - `Hen.controller`: the pack's hen plays through an override of the rooster's controller that has no death clip (it
+    plays the attack instead). The hen's model has one, so its own controller holds Hen_Idle_2, Walk, Run, Attack,
+    Death, Sleep and Eat.
+  - `Reindeer.controller` with `Reindeer_Idle.anim`: the pack cut the reindeer's idle one frame early. It starts on
+    the last frame of its death (lying on its side, tongue out) and takes two more to stand, so every time the pet
+    stopped it flashed dead. The controller plays a copy of the idle without those three frames.
+  A check over every clip of the 30 prefabs for a pose jumping in from another clip found only the reindeer's idle and
+  walk (the walk is not used).
+- **The clips the game's own picking takes** (`PetClipPlayer`, read back from it for every prefab):
 
-| Prefab (model key) | Material | Controller | Idle, move, attack, knocked out |
-|---|---|---|---|
-| Panda | Panda | CTL_Panda | Panda_Idle, Panda_Run, Panda_Attack, Panda_Death |
-| Boar | Boar | CTL_Boar | Boar_Idle_Left_Right, Boar_Run, Boar_Attack, Boar_Death |
-| Horse_Brown, Horse_Grey, Horse_Black | Horse_Brown, Horse_Grey, Horse_Black | CTL_Horse | Horse_Idle, Horse_Run, Horse_Attack, Horse_Death (not `Horse.prefab`: legacy, broken) |
-| Dog_Chihuahua | **Dog_Chihauhau (swap)** | Chihuahua (old folder) | Dog_Chihuahua_Idle, _Run, _Bark as its cast; no death clip, it lies on its side |
-| Dog_GoldenRetriever | **Dog_GoldenRetriever (swap)** | GoldenRetriever (old folder) | Dog-GoldenRetriever_Idle, _Run, _Bark; no death clip |
-| Dog_GreatDane | **Dog_GreatDane_Brown (swap)** | Dog-GreatDane (old folder) | Dog-GreatDane_Idle, _Run, _Bark; no death clip |
-| Capybara | Capybara | CTL_Capybara | Capybara_Idle, _Run, _Attack, _Death |
-| Sheep | Sheep | CTL_Sheep | Sheep_Idle, _Run, _Attack, _Death |
-| Sheep_Wool | Sheep Wool | CTL_Sheep (the plain sheep's clips: check they move the woolly rig) | Sheep_Idle, _Run, _Attack, _Death |
-| Tiger | Tiger | CTL_Tiger | Tiger_Idle_Breathing, Tiger_Run, Tiger_Attack, Tiger_Death |
-| Eagle | Eagle | CTL_Eagle | Eagle_Idle, Eagle_Run, Eagle_Flying_Attack, Eagle_Death (it runs on the ground and attacks with a flying clip: look at it) |
-| Goose | Goose | CTL_Goose | Goose_Idle, _Run, _Attack, _Death |
-| Parrot | Parrot | CTL_Parrot | Parrot_Idle, _Run, _Attack, _Death (it walks; Parrot_Fly is there if flying looks better) |
-| Rat | Rat | CTL_Rat | Rat_Idle_2, Rat_Run, Rat_Attack, Rat_Death |
-| Lion_Female | Lion_Female | CTL_Lion_Female | Lion_Female_Idle, _Run, _Attack, _Death |
-| Lion_Male | Lion | CTL_Lion_Male | Lion_Male_Idle_Breathing, _Run, _Attack, _Death |
-| Spider_Green, Spider_Yellow, Spider_Red | Spider_Green, Spider, Spider_Red (old folder, URP Lit) | Spider (old folder) | Spider_Idle, Spider_Walk, Spider_Attack, Spider_Death 3 |
-| Penguin | Penguin (old folder, URP Lit) | Penguin (old folder) | Penguin_Idle, _Run, Penguin_Shake as its throw, _Death |
-| Reindeer | Reindeer | CTL_Reindeer | Reindeer_Idle, _Run, _Attack, _Death |
-| Cat_Black, Cat_Orange, Cat_White | Cat_Black, (the model's own), Cat_White (old folder, URP Lit) | Cat (old folder) | Cat_Idle, Cat_Run, Cat_Attack, Cat_Death |
-| Pig | Pig | CTL_Pig | Pig_Idle_Breathing, Pig_Run, Pig_Attack, Pig_Death |
-| Chick | Chick | CTL_Chick | Chick_Idle1 or 2, Chick_Run, Chick_Attack, Chick_Death |
-| Hen | Hen | CTL_Hen (an override of CTL_Rooster) | Hen_Idle, Hen_Run, Hen_Attack, Hen_Death |
-| Rooster | Roaster (the pack's spelling) | CTL_Rooster | Rooster_Idle_3, Rooster_Run, Rooster_Attack, Rooster_Death |
+| Prefab | Idle | Move | Attack or cast | Knocked out |
+|---|---|---|---|---|
+| Panda | Panda_Idle | Panda_Run | Panda_Attack | Panda_Death |
+| Boar | Boar_Idle_Left_Right | Boar_Run | Boar_Attack | Boar_Death |
+| Horse_Brown, _Grey, _Black | Horse_Idle | Horse_Run | Horse_Attack | Horse_Death |
+| Dog_Chihuahua | Dog_Chihuahua_Idle | Dog_Chihuahua_Run | Dog_Chihuahua_Bark | none: it lies on its side |
+| Dog_GoldenRetriever | Dog-GoldenRetriever_Idle | Dog-GoldenRetriever_Run | Dog-GoldenRetriever_Bark | none: on its side |
+| Dog_GreatDane | Dog-GreatDane_Idle | Dog-GreatDane_Run | Dog-GreatDane_Bark | none: on its side |
+| Capybara | Capybara_Idle | Capybara_Run | Capybara_Attack | Capybara_Death |
+| Sheep, Sheep_Wool | Sheep_Idle | Sheep_Run | Sheep_Attack | Sheep_Death |
+| Tiger | Tiger_Idle_Breathing | Tiger_Run | Tiger_Attack | Tiger_Death |
+| Eagle | Eagle_Idle | Eagle_Run | Eagle_Flying_Attack | Eagle_Death |
+| Goose | Goose_Idle | Goose_Run | Goose_Attack | Goose_Death |
+| Parrot | Parrot_Idle | Parrot_Run | Parrot_Attack | Parrot_Death |
+| Rat | Rat_Idle_2 | Rat_Run | Rat_Attack | Rat_Death |
+| Lion_Female | Lion_Female_Idle | Lion_Female_Run | Lion_Female_Attack | Lion_Female_Death |
+| Lion_Male | Lion_Male_Idle_Breathing | Lion_Male_Run | Lion_Male_Attack | Lion_Male_Death |
+| Spider_Green, _Yellow, _Red | Spider_Idle | Spider_Walk | Spider_Attack | Spider_Death 1 |
+| Penguin | Penguin_Idle | Penguin_Run | Penguin_Shake | Penguin_Death |
+| Reindeer | Reindeer_Idle (the trimmed copy) | Reindeer_Run | Reindeer_Attack | Reindeer_Death |
+| Cat_Black, _Orange, _White | Cat_Idle | Cat_Run | Cat_Attack | Cat_Death |
+| Pig | Pig_Idle_Breathing | Pig_Run | Pig_Attack | Pig_Death |
+| Chick | Chick_Idle2 | Chick_Run | Chick_Attack | Chick_Death |
+| Hen | Hen_Idle_2 | Hen_Run | Hen_Attack | Hen_Death |
+| Rooster | Rooster_Idle_2 | Rooster_Run | Rooster_Attack | Rooster_Death |
 
-   30 prefabs in all. The clip names were read from the controllers and the models' import settings as text, and the
-   picks worked out with the clip player's rules outside the editor; the Tiger's, Pig's, Rooster's and Goose's idle and
-   walk states could not be named that way and are the likely ones.
-4. **Pictures and egg icons**: `tools/items/egg-renders.cs` (play mode) renders every egg species at each stage, then
-   `python tools/items/egg-icons.py <renders>` writes the egg icons to `Assets/Resources/Items` and the website's
-   `imgs/items`, and the pets' pictures to the website's `imgs/pets`:
-   - Egg icons (18, the same file in both places): `panda-egg.png`, `boar-egg.png`, `pony-egg.png`, `pupper-egg.png`,
-     `capybara-egg.png`, `lamb-egg.png`, `tiger-egg.png`, `storm-eagle-egg.png`, `goose-egg.png`, `parrot-egg.png`,
-     `rat-egg.png`, `lion-egg.png`, `spider-egg.png`, `penguin-egg.png`, `reindeer-egg.png`, `kitten-egg.png`,
-     `piglet-egg.png`, `chick-egg.png`.
-   - Pet pictures the website shows (32): one for a species whose model only grows (`panda.webp`, `boar.webp`,
-     `capybara.webp`, `tiger.webp`, `eagle.webp`, `goose.webp`, `parrot.webp`, `rat.webp`, `penguin.webp`,
-     `reindeer.webp`, `pig.webp`), three for one whose model changes (`horse`, `dog`, `sheep`, `lion`, `spider`,
-     `cat`, `chicken`: `<id>.webp`, `<id>-1.webp`, `<id>-2.webp`). The script also writes `-1` and `-2` pictures for
-     the others; the website does not use them.
-5. **Look at each one in the game** (a critical close-up, a fight, a knockout): the heights per stage are first
-   guesses (`StageHeights`, in metres), a wide model is sized by its length, and the spiders and the eagle are the
-   ones most likely to need another number.
-6. Rebuild `RavenNest.Combat` and copy it to `Assets/Libraries` again if any number changes.
+  The guesses of phase 1 for the Tiger, Pig and Goose were right; the Rooster idles on Rooster_Idle_2 and the Hen on
+  Hen_Idle_2 (and had no death clip until it got its own controller). None of the animals has a clip for being hit.
+- **A clip without loop time starts again** (`PetClipPlayer.Tick`): the pack imports Panda_Idle, Boar_Idle_Left_Right,
+  Reindeer_Run and the hen's clips without it, and a standing or running pet froze on the clip's last frame.
+- **Heights** (`StageHeights`), set by eye with the three stages in a row beside the Wolf Pup line and a player-high
+  post, then seen beside a player in the game. Changed from phase 1: dog 0.4/0.65/0.95, eagle 0.55/0.8/1.05, parrot
+  0.7/0.95/1.2, rat 0.4/0.6/0.85, spider 0.36/0.52/0.7, penguin 0.45/0.65/0.9, cat 0.4/0.5/0.62, chicken 0.3/0.45/0.6.
+  The game sizes a model by its rest pose, and the birds' rest pose has the wings spread, so the parrot's and the
+  eagle's numbers are larger than the bird that stands there (a First Mate at "1.2" is knee high).
+- **Pictures and egg icons** (72 files in all, three steps):
+  1. `tools/items/egg-renders.cs` in play mode, twice: turned 20 degrees from the camera for the icons and 40 degrees
+     for the pictures (`yaw.txt`; a horse seen from the front fits an egg but shows little of the horse), the 18
+     animals only (`only.txt`). The script now renders one stage every few frames and writes `done.txt` (it used to
+     render everything in one go, over the editor's time limit), sets the same daylight every time, and frames against
+     magenta: against black, a black horse and a dark tail did not stand out and were cut off.
+  2. `python tools/items/egg-icons.py <renders at 20> <renders at 40>`: the 18 egg icons into
+     `Assets/Resources/Items` and the website's `imgs/items` (`panda-egg.png`, `boar-egg.png`, `pony-egg.png`,
+     `pupper-egg.png`, `capybara-egg.png`, `lamb-egg.png`, `tiger-egg.png`, `storm-eagle-egg.png`, `goose-egg.png`,
+     `parrot-egg.png`, `rat-egg.png`, `lion-egg.png`, `spider-egg.png`, `penguin-egg.png`, `reindeer-egg.png`,
+     `kitten-egg.png`, `piglet-egg.png`, `chick-egg.png`) and the 32 pictures into the website's `imgs/pets`: one for
+     a species whose model only grows (`panda`, `boar`, `capybara`, `tiger`, `eagle`, `goose`, `parrot`, `rat`,
+     `penguin`, `reindeer`, `pig`), three for one whose model changes (`horse`, `dog`, `sheep`, `lion`, `spider`,
+     `cat`, `chicken`: `<id>.webp`, `<id>-1.webp`, `<id>-2.webp`).
+  3. `tools/items/egg-icons-import.cs` (edit mode) imports the new icons in `Assets/Resources/Items` as sprites, with
+     the settings of an egg icon that is there already; a png nobody imported as a sprite is no icon in the game.
+- **Seen in the game** (play mode on the local server, chat off):
+  - Each of the 18 at each stage out beside zerratar's character (a local pet through `PlayerBattlePets.AddLocal`):
+    following, idling, sized as meant.
+  - Each of the 18 in a fight (bots beside the home island's metalons, pets at level 30, last stage): striking,
+    casting, and knocked out (a death clip for all but the dogs, which lie on their side).
+  - The five new skills, with what they did: Web rooted its target, which then took x1.10; HONK left its target
+    dealing x0.85; Snowball froze its target; Wool Coat put a shield on its hurt owner; Bamboo Snack took a panda set
+    to 165 of 550 health to 275 (a fifth of 550 is 110).
+  - zerratar's character itself fighting Ironhill's dragons with a Tiger beside it (Pounce, Frenzy, Fire Breath), the
+    Tiger knocked out, and the character's task and stable put back.
+  - The real path once, end to end: a Chick Egg given by the server, `pets.hatch` into the stable ("30 left"), warmed
+    by the game's own minute reports for half an hour of play, hatched into a level 1 Chick, sent out (`pets.use`)
+    at the character's heels, and released again (`pets.release`); the stable and the bag are as they were.
+- **Found on the way, not changed:** `BattlePetController.TakeHit` (a tank pet's share of a blow on its owner)
+  multiplies the damage by the armor's reduction instead of by what is left of it (`1 -` is missing): a level 30 panda
+  takes 8% of its share instead of 92%, and a pet without armor takes nothing. It makes every tank pet much tougher
+  than the simulator's numbers; fixing it changes how often tanks are knocked out, so it is the owner's call.
 
 ### Not yet done
 
-- Phase 2 of the animals (above): prefabs, the dogs' materials, pictures, egg icons, and a look at each in the game.
+- The eagle idles on a perching clip (its tail fans out on the ground) and runs rather than flies; a hovering eagle
+  would need the pet lifted off the ground.
+- The animals have no clip for being hit, and the dogs none for being knocked out (the pack has none).
+- `TakeHit`'s armor share (above), if the owner wants tank pets to take their real share.
 
