@@ -564,7 +564,9 @@ public class GameManager : MonoBehaviour, IGameManager
                 player.EquipIfBetter(player.Inventory.AddToBackpack(reward.InventoryItemId, item, reward.Amount));
             }
 
-            var key = rewardItem.Name;
+            // an item the server gave with gems in it says so: "Sorcerer Robe with a Flawed Sapphire" (class gear from a
+            // tower chest; the server says which gems, the names are the gem library's)
+            var key = global::RavenNest.Combat.Gems.SocketedName(rewardItem.Name, reward.Sockets);
 
             if (!droppedItems.TryGetValue(key, out var items))
             {

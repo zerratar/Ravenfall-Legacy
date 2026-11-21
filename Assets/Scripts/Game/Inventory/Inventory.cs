@@ -1497,10 +1497,13 @@ public class Inventory : MonoBehaviour
             : GetEquipmentOfCategory(category);
 
         // class gear is ranked by what the player trains; training nothing that names a line keeps the line worn here
-        var fits = GearScore.LineFor(player.ActiveSkill, equippedItem != null ? equippedItem.Item.Material : ItemMaterial.None);
+        // (several lines can fit one skill: a set of lines)
+        var fits = GearScore.FitsFor(player.ActiveSkill, equippedItem != null ? equippedItem.Item.Material : ItemMaterial.None);
 
+        // what a candidate has to beat: what is worn, then the best found so far (nothing worn is worth nothing)
+        var bestMaterial = equippedItem != null ? equippedItem.Item.Material : ItemMaterial.None;
         var bestValue = equippedItem != null
-            ? equippedItem.GetGearScore(fits)
+            ? equippedItem.GetTotalStats()
             : 0;
 
         if ((category == ItemCategory.Pet && equippedItem != null) ||
@@ -1531,15 +1534,17 @@ public class Inventory : MonoBehaviour
                 if (eqSlot == slot || item.Item.Category == category && (type == null || item.Item.Type == type))
                 {
 
-                    var itemValue = GearScore.Value(item.Item.Material, GetItemValue(item), fits);
+                    var itemValue = GetItemValue(item);
 
                     var canEquip = CanEquipItem(item);
 
                     //if (equippedItem != null && equippedItem.Item.Name == item.Item.Name)
                     //    continue;
 
-                    if (bestValue < itemValue && canEquip)
+                    // the higher gear score wins; between two fitting class lines of one tier the first one stays
+                    if (canEquip && GearScore.Beats(item.Item.Material, itemValue, bestMaterial, bestValue, fits))
                     {
+                        bestMaterial = item.Item.Material;
                         bestValue = itemValue;
                         bestItem = item;
                     }

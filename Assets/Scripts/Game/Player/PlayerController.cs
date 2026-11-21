@@ -3050,8 +3050,9 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         }
 
         // class gear is ranked by what is trained (GearScore, the server's rule too); everything else as before
-        var fits = GearScore.LineFor(ActiveSkill, currentEquipment.Item.Material);
-        if (currentEquipment.GetGearScore(fits) < item.GetGearScore(fits))
+        // several lines can fit one skill: between two of them of the same tier what is worn stays
+        var fits = GearScore.FitsFor(ActiveSkill, currentEquipment.Item.Material);
+        if (item.BeatsWorn(currentEquipment, fits))
         {
             // cosmetic ones should not be replaced.
             // maybe we should find a good way to mark an item as cosmetic?

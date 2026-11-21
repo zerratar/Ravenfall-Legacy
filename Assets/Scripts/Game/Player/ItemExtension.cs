@@ -46,10 +46,20 @@ public static class ItemExtension
     ///     class gear ranked by the line that fits what the player trains. RavenNest.Models.GearScore is the rule, the
     ///     server's too (docs/class-gear-design.md).
     /// </summary>
-    /// <param name="fits">The line that fits: GearScore.LineFor(the trained skill, the material worn in the slot).</param>
-    public static int GetGearScore(this GameInventoryItem invItem, ItemLine fits)
+    /// <param name="fits">The lines that fit, as a set (several can fit one skill): GearScore.FitsFor(the trained skill, the material worn in the slot).</param>
+    public static int GetGearScore(this GameInventoryItem invItem, int fits)
     {
         return GearScore.Value(invItem.Item.Material, invItem.GetTotalStats(), fits);
+    }
+
+    /// <summary>
+    ///     Should this item replace the one worn: the higher gear score wins, except between two fitting class pieces
+    ///     of different lines and the same tier, where the worn one stays (GearScore.Beats: a Paladin's or a Tank's
+    ///     piece is the player's choice).
+    /// </summary>
+    public static bool BeatsWorn(this GameInventoryItem candidate, GameInventoryItem worn, int fits)
+    {
+        return GearScore.Beats(candidate.Item.Material, candidate.GetTotalStats(), worn.Item.Material, worn.GetTotalStats(), fits);
     }
 
     public static IReadOnlyList<SkillBonus> GetSkillBonuses(this GameInventoryItem i)
@@ -189,9 +199,10 @@ public static class ItemExtension
 
             var value = gear[stat];
             if (value == 0) continue;
-            // a tenth where there is one: a class gear piece gives shares like 0.6%, which whole numbers showed as 1% or 0%
+            // decimals where there are any: a class gear piece gives shares like 0.6%, which whole numbers showed as 1% or
+            // 0%, and a Monk's piece 0.04% of combat regen (a share of all health every second)
             var text = RavenNest.Combat.GearStats.IsShare(stat)
-                ? System.Math.Round(value * 100, 1).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) + "%"
+                ? System.Math.Round(value * 100, 2).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "%"
                 : System.Math.Round(value).ToString(System.Globalization.CultureInfo.InvariantCulture);
             lines.Add((RavenNest.Combat.GearStats.Label(stat), text));
         }
