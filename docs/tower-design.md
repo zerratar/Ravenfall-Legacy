@@ -429,9 +429,14 @@ every level should look good.
   layout refills for the next floor, another unloads and loads on the way up). `!tower climb` takes everyone in the town up
   to the next floor. `!tower` from the world goes to wherever the group is (the town between floors); `!tower` again from
   the town goes up alone.
-- **Chat can make every choice.** The streamer or a moderator decides at once; anyone in the tower can vote instead, and a
-  quarter of everyone in the tower (at least three, everyone when fewer are in) decides (`TowerManager.VotesNeeded`: 3 for
-  up to 12 players, 5 for 20, 10 for 40). A vote stays open for two minutes. The choices: `!tower boss` (an attempt),
+- **Chat can make every choice.** The streamer or a moderator decides at once; anyone in the tower can vote instead.
+  **One voice is enough** (the user, 2026-11-21; before, a quarter of everyone inside had to vote within two minutes,
+  which a big stream of idle players might never reach): the first voice opens the vote for a minute
+  (`TowerManager.VoteSeconds`), everyone is told, and when the minute is up it passes. It passes at once when a
+  majority of the players who are here have voted: players who typed no command for 15 minutes are away and do not
+  count (`ActivePlayers`, `Majority`), so one player among idlers decides at once. When two votes are open, the one
+  with fewer voices lapses. `!tower close` alone only passes by majority, never on time (my choice: one voice must not
+  send everyone out; `!tower leave` takes one player out). The panel shows an open vote and its seconds. The choices: `!tower boss` (an attempt),
   `!tower climb` (on up from the town), `!tower floor 7` (train on a floor already reached; was the streamer's only),
   `!tower close` (everyone back to what they were doing, not during an attempt for a vote; the climb stays where it is).
   `!tower vote climb` works too. `!tower leave` still takes only the one player out, any time.

@@ -680,32 +680,135 @@ public sealed class TowerManager : MonoBehaviour
     private sealed class Vote
     {
         public readonly HashSet<string> Voters = new HashSet<string>();
-        public float Started;
+
+        /// <summary>When its time is up (Time.time).</summary>
+        public float Ends;
+
+        /// <summary>Only a majority passes it, never the time alone (closing the tower sends everyone out).</summary>
+        public bool MajorityOnly;
     }
 
-    /// <summary>Seconds a vote stays open after its first voice.</summary>
-    public const float VoteSeconds = 120f;
+    /// <summary>
+    ///     Seconds a vote runs from its first voice. One voice is enough (the user, 2026-11-21): when the time is up the
+    ///     vote passes, and a majority of the players who are here passes it at once.
+    /// </summary>
+    public const float VoteSeconds = 60f;
+
+    /// <summary>A player who typed no command for this long is away from the keyboard and counts toward no majority.</summary>
+    public const double VoteAwayMinutes = 15;
+
+    /// <summary>More than half of <paramref name="active"/> players, at least one.</summary>
+    public static int Majority(int active) => Mathf.Max(1, active / 2 + 1);
+
+    /// <summary>The players in the tower who are here: those who typed a command in the last <see cref="VoteAwayMinutes"/>.</summary>
+    public int ActivePlayers()
+    {
+        var now = System.DateTime.UtcNow;
+        var count = 0;
+        foreach (var p in AllPlayers())
+            if ((now - p.LastChatCommandUtc).TotalMinutes <= VoteAwayMinutes) count++;
+        return count;
+    }
+
+    /// <summary>The voices a vote still needs to pass at once: a majority of those who are here (its voters are).</summary>
+    private int Missing(Vote vote) => Mathf.Max(0, Majority(Mathf.Max(ActivePlayers(), vote.Voters.Count)) - vote.Voters.Count);
+
+    /// <summary>Whether the last vote cast opened a new vote (announced to everyone) and did not join one.</summary>
+    public bool VoteJustOpened { get; private set; }
+
+    /// <summary>Seconds an open vote ("boss", "climb", "close", "floor 7") has left, 0 when there is none.</summary>
+    public int VoteSecondsLeft(string key) =>
+        votes.TryGetValue(key, out var vote) ? Mathf.Max(0, Mathf.CeilToInt(vote.Ends - Time.time)) : 0;
 
     /// <summary>
-    ///     Voices that decide a vote (docs/tower-design.md, section 16): a quarter of everyone in the tower, at least three
-    ///     (everyone, when fewer are in it): 3 for up to 12 players, 5 for 20, 10 for 40.
+    ///     The open vote that ends first, for the panel: what it is for ("boss", "climb", "close", "floor 7"), the seconds
+    ///     left and the voices still missing for it to pass at once.
     /// </summary>
-    public static int VotesNeeded(int inTower) => inTower <= 0 ? 1 : Mathf.Min(inTower, Mathf.Max(3, Mathf.CeilToInt(inTower * 0.25f)));
+    public bool TryGetOpenVote(out string key, out int secondsLeft, out int missing, out bool majorityOnly)
+    {
+        key = null; secondsLeft = 0; missing = 0; majorityOnly = false;
+        Vote first = null;
+        foreach (var kv in votes)
+        {
+            if (Time.time >= kv.Value.Ends || (first != null && kv.Value.Ends >= first.Ends)) continue;
+            first = kv.Value;
+            key = kv.Key;
+        }
+        if (first == null) return false;
+        secondsLeft = Mathf.Max(0, Mathf.CeilToInt(first.Ends - Time.time));
+        missing = Missing(first);
+        majorityOnly = first.MajorityOnly;
+        return true;
+    }
 
     /// <summary>
     ///     A player in the tower votes for <paramref name="key"/> ("boss", "climb", "close", "floor 7"): the voices still
-    ///     missing, 0 when this one decided it (the vote is then over).
+    ///     missing for it to pass at once, 0 when this one decided it (the vote is then over). The first voice opens the
+    ///     vote for <see cref="VoteSeconds"/>; when they are up it passes with the voices it has (<see cref="UpdateVotes"/>),
+    ///     unless it is <paramref name="majorityOnly"/>.
     /// </summary>
-    private int AddVote(string key, PlayerController player)
+    private int AddVote(string key, PlayerController player, bool majorityOnly = false)
     {
-        if (!votes.TryGetValue(key, out var vote) || Time.time - vote.Started > VoteSeconds)
-            votes[key] = vote = new Vote { Started = Time.time };
+        VoteJustOpened = false;
+        if (!votes.TryGetValue(key, out var vote) || Time.time >= vote.Ends)
+        {
+            votes[key] = vote = new Vote { Ends = Time.time + VoteSeconds, MajorityOnly = majorityOnly };
+            VoteJustOpened = true;
+        }
         vote.Voters.Add(player.Id.ToString());
-        // two minutes from the last voice, not the first: a slow chat's vote ran out between voices without a word
-        vote.Started = Time.time;
-        var missing = Mathf.Max(0, VotesNeeded(AllPlayers().Count) - vote.Voters.Count);
-        if (missing == 0) votes.Remove(key);
+        var missing = Missing(vote);
+        if (missing == 0)
+        {
+            votes.Remove(key);
+            VoteJustOpened = false;
+        }
         return missing;
+    }
+
+    private readonly List<string> endedVotes = new List<string>();
+
+    /// <summary>Votes whose time is up: they pass with the voices they have, unless another open vote has more.</summary>
+    private void UpdateVotes()
+    {
+        if (votes.Count == 0) return;
+        endedVotes.Clear();
+        foreach (var kv in votes)
+            if (Time.time >= kv.Value.Ends) endedVotes.Add(kv.Key);
+        foreach (var key in endedVotes)
+        {
+            if (!votes.TryGetValue(key, out var vote)) continue; // one that passed before it cleared the rest
+            votes.Remove(key);
+            if (vote.MajorityOnly) continue;
+            var beaten = false;
+            foreach (var other in votes.Values)
+                if (!other.MajorityOnly && other.Voters.Count > vote.Voters.Count) { beaten = true; break; }
+            if (!beaten) PassVote(key);
+        }
+    }
+
+    /// <summary>Does what a vote was for, as the streamer would, and tells everyone (the boss countdown announces itself).</summary>
+    private void PassVote(string key)
+    {
+        if (key == "boss")
+        {
+            CallBoss(null, true, out _);
+        }
+        else if (key == "climb")
+        {
+            var town = CurrentTown;
+            var floor = Tower.Get(StreamFloor);
+            if (Climb(null, true, out _) == ClimbResult.Climbing)
+                Announce(Localization.MSG_TOWER_CLIMB_STARTED, town != null ? town.Name : "", StreamFloor, floor != null ? floor.Name : "");
+        }
+        else if (key.StartsWith("floor ") && int.TryParse(key.Substring(6), NumberStyles.Integer, CultureInfo.InvariantCulture, out var number))
+        {
+            var def = Tower.Get(number);
+            var result = RequestFloor(null, number, true, out _);
+            if (def == null || (result != FloorChangeResult.Changed && result != FloorChangeResult.Climbing)) return;
+            if (number == StreamFloor) Announce(Localization.MSG_TOWER_FLOOR_BACK, number, def.Name);
+            else Announce(Localization.MSG_TOWER_FLOOR_TRAIN, number, def.Name, StreamFloor);
+            votes.Clear();
+        }
     }
 
     private static bool CanVote(PlayerController player) => player && player.towerHandler != null && player.towerHandler.InTower;
@@ -729,7 +832,11 @@ public sealed class TowerManager : MonoBehaviour
         {
             if (!CanVote(player)) return ClimbResult.NotInTower;
             votesNeeded = AddVote("climb", player);
-            if (votesNeeded > 0) return ClimbResult.Voted;
+            if (votesNeeded > 0)
+            {
+                if (VoteJustOpened) Announce(Localization.MSG_TOWER_CLIMB_VOTE_OPENED, player.PlayerName, StreamFloor, (int)VoteSeconds, votesNeeded);
+                return ClimbResult.Voted;
+            }
         }
         votes.Remove("climb");
         foreach (var p in inTown) Join(p);
@@ -761,8 +868,13 @@ public sealed class TowerManager : MonoBehaviour
         {
             if (!CanVote(player)) return CloseResult.NotInTower;
             if (Phase == TowerPhase.Countdown || Phase == TowerPhase.Fight) return CloseResult.FightUnderWay;
-            votesNeeded = AddVote("close", player);
-            if (votesNeeded > 0) return CloseResult.Voted;
+            // a majority only: one voice and a minute must not send everyone out (!tower leave takes one player out)
+            votesNeeded = AddVote("close", player, true);
+            if (votesNeeded > 0)
+            {
+                if (VoteJustOpened) Announce(Localization.MSG_TOWER_CLOSE_VOTE_OPENED, player.PlayerName, votesNeeded, (int)VoteSeconds);
+                return CloseResult.Voted;
+            }
         }
         votes.Clear();
         if (Phase == TowerPhase.Countdown || Phase == TowerPhase.Fight)
@@ -781,8 +893,8 @@ public sealed class TowerManager : MonoBehaviour
     public enum BossCallResult { Started, Voted, NotOpen, NotLoaded, UnderWay, Regrouping, NotInTower }
 
     /// <summary>
-    ///     !tower boss: the streamer or a moderator starts the countdown at once; anyone else in the tower votes, and
-    ///     <see cref="VotesNeeded"/> votes start it. <paramref name="votesNeeded"/> is what is still missing after a vote.
+    ///     !tower boss: the streamer or a moderator starts the countdown at once; anyone else in the tower votes (see
+    ///     <see cref="AddVote"/>). <paramref name="votesNeeded"/> is what is still missing after a vote for it to start now.
     /// </summary>
     public BossCallResult CallBoss(PlayerController player, bool canForce, out int votesNeeded)
     {
@@ -796,7 +908,11 @@ public sealed class TowerManager : MonoBehaviour
         {
             if (!CanVote(player)) return BossCallResult.NotInTower;
             votesNeeded = AddVote("boss", player);
-            if (votesNeeded > 0) return BossCallResult.Voted;
+            if (votesNeeded > 0)
+            {
+                if (VoteJustOpened) Announce(Localization.MSG_TOWER_BOSS_VOTE_OPENED, player.PlayerName, CurrentFloor, (int)VoteSeconds, votesNeeded);
+                return BossCallResult.Voted;
+            }
         }
 
         StartCountdown();
@@ -1134,7 +1250,7 @@ public sealed class TowerManager : MonoBehaviour
         // a new band's town, the first time the stream gets there: a fly-over with its name
         var arrived = TowerTown.Loaded;
         if (moved > 0 && arrived && arrived.Town == town && Tower.TownFor(cleared.Number) != town) PlayArrival(arrived, false);
-        if (moved > 0) Announce(Localization.MSG_TOWER_IN_TOWN, TowerTown.Loaded && TowerTown.Loaded.Town != null ? TowerTown.Loaded.Town.Name : town.Name, next.Number, next.Name, VotesNeeded(AllPlayers().Count));
+        if (moved > 0) Announce(Localization.MSG_TOWER_IN_TOWN, TowerTown.Loaded && TowerTown.Loaded.Town != null ? TowerTown.Loaded.Town.Name : town.Name, next.Number, next.Name);
     }
 
     public enum FloorChangeResult { Changed, Climbing, Same, Locked, Busy, Voted, NotInTower }
@@ -1154,7 +1270,11 @@ public sealed class TowerManager : MonoBehaviour
         {
             if (!CanVote(player)) return FloorChangeResult.NotInTower;
             votesNeeded = AddVote("floor " + number, player);
-            if (votesNeeded > 0) return FloorChangeResult.Voted;
+            if (votesNeeded > 0)
+            {
+                if (VoteJustOpened) Announce(Localization.MSG_TOWER_FLOOR_VOTE_OPENED, player.PlayerName, number, def.Name, (int)VoteSeconds, votesNeeded);
+                return FloorChangeResult.Voted;
+            }
         }
         return ChangeFloor(number);
     }
@@ -1686,6 +1806,7 @@ public sealed class TowerManager : MonoBehaviour
 
         if (Phase == TowerPhase.Countdown && PhaseSecondsLeft <= 0f && !introBoss) StartFight();
         else if (Phase == TowerPhase.Fight) UpdateFight();
+        UpdateVotes();
 
         if (Time.time >= nextReport)
         {

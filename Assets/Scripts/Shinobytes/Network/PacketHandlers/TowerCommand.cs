@@ -330,7 +330,8 @@ public class TowerCommand : ChatBotCommandHandler<string>
             case TowerManager.BossCallResult.Started:
                 return; // the countdown is announced
             case TowerManager.BossCallResult.Voted:
-                client.SendReply(gm, Localization.MSG_TOWER_BOSS_VOTE, tower.CurrentFloor, needed);
+                // the first voice is announced to everyone (the vote opened); a later one gets where it stands
+                if (!tower.VoteJustOpened) client.SendReply(gm, Localization.MSG_TOWER_BOSS_VOTE, tower.CurrentFloor, needed, tower.VoteSecondsLeft("boss"));
                 return;
             case TowerManager.BossCallResult.NotOpen:
                 if (tower.AllCleared) client.SendReply(gm, Localization.MSG_TOWER_ALL_CLEARED);
@@ -365,7 +366,7 @@ public class TowerCommand : ChatBotCommandHandler<string>
                 client.SendReply(gm, Localization.MSG_TOWER_CLIMB_STARTED, town != null ? town.Name : "", tower.StreamFloor, floor != null ? floor.Name : "");
                 return;
             case TowerManager.ClimbResult.Voted:
-                client.SendReply(gm, Localization.MSG_TOWER_CLIMB_VOTE, tower.StreamFloor, needed);
+                if (!tower.VoteJustOpened) client.SendReply(gm, Localization.MSG_TOWER_CLIMB_VOTE, tower.StreamFloor, needed, tower.VoteSecondsLeft("climb"));
                 return;
             case TowerManager.ClimbResult.NotInTower:
                 client.SendReply(gm, Localization.MSG_TOWER_ENTER_TO_VOTE);
@@ -390,7 +391,7 @@ public class TowerCommand : ChatBotCommandHandler<string>
                 client.SendReply(gm, Localization.MSG_TOWER_CLOSED, tower.StreamFloor);
                 return;
             case TowerManager.CloseResult.Voted:
-                client.SendReply(gm, Localization.MSG_TOWER_CLOSE_VOTE, needed);
+                if (!tower.VoteJustOpened) client.SendReply(gm, Localization.MSG_TOWER_CLOSE_VOTE, needed, tower.VoteSecondsLeft("close"));
                 return;
             case TowerManager.CloseResult.NotInTower:
                 client.SendReply(gm, Localization.MSG_TOWER_ENTER_TO_VOTE);
@@ -422,7 +423,7 @@ public class TowerCommand : ChatBotCommandHandler<string>
         switch (tower.RequestFloor(player, number, canForce, out var needed))
         {
             case TowerManager.FloorChangeResult.Voted:
-                client.SendReply(gm, Localization.MSG_TOWER_FLOOR_VOTE, number, def.Name, needed);
+                if (!tower.VoteJustOpened) client.SendReply(gm, Localization.MSG_TOWER_FLOOR_VOTE, number, def.Name, needed, tower.VoteSecondsLeft("floor " + number));
                 return;
             case TowerManager.FloorChangeResult.NotInTower:
                 client.SendReply(gm, Localization.MSG_TOWER_ENTER_TO_VOTE);

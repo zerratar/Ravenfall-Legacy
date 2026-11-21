@@ -193,6 +193,16 @@ namespace Shinobytes.UI
             var resting = onFloor == 0 && inTown > 0 && !fighting && !countdown;
             var training = !resting && tower.Training;
 
+            // a vote that is open: what it is for and when it passes, and the command that adds a voice
+            string voteText = null, voteCommand = null;
+            if (!fighting && !countdown && tower.TryGetOpenVote(out var voteKey, out var voteSeconds, out var voteMissing, out _))
+            {
+                if (voteKey == "boss") { voteText = string.Format(Localization.UI_TOWER_VOTE_BOSS, voteSeconds); voteCommand = "!tower boss"; }
+                else if (voteKey == "climb") { voteText = string.Format(Localization.UI_TOWER_VOTE_CLIMB, voteSeconds); voteCommand = "!tower climb"; }
+                else if (voteKey == "close") { voteText = string.Format(Localization.UI_TOWER_VOTE_CLOSE, voteSeconds, voteMissing); voteCommand = "!tower close"; }
+                else if (voteKey.StartsWith("floor ")) { voteText = string.Format(Localization.UI_TOWER_VOTE_FLOOR, voteSeconds, voteKey.Substring(6)); voteCommand = "!tower " + voteKey; }
+            }
+
             Set(title, Localization.UI_TOWER_TITLE);
             Set(people, (onFloor + inTown).ToString(CultureInfo.InvariantCulture));
             hud.EnableInClassList("rf-raid--tower-fight", fighting);
@@ -206,7 +216,13 @@ namespace Shinobytes.UI
                 Show(liveDot, false);
                 Show(clock, false);
                 Set(timer, "");
-                if (tower.AllCleared || stream == null)
+                if (voteText != null)
+                {
+                    Set(phase, voteText);
+                    Show(joinPill, true);
+                    Set(join, voteCommand);
+                }
+                else if (tower.AllCleared || stream == null)
                 {
                     Set(phase, Localization.UI_TOWER_ALL_CLEARED);
                     Show(joinPill, false);
@@ -244,9 +260,9 @@ namespace Shinobytes.UI
             {
                 Show(bar, false);
                 Show(quests, false);
-                Set(phase, string.Format(Localization.UI_TOWER_TRAINING, tower.StreamFloor));
+                Set(phase, voteText ?? string.Format(Localization.UI_TOWER_TRAINING, tower.StreamFloor));
                 Show(joinPill, true);
-                Set(join, "!tower floor");
+                Set(join, voteCommand ?? "!tower floor");
                 return;
             }
 
@@ -286,6 +302,12 @@ namespace Shinobytes.UI
                 Set(phase, string.Format(Localization.UI_TOWER_BOSS_STARTS, bossName));
                 Show(joinPill, true);
                 Set(join, "!tower");
+            }
+            else if (voteText != null)
+            {
+                Set(phase, voteText);
+                Show(joinPill, true);
+                Set(join, voteCommand);
             }
             else if (tower.AllCleared)
             {
