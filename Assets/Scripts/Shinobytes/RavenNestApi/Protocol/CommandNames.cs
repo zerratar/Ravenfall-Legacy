@@ -68,7 +68,10 @@ namespace RavenNest.Protocol
         /// <summary>(Guid characterId, Guid itemId) -> bool</summary>
         public const string EquipItem = "equipment.equip-item";
 
-        /// <summary>(Guid characterId) -> bool</summary>
+        /// <summary>
+        /// (Guid characterId, string outfit) -> bool. The outfit is optional (v0.9.7): the word of "!equip tank" or
+        /// "!equip rogue" (RavenNest.Models.GearOutfit); without it, the best for what the character trains.
+        /// </summary>
         public const string EquipBest = "equipment.equip-best";
 
         /// <summary>(Guid characterId, Guid inventoryItemId) -> bool</summary>

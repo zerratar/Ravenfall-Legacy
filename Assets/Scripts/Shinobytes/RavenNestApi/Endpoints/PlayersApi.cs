@@ -548,11 +548,30 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
-        public Task<bool> EquipBestItemsAsync(Guid characterId)
+        /// <summary>
+        /// "Equip best" on the server. With an <paramref name="outfit"/> (the word of "!equip tank" or "!equip rogue",
+        /// RavenNest.Models.GearOutfit.Word) the server dresses the character for that role or line, as the game
+        /// just did; without one, for what the character trains.
+        /// </summary>
+        public Task<bool> EquipBestItemsAsync(Guid characterId, string outfit = null)
         {
             if (client.UseV2)
             {
-                return client.V2.Commands.CallAsync<bool>(Commands.EquipBest, CommandArgs.Pack(characterId));
+                return string.IsNullOrEmpty(outfit)
+                    ? client.V2.Commands.CallAsync<bool>(Commands.EquipBest, CommandArgs.Pack(characterId))
+                    : client.V2.Commands.CallAsync<bool>(Commands.EquipBest, CommandArgs.Pack(characterId, outfit));
+            }
+
+            if (!string.IsNullOrEmpty(outfit))
+            {
+                return request.Create()
+                    .Identifier("v2/" + characterId)
+                    .Method("equipall")
+                    .AddParameter(outfit)
+                    .Build()
+                    .SendAsync<bool>(
+                        ApiRequestTarget.Players,
+                        ApiRequestType.Get);
             }
 
             return request.Create()

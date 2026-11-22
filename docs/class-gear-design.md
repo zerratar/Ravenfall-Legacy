@@ -642,9 +642,81 @@ skipped.
 (`MidpointRounding` made "equip best" throw in the first play test): `GearScore` and `ItemLines` use plain numbers
 only, and a set of lines is a number with one bit a line (`ItemLines.Bit`, `Has`), not a new type.
 
-Not changed: the server's own sum for an enchanted item is only the enchantments' share (`GetItemValue` replaces the
-total instead of adding to it), so the two sides already ranked enchanted gear differently. The rule sits on top of
-whatever each side counts.
+Changed on 2026-11-22: the server's own sum for an enchanted item was only the enchantments' share (`GetItemValue`
+replaced the total instead of adding to it), so the two sides ranked enchanted gear differently. It is now the item's
+own stats plus what a Power, Aim or Armor enchantment adds, as the game counts it (see the next section). The rule sits
+on top of that sum.
+
+## An outfit by role or line: `!equip tank`, `!equip rogue`
+
+`!equip all` dresses for what is trained. Since 2026-11-22 `!equip <word>` dresses for a role or in one line,
+whatever is trained. The word is the whole argument, in any case, and an item the player owns by exactly that name
+comes first (no item has such a name today; `!equip samurai` used to answer an owner of the old Samurai Helmet with
+"did you mean Samurai Helmet?", and is the line now). The game and the server read the word with the same code,
+`RavenNest.Models.GearOutfit.Parse`.
+
+| Word | Kind | What is worn |
+|---|---|---|
+| attack, atk | role, Attack | the best line of Melee, Rogue and Samurai |
+| melee | role, Attack | the same, and the Melee line among equals |
+| strength, str | role, Strength | the best line of Melee, Barbarian, Samurai and Dark Knight |
+| defense, defence, def | role, Defense | the best line of Tank, Paladin and Dark Knight |
+| tank | role, Defense | the same, and the Tank line among equals |
+| ranged, range, archer, bow | role, Ranged | the best line of Ranger and Witch Hunter |
+| ranger | role, Ranged | the same, and the Ranger line among equals |
+| magic, mage | role, Magic | the Mage line |
+| healing, heal | role, Healing | the best line of Healer, Paladin and Monk |
+| healer | role, Healing | the same, and the Healer line among equals |
+| rogue, barbarian, samurai, paladin, dark knight, witch hunter, monk | line | that line and no other |
+| plate | line | the classic metal armor and no class gear |
+| tank line, melee line, ranger line, mage line, healer line | line | that line and no other (any line's name takes "line" after it) |
+
+**A role** is "equip best" as if its skill were trained: weapons, ring, amulet and shield as `!equip all` picks them
+(it wears the best sword, bow and staff at once, so nothing there depends on the skill), and the armor from one line
+that fits the skill, chosen by the same `GearScore.OneLine`. Then that line is worn whatever other armor is worth:
+someone at Ranged 797 in Elder Atlarus plate who asks for ranger gear gets their Windrunner set, although `!equip all`
+would leave the plate on while they train Ranged (it ranks higher). Slots the line has no piece for keep the best of
+everything. With no class gear for the role at all, it is plain "equip best" and the reply says so.
+
+**The five words that are a role and a line** (tank, melee, ranger, mage, healer) are roles. The line they name wins
+when it is as good as the best fitting line (within a hundredth, `OneLine`'s `prefer`), also when another line is
+worn; a line that is clearly worth more still wins: with a Bloodsworn (Melee, tier 7) and a Nightfall (Rogue, tier 8)
+set, `!equip melee` puts Nightfall on. That keeps a set whole for someone with one stray piece of the named line (the
+tower hands out pieces of every line that fits). For exactly that line, whatever else is owned: `!equip melee line`.
+
+**A line by name** changes armor only: in each of the five slots the best piece of that line the player wears or
+could wear (`GearScore.PickOfLine`: the most armor, then the one worn, then the first by name, so both sides pick the
+same of a line's two head pieces), even when other armor is worth more. Slots the line has nothing for stay as they
+are, and so does everything that is not armor. With nothing of the line to wear, nothing changes and the reply says
+so. "Plate" is every armor piece that is not class gear (hats and masks that are looks are left out, as ever).
+
+**The outfit stays.** The game remembers what was asked for (`Inventory.AskedOutfit`) until `!equip all`. While it is
+set, a piece that arrives (`PlayerController.EquipIfBetter`: found, bought, a reward) is ranked for the outfit and not
+for what is trained, and a worn piece of the outfit is only replaced by another piece of it. Before this, with a Tank
+set on while training Attack, every Rogue piece that arrived replaced a Tank piece (it fits, the Tank piece does not).
+`!equip all` forgets the outfit and dresses for what is trained again. The game keeps it, not the server: it is gone
+when the player leaves or the game restarts. What they wear is still on then (the server keeps that), but the next
+piece that arrives is ranked for what is trained.
+
+**The server** gets the word with its "equip best" call and does the same: `Commands.EquipBest` has an optional
+second argument, and the web call is `v2/{characterId}/equipall/{word}`. A game before 0.9.7 sends the character
+alone and gets the plain "equip best" (missing arguments read as nothing). The game equips first and then asks the
+server, as for `!equip all`; the server's changes come back through the inventory feed and the game follows them.
+
+Two things the server's "equip best" did differently from the game came up in the first play test and are changed,
+for `!equip all` too:
+- It takes everything off and starts from nothing, so nothing was "worn" when two lines were equal and the first
+  named won, where the game keeps the one that is worn. It now remembers what was worn before it starts.
+- An enchanted item was worth only what its enchantment adds (`GetItemValue` replaced the sum): a Phantom Ring with a
+  Woodcutting enchantment was worth nothing and came off for a plain Archers Ring III, the game put it back on, and
+  the two disagreed from then on. An enchanted item is now worth its own stats plus what a Power, Aim or Armor
+  enchantment adds, as the game counts it.
+
+**Replies** (`Localization.MSG_EQUIPPED_OUTFIT` and the four after it) name the line that is worn and its tiers:
+"You put on your best tank gear: Aegis." When the outfit is not what the trained skill would wear: "... It stays your
+outfit until you use !equip all." Nothing to change: "You already wear your best tank gear: Aegis." A line with
+nothing to wear: "You have no monk gear you can wear. Nothing was changed." A role with no class gear: "You have no
+defense class gear you can wear, so you have equipped all of your best items."
 
 ## Games before 0.9.7
 
@@ -682,7 +754,15 @@ metal: the Monk's last tier is Celestial, and Celestial Logs are not class gear.
   its socket ("+1.5% Poison Resistance") to a player training Attack. Not played: how the numbers feel, and how fast
   Flax and Hide come in at low levels.
 - The server's task for a character follows the game's saves, so right after `!train` it can be a moment behind the
-  game when `!equip all` is used.
+  game when `!equip all` is used. (`!equip tank` and the other outfit words name the skill themselves.)
+- An outfit asked for with `!equip tank` is remembered by the game only: after a rejoin or a restart of the game the
+  gear is still on, but the next piece that arrives is ranked for what is trained. Keeping it with the character on
+  the server would need a field on the player the game gets when joining.
+- For a game admin the game lets every piece be worn, whatever its level, and the server does not: on the owner's
+  own character the two can pick different pieces where a level is short.
+- `!equip <role or line>` was played on the development character on 2026-11-22 through the chat handler, with the
+  server's equipment compared after every command (docs/releases/v0.9.7.0a-checklist.md has the outfits per word).
+  Not played: from real chat through the bot, a character too low for some of its pieces, a 0.9.6 game.
 - The second head pieces' parts and masks are first picks; they are one row each in `ClassGearPieces`.
 - The second seven lines are not played: their looks, attachments, the skin color on armor and the 336 icons are
   tested in the editor through the equip code, not in the game (the combined mesh with a skin copy in it above all).

@@ -1470,7 +1470,9 @@ public class Inventory : MonoBehaviour
     /// <param name="arriving">An item that is not in the bag yet (one that was just found), counted too.</param>
     public int OutfitFits(GameInventoryItem arriving = null)
     {
-        var fits = ItemLines.Fits(player.ActiveSkill);
+        // an outfit that was asked for ("!equip tank") counts in place of what is trained, until "!equip all"
+        var outfit = AskedOutfit;
+        var fits = outfit != null ? outfit.Fits : ItemLines.Fits(player.ActiveSkill);
         if (ItemLines.In(fits).Length < 2) return fits;
         var materials = new List<ItemMaterial>();
         var classics = new List<int>();
@@ -1491,13 +1493,28 @@ public class Inventory : MonoBehaviour
             for (var i = 0; i < backpack.Count; ++i) Count(backpack[i], false);
         }
         Count(arriving, false);
-        return GearScore.OneLine(fits, materials.ToArray(), classics.ToArray(), slots.ToArray(), worn.ToArray());
+        return GearScore.OneLine(fits, outfit != null ? outfit.Line : ItemLine.Plate, materials.ToArray(), classics.ToArray(), slots.ToArray(), worn.ToArray());
     }
+
+    /// <summary>
+    ///     The outfit the player asked for with "!equip tank" or "!equip rogue" (a role or a class gear line,
+    ///     RavenNest.Models.GearOutfit); null when the gear follows what is trained. While it is set, "equip best" and
+    ///     every piece that arrives (PlayerController.EquipIfBetter) are ranked for it, and a worn piece of the outfit
+    ///     is only replaced by another one of it: a found piece of the trained skill's line, or plate that ranks
+    ///     higher, does not take the outfit apart again. "!equip all" clears it. Kept by the game for as long as the
+    ///     player is in it: the server does not know it (it only equips when asked).
+    /// </summary>
+    public GearOutfit AskedOutfit { get; set; }
 
     public void EquipBestItems()
     {
+        var outfit = AskedOutfit;
+        // what is worn before anything moves: between equal pieces of the outfit's line that one stays
+        var wornBefore = outfit != null ? WornItemIds() : null;
+
         // one line for the whole outfit, decided before the first slot so it cannot change half way
-        outfitFits = OutfitFits();
+        var fits = OutfitFits();
+        outfitFits = fits;
         try
         {
             EquipBestItemsOfEachKind();
@@ -1506,6 +1523,122 @@ public class Inventory : MonoBehaviour
         {
             outfitFits = null;
         }
+
+        // an outfit that was asked for is worn whatever other armor is worth: "equip best" alone leaves plate on
+        // that ranks higher (someone at Ranged 797 in Elder Atlarus plate who asks for ranger gear gets it)
+        if (outfit == null) return;
+        if (outfit.OnlyLine) EquipLine(outfit.Line, wornBefore);
+        else
+        {
+            var lines = ItemLines.In(fits);
+            if (lines.Length == 1) EquipLine(lines[0], wornBefore);
+        }
+    }
+
+    /// <summary>
+    ///     Dresses the player for a role or in a class gear line, whatever they train ("!equip tank", "!equip rogue"),
+    ///     and keeps that as their <see cref="AskedOutfit"/>. A role is "equip best" as if its skill were trained, with
+    ///     the class gear of that skill worn whatever other armor is worth. A line by name is the best piece of that
+    ///     line in each armor slot and nothing else.
+    /// </summary>
+    /// <returns>False when a line was asked for by name and the player has nothing of it to wear: nothing changed.</returns>
+    public bool EquipOutfit(GearOutfit outfit)
+    {
+        if (outfit == null) return false;
+        if (outfit.OnlyLine)
+        {
+            if (!EquipLine(outfit.Line, null)) return false;
+            AskedOutfit = outfit;
+            return true;
+        }
+
+        AskedOutfit = outfit;
+        EquipBestItems();
+        return true;
+    }
+
+    private HashSet<Guid> WornItemIds()
+    {
+        var ids = new HashSet<Guid>();
+        lock (mutex)
+        {
+            for (var i = 0; i < equipped.Count; ++i)
+            {
+                if (equipped[i] != null && equipped[i].Item != null) ids.Add(equipped[i].Item.Id);
+            }
+        }
+        return ids;
+    }
+
+    private static readonly ItemSlot[] armorSlots = { ItemSlot.Head, ItemSlot.Chest, ItemSlot.Gloves, ItemSlot.Leggings, ItemSlot.Boots };
+
+    /// <summary>Head, chest, gloves, leggings and boots: the slots class gear has pieces for.</summary>
+    public static bool IsArmorSlot(ItemSlot slot) => Array.IndexOf(armorSlots, slot) >= 0;
+
+    // armor of a line: class gear of that line, or for plate any armor that is not class gear
+    // (hats and masks that are not class gear are looks, as for "equip best")
+    private static bool IsPieceOfLine(GameInventoryItem item, ItemLine line)
+    {
+        if (item == null || item.Item == null || item.Item.Category != ItemCategory.Armor) return false;
+        if (!ItemLines.IsOf(line, item.Item.Material)) return false;
+        return ItemLines.IsClassGear(item.Item.Material) || (item.Item.Type != ItemType.Hat && item.Item.Type != ItemType.Mask);
+    }
+
+    /// <summary>
+    ///     The best piece of one line in each armor slot, among what is worn and what the player could wear, even when
+    ///     other armor is worth more (GearScore.PickOfLine, the server's rule too). Slots the line has nothing for
+    ///     stay as they are, and so does everything that is not armor.
+    /// </summary>
+    /// <param name="wornBefore">The items that count as worn for the pick, when "equip best" has already moved
+    /// things (the server takes everything off first, and both sides must pick the same of two equal pieces);
+    /// null for what is equipped now.</param>
+    /// <returns>Whether any piece of the line is worn afterwards.</returns>
+    private bool EquipLine(ItemLine line, HashSet<Guid> wornBefore)
+    {
+        var any = false;
+        var changed = false;
+        lock (mutex)
+        {
+            foreach (var slot in armorSlots)
+            {
+                var pieces = new List<GameInventoryItem>();
+                var values = new List<int>();
+                var names = new List<string>();
+                var worn = new List<bool>();
+                void Count(GameInventoryItem item, bool isWorn)
+                {
+                    pieces.Add(item);
+                    values.Add(GetItemValue(item));
+                    names.Add(item.Item.Name);
+                    worn.Add(isWorn);
+                }
+                var equippedItem = GetEquipmentBySlot(slot);
+                if (IsPieceOfLine(equippedItem, line)) Count(equippedItem, wornBefore == null || wornBefore.Contains(equippedItem.Item.Id));
+                for (var i = 0; i < backpack.Count; ++i)
+                {
+                    var item = backpack[i];
+                    if (item == null || item.Item == null || GetEquipmentSlot(item.Item.Type) != slot) continue;
+                    if (!IsPieceOfLine(item, line) || !CanEquipItem(item) || !item.CanBeEquipped()) continue;
+                    Count(item, wornBefore != null && wornBefore.Contains(item.Item.Id));
+                }
+
+                var pick = GearScore.PickOfLine(values.ToArray(), worn.ToArray(), names.ToArray());
+                if (pick < 0) continue;
+                if (pieces[pick] == equippedItem) any = true;
+                else if (Equip(pieces[pick], false, false))
+                {
+                    any = true;
+                    changed = true;
+                }
+            }
+
+            if (changed)
+            {
+                player.UpdateEquipmentEffect(equipped);
+                equipment.EquipAll(equipped);
+            }
+        }
+        return any;
     }
 
     private void EquipBestItemsOfEachKind()

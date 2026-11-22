@@ -1739,6 +1739,12 @@ public static class Localization
 
     public static string MSG_EQUIPPED = Meta("info", "equipment", "equip") + "You have equipped {itemName}.";
     public static string MSG_EQUIPPED_ALL = Meta("info", "equipment", "equip") + "You have equipped all of your best items.";
+    // "!equip tank", "!equip rogue": an outfit for a role or a class gear line ({lineName} is the line worn, {tierNames} its tiers: "Aegis", "Windrunner and Warden")
+    public static string MSG_EQUIPPED_OUTFIT = Meta("info", "equipment", "equip") + "You put on your best {lineName} gear: {tierNames}.";
+    public static string MSG_EQUIPPED_OUTFIT_KEPT = Meta("info", "equipment", "equip") + "You put on your best {lineName} gear: {tierNames}. It stays your outfit until you use !equip all.";
+    public static string MSG_EQUIPPED_OUTFIT_ALREADY = Meta("info", "equipment", "equip") + "You already wear your best {lineName} gear: {tierNames}.";
+    public static string MSG_EQUIP_OUTFIT_NO_ROLE_GEAR = Meta("info", "equipment", "equip") + "You have no {skillName} class gear you can wear, so you have equipped all of your best items.";
+    public static string MSG_EQUIP_OUTFIT_NO_GEAR = Meta("info", "equipment", "equip", "fail") + "You have no {lineName} gear you can wear. Nothing was changed.";
     public static string MSG_CAPE_HIDDEN = Meta("info", "equipment", "cape") + "Your cape is hidden. !toggle cape shows it again.";
     public static string MSG_CAPE_HIDDEN_BACK_PIECE = Meta("info", "equipment", "cape") + "Your cape is hidden, and your armor's own cloak or pack shows instead. !toggle cape brings the cape back.";
     public static string MSG_CAPE_SHOWN = Meta("info", "equipment", "cape") + "Your cape shows again.";

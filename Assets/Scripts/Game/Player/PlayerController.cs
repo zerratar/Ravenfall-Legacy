@@ -3056,7 +3056,17 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             return true;
         }
 
-        // class gear is ranked by what is trained (GearScore, the server's rule too); everything else as before
+        // an outfit the player asked for ("!equip tank", "!equip rogue", "!equip plate") stays on: a worn piece of
+        // it is only replaced by another piece of it, whatever other armor would be worth
+        var outfit = Inventory.AskedOutfit;
+        if (outfit != null && item.Category == ItemCategory.Armor && Inventory.IsArmorSlot(Inventory.GetEquipmentSlot(item.Type)) &&
+            outfit.Covers(currentEquipment.Item.Material) && !outfit.Covers(item.Item.Material))
+        {
+            return false;
+        }
+
+        // class gear is ranked by what is trained (GearScore, the server's rule too), or by the outfit that was asked
+        // for ("!equip tank": Inventory.AskedOutfit) until "!equip all"; everything else as before
         // several lines can fit one skill: between two of them of the same tier what is worn stays
         // and one line for the outfit: a piece of another fitting line does not break up the set that is worn
         var fits = GearScore.KeepWorn(Inventory.OutfitFits(item), currentEquipment.Item.Material);
