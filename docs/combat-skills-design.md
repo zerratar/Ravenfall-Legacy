@@ -86,6 +86,10 @@ Utility nodes outside combat (for example the chance to keep a gem when removing
 document) sit in a small **Artisan** tree, gated by Crafting. It uses the same point pool, so a player who
 spends points there has fewer for combat.
 
+(As built, there is no Artisan tree: its one node, Gem Salvager, sits in Hunter. `trade-skills-design.md` is the
+proposal of 2026-11-22 for a second tab of trees for gathering and making, with points of its own; it moves the
+node there. Not approved yet.)
+
 ## 3. Using skills automatically
 
 Each active has a **cooldown** (4 to 60 s) and a **use rule**. Players do not press anything; the
@@ -295,7 +299,9 @@ It fights the owner's target and uses the pet's skills at half strength (no taun
 side, takes a command with the pet (Sic 'Em, Mend Pet, Call of the Wild), is nobody's target, takes no blows for
 its owner, earns no experience and gathers nothing.
 
-**Proposal, not built: a second pet from the stable** as a later step on top of Pack Leader. `!pets second (name)`
+**Decided against, 2026-11-22** ("lets not have a second pet out, game expects 1"; Pack Leader stays: "thats just a
+clone of whatever you already got equipped"). What was proposed, kept for the record: a second pet from the stable
+as a later step on top of Pack Leader. `!pets second (name)`
 and `!pets second off`; a `Second` flag on the `Pet` row beside `Active`; the second at half strength with its own
 skills and its own knocked-out state; the experience share split in two rather than doubled; no gathering and no
 guard from the second (so two gatherers or two tanks do not double); both in the details window, in `!pets` and on
