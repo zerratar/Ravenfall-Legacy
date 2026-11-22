@@ -628,3 +628,26 @@ more? theres lots of unused space here on the equipment rows" (RavenNest 7bdff90
   hovering a helmet with the switch off and leaving it. **Not checked:** signed in, and a running game following the
   website's switches.
 
+## "Now" and the skills' outfits (2026-11-22)
+
+The owner, training Crafting, picked Strength, pressed "Equip best for Strength", then Ranged and "Equip best for
+Ranged", and back to Strength showed the Ranged gear: the button changed what was worn and kept nothing for either
+skill, and a skill without an outfit shows what is worn. Their idea, built (RavenNest 340c9a0f):
+
+- **"Now"** is the first button in the row and where the page opens: the gear worn this moment. Equipping, dragging
+  and "Equip best for (what is trained)" there put gear on in the game at once, whatever is trained.
+- **Every skill after it is that skill's outfit.** What is done there is saved to the outfit: adding a piece (button,
+  drag, double click, click on a slot), pinning, leaving a slot out. Gear only goes on when that outfit is the one
+  that is on, or with "Put it on now".
+- **"Make a (skill) outfit from my best gear"** for a skill with no outfit, and **"Refill with best"** for one that has
+  one: `OutfitManager.FillBest`, every slot that is not pinned gets the best piece owned for that skill by
+  `OutfitRules.Best` (the rule an outfit going on uses for a gone piece). For the outfit that is on it is "Equip best
+  for (skill)" and puts it on too.
+- The text under the row says which it is: "Worn now", "No Strength outfit yet" (the slots show what is worn and
+  nothing worn changes), "Not on now" (changes are saved to the outfit) or "On now" (changes go on in the game too).
+- **Equip best on "Now"** picks for what the character trains. Crafting and the other skills without a gear line get
+  the highest-worth pieces, and the class gear line already worn is kept.
+- **Checked** on `/dev/gear-preview` with the owner's steps: Now kept its gear throughout, the Strength and Ranged
+  outfits were made and kept apart, Now's button reads "Equip best for Healing". **Not checked:** signed in, and the
+  game following an outfit filled from the website.
+
