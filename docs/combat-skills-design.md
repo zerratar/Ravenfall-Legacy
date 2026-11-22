@@ -235,6 +235,11 @@ Marksman 1.32-1.49x, Elements 1.44-1.83x (was 1.53-2.00x), Hunter against bosses
 points but bosses only). Elements still grows with level because element damage takes only half of armour's share and
 armour grows with level; the simulator's enemies resist nothing, while many real ones resist an element.
 
+**Capstone paths (2026-11-22):** each of the nine combat-side trees now ends in three capstones of which a character
+learns one: the old one, unchanged, and two new paths that ask for the nodes of their theme (27 endings, 18 of them
+new, most with a small rule of their own). The rule, the endings with their numbers, the simulator's comparison and
+what was played are in `capstone-paths-design.md`.
+
 ---
 
 ## Beastmaster: Taming's tree (2026-11-21)
