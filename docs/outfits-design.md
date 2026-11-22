@@ -651,3 +651,81 @@ skill, and a skill without an outfit shows what is worn. Their idea, built (Rave
   outfits were made and kept apart, Now's button reads "Equip best for Healing". **Not checked:** signed in, and the
   game following an outfit filled from the website.
 
+
+## After the UX review (2026-11-22)
+
+An independent review of the Equipment tab on the preview (training Healing) found the page measuring everything
+against the worn gear in a skill's tab, two "best" rules giving different gear, and several places that did not say
+what was going on. The model stays the owner's: "Now" is what is worn this moment, every skill after it is that
+skill's outfit. Built in RavenNest f26aee13, 48484a90 and 8c2e115d, and the Models DLL in game 2a2b3ec6; the owner
+then approved the held back ideas too (A to E below).
+
+**One best rule.** `OutfitRules.BestPicks` (and `FillBest`, `FitsForBest`) pick, slot by slot, what the server's
+equip best picks for a skill: the worth with enchantments, the lines of the skill narrowed to one with the worn set
+winning among equals, and worth alone for a skill without a line. `OutfitManager.FillBest`, the website's "Make" and
+"Refill" and, on "Now", "Equip best for (the outfit that is on)" all use it, so Now and the outfit no longer drift
+apart through the button. The server's equip best now counts one-handed axes and spears as melee weapons, as the
+outfits always did. Unit tests (`OutfitRulesTests`) restate the server's equip best on the preview's bag and check
+every skill agrees, and that Strength and Ranged differ where the bag has gear of their lines.
+Why the review saw different numbers: the preview stand-in filled outfits without enchantments, and its equip best
+kept worn pieces the character may not wear (the Archmages Pendant and Owls Eye Ring need Slayer 200). The real
+server takes those off. The stand-in now builds its pieces as the server does and dresses with the shared rule.
+On the preview, before: Now 191 power, 719 max heal, 12% crit; the Healing outfit 150, 602, 7%; Strength and Ranged
+identical. After: both 150, 602, 7% (the lower numbers are the pendant and ring coming off, as on the server);
+Strength gets the Reaver Hauberk, Ranged the Hunter Gloves (two pieces added to the preview's bag to show it).
+
+**The review's findings, as built:**
+1. In a skill's tab a bag piece is compared with the outfit's piece for its slot: the pick bar ("Instead of Abraxas
+   Helmet (in the Strength outfit)"), the card's second column ("In the Strength outfit") and the arrows. A shirt
+   mark shows bag pieces that are in the outfit looked at (on Now: in the outfit that is on, not worn). "Equip best
+   would pick this" only shows on the piece the one rule picks.
+2. No "Equip now" (and no "Take off", drag to the bag or Equip in the drawer) in a skill's tab: Add to the outfit,
+   Pin, Leave out, Details.
+3. One best rule (above).
+4. The trained skill with no outfit: "Make a Healing outfit from my best gear and wear it", with words that say it
+   goes on.
+5. "Now" says which outfit is on ("Now: your Magic outfit is on (put on by hand). You train Healing; it changes
+   back when training changes"), its tile reads "Magic on", its numbers are counted for that skill ("As worn now,
+   counted for Magic") and its button is "Equip best for Magic", which fills that outfit and puts it on.
+6. A slot whose worn piece is not the outfit's: "Your Healing outfit keeps Priest Cowl here (pinned) and puts it
+   back when it next goes on", with "Keep Dragon Helmet in the Healing outfit" and "Put Priest Cowl back". The
+   outfit's tab no longer says "It is what you wear" then; it says how many slots differ.
+7. Slots that differ carry a "Changes" badge in a skill's tab ("Not saved" on Now); the bar counts them and the big
+   button says "Put the Strength outfit on now (changes 6 slots)".
+8. A word under each skill: On, Saved, Training, On, training. The gold fill is the picked tile's alone; the green
+   light and the small shirts are gone.
+9. Notices list what changed: "Equip best for Healing changed Amulet: Archmages Pendant to Phantom Amulet, Gloves:
+   Rune Gloves to Priest Gloves, ..., and 2 more"; the same for making, refilling, putting on, saving and equipping.
+10. The outfit bar's buttons go under its words when narrow; the row of skills gets columns that leave no tile
+   alone on a row; names fit.
+11. The outfit's pet list is "Battle pet", with "Whichever is out" for none.
+12. A character with nothing to wear: no equip best and no switches, "Buy gear at the Vendor" (/vendor) instead.
+13. A second click on the picked skill does nothing.
+14. The big button ignores clicks for a second after it changes meaning; "Put on now" has its own outlined look.
+15. "What the marks mean" under the bag, folded; the Inventory tab's legend got the skin mark so both match.
+16. Visitors seeing the coins and the whole bag: the old page (before 5dbff418) showed both to everyone too, so it
+   was left as it was.
+
+**Built after the owner's approval of the held back ideas:**
+- A. On Now, when what is worn differs from the outfit that is on, a strip over the slots ("2 changes not in your
+  Healing outfit") with "Save to the Healing outfit" (`OutfitManager.KeepWorn`: each differing slot takes the worn
+  piece, a pinned slot stays pinned) and "Put the outfit back" (`OutfitManager.PutBack`: every piece of it, not only
+  the pinned ones). The per-slot "Keep" and "Put back" of finding 6 stay in the pick bar: one slot at a time.
+- B. A skill without an outfit shows what "Make" would pick, dashed and marked "Proposed", on the figure and in the
+  numbers ("not saved"); `OutfitManager.Propose` returns it without keeping anything.
+- C. "All outfits" by the row: every outfit with its pieces as small pictures, pins, battle pet and its main number
+  (Max heal for Healing, Armor for Defense and the gathering skills, Power for the rest); Open, and "Start another
+  outfit from this" (`OutfitManager.Copy`: slots, pins and pet).
+- D. The character's column has 1.75 parts to the bag's 1 (1.5 to 1 on middling widths); the Equipment bag keeps
+  five columns beside the character.
+- E. The Equipment bag has counts on its kind chips, a sort (by slot, best for the skill, rarity, name) and the legend.
+
+**Calls the owner may want to change:** equip best on Now saves into the outfit that is on (so Now and the outfit
+stay one); "Put the outfit back" also refills a slot whose piece the character may no longer wear, so it can change
+more slots than the strip counted; the proposal is asked of the server again after every change on that tab; the
+"Proposed" note shows on every proposed slot; the badges say "Changes" and "Not saved"; Defense's main number is
+Armor; the copy leaves the role word ("!equip tank") behind; five bag columns at every width beside the character.
+
+**Checked** on /dev/gear-preview with the review's steps at 1920, 1500, 1280 and 400 wide, a visitor and an empty
+character. **Not checked:** signed in, the real database through OutfitService, a running game following these
+changes, hover cards by a real mouse (shown by a synthetic pointer event), Firefox, Safari and a real phone.
