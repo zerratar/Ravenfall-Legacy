@@ -1,6 +1,8 @@
 # Outfits: gear that follows what you train, and the website's gear pages
 
-**Status: proposal with mockups, nothing built** (2026-11-22). From the owner: "will player auto equip gear
+**Status: approved 2026-11-22** ("go with your recommendations, build the outfits and gear pages"), being built.
+The open questions below are settled by the proposals: the pet is part of an outfit, every skill has its own
+outfit, and a raid uses the combat skill's own outfit. Written 2026-11-22. From the owner: "will player auto equip gear
 loadouts when they switch training? for instance when joining raid/dungeon/towers, so they dont have to equip
 everytime. It can remember what you wore when you trained something and fill in missing gear ... maybe let them
 choose what gear they want for each skill and fall back to equip best ... may need to be an option", and "ive
