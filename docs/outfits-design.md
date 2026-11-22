@@ -353,13 +353,21 @@ accuracy, max hit, crit; for Healing max heal and the crit as two), and "All sta
 and words of the game's own stats view. Not counted, and said so on the page: food, potions and a battle pet's
 bonuses. The shield is left out for Ranged, Magic and Healing, as in the game.
 
-**The row of skills** ("Dress for": Attack, Defense, Strength, Ranged, Magic, Healing) is where phase 2 puts the
-outfit picker. In phase 1 a picked skill changes three things: the numbers are shown for it, the "better than
-worn" marks are judged for it, and the button reads "Equip best for Healing" and calls the server's equip best
-with that word (`!equip healing`). With none picked it is the plain equip best for what is trained.
+**The row of skills** ("Dress for": Attack, Defense, Strength, Ranged, Magic, Healing) is the outfit picker since
+phase 2 (see "Built: outfits on the website" below). For a visitor it is still what phase 1 made it: a picked skill
+changes the numbers shown and the "better than worn" marks. For the owner the button under the numbers reads "Equip
+best for Healing" for a picked fighting skill and calls the server's equip best with that word (`!equip healing`);
+with none picked it is the plain equip best for what is trained.
 
-**The character** is the customizer's 3D figure (the flat pictures without WebGL), loaded after the page. It shows
-the character's look, not its gear, and says so ("Shown without gear"). See "The character and worn gear" below.
+**The character** is the customizer's 3D figure, loaded after the page, and since 2026-11-22 it wears what the
+character wears (see "The character wears its gear" below). Without WebGL it is the customizer's flat picture of
+the character's look, with the note "Shown without gear".
+
+**Tooltips** (RavenNest 063479b2). Every piece on the Equipment tab has one: a bag piece alone when its slot is
+empty, a worn piece on its slot, and for a bag piece whose slot is taken the two side by side as one card ("In your
+bag" and "Worn now", each stat's difference in green or red). The card keeps off the slot it is about and off the
+screen's edges (it flips, or stacks the two when there is no room beside), does not flicker between tiles, and goes
+when a drag starts. On a phone a tap opens the detail sheet with the same comparison and Equip.
 
 **Inventory.** The whole bag: search, chips by kind with counts (weapons, armor, jewelry, pets, boats, gems, food,
 potions, scrolls, resources, other; only the kinds the bag holds) and, inside a kind, the narrower groups the old
@@ -426,36 +434,162 @@ real mouse and touch events in headless Chrome, reading the page after each step
   stand-in only. The stand-in's equip best is not the server's (it does not narrow the class gear lines to one).
 - A running game watching a change made here (the inventory feed should carry it, as for every change on the site).
 - Sending a worn piece to the stash (the old page offered it too; whether the server takes it was not seen).
-- The admin character view itself, and the flat (no WebGL) character on this page.
+- The admin character view itself.
 - Firefox and Safari; a real phone.
 
-### The character and worn gear
+### The character wears its gear (3D, 2026-11-22)
 
-The customizer's export holds the body, heads, hair, eyebrows and beards (134 meshes, 1.6 MB), which is why the
-figure wears its look and nothing else. Showing the real worn gear would need, in the same export
-(`tools/characters/export-characters-web.cs`): the armor parts of the Synty character per gender (helmets and head
-coverings, torsos, upper and lower arms, hands, hips, legs, shoulder, elbow, knee and hip attachments, capes),
-several hundred skinned meshes; the class gear lines' own colors per material (the game picks them by material);
-the weapons, shields, pets and hats as their own prefabs (hundreds more, each with a hand or back mount); and the
-item-to-part table (`maleModelId`, `femaleModelId`, `genericPrefab`, head masks that hide hair). The page would
-then load the dozen parts a character wears, so it stays fast; the work is the export, its size on disk (a rough
-guess is 30 to 60 MB against today's 1.6) and keeping it current when gear is added. Until then a face-and-
-shoulders portrait is one line away (`focus('face')` in `rf-gear.js`) if the bare figure is not wanted.
+The figure in the middle of the Equipment tab is dressed as the game dresses it. RavenNest e41bfabb (the page),
+26b0823e (the export and the fixes from comparing with the game), 687b0f90; game a7bb888f (the export script).
 
-### For phase 2 (outfits on these pages)
+**The export** is `tools/characters/export-gear-web.cs` in the game repo, beside the body's
+`export-characters-web.cs`: an edit mode eval (`unity command eval_file --file tools/characters/export-gear-web.cs`,
+about 15 seconds, spread over editor frames; it reads assets only, and the one copy of the player it makes to sample
+the stances lives in a preview scene of its own). It writes into RavenNest's `wwwroot/characters/gear` (26 MB, 870
+files):
+- `parts/`: every armor part of the Player prefab, one small file each (578 files, 8.8 MB), skinned to the body
+  export's skeleton: torsos, arms, hands, hips, legs, helmets, hats, masks, hoods, shoulder, elbow and knee pads,
+  what hangs on the belt and the back, capes.
+- `props/`: every item that is a model of its own on a bone (161 files, 5.4 MB): weapons, shields, novelty hats,
+  necklaces. The list is the prefabs the local server's items name, kept in `tools/characters/gear-prefabs.txt` for
+  when no server answers.
+- `textures/` (9.2 MB): the armor's atlas and its masks, and the props' pictures.
+- `stances/`: the idle of each kind of weapon from the animation pack the game uses (sword, two handed sword, bow,
+  staff, spear, axe, shield), and how far each turns the chest.
+- `gear.json` (106 KB): the part lists by the game's own field names and order (an item's model ids are indices into
+  them), every `ItemMaterial` with its thirteen colors and glow, the parts that show the wearer's skin, the hair that
+  is swapped under hats, the props with their materials, the armor's own bind pose for the attachment bones.
 
-- `IGearBackend` is the seam: outfits per skill (slot, item, pinned or best, the pet), pin and unpin, wear an
-  outfit, save what is worn, and the two switches go there, and `GearPreviewBackend` gets the same. The server's
-  side of each is `OutfitService`, described in "For the website (phase 2)" above.
-- The row of skills is the outfit picker's place; `dressFor` in `PlayerGear.razor.cs` is the picked skill.
-- A slot's marks have a free corner for the pin; the item panel has a marked place for "Add to outfit".
-- `GearSheet.Build` takes the worn set from the character it is given, so the numbers of an outfit that is not
-  worn can be shown by handing it a copy with other pieces marked worn ("what this outfit changes").
-- The Pet slot here is the pet item. The outfit's pet is the battle pet (the Pets tab): it needs its own place.
+Nothing in it names an item or a gear line. The page reads an item's model ids, material, `HeadMask` and prefab from
+the server and looks them up, as the game does in its prefab; a new gear line is new materials (found by walking
+`ItemMaterial`) and new item rows. The Taming line was added while this was built and a re-run picked it up (132
+materials). **Run the export again when armor parts, materials or item prefabs are added**, and restart the server
+(new files under `wwwroot` are served after a build).
+
+**The page** (`wwwroot/js/rf-character-gear.js`, a port of `SyntyPlayerAppearance.EquipArmor` and what it calls; the
+stage is the customizer's, `rf-character-designer.js`): the armor parts by the item's model ids for the character's
+gender, the tier's material and colors, what a helmet hides (head, hair, brows, beard, by `HeadMask`), the flat hair
+under a hat, the wearer's skin color on the parts that show skin, the weapon and shield of the style that is trained
+or picked (a shield only with a one handed weapon or none, as in the game), the necklace, the cape in its shape with
+the clan's cape picture (the game's default cape picture otherwise), the helmet and cape switches, and a skin's look
+instead of the item's own. Pets and boats are not on the figure.
+
+Loading: the body shows first; then only the worn parts are fetched, and any other piece when the mouse is over it
+in the bag (the figure tries it on), when it is dragged, or when it is put on. Fetched parts stay in memory for the
+page, and every file is asked for with the export's version in its address, so the browser keeps it (the server
+sends such addresses as immutable for a year). A small spinner in the stage's corner shows while a piece is on its
+way; the page is never blocked. A piece dropped on its slot stays on the figure until the server has answered, and
+the figure then shows what the server says is worn. A character with a weapon out stands in that weapon's stance
+(the game's own idle for it), turned so its front shows, with the camera a step back.
+
+Measured on the development machine (headless Chrome with software rendering, cache off): a typical dressed
+character (five armor pieces, a necklace and a staff) costs 25 to 28 requests and 460 to 505 KB beyond the bare
+figure's 18 requests and 500 KB: 14 to 17 part files (200 to 240 KB), 2 props (40 KB), 6 pictures (190 KB, shared
+by every tier), the manifest (15 KB compressed) and a stance (8 KB). The dressed figure stood 0.6 to 1.5 seconds
+after the script started, about half a second after the bare one.
+
+**Compared with the game.** `tools/items/class-gear-preview.cs` rendered the same real items (Elder Atlarus plate
+with its antler helmet; Mage tier 1 and 8 with the wizard hat over swapped hair; Healer tier 1 and 8 with the cowl
+that hides hair; Barbarian tier 1 and 8 with the bear hood and bare skin), male and female, and the page's figures
+were put under them piece for piece. What differed and was fixed: props were a hundredth of their size (the bones
+are in centimeters under a root scaled down; the game hangs an item at its true size); parts weighted to the cape's
+and the attachments' bones flew off (the body export has no bind pose for those bones, so the armor brings its
+own); the glowing tiers were flat (the shader graph's drifting band of color is ported); bows and staffs were black
+(their own shader's banded colors are ported); katanas are drawn unlit as in the game; and the customizer's moody
+stage light made a tier's colors darker and warmer than in the game, so this page lights its figure evener and
+whiter. What still differs: the page's light is its own, so shading is a little stronger than in the game's
+preview; the two glowing tiers whose materials use other textures than the body's atlas (ElderSteel, ElderAbraxas)
+are drawn with the atlas; the Turd Sword and the Ultimate Tuna Slapper have no pictures in their materials and are
+drawn in plain colors.
+
+Not seen: a clan's cape picture on the figure (the preview character has no clan; the address the page asks is
+`/api/clan/cape/{clan id}`), a transmog look on the figure (the look's model ids and material are sent in place of
+the item's; the preview's skinned piece was not opened on the dressed figure), and any signed-in character.
+
+## Built: outfits on the website (phase 2, 2026-11-22)
+
+RavenNest 47c45ddb, on top of the outfits agent's `OutfitService`.
+
+**Files:** `Components/PlayerGear.Outfits.cs` (the state and what each button does), the row and the outfit bar in
+`PlayerGear.razor`, `IGearBackend` and `GearService` in `GearService.cs` (six outfit calls that hand over to
+`OutfitService`, which checks each one), `GearPreviewBackend.cs` (outfits kept in memory for the preview), the
+"Outfits" block in `ravenfall-gear.css`.
+
+**The picker.** The row of skills on the Equipment tab is headed "Outfits". The fighting skills are always there
+(All, Attack, Defense, Strength, Ranged, Magic, Healing; "All" is training all, which the server keeps as Health);
+another skill joins the row once it has an outfit or is trained, and "More skills" shows the rest (Woodcutting to
+Sailing; Taming has no outfit). A skill with an outfit wears a small shirt in its corner, gold on the one that is on;
+the green light is the skill trained now. Under the row a bar says in words what the picked skill's outfit is ("On
+now. 10 pieces, 1 pinned.", "Not on now: the slots, the figure and the numbers show it.", "No Attack outfit yet"),
+holds the outfit's battle pet (a list of the character's pets, or "Stays as it is") and, for an outfit that is not
+on, "Put it on". Under the bar are the two switches: "Change outfit when training changes" and "Put better gear on
+automatically".
+
+**Looking at an outfit that is not on.** Picking its skill shows it everywhere: the slots show its pieces (a slot it
+leaves alone shows what is worn, set back, with "Stays as worn"; a piece it names that is no longer owned says "Gone
+from the bag"), the 3D figure wears it, and the numbers are counted for it under the line "The numbers with the
+Magic outfit on". The big button becomes "Put the Magic outfit on". Picking the skill again goes back to what is
+worn.
+
+**A slot.** A pinned slot carries a gold pin in the corner of its picture. With a slot picked, the line under the
+figure offers Pin or Unpin, and for an outfit that is not on, "Leave out" (the slot goes out of the outfit and what
+is worn stays there). A bag piece goes into the outfit that is looked at by "Add to Magic outfit" in that line, by
+picking the piece and then its slot, or by dragging it onto its slot; it goes in pinned, since it is the player's
+own pick. While the worn outfit is looked at, the same things equip as before, and the item panel has "Pin in
+Healing outfit" for a bag piece (the server puts it on at once when that outfit is on). Adding a piece for a skill
+that has no outfit starts one.
+
+**What the server decides.** Every button calls the server and the page then shows the outfits and the character as
+the server gives them back; nothing is patched on the page. The messages for a refusal are the server's (not signed
+in, not your character) or name its status (a piece that cannot go in, no outfit for that skill, a pet that cannot
+go). Visitors see no outfits (`OutfitService.Get` is for the owner and administrators): for them the row is headed
+"Dress for" and works as in phase 1.
+
+**The Beastmaster line** needs Taming, which is not an item column: the requirement (`ItemLines.TamingLevelFor`) is
+listed with the others in the item panel and the tooltip, and a piece below it is locked with "Needs Taming 900."
+
+### Tested (phase 2 and the figure)
+
+Through `/dev/gear-preview`, whose stand-in keeps a healing outfit that is on (the cowl pinned, a pet) and a magic
+outfit that is not, with real mouse events in headless Chrome, reading the page after each step:
+- the worn outfit's bar and pin; picking Magic: its four pieces in the slots, eight slots "Stays as worn", the
+  numbers for it (power 84 Magic instead of 186 Healing), the figure in the Phantom chest and Conjurer hood with the
+  Dragon staff, the button "Put the Magic outfit on";
+- Unpin the staff; Leave out the chest (3 pieces left); a bag chest added by the button (pinned); a hood dragged
+  onto the head slot goes into the outfit and not onto the body; the pet changed; Put it on (the slots, numbers and
+  figure are the outfit's, the bar says "On now");
+- both switches off, each with its notice; a skill without an outfit says so and "Add to Attack outfit" starts one;
+  More skills lists all seventeen;
+- a visitor: "Dress for", six skills, no bar, no switches;
+- the Taming requirement on a tier 8 Beastmaster vest (locked, "Needs Taming 900."), and Beastmaster pieces on the
+  figure (feathered hat, pelt hood with antlers, the vest with one bare shoulder in skin color);
+- the figure: hover tries a piece on, a dragged piece stays on while dragged and after the drop, the cape, the cape
+  hidden, the helmet switched off, the flat fallback without WebGL ("Shown without gear");
+- screenshots at 1500 and 400 px looked at for polish.
+
+### Not tested (phase 2 and the figure)
+
+- Everything signed in: `OutfitService` through this page (the preview's stand-in answers in its place and is
+  simpler: its "put on" does not fill a gone piece with the best one owned, and it knows nothing of the role word).
+- A running game seeing an outfit change made here, and the page seeing a change made by the game while it is open
+  (the page reads the outfits when the tab opens and after each of its own actions).
+- A piece of an outfit that is gone from the bag (the "Gone from the bag" slot was not brought about).
+- The admin character view with outfits (an administrator gets the same picker for any character).
+- A clan cape's picture and a transmog look on the figure; Firefox, Safari and a real phone.
 
 ### Decisions on the gear pages the owner may want to change
 
-- The character stands there without its gear, with a caption saying so, rather than as a portrait or not at all.
+- With a weapon out the figure stands in the weapon's stance, turned to show its front, instead of the relaxed idle.
+  The stance is the game's and puts the weapon in the hand properly, but it is side-on and wide, so the figure is
+  a little smaller. The other way is the relaxed idle with no weapon shown.
+- The figure's light on this page is evener and whiter than the customizer's, to match the game's colors.
+- A piece put into an outfit from the website goes in pinned. Leaving a slot to "best" is the Unpin button.
+- The pet list of an outfit offers every battle pet of the character and "Stays as it is" for none.
+- Outfits are shown to the owner (and administrators) only; a visitor does not see what a character keeps for other
+  skills.
+- The fighting skills are always in the row, the other skills only once they matter (More skills shows them all).
+- Looking at an outfit that is not on shows its numbers, not a difference against what is worn.
+- There are two "put it on" buttons while an outfit is looked at (in the bar and the big one under the numbers).
 - "Equip best" asks for no confirmation; a notice says how many slots changed.
 - The Inventory tab shows worn pieces too (marked "E"); they cannot be picked for selling or the stash in Select
   several.
@@ -466,3 +600,5 @@ shoulders portrait is one line away (`focus('face')` in `rf-gear.js`) if the bar
 - The old page's styles for its own Equipment grid (`.rf-gear`, `.rf-slots`, `.rf-slot`, `.rf-inv...`,
   `.rf-itemview...`) are still in `ravenfall-components.css`, unused: that file was being worked on by someone
   else. They can be deleted (check `/stash` and the admin inventory for `rf-tile` and `rf-item` first).
+- The export is 26 MB in the RavenNest repository. It could live outside it (a release asset or a storage bucket)
+  if the repository's size matters more than having the site whole in one checkout.
