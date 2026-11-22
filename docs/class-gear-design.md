@@ -27,14 +27,15 @@ numbers).
 | Dark Knight | Defense or Strength | 90% | Defense | life steal, thorns, melee power, max health |
 | Witch Hunter | Ranged | 60% | Ranged | ranged power, boss damage, undead damage, crit chance |
 | Monk | Healing | 40% | Magic (Healing passes it) | healing power, cooldown reduction, combat regen, max health, evasion |
+| Beastmaster | Taming (by choice: no combat skill fits it) | 60% | Taming | the pet's power, health and recovery, gatherer pets, tame chance; max health and crit chance for the wearer |
 
 Several lines can fit one skill, and a line can fit two: see "Auto-equip respects the path".
 
-Eight tiers a line. The tier's name is its material (`ItemMaterial`, 96 values after `ElderAtlarus`) and the first word
+Eight tiers a line. The tier's name is its material (`ItemMaterial`, 96 values after `ElderAtlarus`, 104 with the Beastmaster line) and the first word
 of every piece: "Adept Robe", "Tracker Jerkin". The level a tier needs, tier 1 first: 1, 30, 70, 120, 200, 400, 650,
 900, the levels of Bronze/Iron, Mithril, Rune, Abraxas, Lionsbane, Atlarus, Elder Mithril and Elder Ether.
 
-Six pieces a tier, 576 items in all (12 x 8 x 6; 240 in the first five lines): two head pieces to choose a look from (same stats, usable for
+Six pieces a tier, 576 items in all (12 x 8 x 6; 240 in the first five lines; 624 with the Beastmaster line): two head pieces to choose a look from (same stats, usable for
 transmogrification), chest, gloves, leggings and boots. Category Armor, no prefabs: a piece is character parts
 (`MaleModelId` / `FemaleModelId`, the game's part indices) in the tier's material.
 
@@ -52,6 +53,7 @@ transmogrification), chest, gloves, leggings and boots. Category Armor, no prefa
 | Dark Knight | Dread Helm (Helmet), Horned Helm (HeadCovering) | Chestplate | Gauntlets | Legplates | Warboots |
 | Witch Hunter | Buckle Hat (Hat), Plague Mask (Helmet) | Coat | Gloves | Coat Skirt | Boots |
 | Monk | Headband (Hat), Hood (HeadCovering) | Wrap | Handwraps | Leg Wraps | Footwraps |
+| Beastmaster | Feathered Hat (Hat), Pelt Hood (HeadCovering) | Hide Vest | Handler Gloves | Hide Breeches | Tracking Boots |
 
 The seven lines of 2026-11-21 got their looks the same day (parts chosen on both bodies, attachments by tier, 56
 materials, icons): see "The second seven: looks" below. Their materials are
@@ -480,6 +482,25 @@ Armor is 40% of plate. Pieces: Headband, Cap, Wrap, Handwraps, Leg Wraps, Sandal
 | 7 Transcendent | 650 | 131 / 144 / 104 / 125 / 92 | **8.5%** (2.5 / 2.1 / 1.3) | **5.5%** (1.7 / 1.4 / 0.8) | **0.55%** (0.17 / 0.14 / 0.08) | **5.5%** (1.7 / 1.4 / 0.8) | **143** (44 / 36 / 21) |
 | 8 Celestial | 900 | 174 / 190 / 137 / 165 / 122 | **10%** (3 / 2.5 / 1.5) | **6%** (1.8 / 1.5 / 0.9) | **0.6%** (0.18 / 0.15 / 0.09) | **6%** (1.8 / 1.5 / 0.9) | **216** (66 / 54 / 32) |
 
+## The thirteenth line: Beastmaster (2026-11-22)
+
+Gear for those who fight beside a battle pet, gated by **Taming** (the first gear Taming opens); the whole design,
+its numbers and the simulator comparison are in [taming-gear-design.md](taming-gear-design.md). In short:
+
+- Materials Fledgling, Trapper, Houndmaster, Falconer, Wildheart, Packlord, Primal, Wyrmkin (after Celestial; tier 2
+  is not "Tracker", the Ranger's). 48 items, armor 60% of plate, Leather and a bar like the Ranger's.
+- No requirement column: `ItemLines.TamingLevelFor(material, level)` is the rule the game, the server and the website
+  read (a Beastmaster piece needs Taming at its item level).
+- Stats: the wearer's max health (1% to 8%) and crit chance (0.5% to 3%), and the pet's: PET_POWER 4% to 75%,
+  PET_HEALTH 3% to 20%, PET_RECOVERY 2% to 15%, PET_GATHERING 1% to 10%, and the new TAME_CHANCE 2% to 15% (a share
+  more of the chance). The pet reads the worn ones beside its owner's Beastmaster tree.
+- Fits Taming only: "equip best" for a combat skill never picks it. `!equip beastmaster`, `tamer` or `taming`
+  wears it (a line by name). Tower chests give a fighter with a pet out a Beastmaster piece one time in five in
+  place of their skill's line (`TowerLoot.BeastmasterChance`).
+- Looks: studded hide with a fur collar, a falconer's glove, a horn on the belt, bone pauldrons from tier 3, wolf heads
+  and a pelt from tier 6; a feathered hat or a wolf pelt hood with feathers, then antlers. Browns and greens with the
+  Beastmaster tree's teal from tier 4.
+
 ## How it is made
 
 Two new cloths, one of each for every tier (the higher tiers take more of it):
@@ -514,6 +535,7 @@ takes the bar of the tier's level: Bronze, Mithril, Rune, Abraxas, Lionite, Atla
 | Dark Knight | 5 bars + tier Leather | 4 bars + tier Leather | 3 bars + tier Leather |
 | Witch Hunter | 3 x tier Leather + tier Linen + 1 bar | 2 x tier Leather + tier Linen + 1 bar | tier Leather + tier Linen + 1 bar |
 | Monk | 4 x tier Linen + 1 bar | 3 x tier Linen + 1 bar | 2 x tier Linen + 1 bar |
+| Beastmaster | 4 x tier Leather + 1 bar | 3 x tier Leather + 1 bar | 2 x tier Leather + 1 bar |
 
 The Barbarian's hood, bracers and boots are the only pieces without metal (the spec: "Leather, bars for chest and
 leggings"), so they are far cheaper than any other piece of their tier; only the Crafting level holds them back. The
@@ -594,6 +616,7 @@ The lines that fit come from the skill being trained (`ItemLines.Fits(skill)`, a
 | Attack | Melee, Rogue, Samurai |
 | Strength | Melee, Barbarian, Samurai, Dark Knight |
 | Defense | Tank, Paladin, Dark Knight |
+| Taming | Beastmaster (nobody trains Taming as a task, so only `!equip taming` and outfits use it) |
 
 "All" names no line (the game trains it as Health and the server keeps it as "All", so Health cannot mean Tank), and
 neither does a skill that is not combat. When the skill names no line, the line of the class piece already worn in
