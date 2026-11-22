@@ -55,8 +55,8 @@ price, easy to trade.
 - Taking a gem out (or putting a new one over it) **destroys the old gem**, unless the keep roll succeeds.
 - **The chance to keep it:**
   - from the clan's Enchanting level: nothing below level 100, then rising to 40% at level 400;
-  - plus up to 15% from the *Gem Salvager* node (three ranks) in the Hunter tree (see
-    [combat-skills-design.md](combat-skills-design.md));
+  - plus up to 15% from the *Gem Salvager* node (three ranks), in the Artisan tree since 2026-11-22 (see
+    [trade-skills-design.md](trade-skills-design.md); it began in Hunter);
   - at most 55% together, so removing is always a decision.
 - The game and the website say the chance before you confirm.
 
@@ -105,10 +105,12 @@ The first version, with the defaults below for the open questions (easy to chang
 - **Raw gems:** Topaz now drops while mining from level 40, and the new Amethyst (60), Onyx (80) and Diamond (100) too.
 - **Enchanting a gem** takes no cooldown and gives no clan experience; the tier odds come from the clan's Enchanting level
   (Flawed from 30, Polished from 100, Flawless from 250, at most 50%, 30% and 10%). Perfect only by combining.
-- **Combining** costs 1,000, 5,000, 25,000 and 125,000 coins for the four steps. Gems sell to the vendor for the raw gem's
+- **Combining** costs 1,000, 5,000, 25,000 and 125,000 coins for the four steps (up to 30% less with the Artisan
+  tree's *Gem Cutter*, since 2026-11-22). Gems sell to the vendor for the raw gem's
   price times three per tier, so combining never pays at the vendor.
-- **Keeping a gem** taken out: from clan Enchanting 100, up to 40% at 400. The *Gem Salvager* node (Hunter tree, tier 2,
-  after Treasure Hunter, three ranks of 5%) adds to it since 2026-11-10, 55% at most together.
+- **Keeping a gem** taken out: from clan Enchanting 100, up to 40% at 400. The *Gem Salvager* node (three ranks of 5%)
+  adds to it since 2026-11-10, 55% at most together. It was in the Hunter tree (tier 2, after Treasure Hunter) and
+  moved to the Artisan tree on 2026-11-22 (Crafting 300, after Thrifty or Second Helping); a build that had it keeps it.
 - **Commands:** `!gems` (what you own), `!gems ruby` (what a ruby does where), `!gems enchant ruby 5`,
   `!gems combine ruby flawed 2`, `!socket rune sword ruby` (the best ruby you own into the first free socket; a tier
   picks the gem, a number at the end picks the socket and replaces the gem in it) and `!unsocket rune sword 2`. Sent by the

@@ -7,10 +7,12 @@ using RavenNest.Models;
 using UnityEngine;
 
 /// <summary>
-/// The skill trees from chat (combat v2, docs/combat-skills-design.md, section 6), Taming's Beastmaster among them. The bot sends "skills_command" with
-/// the action first: !tree (points and loadout), !tree Might (a tree's nodes), !tree cleave (one node),
+/// The skill trees from chat (combat v2, docs/combat-skills-design.md, section 6), Taming's Beastmaster and the two trade
+/// trees (docs/trade-skills-design.md: Gathering and Artisan) among them. The bot sends "skills_command" with
+/// the action first: !tree (points and loadout), !tree Might or !tree Gathering (a tree's nodes), !tree cleave (one node),
 /// !learn cleave, !loadout (the loadout), !loadout 1 cleave, !loadout clear 3, !respec (the price) and !respec confirm.
-/// The server saves every change and answers with the build, which the character then follows.
+/// The server saves every change and answers with the build, which the character then follows. The trade trees' nodes
+/// are the server's alone (it rolls them while the character gathers and makes things): the game only shows them.
 /// </summary>
 public class SkillsCommand : ChatBotCommandHandler<string>
 {
@@ -72,8 +74,42 @@ public class SkillsCommand : ChatBotCommandHandler<string>
         var info = await Game.RavenNest.Skills.GetAsync(player.Id);
         if (info == null) { client.SendReply(gm, Localization.MSG_SKILLS_ERROR); return; }
         player.ApplySkillBuild(info.Build);
-        client.SendReply(gm, Localization.MSG_SKILLS_SHOW, info.Earned - info.Spent, info.Earned, LoadoutText(player));
+        // where the points come from: one pool, earned by the combat levels, Taming and the nine trade skills
+        var levels = LevelsOf(player);
+        client.SendReply(gm, Localization.MSG_SKILLS_SHOW, info.Earned - info.Spent, info.Earned,
+            SkillPoints.FromCombat(levels), SkillPoints.FromTaming(levels), SkillPoints.FromTrade(levels), LoadoutText(player));
     }
+
+    /// <summary>The character's own level in each skill that opens a tree or earns points (RavenNest.Combat's list).</summary>
+    public static Func<RavenNest.Combat.CombatSkill, int> LevelsOf(PlayerController player) => skill =>
+    {
+        var s = player ? player.Stats : null;
+        if (s == null) return 1;
+        SkillStat stat;
+        switch (skill)
+        {
+            case RavenNest.Combat.CombatSkill.Attack: stat = s.Attack; break;
+            case RavenNest.Combat.CombatSkill.Defense: stat = s.Defense; break;
+            case RavenNest.Combat.CombatSkill.Strength: stat = s.Strength; break;
+            case RavenNest.Combat.CombatSkill.Health: stat = s.Health; break;
+            case RavenNest.Combat.CombatSkill.Ranged: stat = s.Ranged; break;
+            case RavenNest.Combat.CombatSkill.Magic: stat = s.Magic; break;
+            case RavenNest.Combat.CombatSkill.Healing: stat = s.Healing; break;
+            case RavenNest.Combat.CombatSkill.Slayer: stat = s.Slayer; break;
+            case RavenNest.Combat.CombatSkill.Taming: stat = s.Taming; break;
+            case RavenNest.Combat.CombatSkill.Woodcutting: stat = s.Woodcutting; break;
+            case RavenNest.Combat.CombatSkill.Mining: stat = s.Mining; break;
+            case RavenNest.Combat.CombatSkill.Fishing: stat = s.Fishing; break;
+            case RavenNest.Combat.CombatSkill.Farming: stat = s.Farming; break;
+            case RavenNest.Combat.CombatSkill.Gathering: stat = s.Gathering; break;
+            case RavenNest.Combat.CombatSkill.Crafting: stat = s.Crafting; break;
+            case RavenNest.Combat.CombatSkill.Cooking: stat = s.Cooking; break;
+            case RavenNest.Combat.CombatSkill.Alchemy: stat = s.Alchemy; break;
+            case RavenNest.Combat.CombatSkill.Sailing: stat = s.Sailing; break;
+            default: stat = null; break;
+        }
+        return stat != null ? (int)stat.Level : 1;
+    };
 
     private async Task Learn(PlayerController player, string node, GameMessage gm, GameClient client)
     {
@@ -158,10 +194,11 @@ public class SkillsCommand : ChatBotCommandHandler<string>
     {
         // a tree by its name, its skill's name (as shown: Vitality, and Health as it was called), or the start of
         // either ("hunt" is the Hunter tree, not Hunter's Pace) when no skill has that exact name
+        // (a trade tree has several skills: !tree mining and !tree cooking find Gathering and Artisan)
         bool IsTree(SkillTree t, bool start) =>
             start ? t.ToString().StartsWith(text, StringComparison.OrdinalIgnoreCase)
-                : t.ToString().Equals(text, StringComparison.OrdinalIgnoreCase) || SkillTrees.SkillOf(t).ToString().Equals(text, StringComparison.OrdinalIgnoreCase)
-                    || SkillTrees.SkillName(SkillTrees.SkillOf(t)).Equals(text, StringComparison.OrdinalIgnoreCase);
+                : t.ToString().Equals(text, StringComparison.OrdinalIgnoreCase)
+                    || SkillTrees.SkillsOf(t).Any(s => s.ToString().Equals(text, StringComparison.OrdinalIgnoreCase) || SkillTrees.SkillName(s).Equals(text, StringComparison.OrdinalIgnoreCase));
         var trees = Enum.GetValues(typeof(SkillTree)).Cast<SkillTree>().ToList();
         var matches = SkillTrees.Matches(text);
         var exactSkill = matches.Count == 1 && (matches[0].Name.Equals(text, StringComparison.OrdinalIgnoreCase) || matches[0].Id.Equals(text.Replace(' ', '-'), StringComparison.OrdinalIgnoreCase));
@@ -175,8 +212,10 @@ public class SkillsCommand : ChatBotCommandHandler<string>
             var nodes = SkillTrees.Of(tree).Select(n =>
                 n.Name + (n.MaxRank > 1 ? " " + build.Rank(n.Id) + "/" + n.MaxRank : build.Has(n.Id) ? " (learned)" : n.IsActive ? " (active)" : "")
                 + (n.Tier > 0 ? " [" + n.RequiredLevel + "]" : ""));
+            // a trade tree is opened by any of its skills, and its skills work in each of them
+            if (SkillTrees.IsTrade(tree)) client.SendReply(gm, Localization.MSG_SKILLS_TREE_TRADE, tree, string.Join(", ", nodes), SkillTrees.GateName(tree));
             // the Vitality tree is named after its skill: once, not "Vitality (Vitality)"
-            if (tree.ToString() == skillName) client.SendReply(gm, Localization.MSG_SKILLS_TREE_OWN_NAME, tree, string.Join(", ", nodes), skillName);
+            else if (tree.ToString() == skillName) client.SendReply(gm, Localization.MSG_SKILLS_TREE_OWN_NAME, tree, string.Join(", ", nodes), skillName);
             else client.SendReply(gm, Localization.MSG_SKILLS_TREE, tree, skillName, string.Join(", ", nodes));
             return;
         }
@@ -201,7 +240,9 @@ public class SkillsCommand : ChatBotCommandHandler<string>
             else if (needs.Length > 0) kind += string.Format(Localization.MSG_SKILLS_KIND_NEEDS, needs);
         }
         // the path: one of the skills linked below it (none on the first tier)
-        var path = node.Requires.Length > 0 ? string.Format(Localization.MSG_SKILLS_PATH, string.Join(" or ", node.Requires.Select(r => SkillTrees.Get(r)?.Name ?? r))) : "";
+        var path = node.Requires.Length > 0 ? string.Format(Localization.MSG_SKILLS_PATH, SkillTrees.PathText(node)) : "";
+        // a trade skill opened by any of its tree's skills works in each of them that is at its level
+        if (SkillTrees.SkillsOf(node).Count > 1 && node.RequiredLevel > 1) path += Localization.MSG_SKILLS_INFO_ANY_OF;
         // the numbers: a passive's per rank and its total (yours now and at the last rank), an active's effects
         var effect = node.EffectText();
         var total = node.TotalText(player.SkillBuild?.Rank(node.Id) ?? 0);
@@ -209,7 +250,7 @@ public class SkillsCommand : ChatBotCommandHandler<string>
         // nothing to add for the skills without numbers (Last Stand, Battle Rhythm): no ". ." after the description
         if (effect.Length > 0) effect = " " + char.ToUpperInvariant(effect[0]) + effect.Substring(1) + ".";
         var cost = string.Format(node.IsActive || node.MaxRank <= 1 ? Localization.MSG_SKILLS_COST_ACTIVE : Localization.MSG_SKILLS_COST_RANK, node.Cost);
-        client.SendReply(gm, Localization.MSG_SKILLS_INFO, node.Name, node.Tree, kind, node.Description, effect, SkillTrees.SkillName(SkillTrees.SkillOf(node.Tree)), node.RequiredLevel, cost, path);
+        client.SendReply(gm, Localization.MSG_SKILLS_INFO, node.Name, node.Tree, kind, node.Description, effect, SkillTrees.GateName(node), node.RequiredLevel, cost, path);
     }
 
     private static bool Answered(PlayerController player, SkillBuildResult result, GameMessage gm, GameClient client)

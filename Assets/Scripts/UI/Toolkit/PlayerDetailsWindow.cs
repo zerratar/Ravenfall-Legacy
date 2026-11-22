@@ -1562,6 +1562,46 @@ namespace Shinobytes.UI
             if (sheet.LowHealthReduction > 0) defence.Add(new AttrRow(RavenNest.Combat.GearStats.Label(RavenNest.Combat.GearStat.LowHealthReduction), Percent(sheet.LowHealthReduction)));
             left.Add((Localization.UI_STATS_GROUP_DEFENCE, defence));
 
+            // The skill trees: the one pool of points and where they come from (the trade skills earn them too), and
+            // the trade skills that count in what the character trains right now, with what they are worth there:
+            // they show nowhere else in the game, the server rolls them. Only those of the skill in use, so the list
+            // stays short (the window has no scroll) and says what "works in each skill at its level" comes to.
+            if (CombatRules.Enabled && player.SkillBuild != null)
+            {
+                var build = player.SkillBuild;
+                var levels = SkillsCommand.LevelsOf(player);
+                var earned = RavenNest.Combat.SkillTrees.EarnedPoints(levels);
+                var trees = new List<AttrRow>
+                {
+                    new AttrRow(Localization.UI_STATS_POINTS_LEFT, string.Format(CultureInfo.InvariantCulture, Localization.UI_STATS_POINTS_OF, Mathf.Max(0, earned - build.Spent), earned), earned > build.Spent),
+                    new AttrRow(Localization.UI_STATS_POINTS_COMBAT, RavenNest.Combat.SkillPoints.FromCombat(levels).ToString(CultureInfo.InvariantCulture)),
+                    new AttrRow(Localization.UI_STATS_POINTS_TAMING, RavenNest.Combat.SkillPoints.FromTaming(levels).ToString(CultureInfo.InvariantCulture)),
+                    new AttrRow(Localization.UI_STATS_POINTS_TRADE, RavenNest.Combat.SkillPoints.FromTrade(levels).ToString(CultureInfo.InvariantCulture)),
+                };
+                void AddTrade(string id, double worth) { if (worth > 0) trees.Add(new AttrRow(RavenNest.Combat.SkillTrees.Get(id)?.Name ?? id, Percent(worth), true)); }
+                if (build.Ranks.Count > 0 && System.Enum.TryParse<RavenNest.Combat.CombatSkill>(player.ActiveSkill.ToString(), out var trained))
+                {
+                    if (System.Linq.Enumerable.Contains(RavenNest.Combat.SkillTrees.SkillsOf(RavenNest.Combat.SkillTree.Gathering), trained))
+                    {
+                        var g = RavenNest.Combat.TradeSkills.Gathering(build, levels(trained));
+                        AddTrade("sure-hands", g.FindChance);
+                        AddTrade("villages-share", g.VillageShare);
+                        AddTrade("bountiful", g.DoubleFind);
+                        AddTrade("tireless", g.DoubleRound);
+                        AddTrade("quick-return", g.WaitCut);
+                        if (g.Eggs) trees.Add(new AttrRow(RavenNest.Combat.SkillTrees.Get("nest-finder").Name, Localization.UI_STATS_TRADE_LEARNED, true));
+                    }
+                    else if (System.Linq.Enumerable.Contains(RavenNest.Combat.SkillTrees.SkillsOf(RavenNest.Combat.SkillTree.Artisan), trained))
+                    {
+                        var m = RavenNest.Combat.TradeSkills.Making(build, trained, levels(trained));
+                        AddTrade("steady-hands", m.Success);
+                        AddTrade("thrifty", m.KeepIngredients);
+                        AddTrade("second-helping", m.ExtraPortion);
+                    }
+                }
+                left.Add((Localization.UI_STATS_GROUP_SKILL_TREES, trees));
+            }
+
             // offence, for the style in use (melee when not fighting)
             var style = player.TrainingRanged ? RavenNest.Combat.AttackStyle.Ranged
                 : player.TrainingMagic ? RavenNest.Combat.AttackStyle.Magic

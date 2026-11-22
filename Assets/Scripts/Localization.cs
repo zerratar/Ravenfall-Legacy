@@ -1534,12 +1534,15 @@ public static class Localization
     public static string UI_QUEST_REWARD_ITEM = " and a {0}";
     public static string UI_DETAILS_SKILL_COOLDOWN = "Cooldown";
     public static string UI_DETAILS_SKILL_READY = "Ready";
-    public static string MSG_SKILLS_SHOW = Meta("skills", "info") + "{free} of {earned} skill points to spend (you earn 1 for every 10 levels across your combat skills, 1 for every 40 past 1,000, and Taming's levels add their own). Loadout: {loadout}. !tree Might (or another tree) lists its skills, !learn <skill> spends points, !loadout <slot> <skill> changes the loadout. Plan a build at ravenfall.stream/skill-trees";
+    public static string MSG_SKILLS_SHOW = Meta("skills", "info") + "{free} of {earned} skill points to spend ({combat} from combat levels, {taming} from Taming, {trade} from trade skills like Mining and Cooking: every level earns into the one pool). Loadout: {loadout}. !tree Might or !tree Gathering lists a tree, !learn <skill> spends points, !loadout <slot> <skill> changes the loadout. Plan a build at ravenfall.stream/skill-trees";
     public static string MSG_SKILLS_TREE = Meta("skills", "info") + "{tree} ({skill}): {nodes}. The number in brackets is the {skill} level a skill needs. !tree <skill> tells you about one.";
     public static string MSG_SKILLS_INFO = Meta("skills", "info") + "{name} ({tree}, {kind}): {description}{effect} Needs {skill} {level}, {cost}.{path}";
     public static string MSG_SKILLS_COST_ACTIVE = "costs {0} point(s)";
     public static string MSG_SKILLS_COST_RANK = "{0} point(s) per rank";
     public static string MSG_SKILLS_TREE_OWN_NAME = Meta("skills", "info") + "{tree}: {nodes}. The number in brackets is the {skill} level a skill needs. !tree <skill> tells you about one.";
+    // the trade trees (docs/trade-skills-design.md): Gathering and Artisan, passives the server rolls while you gather and make things
+    public static string MSG_SKILLS_TREE_TRADE = Meta("skills", "info") + "{tree} (a trade tree, all passives): {nodes}. The number in brackets is the level a skill needs in one of {skills}; it then works in each of them that is at that level. !tree <skill> tells you about one.";
+    public static string MSG_SKILLS_INFO_ANY_OF = " It works in each of those skills that is at that level.";
     public static string MSG_SKILLS_PATH = " Learn {0} first.";
     public static string MSG_SKILLS_KIND_ACTIVE = "active, every {0} s, used {1}";
     public static string MSG_SKILLS_KIND_NEEDS = ", needs {0} equipped";
@@ -1548,7 +1551,7 @@ public static class Localization
     public static string MSG_SKILLS_LOADOUT_EMPTY = "empty";
     public static string MSG_SKILLS_KIND_PASSIVE = "passive";
     public static string MSG_SKILLS_KIND_RANKS = "passive, {0} ranks";
-    public static string MSG_SKILLS_UNKNOWN = Meta("skills", "fail") + "There is no skill or tree called {name}. The trees are Bulwark, Restoration, Might, Precision, Marksman, Elements, Vitality, Hunter and Beastmaster.";
+    public static string MSG_SKILLS_UNKNOWN = Meta("skills", "fail") + "There is no skill or tree called {name}. The trees are Bulwark, Restoration, Might, Precision, Marksman, Elements, Vitality, Hunter and Beastmaster, and for the trade skills Gathering and Artisan.";
     public static string MSG_SKILLS_LEARNED = Meta("skills", "success") + "You learned {name}. {free} skill point(s) left.";
     public static string MSG_SKILLS_LEARNED_ACTIVE = Meta("skills", "success") + "You learned {name}: it is in loadout slot {slot} and is used {when}. {free} skill point(s) left.";
     public static string MSG_SKILLS_LEARNED_FULL = Meta("skills", "success") + "You learned {name}, but your loadout is full: !loadout <slot> {name} puts it in a slot (!loadout shows them). {free} skill point(s) left.";
@@ -1910,11 +1913,12 @@ public static class Localization
     public static string MSG_PET_USAGE = Meta("pets", "fail") + "Get a battle pet: !pets starter fox, bear or fawn; !pets wake (a pet item you own); !tame (creature); !pets hatch (egg). Then: !pets (the one out), !pets stable, !pets use (name), !pets away, !pets rename (new name, for the one out), !pets skills, !pets slot 2 howl, !pets evolve, !pets release (name), !pets about (kind).";
     public static string MSG_PET_NEXT_EVOLVE_GEMS = "Evolves into {0} at level {1} (Taming {2}) for {3}.";
     public static string MSG_PET_EGGS = Meta("pets") + "Eggs in your bag: {eggs}. !pets hatch (egg) puts one in your stable to warm while you play.";
-    public static string MSG_PET_NO_EGGS = Meta("pets", "fail") + "You have no pet eggs. They turn up now and then in dungeons, raids, tower chests, quests, play streaks and island events.";
+    public static string MSG_PET_NO_EGGS = Meta("pets", "fail") + "You have no pet eggs. They turn up now and then in dungeons, raids, tower chests, quests, play streaks and island events, and while gathering once you have learned Nest Finder.";
     public static string MSG_PET_NO_SUCH_EGG = Meta("pets", "fail") + "You have no egg called {name}.";
     public static string MSG_PET_HATCHING = Meta("pets") + "Your {egg} is in your stable, warming. It hatches into a {kind} after {minutes} minutes of play.";
     public static string MSG_PET_STREAK_EGG = Meta("pets", "egg") + "{player} has played {days} days in a row and found a {egg}! !pets hatch puts it in the stable to warm.";
     public static string MSG_PET_EGG_FOUND = Meta("pets", "egg") + "{player} found a {egg}! !pets hatch puts it in the stable to warm.";
+    public static string MSG_PET_NEST_EGG = Meta("pets", "egg") + "{player} came across a {egg} while gathering (Nest Finder)! !pets hatch puts it in the stable to warm.";
     public static string MSG_STREAM_QUEST_EGG = Meta("quests", "egg") + "{player} added the most to the stream's quest and found a {egg}!";
     public static string MSG_PET_HATCHED = Meta("pets") + "{player}'s {egg} hatched into a {kind}!";
     public static string MSG_PET_HATCH_TAMING = Meta("pets", "fail") + "A {egg} needs Taming {level} to hatch. Taming trains while a battle pet is out with you; keep the egg until then.";
@@ -2693,6 +2697,15 @@ public static class Localization
     public static string UI_STATS_GROUP_DEFENCE = "DEFENSE";
     public static string UI_STATS_GROUP_OFFENCE = "OFFENSE";
     public static string UI_STATS_GROUP_ELEMENTS = "ELEMENTS";
+    // the skill trees in the details window: the one pool of points and where they come from, and the trade skills
+    // that count in the skill being trained (short labels: the rows do not wrap)
+    public static string UI_STATS_GROUP_SKILL_TREES = "SKILL TREES";
+    public static string UI_STATS_POINTS_LEFT = "Points left";
+    public static string UI_STATS_POINTS_OF = "{0} of {1}";
+    public static string UI_STATS_POINTS_COMBAT = "From combat levels";
+    public static string UI_STATS_POINTS_TAMING = "From Taming";
+    public static string UI_STATS_POINTS_TRADE = "From trade skills";
+    public static string UI_STATS_TRADE_LEARNED = "On";
     public static string UI_STATS_HEALTH = "Health";
     public static string UI_STATS_MAX_HEALTH = "Max health";
     public static string UI_STATS_FROM_VITALITY = "From Vitality";

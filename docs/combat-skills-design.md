@@ -15,8 +15,10 @@ Decided with Zerratar (2026-11-06):
 
 - **Skill trees,** one per combat skill (and Beastmaster for Taming, see the end of this document). A tree holds **actives** (skills used in combat on a cooldown) and
   **passives** (always on: more armour, more crit, longer burns, cheaper threat...).
-- **Skill points** come from combat levels and are spent in any tree. A node also needs a level in its
-  tree's skill: "Whirlwind" needs Strength 120, so points alone do not open a tree you never trained.
+- **Skill points** come from combat levels (and, since 2026-11-21 and 2026-11-22, from Taming's levels and the nine
+  trade skills', each counted apart at its own rate: `trade-skills-design.md`) and are spent in any tree. A node also
+  needs a level in its tree's skill: "Whirlwind" needs Strength 120, so points alone do not open a tree you never
+  trained.
 - **The loadout:** up to **4 active skills** in combat, picked from the actives you have unlocked, plus your
   basic attack. Passives from all trees always apply.
 - **Respec** gives all points back for coins (section 5).
@@ -32,6 +34,9 @@ deep in one or two trees, or wide across several, never everything.
 1,000 levels). A character with every combat skill at 999 has about **280 points**; all trees together cost
 about **750**, so even the strongest player fills well under half. A new player gets their first points
 within the first hours.
+
+(As built on 2026-11-22: the eight combat skills at 999 earn 274, Taming 34 more, the nine trade skills 97 more, 405
+in all, against eleven trees that cost 957. Still one pool: the trade trees are paid from it too.)
 
 ## 2. The trees
 
@@ -86,9 +91,10 @@ Utility nodes outside combat (for example the chance to keep a gem when removing
 document) sit in a small **Artisan** tree, gated by Crafting. It uses the same point pool, so a player who
 spends points there has fewer for combat.
 
-(As built, there is no Artisan tree: its one node, Gem Salvager, sits in Hunter. `trade-skills-design.md` is the
-proposal of 2026-11-22 for a second tab of trees for gathering and making, with points of its own; it moves the
-node there. Not approved yet.)
+(As built: until 2026-11-22 there was no Artisan tree and its one node, Gem Salvager, sat in Hunter. Since then
+Artisan is one of the two **trade trees** (Gathering and Artisan, `trade-skills-design.md`), shown on their own
+Trade tab, and Gem Salvager is there, opened by Crafting 300. They use the same point pool, as this paragraph
+said, and the nine trade skills earn into it; the combat level does not count them.)
 
 ## 3. Using skills automatically
 
