@@ -169,6 +169,9 @@ in its place: all finds together are up 21%.)
 With a gatherer pet out (Forage: 5% for one more, 6.5% with Keen Senses) the rarest goes to 5.16 a day, +30% on
 3.98 without a pet.
 
+Taming gear (docs/taming-gear-design.md, 2026-11-22) adds its PET_GATHERING to Keen Senses: up to 10% more of the
+pet's gather skills at tier 8, so Forage at 5% x (1 + 0.3 + 0.1) = 7% with both. A small step on the line above.
+
 **The dial for the rarest things** is Bountiful's and Quick Return's last rank, and nothing else touches them:
 
 | Bountiful / Quick Return at full rank | The rarest finds, per player with both |
