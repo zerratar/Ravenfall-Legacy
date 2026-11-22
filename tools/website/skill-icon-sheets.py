@@ -3,7 +3,7 @@
 # emblems as tree-<name>.webp and the skill point as point.webp. Each icon is trimmed to what is drawn and centred on a
 # transparent square.
 #
-#   python tools/website/skill-icon-sheets.py [folder with skill-sheet-a.webp, -b, -c and -d; default tools/website/skill-icon-sheets]
+#   python tools/website/skill-icon-sheets.py [folder with skill-sheet-a.webp to -e; default tools/website/skill-icon-sheets]
 # (the sheets as made are kept there, with skill-medallion.webp, the centre of the map, saved by hand as imgs/skills/medallion.webp)
 import os
 import sys
@@ -25,6 +25,10 @@ LAYOUT = {
     # the Beastmaster tree (2026-11-21); the last row is spare sigils (a pack, a guard, an element), not cut
     "d": (3, ["tree-beastmaster", "sic-em", "mend-pet", "call-of-the-wild", "trick-training", "shared-mending",
               None, None, None]),
+    # the trade trees (2026-11-22): Gathering's emblem and seven skills in green, Artisan's in forge amber
+    "e": (4, ["tree-gathering", "sure-hands", "villages-share", "bountiful", "tireless", "quick-return", "nest-finder",
+              "master-of-the-trade", "tree-artisan", "steady-hands", "thrifty", "second-helping", "gem-salvager",
+              "gem-cutter", "enchanters-patience", "master-artisan"]),
 }
 
 
