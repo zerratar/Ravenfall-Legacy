@@ -77,8 +77,11 @@ public sealed class PlayerOutfits
     public void Apply(OutfitResult result, bool announce)
     {
         if (result == null || result.Outfits == null) return;
+        var followed = state.Follow;
         state = CharacterOutfits.Parse(result.Outfits);
         if (state.Worn != Skill.None) worn = state.Worn;
+        // "change outfit with training" was turned on again: what is trained now is looked at afresh
+        if (state.Follow && !followed) seen = false;
         ApplyWord();
         if (result.Pets != null && owner) owner.BattlePets.Apply(new PetResult { Status = PetResultStatus.Ok, Pets = result.Pets });
         if (announce) AnnounceGone(result);
