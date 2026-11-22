@@ -1,0 +1,163 @@
+# The item prefabs the website's gear export writes (tools/characters/export-gear-web.cs): what the server's items
+# name as their model. Written by the export whenever the local server answers; read by it when none does.
+Character/Appearance/Head/Antlers
+Character/Appearance/Head/Bachelor Hat
+Character/Appearance/Head/Beach Hat
+Character/Appearance/Head/Black Santa Hat
+Character/Appearance/Head/Blue Tiki Mask
+Character/Appearance/Head/Bunny Ears
+Character/Appearance/Head/Cactus Hat
+Character/Appearance/Head/Chef Hat
+Character/Appearance/Head/Crown
+Character/Appearance/Head/Dinosaur Hat
+Character/Appearance/Head/FBI Hat
+Character/Appearance/Head/Fedora
+Character/Appearance/Head/Green Tiki Mask
+Character/Appearance/Head/Leprechaun Hat
+Character/Appearance/Head/Nurse Hat
+Character/Appearance/Head/Paperbag
+Character/Appearance/Head/Red Tiki Mask
+Character/Appearance/Head/Samurai Helmet
+Character/Appearance/Head/Santa Hat
+Character/Appearance/Head/Shark Hat
+Character/Appearance/Head/Top Hat
+Character/Appearance/Head/Traffic Cone
+Character/Appearance/Head/Uncle Sam Hat
+Character/Appearance/Head/Unicorn Hat
+Character/Appearance/Neck/Brown Neckwrap
+Character/Appearance/Neck/Green Neckwrap
+Character/Male/Accessories/Necklaces/Necklace 07 Gold
+Character/Male/Accessories/Necklaces/Necklace 07 Gold 1
+Character/Male/Accessories/Necklaces/Necklace 12 Green Silver
+Character/Weapons/Axes/Abraxas 2H Axe
+Character/Weapons/Axes/Abraxas Axe
+Character/Weapons/Axes/Adamantite 2H Axe
+Character/Weapons/Axes/Adamantite Axe
+Character/Weapons/Axes/Ancient 2H Axe
+Character/Weapons/Axes/Ancient Axe
+Character/Weapons/Axes/Atlarus 2H Axe
+Character/Weapons/Axes/Atlarus Axe
+Character/Weapons/Axes/Black 2H Axe
+Character/Weapons/Axes/Black Axe
+Character/Weapons/Axes/Bronze 2H Axe
+Character/Weapons/Axes/Bronze Axe
+Character/Weapons/Axes/Dragon 2H Axe
+Character/Weapons/Axes/Dragon Axe
+Character/Weapons/Axes/Ether 2H Axe
+Character/Weapons/Axes/Ether Axe
+Character/Weapons/Axes/Iron 2H Axe
+Character/Weapons/Axes/Iron Axe
+Character/Weapons/Axes/Lionsbane 2H Axe
+Character/Weapons/Axes/Lionsbane Axe
+Character/Weapons/Axes/Mithril 2H Axe
+Character/Weapons/Axes/Mithril Axe
+Character/Weapons/Axes/Phantom 2H Axe
+Character/Weapons/Axes/Phantom Axe
+Character/Weapons/Axes/Rune 2H Axe
+Character/Weapons/Axes/Rune Axe
+Character/Weapons/Axes/Steel 2H Axe
+Character/Weapons/Axes/Steel Axe
+Character/Weapons/Bacon_Sword
+Character/Weapons/Bows/Abraxas Bow
+Character/Weapons/Bows/Adamantite Bow
+Character/Weapons/Bows/Ancient Bow
+Character/Weapons/Bows/Atlarus Bow
+Character/Weapons/Bows/Bananarang
+Character/Weapons/Bows/Black Bow
+Character/Weapons/Bows/Bronze Bow
+Character/Weapons/Bows/Dragon Bow
+Character/Weapons/Bows/Ether Bow
+Character/Weapons/Bows/Iron Bow
+Character/Weapons/Bows/Lionsbane Bow
+Character/Weapons/Bows/Mithril Bow
+Character/Weapons/Bows/Phantom Bow
+Character/Weapons/Bows/Rune Bow
+Character/Weapons/Bows/Steel Bow
+Character/Weapons/Shields/Abraxas Shield
+Character/Weapons/Shields/Adamantite Shield
+Character/Weapons/Shields/Ancient Shield
+Character/Weapons/Shields/Atlarus Shield
+Character/Weapons/Shields/Black Shield
+Character/Weapons/Shields/Bronze Shield
+Character/Weapons/Shields/Dragon Shield
+Character/Weapons/Shields/Ether Shield
+Character/Weapons/Shields/Iron Shield
+Character/Weapons/Shields/Lionsbane Shield
+Character/Weapons/Shields/Mithril Shield
+Character/Weapons/Shields/Phantom Shield
+Character/Weapons/Shields/Rune Shield
+Character/Weapons/Shields/Steel Shield
+Character/Weapons/Spears/Abraxas Spear
+Character/Weapons/Spears/Adamantite Spear
+Character/Weapons/Spears/Ancient Spear
+Character/Weapons/Spears/Atlarus Spear
+Character/Weapons/Spears/Black Spear
+Character/Weapons/Spears/Bronze Spear
+Character/Weapons/Spears/Dragon Spear
+Character/Weapons/Spears/Ether Spear
+Character/Weapons/Spears/Iron Spear
+Character/Weapons/Spears/Lionsbane Spear
+Character/Weapons/Spears/Mithril Spear
+Character/Weapons/Spears/Phantom Spear
+Character/Weapons/Spears/Rune Spear
+Character/Weapons/Spears/Steel Spear
+Character/Weapons/Staffs/Abraxas Staff
+Character/Weapons/Staffs/Adamantite Staff
+Character/Weapons/Staffs/Ancient Staff
+Character/Weapons/Staffs/Atlarus Staff
+Character/Weapons/Staffs/Black Staff
+Character/Weapons/Staffs/Bronze Staff
+Character/Weapons/Staffs/Dragon Staff
+Character/Weapons/Staffs/Ether Staff
+Character/Weapons/Staffs/Iron Staff
+Character/Weapons/Staffs/Lionsbane Staff
+Character/Weapons/Staffs/Mithril Staff
+Character/Weapons/Staffs/Phantom Staff
+Character/Weapons/Staffs/Rune Staff
+Character/Weapons/Staffs/Steel Staff
+Character/Weapons/StickOfGhrims
+Character/Weapons/Swords/Abraxas 2H Sword
+Character/Weapons/Swords/Abraxas Katana
+Character/Weapons/Swords/Abraxas Sword
+Character/Weapons/Swords/Adamantite 2H Sword
+Character/Weapons/Swords/Adamantite Katana
+Character/Weapons/Swords/Adamantite Sword
+Character/Weapons/Swords/Ancient 2H Sword
+Character/Weapons/Swords/Ancient Katana
+Character/Weapons/Swords/Ancient Sword
+Character/Weapons/Swords/Atlarus 2H Sword
+Character/Weapons/Swords/Atlarus Katana
+Character/Weapons/Swords/Atlarus Sword
+Character/Weapons/Swords/Black 2H Sword
+Character/Weapons/Swords/Black Katana
+Character/Weapons/Swords/Black Sword
+Character/Weapons/Swords/Bronze 2H Sword
+Character/Weapons/Swords/Bronze Katana
+Character/Weapons/Swords/Bronze Sword
+Character/Weapons/Swords/Dragon 2H Sword
+Character/Weapons/Swords/Dragon Katana
+Character/Weapons/Swords/Dragon Sword
+Character/Weapons/Swords/Ether 2H Sword
+Character/Weapons/Swords/Ether Katana
+Character/Weapons/Swords/Ether Sword
+Character/Weapons/Swords/Iron 2H Sword
+Character/Weapons/Swords/Iron Katana
+Character/Weapons/Swords/Iron Sword
+Character/Weapons/Swords/Lionsbane 2H Sword
+Character/Weapons/Swords/Lionsbane Katana
+Character/Weapons/Swords/Lionsbane Sword
+Character/Weapons/Swords/Mithril 2H Sword
+Character/Weapons/Swords/Mithril Katana
+Character/Weapons/Swords/Mithril Sword
+Character/Weapons/Swords/Phantom 2H Sword
+Character/Weapons/Swords/Phantom Katana
+Character/Weapons/Swords/Phantom Sword
+Character/Weapons/Swords/Rune 2H Sword
+Character/Weapons/Swords/Rune Katana
+Character/Weapons/Swords/Rune Sword
+Character/Weapons/Swords/Steel 2H Sword
+Character/Weapons/Swords/Steel Katana
+Character/Weapons/Swords/Steel Sword
+Character/Weapons/Turd_Sword
+Character/Weapons/UltimateTunaSlapper
+Character/Weapons/pickle_rick_sword
