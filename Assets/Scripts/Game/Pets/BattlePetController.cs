@@ -39,9 +39,26 @@ public sealed class BattlePetController : MonoBehaviour
     public const float TwinStrength = 0.5f;
 
     // from its owner's skill tree (Beastmaster), read whenever the pet or the build changes
-    private float bondPower = 1f, bondRecovery, bondGuard;
+    private float bondPower = 1f, bondRecovery, bondGuard, bondAlpha;
     private int bondSlots;
-    private bool bondShared;
+    private bool bondShared, bondSafe;
+    // the model's own size, before a packmate's or an Alpha's
+    private Vector3 rawScale = Vector3.one;
+    private float rawHeight = 0.6f;
+
+    /// <summary>Trailblazer: while its owner gathers, the pet is never knocked out (and one that is gets up).</summary>
+    private bool SafeNow
+    {
+        get
+        {
+            if (!bondSafe || !Owner) return false;
+            switch (Owner.ActiveSkill)
+            {
+                case Skill.Woodcutting: case Skill.Mining: case Skill.Fishing: case Skill.Farming: case Skill.Gathering: return true;
+                default: return false;
+            }
+        }
+    }
     // Call of the Wild: more damage for a while
     private float commandDamageUntil, commandDamage;
 
@@ -121,13 +138,20 @@ public sealed class BattlePetController : MonoBehaviour
         model.Root.transform.SetParent(transform, false);
         model.Root.transform.localPosition = Vector3.zero;
         model.Root.transform.localRotation = Quaternion.identity;
-        if (IsTwin)
-        {
-            model.Root.transform.localScale *= 0.85f;
-            model.Height *= 0.85f;
-        }
-        baseScale = model.Root.transform.localScale;
+        rawScale = model.Root.transform.localScale;
+        rawHeight = model.Height;
+        Size();
         clips = new PetClipPlayer(model.Animator, model.Clips, Species.Strike == PetStrike.Bolt);
+    }
+
+    /// <summary>The model's size: a packmate a little smaller than the pet, an Alpha's pet larger (its owner's capstone).</summary>
+    private void Size()
+    {
+        if (model == null || !model.Root) return;
+        var size = (IsTwin ? 0.85f : 1f) * (1f + bondAlpha);
+        model.Root.transform.localScale = rawScale * size;
+        model.Height = rawHeight * size;
+        baseScale = model.Root.transform.localScale;
     }
 
     private void Setup(PlayerController owner, BattlePet data, PetSpecies species)
@@ -156,6 +180,16 @@ public sealed class BattlePetController : MonoBehaviour
         bondGuard = Mathf.Max(0f, (float)bond[GearStat.PetGuard]);
         bondSlots = build != null && CombatRules.Enabled ? build.ExtraPetSkillSlots : 0;
         bondShared = build != null && CombatRules.Enabled && build.HealsReachPet;
+        bondSafe = bond[GearStat.PetSafeGathering] > 0;
+        // Alpha: one larger pet (the size changes at once when the ending is learned or taken back)
+        var alpha = Mathf.Clamp((float)bond[GearStat.PetAlpha], 0f, 1f);
+        if (!Mathf.Approximately(alpha, bondAlpha))
+        {
+            var grew = alpha > bondAlpha;
+            bondAlpha = alpha;
+            if (move == Move.None) Size();
+            if (grew && placed && Shown) PetFx.Burst(transform.position, Mathf.Max(0.6f, Height), PetFx.ElementColor(Species.Element));
+        }
         var share = MaxHealth > 0 ? (float)Health / MaxHealth : 1f;
         MaxHealth = Mathf.Max(1, Mathf.RoundToInt(sheet.MaxHealth * (1f + Mathf.Max(0f, (float)bond[GearStat.PetHealth])) * (IsTwin ? TwinStrength : 1f)));
         Health = Mathf.Clamp(Mathf.RoundToInt(MaxHealth * share), 1, MaxHealth);
@@ -183,6 +217,7 @@ public sealed class BattlePetController : MonoBehaviour
         if (drawn) clips?.Tick();
         if (hidden) { placed = false; move = Move.None; return; }
 
+        if (KnockedOut && SafeNow) GetUp(); // Trailblazer: on its feet while its owner gathers
         if (KnockedOut) { Lie(); return; }
         if (knockedUntil > 0f) GetUp();
 
@@ -816,6 +851,7 @@ public sealed class BattlePetController : MonoBehaviour
 
     private void KnockOut()
     {
+        if (SafeNow) { Health = 1; return; } // Trailblazer: never knocked out while its owner gathers
         Health = 0;
         knockedUntil = Time.time + (float)BattlePets.KnockoutSeconds * (1f - bondRecovery); // sooner with Back on Its Feet
         move = Move.None;

@@ -132,6 +132,12 @@ public class SkillsCommand : ChatBotCommandHandler<string>
             else client.SendReply(gm, Localization.MSG_SKILLS_LEARNED_ACTIVE + needsText, learned.Name, slot + 1, SkillTrees.UseText(build.RuleOf(learned)), free);
             return;
         }
+        // a combat tree's ending: one of three, and it says which tree's
+        if (learned != null && learned.Capstone && SkillTrees.Capstones(learned.Tree).Count > 1)
+        {
+            client.SendReply(gm, Localization.MSG_SKILLS_LEARNED_ENDING, learned.Name, learned.Tree, free);
+            return;
+        }
         client.SendReply(gm, Localization.MSG_SKILLS_LEARNED, (learned?.Name ?? node) + rank, free);
     }
 
@@ -201,7 +207,8 @@ public class SkillsCommand : ChatBotCommandHandler<string>
                     || SkillTrees.SkillsOf(t).Any(s => s.ToString().Equals(text, StringComparison.OrdinalIgnoreCase) || SkillTrees.SkillName(s).Equals(text, StringComparison.OrdinalIgnoreCase));
         var trees = Enum.GetValues(typeof(SkillTree)).Cast<SkillTree>().ToList();
         var matches = SkillTrees.Matches(text);
-        var exactSkill = matches.Count == 1 && (matches[0].Name.Equals(text, StringComparison.OrdinalIgnoreCase) || matches[0].Id.Equals(text.Replace(' ', '-'), StringComparison.OrdinalIgnoreCase));
+        var exactSkill = matches.Count == 1 && (matches[0].Name.Equals(text, StringComparison.OrdinalIgnoreCase) || matches[0].Id.Equals(text.Replace(' ', '-'), StringComparison.OrdinalIgnoreCase)
+            || string.Equals(matches[0].Path, text, StringComparison.OrdinalIgnoreCase)); // an ending by its path's name (!tree assassin)
         var treeIndex = trees.FindIndex(t => IsTree(t, false));
         if (treeIndex < 0 && !exactSkill && text.Length >= 3) treeIndex = trees.FindIndex(t => IsTree(t, true));
         if (treeIndex >= 0)
@@ -209,14 +216,18 @@ public class SkillsCommand : ChatBotCommandHandler<string>
             var tree = trees[treeIndex];
             var build = player.SkillBuild;
             var skillName = SkillTrees.SkillName(SkillTrees.SkillOf(tree));
-            var nodes = SkillTrees.Of(tree).Select(n =>
+            // a combat tree's three endings are listed after its skills, with the one chosen
+            var endings = SkillTrees.Capstones(tree);
+            var three = endings.Count > 1;
+            var nodes = SkillTrees.Of(tree).Where(n => !(three && n.Capstone)).Select(n =>
                 n.Name + (n.MaxRank > 1 ? " " + build.Rank(n.Id) + "/" + n.MaxRank : build.Has(n.Id) ? " (learned)" : n.IsActive ? " (active)" : "")
                 + (n.Tier > 0 ? " [" + n.RequiredLevel + "]" : ""));
+            var endingText = three ? string.Format(Localization.MSG_SKILLS_TREE_ENDINGS, string.Join(", ", endings.Select(n => build.Has(n.Id) ? string.Format(Localization.MSG_SKILLS_ENDING_CHOSEN, n.Name) : n.Name))) : "";
             // a trade tree is opened by any of its skills, and its skills work in each of them
             if (SkillTrees.IsTrade(tree)) client.SendReply(gm, Localization.MSG_SKILLS_TREE_TRADE, tree, string.Join(", ", nodes), SkillTrees.GateName(tree));
             // the Vitality tree is named after its skill: once, not "Vitality (Vitality)"
-            else if (tree.ToString() == skillName) client.SendReply(gm, Localization.MSG_SKILLS_TREE_OWN_NAME, tree, string.Join(", ", nodes), skillName);
-            else client.SendReply(gm, Localization.MSG_SKILLS_TREE, tree, skillName, string.Join(", ", nodes));
+            else if (tree.ToString() == skillName) client.SendReply(gm, Localization.MSG_SKILLS_TREE_OWN_NAME + endingText, tree, string.Join(", ", nodes), skillName);
+            else client.SendReply(gm, Localization.MSG_SKILLS_TREE + endingText, tree, skillName, string.Join(", ", nodes));
             return;
         }
 
@@ -232,6 +243,16 @@ public class SkillsCommand : ChatBotCommandHandler<string>
         // an active: how often, when the character uses it (the player's rule from the website, or the skill's own) and
         // what must be equipped; a skill learned for the wrong weapon was never used and nothing said why
         var kind = node.MaxRank > 1 ? string.Format(Localization.MSG_SKILLS_KIND_RANKS, node.MaxRank) : Localization.MSG_SKILLS_KIND_PASSIVE;
+        // an ending: whose it is, that a tree has only one, and which one this character chose
+        var endingNote = "";
+        if (node.Capstone && SkillTrees.Capstones(node.Tree).Count > 1)
+        {
+            kind = string.Equals(node.Path, node.Name, StringComparison.OrdinalIgnoreCase) ? Localization.MSG_SKILLS_KIND_ENDING_PLAIN : string.Format(Localization.MSG_SKILLS_KIND_ENDING, node.Path);
+            var chosen = player.SkillBuild?.CapstoneOf(node.Tree);
+            endingNote = chosen == null ? string.Format(Localization.MSG_SKILLS_INFO_ENDING, node.Tree)
+                : chosen == node ? string.Format(Localization.MSG_SKILLS_INFO_ENDING_YOURS, node.Tree)
+                : string.Format(Localization.MSG_SKILLS_INFO_ENDING_OTHER, chosen.Name, node.Tree);
+        }
         if (node.IsActive)
         {
             kind = string.Format(Localization.MSG_SKILLS_KIND_ACTIVE, node.Active.Cooldown, SkillTrees.UseText(player.SkillBuild != null ? player.SkillBuild.RuleOf(node) : node.Active.Use));
@@ -250,7 +271,7 @@ public class SkillsCommand : ChatBotCommandHandler<string>
         // nothing to add for the skills without numbers (Last Stand, Battle Rhythm): no ". ." after the description
         if (effect.Length > 0) effect = " " + char.ToUpperInvariant(effect[0]) + effect.Substring(1) + ".";
         var cost = string.Format(node.IsActive || node.MaxRank <= 1 ? Localization.MSG_SKILLS_COST_ACTIVE : Localization.MSG_SKILLS_COST_RANK, node.Cost);
-        client.SendReply(gm, Localization.MSG_SKILLS_INFO, node.Name, node.Tree, kind, node.Description, effect, SkillTrees.GateName(node), node.RequiredLevel, cost, path);
+        client.SendReply(gm, Localization.MSG_SKILLS_INFO, node.Name, node.Tree, kind, node.Description, effect, SkillTrees.GateName(node), node.RequiredLevel, cost, path + endingNote);
     }
 
     private static bool Answered(PlayerController player, SkillBuildResult result, GameMessage gm, GameClient client)

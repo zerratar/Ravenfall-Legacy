@@ -259,18 +259,22 @@ public sealed class CombatSkillRunner
             }
             return;
         }
+        // lightning that jumps (Chain Lightning) hits harder on every jump with a jump bonus (Eye of the Storm, a Topaz)
+        var jumpBonus = active.Targeting == SkillTargeting.Chain ? owner.EquipmentStats.Gear(GearStat.LightningJumpBonus) : 0;
         foreach (var effect in active.Effects)
         {
-            foreach (var t in targets)
+            for (var index = 0; index < targets.Count; ++index)
             {
+                var t = targets[index];
                 if (t == null || (t is Object o && !o)) continue;
                 var seconds = (float)effect.Seconds;
                 switch (effect.Kind)
                 {
                     case SkillEffectKind.Damage:
+                        var jump = jumpBonus > 0 && index > 0 && effect.Element == Element.Lightning ? System.Math.Pow(1 + jumpBonus, index) : 1;
                         for (var hit = 0; hit < Mathf.Max(1, effect.Hits); ++hit)
                         {
-                            var result = CombatRules.Strike(owner, t, active.Style, new AttackOptions { Multiplier = effect.Amount, Element = effect.Element, ArmorIgnored = effect.ArmorIgnored });
+                            var result = CombatRules.Strike(owner, t, active.Style, new AttackOptions { Multiplier = effect.Amount * jump, Element = effect.Element, ArmorIgnored = effect.ArmorIgnored });
                             if (result == null) break;
                             owner.SessionStats.AddDamageDealt(result.Total);
                             if (t.TakeDamage(owner, result.Total))
@@ -284,8 +288,12 @@ public sealed class CombatSkillRunner
                         CombatEffects.AddDamageOverTime(owner, t, effect.Element, CombatRules.TypicalHit(owner, active.Style) * effect.Amount, seconds);
                         break;
                     case SkillEffectKind.Heal:
-                        t.Heal(CombatRules.SkillHeal(owner, effect.Amount));
-                        break;
+                        {
+                            var healed = CombatRules.SkillHeal(owner, effect.Amount);
+                            t.Heal(healed);
+                            CombatPaths.HealStruck(owner, t, healed); // Holy Fire
+                            break;
+                        }
                     case SkillEffectKind.HealOverTime:
                         CombatEffects.AddHealOverTime(owner, t, CombatRules.SkillHeal(owner, effect.Amount), seconds);
                         break;

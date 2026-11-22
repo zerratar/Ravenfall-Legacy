@@ -49,7 +49,44 @@ public static class CombatRules
     public static float AttackSpeed(IAttackable fighter)
     {
         var eq = Enabled ? fighter?.GetEquipmentStats() : null;
-        return eq == null ? 1f : Mathf.Clamp((float)(1 + eq.Gear(GearStat.AttackSpeed)), 0.2f, (float)CombatMath.MaxAttackSpeed);
+        if (eq == null) return 1f;
+        var speed = 1 + eq.Gear(GearStat.AttackSpeed);
+        // Flowing Steel: faster with every hit in a row on one target
+        var combo = eq.Gear(GearStat.ComboSpeed);
+        if (combo > 0 && PathOf != null)
+        {
+            var state = PathOf(fighter);
+            PathRules.Rest(state, Time.time);
+            speed += PathRules.ComboSpeed(state, combo);
+        }
+        return Mathf.Clamp((float)speed, 0.2f, (float)CombatMath.MaxAttackSpeed);
+    }
+
+    /// <summary>
+    ///     A fighter's capstone path memory (its target, hits in a row, the count to the next Aftershock), or null for
+    ///     one whose build has nothing to remember (the game's CombatPaths sets it; docs/capstone-paths-design.md).
+    /// </summary>
+    public static System.Func<IAttackable, PathState> PathOf;
+
+    /// <summary>A blow whose path set something off (a first hit, Aftershock's burst, Volley's second arrow): CombatPaths carries it out.</summary>
+    public static System.Action<IAttackable, IAttackable, AttackStyle, AttackResult, PathBlow> PathBlowLanded;
+
+    // a blow worked out by the new rules, with what the attacker's capstone path changes about it before and sets off after
+    private static AttackResult Resolve(IAttackable attacker, IAttackable defender, AttackStyle style, CombatSheet attackerSheet, CombatSheet defenderSheet, AttackOptions options, bool basic)
+    {
+        var state = PathOf != null && !attacker.IsEnemy ? PathOf(attacker) : null;
+        if (state != null)
+        {
+            if (basic) PathRules.Rest(state, Time.time);
+            options = PathRules.Before(state, attackerSheet, defender, options, basic, Time.time);
+        }
+        var result = CombatMath.Attack(attackerSheet, style, defenderSheet, random, options);
+        var blow = state != null ? PathRules.After(state, attackerSheet, style, defender, result, basic, Time.time) : default;
+        // Retribution: a player who blocked answers with its next hit
+        if (result.Blocked && PathOf != null && !defender.IsEnemy && defenderSheet.BlockRetort > 0) PathRules.Blocked(PathOf(defender), defenderSheet);
+        BlowLanded?.Invoke(attacker, defender, result, defenderSheet); // burn, chill, shock, poison (CombatEffects)
+        if (blow.First || blow.Retorted || blow.Splash > 0 || blow.Second > 0) PathBlowLanded?.Invoke(attacker, defender, style, result, blow);
+        return result;
     }
 
     /// <summary>Heal and spell times are divided by this: 1 plus the CAST_SPEED stat (Quick Hands), 1 with the old rules.</summary>
@@ -98,9 +135,7 @@ public static class CombatRules
         var attackerSheet = Sheet(attacker);
         var defenderSheet = Sheet(defender);
         if (attackerSheet == null || defenderSheet == null) return null;
-        var result = CombatMath.Attack(attackerSheet, style, defenderSheet, random, options);
-        BlowLanded?.Invoke(attacker, defender, result, defenderSheet);
-        return result;
+        return Resolve(attacker, defender, style, attackerSheet, defenderSheet, options, false);
     }
 
     /// <summary>A skill's heal: the healer's basic heal times <paramref name="multiplier"/>.</summary>
@@ -131,9 +166,7 @@ public static class CombatRules
         if (defenderModifiers != null && defenderModifiers.DodgeChance > 0 && Random.value <= defenderModifiers.DodgeChance)
             return 0;
 
-        var result = CombatMath.Attack(attackerSheet, style, defenderSheet, random);
-        BlowLanded?.Invoke(attacker, defender, result, defenderSheet); // burn, chill, shock, poison (CombatEffects)
-        return result.Total;
+        return Resolve(attacker, defender, style, attackerSheet, defenderSheet, AttackOptions.Basic, true).Total;
     }
 
     /// <summary>

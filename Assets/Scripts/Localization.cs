@@ -1176,6 +1176,10 @@ public static class Localization
     public static string UI_FLOAT_BURNING = "Burning";
     public static string UI_FLOAT_POISONED = "Poisoned";
     public static string UI_FLOAT_CHILLED = "Chilled";
+    // the capstone paths (docs/capstone-paths-design.md): what a path's rule did, in a word over the fighter
+    public static string UI_FLOAT_FIRST_BLOOD = "First Blood";
+    public static string UI_FLOAT_RETRIBUTION = "Retribution";
+    public static string UI_FLOAT_GUARDIAN_ANGEL = "Guardian Angel";
     public static string UI_SETTINGS_EFFECT_WORDS = "Effect words";
     public static string UI_SETTINGS_EFFECT_WORDS_HINT = "A word over a fighter when an element's effect starts on it (Burning, Chilled, Frozen, Stunned, Poisoned) or a hit does nothing (Immune), in the element's color.";
     public static string UI_SETTINGS_WHATSNEW = "What's new";
@@ -1544,6 +1548,15 @@ public static class Localization
     public static string MSG_SKILLS_TREE_TRADE = Meta("skills", "info") + "{tree} (a trade tree, all passives): {nodes}. The number in brackets is the level a skill needs in one of {skills}; it then works in each of them that is at that level. !tree <skill> tells you about one.";
     public static string MSG_SKILLS_INFO_ANY_OF = " It works in each of those skills that is at that level.";
     public static string MSG_SKILLS_PATH = " Learn {0} first.";
+    // the capstone paths: a combat tree ends in three capstones of which a character learns one
+    public static string MSG_SKILLS_TREE_ENDINGS = " At 999 pick one ending: {0}.";
+    public static string MSG_SKILLS_ENDING_CHOSEN = "{0} (chosen)";
+    public static string MSG_SKILLS_KIND_ENDING = "the {0}'s ending";
+    public static string MSG_SKILLS_KIND_ENDING_PLAIN = "an ending";
+    public static string MSG_SKILLS_INFO_ENDING = " One of {0}'s three endings: you can learn only one.";
+    public static string MSG_SKILLS_INFO_ENDING_YOURS = " This is the {0} ending you chose.";
+    public static string MSG_SKILLS_INFO_ENDING_OTHER = " You chose {0} as your {1} ending; a respec gives the choice back.";
+    public static string MSG_SKILLS_LEARNED_ENDING = Meta("skills", "success") + "You learned {name}, your {tree} ending. {free} skill point(s) left.";
     public static string MSG_SKILLS_KIND_ACTIVE = "active, every {0} s, used {1}";
     public static string MSG_SKILLS_KIND_NEEDS = ", needs {0} equipped";
     public static string MSG_SKILLS_KIND_NEEDS_PET = ", needs a battle pet out";

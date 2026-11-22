@@ -2935,6 +2935,9 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         // a tank pet takes its share of the blow (all of it while it guards)
         if (battlePets != null && damage > 0 && attacker != null && attacker.IsEnemy) damage = battlePets.Intercept(damage);
 
+        // Shield of the Many (Bulwark's Guardian): a guardian near takes its share of the blow in this player's place
+        if (damage > 1 && attacker != null && attacker.IsEnemy) damage = CombatPaths.Guard(this, attacker, damage);
+
         // level sync on a tower floor: a blow takes the same share of the pool as it would of the synced one
         if (damage > 0 && towerHandler != null && towerHandler.SyncFloor > 0) damage = Mathf.RoundToInt(damage * towerHandler.SyncHealthScale);
 
@@ -2947,6 +2950,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         }
 
         // combat v2: a shield takes the blow first; Last Stand leaves 1 health once a fight
+        var angelHeal = 0;
         if (CombatRules.Enabled)
         {
             if (Time.time - lastHitTime > 10f) lastStandUsed = false;
@@ -2962,6 +2966,12 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
                 lastStandUsed = true;
                 damage = Mathf.Max(0, (int)Stats.Health.CurrentValue - 1);
             }
+            // Guardian Angel (Restoration's Lifebinder): a healer near leaves this player at 1 health and heals them
+            else if (damage >= Stats.Health.CurrentValue && attacker != null && attacker.IsEnemy)
+            {
+                angelHeal = CombatPaths.Angel(this);
+                if (angelHeal > 0) damage = Mathf.Max(0, (int)Stats.Health.CurrentValue - 1);
+            }
         }
 
         if (!damageCounterManager)
@@ -2975,6 +2985,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         }
 
         Stats.Health.Add(-damage);
+        if (angelHeal > 0) Heal(angelHeal);
         if (dungeonHandler != null && dungeonHandler.InDungeon) CombatMeter.Dungeon.AddTaken(this, damage);
         //if (damage > 0)
         //{

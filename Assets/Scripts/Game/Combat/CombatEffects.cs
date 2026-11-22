@@ -169,13 +169,23 @@ public static class CombatEffects
 
         // thorns hurt the attacker back, life steal heals it
         if (result.Reflected > 0 && attacker != null && Alive(attacker)) Deal(defender, attacker, result.Reflected);
-        if (result.Healed > 0 && attacker != null && Alive(attacker)) attacker.Heal(result.Healed);
+        // (Crimson Pact: what does not fit into the attacker's health becomes a shield)
+        if (result.Healed > 0 && attacker != null && Alive(attacker)) CombatPaths.LifeSteal(attacker, result.Healed);
 
         // Rend: a crit bleeds over 4 seconds
         if (result.Bleed >= 1 && defender != null && Alive(defender))
         {
             var bleeding = GetOrAdd(defender, attacker, defenderSheet);
             bleeding.Set.Bleed(result.Bleed / 4.0, 4);
+        }
+
+        // First Blood: a crit poisons for four seconds (it does not stack, a stronger one replaces it)
+        if (result.Poison >= 1 && Alive(defender))
+        {
+            var poisoned = GetOrAdd(defender, attacker, defenderSheet);
+            var before = Showing(poisoned.Set);
+            poisoned.Set.Venom(result.Poison, PathRules.PoisonSeconds);
+            ShowStarted(defender, before, Showing(poisoned.Set));
         }
 
         if (result.Immune) ShowWord(defender, Localization.UI_FLOAT_IMMUNE, new Color(0.85f, 0.85f, 0.85f));
@@ -277,6 +287,28 @@ public static class CombatEffects
         if (sheet != null) entry.Set.IsBoss = sheet.IsBoss;
         if (source != null) entry.Source = source;
         return entry;
+    }
+
+    /// <summary>
+    ///     Wildfire: the burn on a fighter that fell, taken off it to put on another (CombatPaths), and who lit it.
+    ///     Null when it does not burn.
+    /// </summary>
+    public static RavenNest.Combat.StatusEffect TakeBurn(IAttackable fighter, out IAttackable source)
+    {
+        source = null;
+        if (fighter == null || !entries.TryGetValue(fighter, out var entry)) return null;
+        source = entry.Source;
+        return entry.Set.TakeBurn();
+    }
+
+    /// <summary>
+    ///     Damage that is no swing (Aftershock's burst, Volley's second arrow, Holy Fire's strike): the kill counts as
+    ///     the source's, as a swing's would.
+    /// </summary>
+    public static void DealAs(IAttackable source, IAttackable target, int amount)
+    {
+        if (!CombatRules.Enabled || target == null || amount <= 0 || !Alive(target)) return;
+        Deal(source, target, amount);
     }
 
     /// <summary>A fighter died, left or came back: its effects end.</summary>

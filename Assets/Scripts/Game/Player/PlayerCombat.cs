@@ -200,6 +200,8 @@ public class PlayerCombat
                 var shieldShare = CombatRules.Enabled ? owner.EquipmentStats.Gear(RavenNest.Combat.GearStat.HealShield) : 0;
                 if (shieldShare > 0) healed.AddShield(Mathf.RoundToInt((float)(heal * shieldShare)), 10f);
             }
+            // Holy Fire: the heal also strikes an enemy
+            CombatPaths.HealStruck(owner, target, heal);
             if (owner.dungeonHandler != null && owner.dungeonHandler.InDungeon) CombatMeter.Dungeon.AddHealing(owner, heal);
 
             // allow for some variation in gains based on how high you heal.
@@ -271,6 +273,8 @@ public class PlayerCombat
     public void Defeated(IAttackable enemy)
     {
         owner.SessionStats.IncrementEnemiesKilled();
+        // the capstone paths: a new target when it comes back, Thin the Herd's rush, Wildfire's burn moving on
+        CombatPaths.Defeated(owner, enemy);
         //Statistics.TotalDamageDone += damage;
 
         var isPlayer = enemy is PlayerController playerController;
