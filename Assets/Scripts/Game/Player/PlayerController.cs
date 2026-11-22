@@ -3309,6 +3309,18 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             }
         }
 
+        // what the gear alone gives the battle pet and taming (the Beastmaster line): the pet adds it to its owner's
+        // tree, which it reads from the build, so it is kept apart from the passives added next
+        var petGear = new RavenNest.Combat.GearStats();
+        foreach (var stat in EquipmentStats.PetGearStats)
+        {
+            petGear[stat] = extras[stat];
+            if (weaponExtras != null) foreach (var w in weaponExtras) if (w != null) petGear[stat] += w[stat];
+        }
+        var petGearChanged = false;
+        foreach (var stat in EquipmentStats.PetGearStats) if (petGear[stat] != EquipmentStats.Pet(stat)) petGearChanged = true;
+        EquipmentStats.PetGear = petGear;
+
         // the skill trees' passives count like gear stats (combat v2)
         if (CombatRules.Enabled && SkillBuild != null)
         {
@@ -3320,6 +3332,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
         EquipmentStats.Extras = extras;
         EquipmentStats.WeaponExtras = weaponExtras;
+        if (petGearChanged && battlePets != null) battlePets.GearChanged(); // the pet's numbers follow at once
         if (!CombatRules.Enabled) armorHealth = 0;
         var gearHealth = extras[RavenNest.Combat.GearStat.MaxHealth] + armorHealth;
         if (weaponExtras != null) foreach (var w in weaponExtras) if (w != null) gearHealth += w[RavenNest.Combat.GearStat.MaxHealth];

@@ -18,6 +18,9 @@ public sealed class PlayerBattlePets
     /// <summary>Pet experience is sent to the server this often (when there is any).</summary>
     private const float ReportEvery = 60f;
 
+    /// <summary>For tests: every tame roll is written to the log with its chance (the gear's share in it).</summary>
+    public static bool LogTameRolls;
+
     /// <summary>A tame is announced at most this often, whoever tamed it, so a busy stream's chat is not flooded.</summary>
     private const float AnnounceEvery = 8f;
     private static float nextAnnounce;
@@ -184,6 +187,19 @@ public sealed class PlayerBattlePets
         if (owner.SkillBuild != null && slotsBefore != owner.SkillBuild.ExtraPetSkillSlots && stable.Count > 0 && !owner.IsBot && stable.Any(p => p.CharacterId == owner.Id))
             ReadStable();
     }
+
+    /// <summary>
+    ///     What the owner wears changed what it gives the pet (the Beastmaster line's PET_POWER, PET_HEALTH, PET_RECOVERY,
+    ///     PET_GUARD): the pet and its packmate take the new numbers at once.
+    /// </summary>
+    public void GearChanged()
+    {
+        if (Controller) Controller.Refresh(Controller.Data);
+        if (Twin) Twin.Refresh(Twin.Data);
+    }
+
+    /// <summary>The share more of the tame chance the owner's gear gives (TAME_CHANCE, the Beastmaster line).</summary>
+    public double GearTameChance => owner && owner.EquipmentStats != null && CombatRules.Enabled ? owner.EquipmentStats.Pet(GearStat.TameChance) : 0;
 
     private async void ReadStable()
     {
@@ -450,7 +466,10 @@ public sealed class PlayerBattlePets
 
         // a treat it loves makes it likelier, and is eaten when it works
         var treat = Treat(species);
-        if (UnityEngine.Random.value >= RavenNest.Combat.Taming.Chance(stat.Level, species, treat != null)) return;
+        // the Beastmaster line's TAME_CHANCE: that share more of the chance
+        var chance = RavenNest.Combat.Taming.Chance(stat.Level, species, treat != null, GearTameChance);
+        if (LogTameRolls) Shinobytes.Debug.Log("Tame roll for " + owner.PlayerName + ": " + species.Id + " at " + (chance * 100).ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) + "% (gear +" + (GearTameChance * 100).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) + "%)");
+        if (UnityEngine.Random.value >= chance) return;
         if (owner.IsBot)
         {
             AddLocal(species.Id);

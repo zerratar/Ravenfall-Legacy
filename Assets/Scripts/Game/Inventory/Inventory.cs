@@ -29,6 +29,7 @@ public class GameInventoryItem
         RequiredSlayerLevel = item.RequiredSlayerLevel;
         RequiredMagicLevel = item.RequiredMagicLevel;
         RequiredRangedLevel = item.RequiredRangedLevel;
+        RequiredTamingLevel = RavenNest.Models.ItemLines.TamingLevelFor(item.Material, item.Level);
         Name = instance.Name ?? item.Name;
         ItemId = item.Id;
         Type = item.Type;
@@ -68,7 +69,8 @@ public class GameInventoryItem
             && Player.Stats.Attack.Level >= RequiredAttackLevel
             && Player.Stats.Slayer.Level >= RequiredSlayerLevel
             && (Player.Stats.Magic.Level >= RequiredMagicLevel || Player.Stats.Healing.Level >= RequiredMagicLevel)
-            && Player.Stats.Ranged.Level >= RequiredRangedLevel;
+            && Player.Stats.Ranged.Level >= RequiredRangedLevel
+            && (RequiredTamingLevel <= 0 || Player.Stats.Taming.Level >= RequiredTamingLevel);
     }
 
     public bool Soulbound { get; set; }
@@ -77,6 +79,8 @@ public class GameInventoryItem
     public int RequiredSlayerLevel { get; set; }
     public int RequiredMagicLevel { get; set; }
     public int RequiredRangedLevel { get; set; }
+    /// <summary>The Beastmaster line needs Taming (RavenNest.Models.ItemLines.TamingLevelFor); 0 for anything else.</summary>
+    public int RequiredTamingLevel { get; set; }
     public string Name { get; set; }
     public Guid InstanceId { get => InventoryItem.Id; set => InventoryItem.Id = value; }
     public Guid ItemId { get; set; }
@@ -1828,7 +1832,8 @@ public class Inventory : MonoBehaviour
                 player.Stats.Attack.Level >= item.RequiredAttackLevel &&
                 player.Stats.Ranged.Level >= item.RequiredRangedLevel &&
                 (player.Stats.Magic.Level >= item.RequiredMagicLevel || player.Stats.Healing.Level >= item.RequiredMagicLevel) &&
-                player.Stats.Slayer.Level >= item.RequiredSlayerLevel;
+                player.Stats.Slayer.Level >= item.RequiredSlayerLevel &&
+                player.Stats.Taming.Level >= RavenNest.Models.ItemLines.TamingLevelFor(item.Material, item.Level); // the Beastmaster line
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

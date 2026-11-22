@@ -420,6 +420,7 @@ namespace Shinobytes.UI
             if (s.Ranged.Level < item.RequiredRangedLevel) parts.Add(Localization.StatName("Ranged") + " " + item.RequiredRangedLevel);
             if (s.Magic.Level < item.RequiredMagicLevel && s.Healing.Level < item.RequiredMagicLevel) parts.Add(Localization.StatName("Magic") + " " + item.RequiredMagicLevel);
             if (s.Slayer.Level < item.RequiredSlayerLevel) parts.Add(Localization.StatName("Slayer") + " " + item.RequiredSlayerLevel);
+            if (s.Taming.Level < item.RequiredTamingLevel) parts.Add(Localization.StatName("Taming") + " " + item.RequiredTamingLevel);
             return string.Join(", ", parts);
         }
 

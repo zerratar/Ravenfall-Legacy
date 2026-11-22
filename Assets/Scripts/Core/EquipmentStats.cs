@@ -41,6 +41,23 @@ public class EquipmentStats : IComparable
     /// </summary>
     [NonSerialized] public RavenNest.Combat.GearStats[] WeaponExtras;
 
+    /// <summary>
+    ///     What the worn gear alone gives a battle pet and taming (the Beastmaster line, docs/taming-gear-design.md):
+    ///     PET_POWER, PET_HEALTH, PET_RECOVERY, PET_GATHERING, PET_GUARD and TAME_CHANCE, without the skill tree's
+    ///     (Extras has both; the pet reads the tree from the build itself). Null before the first equipment update.
+    /// </summary>
+    [NonSerialized] public RavenNest.Combat.GearStats PetGear;
+
+    /// <summary>The stats of <see cref="PetGear"/>.</summary>
+    public static readonly RavenNest.Combat.GearStat[] PetGearStats =
+    {
+        RavenNest.Combat.GearStat.PetPower, RavenNest.Combat.GearStat.PetHealth, RavenNest.Combat.GearStat.PetRecovery,
+        RavenNest.Combat.GearStat.PetGathering, RavenNest.Combat.GearStat.PetGuard, RavenNest.Combat.GearStat.TameChance,
+    };
+
+    /// <summary>A stat of <see cref="PetGear"/>; 0 without one.</summary>
+    public double Pet(RavenNest.Combat.GearStat stat) => PetGear != null ? PetGear[stat] : 0;
+
     /// <summary>A combat v2 gear stat summed over all worn gear and enchantments (the weapons' too).</summary>
     public double Gear(RavenNest.Combat.GearStat stat)
     {

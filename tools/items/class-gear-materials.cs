@@ -19,7 +19,7 @@
 // Feathers and a few props keep the texture's own color. No part of the class gear shows skin, but the skin color
 // is kept neutral in case one ever does.
 //
-// Palette direction (docs: the class gear spec): mage dark and cool, healer light, ranger greens, browns and autumn
+// Palette direction (docs: the class gear spec and docs/taming-gear-design.md): mage dark and cool, healer light, ranger greens, browns and autumn
 // tones, melee reds, rusts and dark steel, tank iron and steel first and then heraldic colors. Every tier of a line
 // is clearly another color, and the richness grows from tier 1 to tier 8.
 var table = @"
@@ -132,7 +132,19 @@ Mystic        | #8A2E2A | #E8A83A | #5A2E24 | #48201A | #E4D4B4 | #D8A040 | #5E2
 Enlightened   | #E8C040 | #F4EEDC | #8A6A3A | #70562E | #F0E8D4 | #E0B840 | #B88A30 | 0        | 0.2
 Transcendent  | #F0E8D8 | #E08A1E | #A8825A | #8A6844 | #F6F0E2 | #E8B040 | #C8BCA0 | 0        | 0.25
 Celestial     | #FFFFFF | #F6C840 | #D8B878 | #B89858 | #FFFFFF | #F8CC48 | #E0A830 | 0        | 0.25
+# ---- Beastmaster: hide, fur and bone in earthy browns and greens, the teal of the Beastmaster tree growing in ----
+Fledgling     | #6E6A4A | #A89A72 | #6A4A2E | #3E2C1C | #BFB49A | #9A8058 | #4A4234 | 0        | 0.15
+Trapper       | #56603A | #B8A878 | #5E3E24 | #36241A | #C4B898 | #8A6440 | #3A3424 | 0        | 0.15
+Houndmaster   | #3E5A34 | #D0BC8A | #6A4426 | #3A2414 | #C8BC9C | #7A5636 | #2E3A28 | 0        | 0.15
+Falconer      | #4E5E66 | #4FB8AE | #5E3E26 | #33220F | #CFC4A6 | #A0784A | #22302E | 0        | 0.2
+Wildheart     | #3E6A2E | #3FD0C9 | #6E4A2C | #3A2616 | #D6CCAE | #6E5030 | #1E2C22 | 0        | 0.2
+Packlord      | #3A4446 | #3FD0C9 | #4A3A2E | #261E18 | #DCD2B8 | #5A5450 | #1E2224 | 0        | 0.2
+Primal        | #24584A | #E0B24A | #3E2A18 | #22160C | #E4DAC0 | #7A4A26 | #1A2A22 | 0        | 0.25
+Wyrmkin       | #0E4A48 | #F0C64A | #4A2E1C | #24160E | #E8DEC6 | #2E7A70 | #0A2A28 | 0        | 0.25
 ";
+// a run that writes only these (comma separated names; empty for every row): the other lines' materials stay as
+// they are on disk
+var only = "";
 var folder = "Assets/World/ClassGear/Resources/ClassGear";
 var skin = "#C99A7A";
 var inv = System.Globalization.CultureInfo.InvariantCulture;
@@ -155,13 +167,18 @@ foreach (var raw in table.Split('\n'))
     rows.Add(cells);
 }
 var first = (int)RavenNest.Models.ItemMaterial.Apprentice;
-var last = (int)RavenNest.Models.ItemMaterial.Celestial;
+var last = (int)RavenNest.Models.ItemMaterial.Wyrmkin;
 for (var v = first; v <= last; v++)
 {
     var name = ((RavenNest.Models.ItemMaterial)v).ToString();
     if (!rows.Exists(r => r[0] == name)) problems.Append(" no row for " + name + ";");
 }
 if (problems.Length > 0) return "nothing written:" + problems;
+if (only.Trim().Length > 0)
+{
+    var wanted = new System.Collections.Generic.HashSet<string>(System.Array.ConvertAll(only.Split(','), x => x.Trim()));
+    rows = rows.FindAll(r => wanted.Contains(r[0]));
+}
 
 if (!System.IO.Directory.Exists(folder))
 {

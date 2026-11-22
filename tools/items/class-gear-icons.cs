@@ -45,7 +45,7 @@ if (trialOut == null && !System.IO.Directory.Exists(websiteFolder)) return "no w
 
 // ---- the items ------------------------------------------------------------------------------------------------------
 // in the order of their materials in ItemMaterial (eight a line, from Apprentice on)
-var lines = new[] { "Mage", "Healer", "Ranger", "Melee", "Tank", "Rogue", "Barbarian", "Samurai", "Paladin", "DarkKnight", "WitchHunter", "Monk" };
+var lines = new[] { "Mage", "Healer", "Ranger", "Melee", "Tank", "Rogue", "Barbarian", "Samurai", "Paladin", "DarkKnight", "WitchHunter", "Monk", "Beastmaster" };
 var icons = new System.Collections.Generic.List<string[]>(); // slug, type, material, male ids, mask
 // a row is for the tiers its last column names ("3-5", "8"), or for all of them without one
 bool RowIsFor(string[] row, int tier)

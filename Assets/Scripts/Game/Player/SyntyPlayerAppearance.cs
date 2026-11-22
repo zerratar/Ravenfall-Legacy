@@ -1574,6 +1574,8 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
         { 4, new HashSet<int> { 0, 3, 4, 5, 8, 12, 13, 15, 18, 22, 23, 24, 25, 26, 27, 28, 29, 31, 32, 37 } },
         // hats[8], the witch hunter's buckle hat
         { 8, new HashSet<int> { 0, 3, 4, 5, 6, 8, 12, 13, 18, 22, 23, 24, 25, 26, 27, 28, 29, 31, 32, 33, 36, 37 } },
+        // hats[7], the Beastmaster's feathered hat
+        { 7, new HashSet<int> { 0, 3, 4, 5, 6, 8, 12, 13, 15, 18, 22, 23, 24, 25, 26, 27, 28, 29, 31, 32, 33, 37 } },
         // hats[0], the monk's headband, is a band around the head: hair is meant to show over it, nothing is swapped
     };
 

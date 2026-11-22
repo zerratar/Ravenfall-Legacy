@@ -175,9 +175,11 @@ public sealed class BattlePetController : MonoBehaviour
         // Training, Shared Mending
         var build = Owner ? Owner.SkillBuild : null;
         var bond = build != null && CombatRules.Enabled ? build.Passives() : new GearStats();
-        bondPower = 1f + Mathf.Max(0f, (float)bond[GearStat.PetPower]);
-        bondRecovery = Mathf.Clamp((float)bond[GearStat.PetRecovery], 0f, 0.75f);
-        bondGuard = Mathf.Max(0f, (float)bond[GearStat.PetGuard]);
+        // and what its owner wears (the Beastmaster line): the same stats, added to the tree's
+        float Gear(GearStat stat) => Owner && CombatRules.Enabled && Owner.EquipmentStats != null ? (float)Owner.EquipmentStats.Pet(stat) : 0f;
+        bondPower = 1f + Mathf.Max(0f, (float)bond[GearStat.PetPower] + Gear(GearStat.PetPower));
+        bondRecovery = Mathf.Clamp((float)bond[GearStat.PetRecovery] + Gear(GearStat.PetRecovery), 0f, 0.75f);
+        bondGuard = Mathf.Max(0f, (float)bond[GearStat.PetGuard] + Gear(GearStat.PetGuard));
         bondSlots = build != null && CombatRules.Enabled ? build.ExtraPetSkillSlots : 0;
         bondShared = build != null && CombatRules.Enabled && build.HealsReachPet;
         bondSafe = bond[GearStat.PetSafeGathering] > 0;
@@ -191,7 +193,7 @@ public sealed class BattlePetController : MonoBehaviour
             if (grew && placed && Shown) PetFx.Burst(transform.position, Mathf.Max(0.6f, Height), PetFx.ElementColor(Species.Element));
         }
         var share = MaxHealth > 0 ? (float)Health / MaxHealth : 1f;
-        MaxHealth = Mathf.Max(1, Mathf.RoundToInt(sheet.MaxHealth * (1f + Mathf.Max(0f, (float)bond[GearStat.PetHealth])) * (IsTwin ? TwinStrength : 1f)));
+        MaxHealth = Mathf.Max(1, Mathf.RoundToInt(sheet.MaxHealth * (1f + Mathf.Max(0f, (float)bond[GearStat.PetHealth] + Gear(GearStat.PetHealth))) * (IsTwin ? TwinStrength : 1f)));
         Health = Mathf.Clamp(Mathf.RoundToInt(MaxHealth * share), 1, MaxHealth);
         if (stageChanged)
         {
@@ -788,6 +790,12 @@ public sealed class BattlePetController : MonoBehaviour
     }
 
     /// <summary>For tests and the details window: what its owner's skill tree gives it now.</summary>
+    /// <summary>What its owner's tree and gear add to its blows and heals (1 is nothing), for the details window.</summary>
+    public float BondPower => bondPower;
+
+    /// <summary>How long a knockout keeps it down, in seconds, after its owner's tree and gear.</summary>
+    public float KnockoutTime => (float)BattlePets.KnockoutSeconds * (1f - bondRecovery);
+
     public string BondText => "power x" + Power.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + ", up after " + ((float)BattlePets.KnockoutSeconds * (1f - bondRecovery)).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)
         + " s, guard +" + bondGuard.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + ", slots +" + bondSlots + (bondShared ? ", shared mending" : "") + (IsTwin ? ", packmate" : "");
 

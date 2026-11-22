@@ -72,7 +72,7 @@ if (jobs.Count == 0) return "no jobs in " + jobPath;
 
 // ---- the pieces and the items made from them ------------------------------------------------------------------------
 // in the order of their materials in ItemMaterial (eight a line, from Apprentice on)
-var lines = new[] { "Mage", "Healer", "Ranger", "Melee", "Tank", "Rogue", "Barbarian", "Samurai", "Paladin", "DarkKnight", "WitchHunter", "Monk" };
+var lines = new[] { "Mage", "Healer", "Ranger", "Melee", "Tank", "Rogue", "Barbarian", "Samurai", "Paladin", "DarkKnight", "WitchHunter", "Monk", "Beastmaster" };
 var pieces = new System.Collections.Generic.List<string[]>(); // line, type, name, male ids, female ids, mask
 foreach (var raw in System.IO.File.ReadAllLines(partsPath))
 {

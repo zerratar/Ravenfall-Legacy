@@ -125,7 +125,7 @@ public class PlayerEquipmentActions
                 return;
             }
 
-            ReportMissingRequirements(item.Name, item.RequiredAttackLevel, item.RequiredDefenseLevel, item.RequiredMagicLevel, item.RequiredRangedLevel, item.RequiredSlayerLevel);
+            ReportMissingRequirements(item.Name, item.RequiredAttackLevel, item.RequiredDefenseLevel, item.RequiredMagicLevel, item.RequiredRangedLevel, item.RequiredSlayerLevel, item.RequiredTamingLevel);
             return;
         }
     }
@@ -139,7 +139,7 @@ public class PlayerEquipmentActions
             return;
         }
 
-        ReportMissingRequirements(item.Name, item.RequiredAttackLevel, item.RequiredDefenseLevel, item.RequiredMagicLevel, item.RequiredRangedLevel, item.RequiredSlayerLevel);
+        ReportMissingRequirements(item.Name, item.RequiredAttackLevel, item.RequiredDefenseLevel, item.RequiredMagicLevel, item.RequiredRangedLevel, item.RequiredSlayerLevel, item.RequiredTamingLevel);
     }
 
     internal async Task<bool> EquipAsync(GameInventoryItem item)
@@ -190,7 +190,7 @@ public class PlayerEquipmentActions
         var equipped = owner.Inventory.EquipByItemId(item.Id);
         if (!equipped)
         {
-            ReportMissingRequirements(item.Name, item.RequiredAttackLevel, item.RequiredDefenseLevel, item.RequiredMagicLevel, item.RequiredRangedLevel, item.RequiredSlayerLevel);
+            ReportMissingRequirements(item.Name, item.RequiredAttackLevel, item.RequiredDefenseLevel, item.RequiredMagicLevel, item.RequiredRangedLevel, item.RequiredSlayerLevel, RavenNest.Models.ItemLines.TamingLevelFor(item.Material, item.Level));
             return false;
         }
 
@@ -207,7 +207,7 @@ public class PlayerEquipmentActions
         return true;
     }
 
-    private void ReportMissingRequirements(string itemName, int attack, int defense, int magic, int ranged, int slayer)
+    private void ReportMissingRequirements(string itemName, int attack, int defense, int magic, int ranged, int slayer, int taming = 0)
     {
         var reqLevels = new List<string>();
         if (attack > owner.Stats.Attack.Level) reqLevels.Add(string.Format(Localization.MSG_EQUIP_REQ_ATTACK, attack));
@@ -215,6 +215,7 @@ public class PlayerEquipmentActions
         if (magic > owner.Stats.Magic.Level || magic > owner.Stats.Healing.Level) reqLevels.Add(string.Format(Localization.MSG_EQUIP_REQ_MAGIC_OR_HEALING, magic));
         if (ranged > owner.Stats.Ranged.Level) reqLevels.Add(string.Format(Localization.MSG_EQUIP_REQ_RANGED, ranged));
         if (slayer > owner.Stats.Slayer.Level) reqLevels.Add(string.Format(Localization.MSG_EQUIP_REQ_SLAYER, slayer));
+        if (taming > owner.Stats.Taming.Level) reqLevels.Add(string.Format(Localization.MSG_EQUIP_REQ_TAMING, taming));
         if (reqLevels.Count > 0)
         {
             var requirement = string.Format(Localization.MSG_EQUIP_REQ_LEVEL, string.Join(" ", reqLevels.ToArray()));

@@ -118,6 +118,11 @@ public class CraftRequirement : ChatBotCommandHandler<string>
         {
             requirements.Add(Localization.MSG_CRAFTREQ_LEVEL_SLAYER.Replace("{level}", item.RequiredSlayerLevel.ToString()));
         }
+        var taming = RavenNest.Models.ItemLines.TamingLevelFor(item.Material, item.Level);
+        if (taming > 0)
+        {
+            requirements.Add(Localization.MSG_CRAFTREQ_LEVEL_TAMING.Replace("{level}", taming.ToString()));
+        }
         return string.Join(", ", requirements);
     }
 

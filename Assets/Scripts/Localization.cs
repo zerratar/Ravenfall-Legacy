@@ -2726,6 +2726,9 @@ public static class Localization
     public static string UI_PET_LEVEL_CAP = "Level cap";
     public static string UI_PET_ATTACK_EVERY = "Attacks every";
     public static string UI_PET_THREAT = "Threat";
+    public static string UI_PET_BOND_POWER = "Power from you";
+    public static string UI_PET_KNOCKOUT_TIME = "Up after a knockout";
+    public static string UI_PET_GEAR_TAME = "Tame chance from gear";
     public static string UI_PET_SKILL_ACTIVE = "Active";
     public static string UI_PET_SKILL_PASSIVE = "Passive";
     public static string UI_PET_NO_SKILLS = "None yet";
@@ -3431,6 +3434,7 @@ public static class Localization
     public static string MSG_EQUIP_REQ_MAGIC_OR_HEALING = "{0} Magic or Healing.";
     public static string MSG_EQUIP_REQ_RANGED = "{0} Ranged.";
     public static string MSG_EQUIP_REQ_SLAYER = "{0} Slayer.";
+    public static string MSG_EQUIP_REQ_TAMING = "{0} Taming.";
 
     // RaidForce
     public static string MSG_RAID_FORCE_DISABLED = Meta("raid", "scroll", "fail") + "Raids have been disabled in this stream by the broadcaster.";
@@ -3772,6 +3776,7 @@ public static class Localization
     public static string MSG_CRAFTREQ_LEVEL_RANGED = "Level {level} Ranged";
     public static string MSG_CRAFTREQ_LEVEL_MAGIC = "Level {level} Magic or Healing";
     public static string MSG_CRAFTREQ_LEVEL_SLAYER = "Level {level} Slayer";
+    public static string MSG_CRAFTREQ_LEVEL_TAMING = "Level {level} Taming";
 
     // PlayerUnstuck
     public static string MSG_UNSTUCK_ALL = Meta("system", "unstuck") + "Unstucking all players.";

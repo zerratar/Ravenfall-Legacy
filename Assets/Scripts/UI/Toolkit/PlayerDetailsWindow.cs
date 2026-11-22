@@ -1720,6 +1720,9 @@ namespace Shinobytes.UI
                     new AttrRow(Localization.UI_PET_STAGE, string.Format(CultureInfo.InvariantCulture, Localization.UI_PET_STAGE_OF, pet.Stage + 1, RavenNest.Combat.BattlePets.MaxStage + 1)),
                     new AttrRow(Localization.UI_PET_LEVEL_CAP, cap.ToString(CultureInfo.InvariantCulture)),
                 };
+                // the Beastmaster line's TAME_CHANCE: a share more of every tame chance
+                var gearTame = pets.GearTameChance;
+                if (gearTame > 0) about.Add(new AttrRow(Localization.UI_PET_GEAR_TAME, SignedPercent(gearTame), true));
                 left.Add((Localization.UI_PET_GROUP_PET, about));
 
                 // health and defense
@@ -1729,6 +1732,8 @@ namespace Shinobytes.UI
                     new AttrRow(Localization.UI_STATS_ARMOUR, HudFormat.Grouped(sheet.EffectiveArmor)),
                     new AttrRow(Localization.UI_STATS_ARMOUR_CUT, Percent(RavenNest.Combat.CombatMath.ArmorReduction(sheet.EffectiveArmor))),
                 };
+                // its owner's tree and gear (Back on Its Feet, the Beastmaster line): sooner on its feet
+                if (c) defence.Add(new AttrRow(Localization.UI_PET_KNOCKOUT_TIME, c.KnockoutTime.ToString("0.#", CultureInfo.InvariantCulture) + " s", c.KnockoutTime < RavenNest.Combat.BattlePets.KnockoutSeconds));
                 foreach (var e in new[] { RavenNest.Combat.Element.Fire, RavenNest.Combat.Element.Ice, RavenNest.Combat.Element.Lightning, RavenNest.Combat.Element.Poison })
                 {
                     var resist = sheet.Resistance[e];
@@ -1749,6 +1754,8 @@ namespace Shinobytes.UI
                     offence.Add(new AttrRow(Localization.UI_STATS_MAX_HEAL, HudFormat.Grouped((int)RavenNest.Combat.CombatMath.MaxHit(sheet.Healing.DamageLevel, sheet.Healing.EffectivePower))));
                 if (species.Stats != null) offence.Add(new AttrRow(Localization.UI_PET_ATTACK_EVERY, species.Stats.AttackInterval.ToString("0.0", CultureInfo.InvariantCulture) + " s"));
                 if (sheet.ThreatMultiplier != 1) offence.Add(new AttrRow(Localization.UI_PET_THREAT, SignedPercent(sheet.ThreatMultiplier - 1)));
+                // its owner's tree and gear (Fang and Claw, the Beastmaster line): on every blow and heal
+                if (c && c.BondPower > 1f) offence.Add(new AttrRow(Localization.UI_PET_BOND_POWER, SignedPercent(c.BondPower - 1f), true));
                 right.Add((Localization.UI_STATS_GROUP_OFFENCE, offence));
 
                 // the skills in its slots

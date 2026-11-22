@@ -398,7 +398,7 @@ public class TameCommand : ChatBotCommandHandler<string>
         if (text.Length == 0)
         {
             if (pets.Taming == null) client.SendReply(gm, Localization.MSG_TAME_NOTHING);
-            else client.SendReply(gm, Localization.MSG_TAME_STATUS, pets.Taming.CreatureName, ChanceText(level, pets.Taming, pets.Treat(pets.Taming) != null), level);
+            else client.SendReply(gm, Localization.MSG_TAME_STATUS, pets.Taming.CreatureName, ChanceText(level, pets.Taming, pets.Treat(pets.Taming) != null, pets.GearTameChance), level);
             return;
         }
         if (text.Equals("stop", StringComparison.OrdinalIgnoreCase) || text.Equals("off", StringComparison.OrdinalIgnoreCase))
@@ -414,7 +414,7 @@ public class TameCommand : ChatBotCommandHandler<string>
         var treat = pets.Treat(species);
         var treatText = string.Format(treat != null ? Localization.MSG_TAME_TREAT : Localization.MSG_TAME_NO_TREAT, treat?.Item?.Name ?? string.Join(" or ", species.Treats));
         var creature = species.CreatureName;
-        var chance = ChanceText(level, species, treat != null);
+        var chance = ChanceText(level, species, treat != null, pets.GearTameChance);
         // the creature has to be where the player is: !tame red dragon on the home island answered as if it had
         // started, and then nothing ever happened
         if (!pets.HereToTame(species))
@@ -428,9 +428,10 @@ public class TameCommand : ChatBotCommandHandler<string>
         else client.SendReply(gm, Localization.MSG_TAME_NOT_FIGHTING, creature, chance, creature.ToLowerInvariant(), treatText);
     }
 
-    private static string ChanceText(int level, PetSpecies species, bool treat = false)
+    /// <summary>The chance as players read it, with a treat and the Beastmaster line's TAME_CHANCE in it.</summary>
+    private static string ChanceText(int level, PetSpecies species, bool treat = false, double gearBonus = 0)
     {
-        var c = Taming.Chance(level, species, treat) * 100;
+        var c = Taming.Chance(level, species, treat, gearBonus) * 100;
         return c.ToString(c < 1 ? "0.##" : "0.#", CultureInfo.InvariantCulture) + "%";
     }
 
