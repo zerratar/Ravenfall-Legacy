@@ -1545,6 +1545,13 @@ public class Inventory : MonoBehaviour
 
     public void EquipBestItems()
     {
+        EquipBest();
+        // outfits per skill: nothing replaces a pinned piece, so those of the outfit that is on go back on
+        if (player) player.Outfits.WearPinned();
+    }
+
+    private void EquipBest()
+    {
         var outfit = AskedOutfit;
         // what is worn before anything moves: between equal pieces of the outfit's line that one stays
         var wornBefore = outfit != null ? WornItemIds() : null;
@@ -1586,6 +1593,7 @@ public class Inventory : MonoBehaviour
         {
             if (!EquipLine(outfit.Line, null)) return false;
             AskedOutfit = outfit;
+            if (player) player.Outfits.WearPinned();
             return true;
         }
 

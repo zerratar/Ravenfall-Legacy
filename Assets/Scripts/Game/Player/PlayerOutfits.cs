@@ -46,6 +46,9 @@ public sealed class PlayerOutfits
     /// <summary>The outfits as the server last said. Never null.</summary>
     public CharacterOutfits State => state;
 
+    /// <summary>The server's last answer that named pieces gone from an outfit (what the player was told once); null before any.</summary>
+    public OutfitResult LastGone { get; private set; }
+
     /// <summary>The skill whose outfit is on.</summary>
     public Skill Worn => worn != Skill.None ? worn : OutfitRules.Desired(Trained, Fighting, state.Fight);
 
@@ -118,6 +121,10 @@ public sealed class PlayerOutfits
         var fighting = Fighting;
         if (seen && trained == seenTrained && fighting == seenFighting) return;
 
+        // never in the middle of a fight: someone who picks another skill while the raid, dungeon or floor goes on
+        // keeps what they wear until it is over (!outfit (skill) changes it at once, for those who mean it)
+        if (seen && seenFighting && fighting) return;
+
         // an outfit is on from the first moment: before the server kept anything it is the one of what was trained
         // until now, and the server is told so when it is first asked
         var nothingKept = worn == Skill.None;
@@ -170,7 +177,19 @@ public sealed class PlayerOutfits
     // the outfit has the new pieces from then on
     private void AnnounceGone(OutfitResult result)
     {
-        if (result.Gone == null || result.Gone.Length == 0 || !owner || !owner.GameManager) return;
+        var format = GoneText(result, out var args);
+        if (format != null) owner.GameManager.RavenBot.SendReply(owner, format, args);
+    }
+
+    /// <summary>
+    ///     What to tell the player when pieces of an outfit were gone: the text and its arguments, or null when none
+    ///     were. Said once: the outfit has the new pieces from then on.
+    /// </summary>
+    public string GoneText(OutfitResult result, out object[] args)
+    {
+        args = null;
+        if (result == null || result.Gone == null || result.Gone.Length == 0 || !owner || !owner.GameManager) return null;
+        LastGone = result;
         var gone = new List<string>();
         var filled = new List<string>();
         for (var i = 0; i < result.Gone.Length; ++i)
@@ -180,10 +199,15 @@ public sealed class PlayerOutfits
             var with = result.Filled != null && i < result.Filled.Length && result.Filled[i] != Guid.Empty ? owner.GameManager.Items.Get(result.Filled[i]) : null;
             if (with != null && !filled.Contains(with.Name)) filled.Add(with.Name);
         }
-        if (gone.Count == 0) return;
+        if (gone.Count == 0) return null;
         var skill = Localization.CombatStyleName((Skill)result.Skill);
-        if (filled.Count > 0) owner.GameManager.RavenBot.SendReply(owner, Localization.MSG_OUTFIT_FILLED, skill, Join(gone), Join(filled));
-        else owner.GameManager.RavenBot.SendReply(owner, Localization.MSG_OUTFIT_GONE, skill, Join(gone));
+        if (filled.Count > 0)
+        {
+            args = new object[] { skill, Join(gone), Join(filled) };
+            return Localization.MSG_OUTFIT_FILLED;
+        }
+        args = new object[] { skill, Join(gone) };
+        return Localization.MSG_OUTFIT_GONE;
     }
 
     // ---------------------------------------------------------------- gear that arrives
@@ -256,19 +280,48 @@ public sealed class PlayerOutfits
     }
 
     /// <summary>What the player has, as the outfit rules see it.</summary>
-    public List<OutfitPiece> Pieces()
+    public List<OutfitPiece> Pieces() => Pieces(null);
+
+    private List<OutfitPiece> Pieces(List<GameInventoryItem> items)
     {
         var pieces = new List<OutfitPiece>();
         if (!owner || !owner.Inventory) return pieces;
         foreach (var item in owner.Inventory.GetEquippedItems().ToArray())
         {
-            if (item != null && item.Item != null && OutfitRules.IsOutfitSlot(OutfitRules.SlotOf(item.Item.Type))) pieces.Add(PieceOf(item, true));
+            if (item == null || item.Item == null || !OutfitRules.IsOutfitSlot(OutfitRules.SlotOf(item.Item.Type))) continue;
+            pieces.Add(PieceOf(item, true));
+            if (items != null) items.Add(item);
         }
         foreach (var item in owner.Inventory.GetBackpackItems().ToArray())
         {
-            if (item != null && item.Item != null && OutfitRules.IsOutfitSlot(OutfitRules.SlotOf(item.Item.Type))) pieces.Add(PieceOf(item, false));
+            if (item == null || item.Item == null || !OutfitRules.IsOutfitSlot(OutfitRules.SlotOf(item.Item.Type))) continue;
+            pieces.Add(PieceOf(item, false));
+            if (items != null) items.Add(item);
         }
         return pieces;
+    }
+
+    /// <summary>
+    ///     After the game's own "equip best" ("!equip all", "!equip tank"): the pinned pieces of the outfit that is on go
+    ///     back on, as the server puts them back after its "equip best" (OutfitManager.EquippedBest, by the same rule),
+    ///     so the two wear the same afterwards.
+    /// </summary>
+    public void WearPinned()
+    {
+        if (!Active) return;
+        var on = state.Find(Worn);
+        if (on == null || on.PinnedCount == 0) return;
+
+        // a copy: the outfits are the server's to change
+        var pinned = new Outfit { Skill = on.Skill, Word = on.Word };
+        foreach (var slot in on.Slots)
+        {
+            if (slot.Pinned) pinned.Set(slot.Slot, slot.Item, slot.ItemId, true);
+        }
+        var items = new List<GameInventoryItem>();
+        var pieces = Pieces(items);
+        var plan = OutfitRules.Wear(pinned, pieces, true);
+        foreach (var index in plan.Equip) owner.Inventory.Equip(items[index]);
     }
 
     private OutfitPiece PieceOf(GameInventoryItem item, bool isWorn)

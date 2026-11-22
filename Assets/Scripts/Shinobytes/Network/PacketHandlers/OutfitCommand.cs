@@ -205,6 +205,7 @@ public class OutfitCommand : ChatBotCommandHandler<string>
         var gear = player.Outfits.Describe(skill) ?? player.Outfits.DescribeWorn();
         client.SendReply(gm, result.Changed || result.Pets != null ? Localization.MSG_OUTFIT_WORN : Localization.MSG_OUTFIT_WORN_ALREADY, name, gear);
         // pieces that were gone, and what filled them: said after the outfit itself
-        player.Outfits.Apply(new OutfitResult { Outfits = result.Outfits, Skill = result.Skill, Gone = result.Gone, Filled = result.Filled }, true);
+        var gone = player.Outfits.GoneText(result, out var goneArgs);
+        if (gone != null) client.SendReply(gm, gone, goneArgs);
     }
 }
