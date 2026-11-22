@@ -602,3 +602,29 @@ outfit that is not, with real mouse events in headless Chrome, reading the page 
   else. They can be deleted (check `/stash` and the admin inventory for `rf-tile` and `rf-item` first).
 - The export is 26 MB in the RavenNest repository. It could live outside it (a release asset or a storage bucket)
   if the repository's size matters more than having the site whole in one checkout.
+
+## The figure's switches (2026-11-22)
+
+The owner, after trying the dressed figure: "we need to be able to toggle the helmet/cape visibility on the website
+under gear", "when i try to see how it looks like when i wear another helmet on it just shows like im not wearing a
+helmet at all", "maybe able to toggle combat stance vs normal idle stance?" and "can we expand the 3d view slightly
+more? theres lots of unused space here on the equipment rows" (RavenNest 7bdff90e).
+
+- **Helmet and Cape** buttons under the figure, for the owner and administrators: they set (not flip) the same
+  settings as `!toggle helmet` and `!toggle cape` through `PlayerManager.SetHelmetAndCape(characterId, helmet,
+  capeHidden)`, which sends the appearance to a running game as a website appearance save does
+  (`GameEventType.PlayerAppearance`; the game's `SetAppearance` reads `HelmetVisible` and `CapeHidden`). The Cape
+  button shows only for a character that has a cape (its own or its clan's).
+- **A tried-on head piece always shows.** The helmet switch hid every head piece on the figure, so hovering a helmet
+  with the switch off showed a bare head. Now it hides only the worn one; a hovered, dragged or outfit-viewed head
+  piece shows.
+- **Combat or At ease:** the figure stands in its weapon's stance, or at ease with empty hands (no weapon, no
+  shield). Each viewer's own choice, kept in the browser (`rf.gear.stance`); combat by default, as before. A weapon
+  that is hovered is held in either.
+- **More room:** on a wide page the slot columns keep the room their names need and the figure's column takes the
+  rest (it was a fixed 13rem). On a stage much taller than wide the camera steps back so the fighting stance is not
+  cut off at the side; on a narrow stage the three buttons are pictures only.
+- **Checked** on `/dev/gear-preview` at 1920, 1500, 1280 and 400 wide: both stances, the helmet switch both ways,
+  hovering a helmet with the switch off and leaving it. **Not checked:** signed in, and a running game following the
+  website's switches.
+
