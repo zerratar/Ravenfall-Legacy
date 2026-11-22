@@ -3,7 +3,7 @@
 # emblems as tree-<name>.webp and the skill point as point.webp. Each icon is trimmed to what is drawn and centred on a
 # transparent square.
 #
-#   python tools/website/skill-icon-sheets.py [folder with skill-sheet-a.webp to -e; default tools/website/skill-icon-sheets]
+#   python tools/website/skill-icon-sheets.py [folder with skill-sheet-a.webp to -g; default tools/website/skill-icon-sheets]
 # (the sheets as made are kept there, with skill-medallion.webp, the centre of the map, saved by hand as imgs/skills/medallion.webp)
 import os
 import sys
@@ -29,6 +29,12 @@ LAYOUT = {
     "e": (4, ["tree-gathering", "sure-hands", "villages-share", "bountiful", "tireless", "quick-return", "nest-finder",
               "master-of-the-trade", "tree-artisan", "steady-hands", "thrifty", "second-helping", "gem-salvager",
               "gem-cutter", "enchanters-patience", "master-artisan"]),
+    # the capstone paths (2026-11-22): the eighteen new endings, two sheets of nine, each in its tree's color.
+    # Today's capstones keep wearing their tree's emblem, so a tree's three crowns do not look alike.
+    "f": (3, ["shield-of-the-many", "retribution", "holy-fire", "guardian-angel", "blood-rage", "aftershock",
+              "first-blood", "flowing-steel", "clean-kill"]),
+    "g": (3, ["volley", "wildfire", "eye-of-the-storm", "crimson-pact", "ironblood", "thin-the-herd",
+              "fortunes-favorite", "alpha", "trailblazer"]),
 }
 
 
