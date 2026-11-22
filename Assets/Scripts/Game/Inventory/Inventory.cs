@@ -546,6 +546,43 @@ public class Inventory : MonoBehaviour
                 }
             }
 
+            // The server's word on a slot is final. Where it put a piece on (an outfit, "equip best", the website),
+            // anything else the game has on in that slot comes off: a piece the game put on by itself that the server
+            // did not know of, or the rest of a stack one piece was taken from. Without this both stayed "worn" here.
+            if (equipmentChanged)
+            {
+                for (var i = 0; i < stacks.Count; ++i)
+                {
+                    var s = stacks[i];
+                    if (!s.Equipped || s.Amount <= 0 || followEquipped == null || i >= followEquipped.Count || !followEquipped[i]) continue;
+                    GameInventoryItem on = null;
+                    foreach (var e in equipped)
+                    {
+                        if (e.InstanceId == s.Id) { on = e; break; }
+                    }
+                    if (on == null || on.Item == null) continue;
+                    var slot = GetEquipmentSlot(on.Item.Type);
+                    if (slot == ItemSlot.None) continue;
+                    foreach (var other in equipped.ToList())
+                    {
+                        if (other == on || other.Item == null || GetEquipmentSlot(other.Item.Type) != slot) continue;
+                        // (not another piece the server put on in this same update)
+                        var alsoOn = false;
+                        for (var j = 0; j < stacks.Count; ++j)
+                        {
+                            if (stacks[j].Id == other.InstanceId && stacks[j].Equipped && stacks[j].Amount > 0) { alsoOn = true; break; }
+                        }
+                        if (alsoOn) continue;
+                        other.InventoryItem.Equipped = false;
+                        equipped.Remove(other);
+                        equipment.Unequip(other, false);
+                        if (equippedMeleeWeapon == other) equippedMeleeWeapon = null;
+                        if (!backpack.Contains(other)) backpack.Add(other);
+                        changes++;
+                    }
+                }
+            }
+
             if (equipmentChanged)
             {
                 EquipmentChanged();

@@ -29,6 +29,7 @@ public class EquipItem : ChatBotCommandHandler<string>
         {
             // back to what is trained: an outfit asked for earlier ("!equip tank") is over
             player.Inventory.AskedOutfit = null;
+            player.Outfits.Asked(null);
             player.EquipBestItems();
             await Game.RavenNest.Players.EquipBestItemsAsync(player.Id);
             client.SendReply(gm, Localization.MSG_EQUIPPED_ALL);
@@ -122,6 +123,9 @@ public class EquipItem : ChatBotCommandHandler<string>
             ? outfit.Skill != player.ActiveSkill
             : !ItemLines.Has(ItemLines.Fits(player.ActiveSkill), outfit.Line);
 
+        // with outfits per skill the role or line belongs to the outfit that is on: the server keeps it with that
+        // outfit, so it comes back with it and is forgotten with "!equip all" (docs/outfits-design.md)
+        player.Outfits.Asked(outfit);
         await Game.RavenNest.Players.EquipBestItemsAsync(player.Id, outfit.Word);
 
         if (worn == null)

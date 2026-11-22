@@ -86,6 +86,27 @@ namespace RavenNest.Protocol
         /// <summary>(Guid characterId) -> bool (whether the cape shows now)</summary>
         public const string ToggleCape = "equipment.toggle-cape";
 
+        // Outfits per skill (docs/outfits-design.md in the game repo); skills are RavenNest.Models.Skill numbers, and
+        // every answer has the character's outfits as they are now (RavenNest.Models.CharacterOutfits' text)
+
+        /// <summary>(Guid characterId) -> OutfitResult: the character's outfits</summary>
+        public const string OutfitGet = "outfits.get";
+
+        /// <summary>(Guid characterId, int trained, bool fighting, int from) -> OutfitResult: training changed, or a raid, dungeon or tower floor began or ended; the outfit that belongs to it goes on. "from" is the skill the game takes to be worn, for a character with nothing kept yet</summary>
+        public const string OutfitFollow = "outfits.follow";
+
+        /// <summary>(Guid characterId, int skill) -> OutfitResult: that skill's outfit goes on now; NoOutfit when it has none</summary>
+        public const string OutfitWear = "outfits.wear";
+
+        /// <summary>(Guid characterId, int skill, int mode) -> OutfitResult: what is worn becomes the skill's outfit (mode 0), is pinned as it (1), or every slot of it is "best" again (2)</summary>
+        public const string OutfitSave = "outfits.save";
+
+        /// <summary>(Guid characterId, int follow, int upgrade) -> OutfitResult: the two switches, each -1 as it is, 0 off, 1 on</summary>
+        public const string OutfitSwitches = "outfits.switches";
+
+        /// <summary>(Guid characterId, Guid inventoryItemId (empty: not known yet), Guid itemId) -> OutfitResult: a piece that arrived, for the outfits that are not on</summary>
+        public const string OutfitOffer = "outfits.offer";
+
         // Enchanting
 
         /// <summary>(Guid characterId, Guid inventoryItemId) -> ItemEnchantmentResult</summary>

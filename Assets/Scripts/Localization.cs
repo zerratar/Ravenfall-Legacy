@@ -1753,6 +1753,32 @@ public static class Localization
     public static string MSG_CAPE_SHOWN = Meta("info", "equipment", "cape") + "Your cape shows again.";
     public static string MSG_CAPE_NONE_HIDDEN = Meta("info", "equipment", "cape") + "You have no cape to hide. If you get one it will stay hidden until you use !toggle cape again.";
     public static string MSG_CAPE_NONE_SHOWN = Meta("info", "equipment", "cape") + "You have no cape to show. If you get one it will show.";
+    // "!outfit": outfits per skill, gear that follows what is trained ({skillName} a skill or "All", {gear} what is worn in a few words: "Elder Atlarus plate", "Nightfall (rogue)")
+    public static string MSG_OUTFIT_INFO = Meta("info", "equipment", "outfit") + "Your {skillName} outfit: {gear}.";
+    public static string MSG_OUTFIT_INFO_NOTES = Meta("info", "equipment", "outfit") + "Your {skillName} outfit: {gear}. {notes}";
+    public static string MSG_OUTFIT_NONE_YET = Meta("info", "equipment", "outfit") + "You have no {skillName} outfit yet. What you wear while you train it becomes its outfit.";
+    public static string MSG_OUTFIT_SAVED = Meta("info", "equipment", "outfit") + "What you wear is now your {skillName} outfit: {gear}.";
+    public static string MSG_OUTFIT_PINNED = Meta("info", "equipment", "outfit") + "Pinned as your {skillName} outfit: {gear}. Better gear will not replace it. !outfit unpin lets it again.";
+    public static string MSG_OUTFIT_UNPINNED = Meta("info", "equipment", "outfit") + "Your {skillName} outfit takes better gear again.";
+    public static string MSG_OUTFIT_UNPINNED_NONE = Meta("info", "equipment", "outfit") + "Nothing in your {skillName} outfit is pinned.";
+    public static string MSG_OUTFIT_WORN = Meta("info", "equipment", "outfit") + "You put on your {skillName} outfit: {gear}.";
+    public static string MSG_OUTFIT_WORN_ALREADY = Meta("info", "equipment", "outfit") + "You already wear your {skillName} outfit: {gear}.";
+    public static string MSG_OUTFIT_AUTO_ON = Meta("info", "equipment", "outfit") + "Your outfit changes with what you train, and for raids, dungeons and the tower.";
+    public static string MSG_OUTFIT_AUTO_OFF = Meta("info", "equipment", "outfit") + "Your outfit does not change by itself. !outfit (skill) puts one on, !outfit auto on turns it back on.";
+    public static string MSG_OUTFIT_UPGRADE_ON = Meta("info", "equipment", "outfit") + "Better gear you get is put on by itself.";
+    public static string MSG_OUTFIT_UPGRADE_OFF = Meta("info", "equipment", "outfit") + "Better gear you get is not put on by itself. !outfit upgrade on turns it back on.";
+    public static string MSG_OUTFIT_FILLED = Meta("info", "equipment", "outfit") + "Gone from your {skillName} outfit: {goneNames}. In its place now: {filledNames}.";
+    public static string MSG_OUTFIT_GONE = Meta("info", "equipment", "outfit") + "Gone from your {skillName} outfit: {goneNames}. You have nothing else to wear there.";
+    public static string MSG_OUTFIT_USAGE = Meta("info", "equipment", "outfit") + "!outfit shows the outfit of what you train. !outfit save keeps what you wear for it, !outfit pin also stops better gear from replacing it (!outfit unpin). !outfit (skill) puts that skill's outfit on. !outfit auto on or off, !outfit upgrade on or off.";
+    public static string MSG_OUTFIT_FAILED = Meta("info", "equipment", "outfit", "fail") + "Your outfit could not be changed right now. Try again in a moment.";
+    // parts of the "!outfit" reply's {notes}, and of {gear}
+    public static string OUTFIT_NOTE_PET = "{petName} goes out with it.";
+    public static string OUTFIT_NOTE_PINNED = "Pinned slots: {count}.";
+    public static string OUTFIT_NOTE_OTHER_ON = "You wear your {skillName} outfit now.";
+    public static string OUTFIT_NOTE_AUTO_OFF = "Outfits do not change by themselves (!outfit auto on).";
+    public static string OUTFIT_NOTE_UPGRADE_OFF = "Better gear is not put on by itself (!outfit upgrade on).";
+    public static string OUTFIT_NO_GEAR = "nothing much";
+    public static string OUTFIT_AND = "and";
 
     public static string MSG_ITEM_COUNT_MISSING_ARGS = Meta("info", "item count", "fail") + "You must specify an item. Use !items (item name) or !count (item name)";
     public static string MSG_ITEM_EXAMINE_MISSING_ARGS = Meta("info", "examine", "fail") + "You must specify an item. Use !examine (item name)";

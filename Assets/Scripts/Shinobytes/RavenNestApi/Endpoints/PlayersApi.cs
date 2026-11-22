@@ -222,6 +222,31 @@ namespace RavenNest.SDK.Endpoints
         public Task<PetResult> PetListAsync(Guid characterId) =>
             client.UseV2 ? client.V2.Commands.CallAsync<PetResult>(Commands.PetList, CommandArgs.Pack(characterId)) : Task.FromResult<PetResult>(null);
 
+        // Outfits per skill (docs/outfits-design.md): the server keeps them and decides what is worn; the changes to
+        // what is worn come with each answer. Only on the v2 connection: an older path has no outfits.
+
+        public Task<OutfitResult> OutfitGetAsync(Guid characterId) =>
+            client.UseV2 ? client.V2.Commands.CallAsync<OutfitResult>(Commands.OutfitGet, CommandArgs.Pack(characterId)) : Task.FromResult<OutfitResult>(null);
+
+        /// <summary>Training changed, or a raid, dungeon or tower floor began or ended: the outfit that belongs to it goes on.</summary>
+        public Task<OutfitResult> OutfitFollowAsync(Guid characterId, int trained, bool fighting, int from) =>
+            client.UseV2 ? client.V2.Commands.CallAsync<OutfitResult>(Commands.OutfitFollow, CommandArgs.Pack(characterId, trained, fighting, from)) : Task.FromResult<OutfitResult>(null);
+
+        public Task<OutfitResult> OutfitWearAsync(Guid characterId, int skill) =>
+            client.UseV2 ? client.V2.Commands.CallAsync<OutfitResult>(Commands.OutfitWear, CommandArgs.Pack(characterId, skill)) : Task.FromResult<OutfitResult>(null);
+
+        /// <summary>Mode 0 keeps what is worn as the skill's outfit, 1 pins it, 2 makes every slot "best" again.</summary>
+        public Task<OutfitResult> OutfitSaveAsync(Guid characterId, int skill, int mode) =>
+            client.UseV2 ? client.V2.Commands.CallAsync<OutfitResult>(Commands.OutfitSave, CommandArgs.Pack(characterId, skill, mode)) : Task.FromResult<OutfitResult>(null);
+
+        /// <summary>The two switches: -1 leaves one as it is, 0 turns it off, 1 on.</summary>
+        public Task<OutfitResult> OutfitSwitchesAsync(Guid characterId, int follow, int upgrade) =>
+            client.UseV2 ? client.V2.Commands.CallAsync<OutfitResult>(Commands.OutfitSwitches, CommandArgs.Pack(characterId, follow, upgrade)) : Task.FromResult<OutfitResult>(null);
+
+        /// <summary>A piece that arrived, for the outfits that are not on.</summary>
+        public Task<OutfitResult> OutfitOfferAsync(Guid characterId, Guid inventoryItemId, Guid itemId) =>
+            client.UseV2 ? client.V2.Commands.CallAsync<OutfitResult>(Commands.OutfitOffer, CommandArgs.Pack(characterId, inventoryItemId, itemId)) : Task.FromResult<OutfitResult>(null);
+
         public Task<PetResult> PetTameAsync(Guid characterId, string species, Guid treatItemId) =>
             client.UseV2 ? client.V2.Commands.CallAsync<PetResult>(Commands.PetTame, CommandArgs.Pack(characterId, species, treatItemId)) : Task.FromResult<PetResult>(null);
 

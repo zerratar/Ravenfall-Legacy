@@ -175,6 +175,7 @@ public class RavenBot : System.IDisposable
         Connection.Register<GemsCommand>("gems_command");
         Connection.Register<PetCommand>("pet_command");
         Connection.Register<TameCommand>("tame_command");
+        Connection.Register<OutfitCommand>("outfit_command");
         Connection.Register<TowerCommand>("tower_command");
         Connection.Register<MangroveCommand>("mangrove_command");
         Connection.Register<ConnectionPing>("ping");

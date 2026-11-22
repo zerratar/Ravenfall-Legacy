@@ -90,6 +90,10 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     public PlayerBattlePets BattlePets => battlePets ??= new PlayerBattlePets(this);
     private PlayerBattlePets battlePets;
 
+    /// <summary>Outfits per skill: gear that follows what is trained (docs/outfits-design.md).</summary>
+    public PlayerOutfits Outfits => outfits ??= new PlayerOutfits(this);
+    private PlayerOutfits outfits;
+
     /// <summary>Equip and unequip operations. See PlayerEquipmentActions.</summary>
     public PlayerEquipmentActions EquipmentActions { get; private set; }
 
@@ -755,6 +759,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         }
 
         battlePets?.Tick();
+        outfits?.Tick();
 
         // training away from the islands: the rate is learned on them, and paid in calm places (a tower town while not
         // resting, a tower floor for a skill its fights do not train, Ravebridge)
@@ -1603,6 +1608,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         PatreonTier = player.PatreonTier;
         SkillBuild = RavenNest.Combat.SkillBuild.Parse(player.SkillBuild);
         BattlePets.Load(player.BattlePets);
+        Outfits.Load(player.Outfits);
         PlayerName = player.Name;
         PlayerNameLowerCase = player.Name.ToLower();
         Stats = new Skills(player.Skills);
@@ -3049,11 +3055,22 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         if (item == null || !item.CanBeEquipped())
             return false;
 
+        // outfits per skill: a better piece also goes into the outfits that are not on, where their slot is "best"
+        Outfits.Arrived(item);
+
         var currentEquipment = Inventory.GetEquipmentOfType(item.Category, item.Type);
         if (currentEquipment == null)
         {
             Inventory.Equip(item);
+            Outfits.PutOn(item);
             return true;
+        }
+
+        // with "upgrade to better gear automatically" off nothing is replaced by itself, and a slot that is pinned in
+        // the outfit that is on never is
+        if (!Outfits.MayReplace(item.Type))
+        {
+            return false;
         }
 
         // an outfit the player asked for ("!equip tank", "!equip rogue", "!equip plate") stays on: a worn piece of
@@ -3080,14 +3097,24 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
                 return false;
             }
 
-            return Inventory.Equip(item);
+            if (!Inventory.Equip(item)) return false;
+            // the server is told what the game put on, so both know the same outfit
+            Outfits.PutOn(item);
+            return true;
         }
 
         return false;
     }
 
+    // items the game found and is still telling the server of: the server does not know their stack yet
+    private readonly HashSet<GameInventoryItem> itemsBeingAdded = new HashSet<GameInventoryItem>();
+
+    /// <summary>An item the game found whose add has not reached the server yet.</summary>
+    public bool IsBeingAdded(GameInventoryItem item) => item != null && itemsBeingAdded.Contains(item);
+
     private void EnqueueItemAdd(GameInventoryItem itemInstance)
     {
+        itemsBeingAdded.Add(itemInstance);
         queuedItemAdd.Enqueue(itemInstance);
         this.hasQueuedItemAdd = true;
         AddQueuedItemAsync();
@@ -3124,9 +3151,13 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
                 else if (result.Result == AddItemResult.Added || result.Result == AddItemResult.AddedAndEquipped)
                 {
                     item.InstanceId = result.InstanceId;
+                    // a found piece that went on at once: the server can be told now that it has the stack
+                    itemsBeingAdded.Remove(item);
+                    outfits?.PutOn(item);
                 }
                 else
                 {
+                    itemsBeingAdded.Remove(item);
                     Shinobytes.Debug.LogError("Failed to add item (" + item.Item.Name + " x " + item.Amount + ") to user with ID '" + UserId + "' (" + Name + "), server returned: " + result.Result + " (" + result.Message + ")");
                 }
             }

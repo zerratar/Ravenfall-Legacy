@@ -511,6 +511,8 @@ public class GameManager : MonoBehaviour, IGameManager
         RegisterGameEventHandler<UpdateHonourEventHandler>((GameEventType)57);
         RegisterGameEventHandler<SkillBuildChangedEventHandler>((GameEventType)58);
         RegisterGameEventHandler<PlayStreakEggEventHandler>((GameEventType)59);
+        // a character's outfits per skill were changed on the website (60)
+        RegisterGameEventHandler<OutfitsChangedEventHandler>((GameEventType)60);
         RegisterGameEventHandler<ItemRemoveByCategoryHandler>(GameEventType.ItemRemoveByCategory);
 
         RegisterGameEventHandler<ItemUnequipEventHandler>(GameEventType.ItemUnEquip);
