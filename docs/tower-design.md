@@ -552,14 +552,21 @@ and by the crypt and marsh builders), on the humanoid enemy animations.
 - Floor 4: Risen Dead and Risen Soldiers beside the skeletons. Floor 7: Grave Knights (the pack's Knight, floor + 3)
   with the goblins and skeletons. Floor 8: Plague Walkers with the red and purple Metalons. Floor 9: Shambling Corpses
   and Crypt Wraiths with the red Metalons. Quests on 4, 8 and 9 name the new monsters.
-- **The Gardener (floor 9) is the Behemoth**, at scale 2.3, with its fight, numbers and line unchanged. Its help is
-  three Shambling Corpses. Intro taunt Cheer3.
+- **Four band 1 bosses are Dark Fortress characters** (round 2, same day), each in a slot that had a reused look:
+  floor 4 **Mortimer Bonewhistle** (the Necromancer, raises Risen Dead three times; was the Rootbound King), floor 7
+  **Big Gorp, the Keep Colossus** (a ground slam every third swing, goblins at half health; was King Grubnose the
+  Second), floor 8 **Lord Pestilus** (the Plague Lord, poison clouds every third swing, Plague Walkers; was Redshell
+  the Blighted), floor 9 **Old Rotbelly** (the Behemoth, the Gardener's fight and numbers). Numbers set with the
+  simulator so the floors stay about as hard; the table is in docs/dark-fortress-design.md.
+- Elites: Bog Apothecary (floor 3), Antlered Reaver (floor 5, the overgrown layout has its template), Fallen
+  Inquisitor (floor 10).
 - **Trophies**: a boss can name items of its own (`TowerBoss.Trophies`); on the stream's first clear each fighter has
-  `TowerLoot.TrophyChance` (1 in 4) of one. The Gardener's: Gardeners Bonesaw, Rotreaper, Plague Mitre.
+  `TowerLoot.TrophyChance` (1 in 4) of one. Floor 4: Bonewhistle Staff, Grinning Skull; 7: Colossus Cleaver, Keepward
+  Shield; 8: Plague Mitre, Blightbone Staff; 9: Rotbelly Bonesaw, Rotreaper.
 
-Played on floor 9 with the dev character and four bots: the new monsters fight, get hit and fall; the Gardener's
-slam, spit, adds and fall work. A real clear of floor 9 (the server's trophy roll) and floors 4, 7 and 8 were not
-played.
+Played with the dev character and four bots: floor 9 (round 1) and full fights against the Necromancer, the
+Colossus and the Plague Lord (their help, slam and spit), and the new monsters on floors 3, 4, 5, 7, 8 and 10. A real
+clear (the server's trophy roll) was not played: the dev stream is on floor 6, so these were training attempts.
 
 ## Open questions
 
