@@ -576,6 +576,24 @@ fighter on the stream's clear, against 0.25% for a heroic dungeon and 0.1% for a
 boss kill toward awakening a worn Legendary. The line is a constant (21), not "the top band", so band 4 does not lock
 anyone out when it comes.
 
+## 21. Band 4 concepts, the Dark Fortress (2026-11-23)
+
+Planned for v0.9.8, not v0.9.7 (the owner agreed: finish and playtest v0.9.7 first). Floors 31 to 40, a dark
+citadel band built from the Synty Dark Fortress pack (plus Dungeon Realms and Horror Mansion where they fit). The
+owner asked for a fresh look, not a match with bands 1 to 3, and a town with a fresh layout too, so the climb does
+not repeat itself. Concepts (Image Generator, from scratch, no earlier concept as reference) in
+`docs/mockups/tower/band4/`:
+
+- `floor-a-gatehouse.jpg`: the outer bailey, portcullis, green ghostfire, chains, wrecked siege engines, eclipse.
+- `floor-b-great-hall.jpg`: a roofless great hall, pillars, chandeliers, a violet rune circle, feast tables.
+- `floor-c-ramparts.jpg`: wall walks and bridges between towers over a misty chasm, hanging cages, a red moon.
+- `boss-throne.jpg`: the open throne room at the top, ectoplasm channels, skull carvings, a vortex and eclipse.
+- `town-a-lanternrest.jpg`: a warm camp of adventurers on a ledge in the fortress's shadow.
+- `town-b-ghost-quarter.jpg`: a friendly ghost quarter with ghost shopkeepers inside the walls.
+
+When it is built: raise the Legendary tower requirement (section 20) to the new top band, and model the custom
+shapes in Blender from the picked concepts (memory: concept then Blender).
+
 ## Open questions
 
 - ~~Is the tower always open while a stream is live, or does the streamer open it?~~ Open on every stream: any viewer can
