@@ -26,6 +26,13 @@ public class UseItem : ChatBotCommandHandler<string>
             return;
         }
 
+        // a Message in a Bottle ("!use bottle") or a Treasure Map ("!use map"): the server opens or digs it, BottleUse words it
+        if (BottleUse.IsBottleQuery(inputQuery) || BottleUse.IsMapQuery(inputQuery))
+        {
+            await UseBottleOrMapAsync(BottleUse.IsMapQuery(inputQuery), player, inputQuery, gm, client);
+            return;
+        }
+
         // an experience book names the skill it is read for after the item: "gathering book fishing", "large combat book magic 2"
         if (ExperienceBooks.IsBookQuery(inputQuery))
         {
@@ -111,6 +118,13 @@ public class UseItem : ChatBotCommandHandler<string>
         if (queriedItem.InventoryItem == null)
         {
             client.SendReply(gm, Localization.MSG_ITEM_NOT_OWNED, inputQuery);
+            return;
+        }
+
+        // a bottle or a map found by its full name ("!use message in a bottle"): neither is food, a scroll or a potion
+        if (BottleUse.Handles(queriedItem.Item))
+        {
+            await UseBottleOrMapAsync(string.Equals(queriedItem.Item.Name, BottleUse.MapName, StringComparison.OrdinalIgnoreCase), player, inputQuery, gm, client);
             return;
         }
 
@@ -259,6 +273,19 @@ public class UseItem : ChatBotCommandHandler<string>
 
         player.UpdateEquipmentEffect();
         client.SendReply(gm, message.Trim(), args.ToArray());
+    }
+
+    private async System.Threading.Tasks.Task UseBottleOrMapAsync(bool map, PlayerController player, string inputQuery, GameMessage gm, GameClient client)
+    {
+        try
+        {
+            await BottleUse.UseAsync(Game, player, map, gm, client);
+        }
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogError("!use " + inputQuery + " failed: " + exc);
+            client.SendReply(gm, Localization.MSG_USE_ITEM_NOT_NOW, map ? BottleUse.MapName : BottleUse.BottleName);
+        }
     }
 
     private static readonly Regex PlaceholderName = new Regex(@"\{([A-Za-z0-9]+)\}", RegexOptions.Compiled);
