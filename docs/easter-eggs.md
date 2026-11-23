@@ -86,6 +86,11 @@ By the streamer's own clock. All off with the setting.
 - **April 1st** (the owner's favorite; force it with the debug menu button):
   - Big head mode: every character's head bone at 1.7 times its size.
   - Party hats and traffic cones on the enemies near the camera and on every pet out (checked every 5 seconds).
+    Without help the hat is a guess (head bone, or the top front of the body, sized by height), which is off on
+    cows (no head bone, so it floats) and chickens (too big). Fix one by hand: add a **Hat Fit** component to the
+    enemy or pet prefab, set its Anchor to the head or neck bone, press "Show hat preview", move/turn/scale the
+    preview hat in the scene view, then "Take values from preview" and save the prefab. "No Hat" skips it.
+    Test with the debug menu's "April Fools" button.
   - King Clucksworth in front of the town hall (above), and Rob Boss paints only chickens.
   - Bottle notes are pranksters' (`UI_BOTTLE_APRIL_n`, 8 of them) instead of the server's note; the server's roll,
     the map chance and everything else stay as they are.
