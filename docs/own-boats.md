@@ -581,3 +581,66 @@ Fishing Boat, 100 for the Sloop, 300 for the Brigantine and 500 for the Galleon 
 Crafting levels, parts and fees are as they were). The level is asked when building; a built boat is soulbound, as the
 rowboat is, so it can go to the player's other characters (the user: give it to your new character) but not be traded,
 gifted or sold to anyone else.
+
+### Messages in bottles (built 2026-11-23)
+
+The Message in a Bottle (2% a fishing round at sea from an own boat, an hour apart, sea only) used to do nothing. Now
+`!use message in a bottle` (also `!use bottle`, `!use message`) opens it: the bottle is used up and the player reads a
+note in chat. Now and then a **Treasure Map** comes out instead, and `!use treasure map` (also `!use map`) digs it up
+on the island it marks. A small easter egg; the bottle keeps its old description (the joke).
+
+**Who decides what.** The server decides everything (RavenNest `Bottles` for the rolls, `BottleManager` for the
+items): it takes the bottle, picks the note or makes the map, checks where the character is, takes the map and gives
+the treasure. The game (`BottleUse`, from `UseItem`) only words the answer and shows the dig; coins and items arrive
+through the server's own pushes. The answer is `ItemUseResult` with five new fields: `Outcome` ("note", "map",
+"elsewhere", "locked", "treasure"), `Note`, `Coins`, `Items` and `Look`.
+
+**The notes.** 48 ordinary notes and 5 rare ones, written as the game's voice and true to the game: messages from
+zerratar (who has more bottles), islanders (a fisherman's war with the seagulls, a love letter to a salmon, shopping
+lists, the very polite Pirates of Away and their ransom notes), small lore about Home, Away, Ironhill, Kyo, Heim,
+Atria, Eldara, Mangrove and Ravebridge, and gentle tips (`!outfit`, `!tree`, `!pets`, `!tame`, `!tower`, `!quest`,
+`!title`, `!boat`, `!rest`). The rare ones: a drawing of a raven, a note addressed to the finder by name, "THIS IS NOT
+A TREASURE MAP." and nothing more, a soaked note where only "bottles" can be read, and a smaller bottle inside the
+bottle. The server picks a number; the words are `UI_BOTTLE_NOTE_1` to `_48` and `_101` to `_105` in Localization.cs,
+so they are in the languages template like every other text (the same way the quest chains' stories reach the
+player: the server names a key, the game looks the text up). A game without a note the server names reads its first.
+Keep `Bottles.NoteCount` on the server and the game's notes in step when adding more.
+
+**The odds of a bottle.** One in eight is a Treasure Map (12.5%). Of the notes, 8% are rare (each of the five about
+1.4% of all bottles), the rest one of the 48 (about 1.8% each).
+
+**The island a map marks.** One the character can reach by the server's island requirements
+(`ResourceTaskProcessor.islandLevelRequirements`): an island counts when any of the skills it lists (Woodcutting,
+Mining, Fishing, Farming, Gathering) is at its level (Home 1, Away 50, Ironhill 100, Kyo 200, Heim 300, Atria 500,
+Eldara 700). The Mangrove island only where the stream has opened it (`IslandOpen`, the streamer's story), and there
+twice as likely as another island (pirates bury things there). Never the sea, Ravebridge (an event island) or the
+ferry. The island is kept in the map's inventory item tag (the island's name, ten characters at most; the tag column
+is wide since the boat look outage). A map is soulbound, since its island lives in the tag, and worth a coin at the
+vendor like the bottle.
+
+**Using a map.** On another island (or at sea, on the ferry): "The X on this map is on Kyo." and the map stays. On a
+Mangrove map in a stream that has not opened Mangrove: it says so and the map stays. Busy (dungeon, raid, tower, arena,
+duel, war, onsen, Ravebridge, knocked out): no digging. On the right island (by the server's last state of the
+character): the map is taken, the character digs a step in front of where it stands with the banana island's shovel
+and farming animation for 5 s, the banana island's treasure chest rises out of the ground and opens, and the reply
+lists the find. With more than one map, the one for the island the character is on is used.
+
+**The treasure** (per map, by the character's level: the highest of the five gathering skills):
+
+| What | Chance | Amount |
+| --- | --- | --- |
+| Coins | always | (400 + 12 a level) times 1 to 2, to 10: level 1 410 to 820, 100 1,600 to 3,200, 500 6,400 to 12,800, 999 12,390 to 24,780 |
+| An enchanted gem | 25% | any of the seven kinds; Chipped below 300; from 300 Flawed 30%; from 700 Polished 10%, Flawed 40% |
+| A pet egg | 5% (7% with the animal eggs' widening, as every egg source) | from the pirates' table (Bomb, Shell, Snakelet, Parrot) |
+| Another Message in a Bottle | 8% | one |
+| Something memorable | 2% | the Treasure Hunter title (a hidden achievement, "the Treasure Hunter") or a boat flag or figurehead from the treasure set, whichever is not owned yet, in a random order; with both owned the coins are doubled |
+
+**Not built:** a visible X on the island before digging (the dig is where the character stands), a walk to a spot,
+others joining the dig (the banana island's `!dig` stays its own thing), a map that can be traded.
+
+**Played 2026-11-23** on the development character (local server, chat cut off): eight bottles gave four notes and
+four maps (Heim, Ironhill, Kyo, Eldara; a lucky run, the odds are one in eight); the maps were dug on their islands
+(19,050, 21,780, 22,930 with a Chipped Onyx, 16,840 coins at level 999), one used on the wrong island said where it
+belongs, a map without an island got Heim from its stack id, and the dig showed the shovel and the farming animation
+and brought the chest up and open. The coins and items showed on the game and the server. Everything given was taken
+back afterwards. Not seen: real chat, the rarer finds, a Mangrove map, the dig up close on screen.
