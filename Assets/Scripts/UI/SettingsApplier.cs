@@ -113,7 +113,8 @@ public static class SettingsApplier
         public const float IslandObserveSeconds = 10f;
         public const bool ObserveEmptyIslands = true;
         public const bool RaceCamera = true;
-        public const bool RavebridgeUprisings = true;
+        // off by default (the owner, 2026-11-23): Ravebridge opens when the streamer starts it
+        public const bool RavebridgeUprisings = false;
         public const bool TowerOpen = true;
         public const bool EffectWords = true;
         public const bool ScreenShake = true;

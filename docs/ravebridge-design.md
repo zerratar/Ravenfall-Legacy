@@ -295,3 +295,25 @@ The user played Ravebridge by hand (outside hero mode) and asked for these, buil
   answers, follow-up choices, ones that wait for a quest to be done, and a few that give Ravebridge coins once (the
   Duke's tax, Millie's flour money, Wartfist's thanks, the captain's wage). A quest offered can be asked about first
   ("What's in it for me?" shows the rewards) or turned down ("Not now").
+
+## Opened by the streamer, and raids and dungeons beside it (2026-11-23)
+
+The owner: "make sure that raids and dungeons can spawn during Ravebridge" and "double check so that Ravebridge no
+longer automatically start as an event per default anymore, and streamers has to start it themselves."
+
+- **No longer the one event.** Ravebridge took the game's single event slot (`GameEventManager`), so no raid or
+  dungeon could start while it was open. It no longer takes it: raids and dungeons start as usual for the players who
+  are not on Ravebridge. Its visitors stay out of them as before (InRavebridge). Only a stream raid (war) still keeps
+  Ravebridge from opening, so the quest window's button and `!ravebridge start` only say "busy" for that.
+- **The hero keeps the camera.** A raid or dungeon starting or ending no longer takes the camera from a character
+  played by hand (`GameCamera.EnableRaidCamera`, `EnableDungeonCamera`, `DisableFocusCamera`, `DisableDungeonCamera`
+  return while `controlled` or in a cutscene).
+- **Uprisings off by default.** The random goblin uprising (about every six hours of streaming with three players or
+  more) was the one way Ravebridge opened by itself; Settings > Game > World "Ravebridge uprisings" is now off unless
+  a streamer turns it on. A streamer who switched it on before keeps it on. Still forced from outside: game event 56
+  (`api/admin/ravebridge-force`, the owner's own tool) and the debug menu.
+- **Played** (play mode, chat cut off): with Ravebridge open, a forced raid started and ended, a dungeon opened for
+  joining, Ravebridge stayed open throughout; with the development character played by hand, raid and dungeon
+  camera calls left the camera on it. **Not played:** a real raid or dungeon fought to the end while the streamer
+  plays the hero, and players joining a raid from chat while Ravebridge is open.
+

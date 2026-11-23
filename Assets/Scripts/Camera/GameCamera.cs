@@ -419,6 +419,8 @@ public class GameCamera : MonoBehaviour
     public void EnableRaidCamera()
     {
         if (forcedFreeCamera) return;
+        // a character played by hand (the Ravebridge hero) keeps its camera: raids go on beside Ravebridge
+        if (controlled || state == GameCameraType.Cinematic) return;
         LeaveRace();
         state = GameCameraType.Raid;
         observeCamera.ObservePlayer(null);
@@ -441,6 +443,8 @@ public class GameCamera : MonoBehaviour
     public void EnableDungeonCamera()
     {
         if (forcedFreeCamera) return;
+        // a character played by hand (the Ravebridge hero) keeps its camera: dungeons go on beside Ravebridge
+        if (controlled || state == GameCameraType.Cinematic) return;
         LeaveRace();
         state = GameCameraType.Dungeon;
         observeCamera.ObservePlayer(null);
@@ -452,6 +456,7 @@ public class GameCamera : MonoBehaviour
     public void DisableFocusCamera()
     {
         if (forcedFreeCamera) return;
+        if (controlled || state == GameCameraType.Cinematic) return;
         if (state != GameCameraType.Observe)
         {
             if (PlayerSettings.Instance.EnableIslandCameraOnStart == true)
@@ -468,6 +473,7 @@ public class GameCamera : MonoBehaviour
     public void DisableDungeonCamera()
     {
         if (forcedFreeCamera) return;
+        if (controlled || state == GameCameraType.Cinematic) return;
         if (PlayerSettings.Instance.EnableIslandCameraOnStart == true)
         {
             ObserveNextIsland();

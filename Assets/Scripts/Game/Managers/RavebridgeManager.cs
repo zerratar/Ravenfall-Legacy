@@ -130,12 +130,10 @@ public class RavebridgeManager : MonoBehaviour, IEvent
         if (!Island) return StartResult.NoIsland;
         if (!forced && !Unlocked) return StartResult.Locked;
         if (game.StreamRaid && game.StreamRaid.Started) return StartResult.Busy;
-        if (!game.Events.TryStart(this, !forced || now))
-        {
-            // a forced event waits for the running one to end
-            if (forced) pendingForcedReason = reason ?? string.Empty;
-            return StartResult.Busy;
-        }
+        // Ravebridge does not take the game's one event slot (GameEventManager): raids and dungeons go on while it is
+        // open, for the players who are not on it (the owner, 2026-11-23: "make sure that raids and dungeons can spawn
+        // during Ravebridge"). Its visitors stay out of them (InRavebridge), and the hero's camera is not taken
+        // (GameCamera.EnableRaidCamera, EnableDungeonCamera).
 
         ShowIsland();
         Active = true;
@@ -203,7 +201,6 @@ public class RavebridgeManager : MonoBehaviour, IEvent
         Active = false;
         Forced = false;
         Hero = null;
-        game.Events.End(this);
         game.RavenBot?.Announce(Localization.MSG_RAVEBRIDGE_ENDED);
         Changed?.Invoke();
     }
@@ -334,7 +331,7 @@ public class RavebridgeManager : MonoBehaviour, IEvent
 
         if (!Active)
         {
-            if (pendingForcedReason != null && !game.Events.IsActive) Begin(true, pendingForcedReason.Length > 0 ? pendingForcedReason : null);
+            if (pendingForcedReason != null && !(game.StreamRaid && game.StreamRaid.Started)) Begin(true, pendingForcedReason.Length > 0 ? pendingForcedReason : null);
             RollUprising();
             return;
         }

@@ -462,7 +462,8 @@ namespace Shinobytes.UI
             else
             {
                 body.Add(Text(Localization.UI_RAVEBRIDGE_START_HINT, "rf-qcard__line"));
-                var busy = rb && GameManager.Instance && GameManager.Instance.Events.IsActive;
+                // only a stream raid (war) keeps it shut: raids and dungeons go on beside Ravebridge
+                var busy = rb && GameManager.Instance && GameManager.Instance.StreamRaid && GameManager.Instance.StreamRaid.Started;
                 var open = new Button(() =>
                 {
                     if (rb && rb.Begin(false) == RavebridgeManager.StartResult.Busy) showError(Localization.UI_RAVEBRIDGE_BUSY);

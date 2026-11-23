@@ -103,7 +103,7 @@ public static class Localization
     public static string MSG_RAVEBRIDGE_BUSY = Meta("ravebridge", "fail") + "Finish what you are doing first (a dungeon, raid, war, arena or duel).";
     public static string MSG_RAVEBRIDGE_DEAD = Meta("ravebridge", "fail") + "You cannot travel while knocked out.";
     public static string MSG_RAVEBRIDGE_LOCKED = Meta("ravebridge", "fail") + "This stream has not found the road west yet: the streamer's story \"The road west\" opens Ravebridge.";
-    public static string MSG_RAVEBRIDGE_EVENT_BUSY = Meta("ravebridge", "fail") + "Another event is running; Ravebridge can open when it is over.";
+    public static string MSG_RAVEBRIDGE_EVENT_BUSY = Meta("ravebridge", "fail") + "A stream raid is running; Ravebridge can open when it is over.";
     public static string MSG_RAVEBRIDGE_NO_PERMISSION = Meta("ravebridge", "fail") + "Only the streamer and the moderators can open or close Ravebridge.";
     public static string MSG_RAVEBRIDGE_FOLLOW = Meta("ravebridge", "help") + "You fight beside the streamer's hero now. !ravebridge stop goes back to your own training.";
     public static string MSG_RAVEBRIDGE_HEAL = Meta("ravebridge", "help") + "You heal the streamer's hero now. !ravebridge stop goes back to your own training.";
@@ -1209,7 +1209,7 @@ public static class Localization
     public static string UI_HERO_MAP_HINT = "Click to walk there. Scroll to zoom, drag to look around. M or Esc closes.";
     public static string UI_RAVEBRIDGE_START = "Open Ravebridge";
     public static string UI_RAVEBRIDGE_START_HINT = "The Ravebridge event: viewers join with !ravebridge, and you can play by hand.";
-    public static string UI_RAVEBRIDGE_BUSY = "Another event is running.";
+    public static string UI_RAVEBRIDGE_BUSY = "A stream raid is running.";
     public static string UI_STORY_TAB = "Village";
     public static string UI_STORY_HINT = "Quests given to you as the village's leader. Your viewers do the work; you talk to the people and make the choices.";
     public static string UI_STORY_INTRO = "The village's stories. One at a time; each ends with something for the village and for you.";
@@ -2977,7 +2977,7 @@ public static class Localization
     public static string UI_SETTINGS_RAVEBRIDGE_UPRISINGS = "Ravebridge uprisings";
     public static string UI_SETTINGS_TOWER_OPEN = "Tower open to chat";
     public static string UI_SETTINGS_TOWER_OPEN_HINT = "Viewers can go into the tower with !tower and climb it together, by vote when you are away. Turn it off to close the tower on this stream: players inside can still leave.";
-    public static string UI_SETTINGS_RAVEBRIDGE_UPRISINGS_HINT = "Now and then the goblins of Ravebridge rise by themselves and pull players into the event. Turn it off for a stream left running: Ravebridge then only opens when you start it.";
+    public static string UI_SETTINGS_RAVEBRIDGE_UPRISINGS_HINT = "Off: Ravebridge only opens when you start it. On: now and then the goblins of Ravebridge rise by themselves and pull players into the event.";
     public static string UI_SETTINGS_JOIN_CODE = "Join with a code";
     public static string UI_SETTINGS_JOIN_CODE_HINT = "Raids and dungeons show a word on stream, and viewers join by typing it, such as !raid apple. Keeps out those who are not watching. From the next raid or dungeon.";
 
