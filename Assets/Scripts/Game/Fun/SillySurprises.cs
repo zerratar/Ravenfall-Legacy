@@ -216,6 +216,18 @@ public sealed class SillySurprises : MonoBehaviour
     {
         var id = wearer.GetHashCode();
         if (!hatted.Add(id)) return;
+        var template = hatTemplates[(id & 0x7fffffff) % hatTemplates.Length];
+        // placed by hand on the prefab (HatFit, fitted in the inspector): no guessing
+        var fit = wearer.GetComponentInChildren<HatFit>(true);
+        if (fit)
+        {
+            if (fit.NoHat) return;
+            var fitted = Instantiate(template);
+            fitted.SetActive(true);
+            fit.Place(fitted.transform, template.transform.lossyScale);
+            hats.Add(fitted);
+            return;
+        }
         // the size of what is drawn (enabled renderers only: pooled and LOD ones can sit at the feet)
         var found = false;
         var bounds = new Bounds(wearer.position, Vector3.zero);
@@ -233,7 +245,6 @@ public sealed class SillySurprises : MonoBehaviour
             foreach (var t in wearer.GetComponentsInChildren<Transform>())
                 if (t.name.StartsWith("Head", StringComparison.OrdinalIgnoreCase) || t.name.EndsWith("_Head", StringComparison.OrdinalIgnoreCase)) { head = t; break; }
         var size = Mathf.Clamp(bounds.size.y / 1.8f, 0.25f, 4f);
-        var template = hatTemplates[(id & 0x7fffffff) % hatTemplates.Length];
         var hat = Instantiate(template);
         hat.SetActive(true);
         // no head bone (the cows' bones are joint1, joint2...): the top of the front of the body, where a head is
