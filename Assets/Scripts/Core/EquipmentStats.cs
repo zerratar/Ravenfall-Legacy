@@ -48,6 +48,17 @@ public class EquipmentStats : IComparable
     /// </summary>
     [NonSerialized] public RavenNest.Combat.GearStats PetGear;
 
+    /// <summary>A worn Legendary and its awakening rank (docs/legendary-design.md): the rank is the server's, on the item's tag.</summary>
+    public struct WornLegendary
+    {
+        public RavenNest.Combat.LegendaryInfo Info;
+        public int Rank;
+        public int Kills;
+    }
+
+    /// <summary>The worn Legendaries (a weapon and a shield can both be), null or empty for none.</summary>
+    [NonSerialized] public System.Collections.Generic.List<WornLegendary> Legendaries;
+
     /// <summary>The stats of <see cref="PetGear"/>.</summary>
     public static readonly RavenNest.Combat.GearStat[] PetGearStats =
     {

@@ -248,7 +248,7 @@ public sealed class WeaponElementFx : MonoBehaviour
     }
 
     // hero mode's additive particle material with a soft dot
-    private static Material Material
+    internal static Material Material
     {
         get
         {

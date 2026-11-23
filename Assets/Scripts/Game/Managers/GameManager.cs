@@ -570,6 +570,9 @@ public class GameManager : MonoBehaviour, IGameManager
 
             // an item the server gave with gems in it says so: "Sorcerer Robe with a Flawed Sapphire" (class gear from a
             // tower chest; the server says which gems, the names are the gem library's)
+            // a Legendary: the stream hears it (docs/legendary-design.md)
+            if (global::RavenNest.Combat.Legendary.IsLegendary(reward.ItemId)) LegendaryNews.Found(player, rewardItem.Name);
+
             var key = global::RavenNest.Combat.Gems.SocketedName(rewardItem.Name, reward.Sockets);
 
             if (!droppedItems.TryGetValue(key, out var items))
@@ -1185,6 +1188,8 @@ public class GameManager : MonoBehaviour, IGameManager
         GameSystems.Update(!isReloadingScene);
         CombatEffects.Update(GameTime.deltaTime);
         WeaponElementFx.Update(GameTime.deltaTime); // embers, frost, sparks and venom on elemental weapons
+        LegendaryGlow.Update(GameTime.deltaTime); // awakened Legendaries glow in their color
+        LegendaryNews.Update(); // a Legendary found or fully awakened: one line in chat, at most once a minute
         FreezeChecker.SetCurrentScriptUpdate("GameManager Update");
 
         if (isReloadingScene)

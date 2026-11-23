@@ -568,6 +568,14 @@ Played with the dev character and four bots: floor 9 (round 1) and full fights a
 Colossus and the Plague Lord (their help, slam and spit), and the new monsters on floors 3, 4, 5, 7, 8 and 10. A real
 clear (the server's trophy roll) was not played: the dev stream is on floor 6, so these were training attempts.
 
+## 20. Legendaries from the top band (2026-11-23)
+
+The Legendary weapons (docs/legendary-design.md) ask for a clear of floor 21 or higher fought in (the climber
+achievement's highest floor, per character), and the boss of floor 21 and up is their best source: 4% a qualifying
+fighter on the stream's clear, against 0.25% for a heroic dungeon and 0.1% for a raid. Every tower clear also counts a
+boss kill toward awakening a worn Legendary. The line is a constant (21), not "the top band", so band 4 does not lock
+anyone out when it comes.
+
 ## Open questions
 
 - ~~Is the tower always open while a stream is live, or does the streamer open it?~~ Open on every stream: any viewer can

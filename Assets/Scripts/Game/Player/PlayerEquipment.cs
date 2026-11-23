@@ -64,6 +64,8 @@ public class PlayerEquipment : MonoBehaviour
     public ItemController MeleeWeaponObject => weapon;
     public ItemController BowObject => bow;
     public ItemController StaffObject => staff;
+    /// <summary>The worn shield's object, when one is worn (a Legendary's glow).</summary>
+    public ItemController ShieldObject => shield;
 
     /// <summary>The melee weapon's object, when one is worn (hero mode's sword trail).</summary>
     public Transform MeleeWeapon => weapon ? weapon.transform : null;

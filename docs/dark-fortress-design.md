@@ -54,6 +54,13 @@ Stats follow the ladder of their type at their level, plus one fortress touch in
 | Spiked Bulwark | Shield_01 | shield | Defense 850 | 380 armor | thorns 8% | chests, tier 4, Slayer 85 |
 | Soulreaver | Sword_01 | 2H sword | Attack 900 | 711 / 711 | life steal 3% | chests, tier 4, Slayer 90 |
 
+**Legendaries (2026-11-23).** Five of the finds are the first Legendaries (docs/legendary-design.md): the
+Soulreaver, Hellhorn Mace, Batwing Staff, Spiked Bulwark and Fortress Hand Cannon. They left the chest table, ask for
+950 in their skill, are soulbound and sell for a coin, and their numbers are no longer the ones in this table: each is
+the best normal item of its type plus 10% (20% at awakening rank 5), worked out by the server from the catalog. The
+Hellhorn Mace's fire is 15% (35% made it half again as strong as the best axe in the simulator). Each has a power of
+its own. Skullcrusher, the Gravebloom Warhammer and the Sunstaff of the Inquisitor stay chest finds as below.
+
 The chest finds are `ItemDrop` rows with a weight of 0.01 (most drops are 0.05), so they are rare. A tier 3 find drops
 from chests of tier 3 and up (the harder dungeons, tower floors 10 and up), a tier 4 find only from tier 4 chests (the
 hardest dungeons, tower floors 13 and up); the Slayer level keeps them from characters far below them.

@@ -332,8 +332,8 @@ public static class CombatPaths
         }
     }
 
-    /// <summary>A ring that grows and fades on the ground (the battle pets' ring).</summary>
-    private static void Ring(Vector3 center, float radius, Color color, float seconds = 0.6f)
+    /// <summary>A ring that grows and fades on the ground (the battle pets' ring); the Legendaries' powers use it too.</summary>
+    internal static void Ring(Vector3 center, float radius, Color color, float seconds = 0.6f)
     {
         if (!Shown) return;
         var go = new GameObject("Path ring");
@@ -349,7 +349,7 @@ public static class CombatPaths
     }
 
     /// <summary>A small bolt with a trail from a point to a fighter (the battle pets' bolt): only for the eye, the damage is dealt at once.</summary>
-    private static void Bolt(Vector3 from, Transform target, Color color)
+    internal static void Bolt(Vector3 from, Transform target, Color color)
     {
         if (!Shown || !target) return;
         var go = new GameObject("Path bolt");
@@ -365,7 +365,7 @@ public static class CombatPaths
         go.AddComponent<PetBoltMover>().Launch(target, Vector3.up * 0.8f, null);
     }
 
-    private static void Word(IAttackable fighter, string word, Color color)
+    internal static void Word(IAttackable fighter, string word, Color color)
     {
         if (!SettingsApplier.EffectWords || !GraphicsToggler.GraphicsEnabled) return;
         if (!(fighter is Component c) || !c) return;

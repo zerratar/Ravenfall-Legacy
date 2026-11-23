@@ -933,6 +933,7 @@
 .rf-tooltip .rf-tooltip__value--bad { color: rgb(255, 110, 100); }
 .rf-tooltip .rf-tooltip__value--gold { color: var(--rf-accent-bright); }
 .rf-tooltip .rf-tooltip__value--magic { color: rgb(190, 140, 255); }
+.rf-tooltip .rf-tooltip__value--legendary { color: rgb(255, 194, 71); -unity-font-style: bold; }
 
 .rf-tooltip .rf-tooltip__note {
     font-size: 13px;

@@ -147,6 +147,39 @@ public static class ItemExtension
         return RavenNest.Combat.Gems.Sockets(level, slot);
     }
 
+    /// <summary>A Legendary (docs/legendary-design.md): which one, and the boss kills worn that awaken it (the server's, on the tag).</summary>
+    public static bool GetLegendary(this GameInventoryItem e, out RavenNest.Combat.LegendaryInfo legend, out int kills)
+    {
+        legend = e?.Item != null ? RavenNest.Combat.Legendary.Get(e.Item.Id) : null;
+        kills = legend != null ? RavenNest.Combat.Legendary.KillsOf(e.InventoryItem?.Tag) : 0;
+        return legend != null;
+    }
+
+    /// <summary>A stack's sockets: by the item's level, or a Legendary's by its awakening rank.</summary>
+    public static int GetSocketCount(this GameInventoryItem e)
+    {
+        if (e?.Item == null) return 0;
+        if (e.GetLegendary(out _, out var kills)) return RavenNest.Combat.Legendary.Sockets(RavenNest.Combat.Legendary.RankOf(kills));
+        return e.Item.GetSocketCount();
+    }
+
+    /// <summary>
+    ///     A Legendary's lines for tooltips: ("Legendary", "Rank 2 of 5"), (its power's name, what it does at this
+    ///     rank), ("Awakening", "37 of 90 boss kills to rank 3"). Empty for any other item.
+    /// </summary>
+    public static List<(string Label, string Value)> GetLegendaryLines(this GameInventoryItem e)
+    {
+        var lines = new List<(string, string)>();
+        if (!e.GetLegendary(out var legend, out var kills)) return lines;
+        var rank = RavenNest.Combat.Legendary.RankOf(kills);
+        lines.Add((Localization.UI_TIP_LEGENDARY, string.Format(Localization.UI_TIP_LEGENDARY_RANK, rank)));
+        lines.Add((legend.PowerName, Localization.LegendaryPower(legend.Power, rank)));
+        lines.Add((Localization.UI_TIP_AWAKENING, rank >= RavenNest.Combat.Legendary.MaxRank
+            ? Localization.UI_TIP_AWAKENING_FULL
+            : string.Format(Localization.UI_TIP_AWAKENING_NEXT, kills, RavenNest.Combat.Legendary.NextRankKills(kills), rank + 1)));
+        return lines;
+    }
+
     /// <summary>The bonus of every gem in the item's sockets, or null without gems.</summary>
     public static RavenNest.Combat.GearStats GetGemStats(this GameInventoryItem e)
     {
@@ -163,7 +196,7 @@ public static class ItemExtension
     {
         var lines = new List<(string, string)>();
         if (e?.Item == null || !e.Item.TryGetGemSlot(out var slot)) return lines;
-        var count = e.Item.GetSocketCount();
+        var count = e.GetSocketCount();
         var sockets = RavenNest.Combat.Gems.ParseSockets(e.InventoryItem?.Sockets, count);
         for (var s = 0; s < sockets.Length; ++s)
         {
@@ -224,6 +257,9 @@ public static class ItemExtension
 
     public static ItemStatsCollection GetItemStats(this GameInventoryItem i, bool includeSkillEnchantments = false)
     {
+        // a Legendary's numbers grow with its awakening rank (the item holds rank 1; docs/legendary-design.md)
+        var legendRank = i.GetLegendary(out var legend, out _) ? RavenNest.Combat.Legendary.RankOf(RavenNest.Combat.Legendary.KillsOf(i.InventoryItem?.Tag)) : 1;
+        int R(int v) => legend != null ? RavenNest.Combat.Legendary.AtRank(v, legendRank) : v;
         int aimBonus = 0;
         int armorBonus = 0;
         int powerBonus = 0;
@@ -250,17 +286,17 @@ public static class ItemExtension
                     if (key == "POWER")
                     {
                         powerEnchantment = e;
-                        powerBonus = (int)(i.Item.WeaponPower * value) + (int)(i.Item.MagicPower * value) + (int)(i.Item.RangedPower * value);
+                        powerBonus = (int)(R(i.Item.WeaponPower) * value) + (int)(R(i.Item.MagicPower) * value) + (int)(R(i.Item.RangedPower) * value);
                     }
                     if (key == "AIM")
                     {
                         aimEnchantment = e;
-                        aimBonus = (int)(i.Item.WeaponAim * value) + (int)(i.Item.MagicAim * value) + (int)(i.Item.RangedAim * value);
+                        aimBonus = (int)(R(i.Item.WeaponAim) * value) + (int)(R(i.Item.MagicAim) * value) + (int)(R(i.Item.RangedAim) * value);
                     }
                     if (key == "ARMOUR" || key == "ARMOR")
                     {
                         armorEnchantment = e;
-                        armorBonus = (int)(i.Item.ArmorPower * value);
+                        armorBonus = (int)(R(i.Item.ArmorPower) * value);
                     }
                 }
                 else
@@ -284,13 +320,13 @@ public static class ItemExtension
             }
         }
 
-        if (i.Item.WeaponAim > 0) stats.Add(new ItemStat("Weapon Aim", i.Item.WeaponAim, aimBonus, aimEnchantment));
-        if (i.Item.WeaponPower > 0) stats.Add(new ItemStat("Weapon Power", i.Item.WeaponPower, powerBonus, powerEnchantment));
-        if (i.Item.RangedAim > 0) stats.Add(new ItemStat("Ranged Aim", i.Item.RangedAim, aimBonus, aimEnchantment));
-        if (i.Item.RangedPower > 0) stats.Add(new ItemStat("Ranged Power", i.Item.RangedPower, powerBonus, powerEnchantment));
-        if (i.Item.MagicAim > 0) stats.Add(new ItemStat("Magic Aim", i.Item.MagicAim, aimBonus, aimEnchantment));
-        if (i.Item.MagicPower > 0) stats.Add(new ItemStat("Magic Power", i.Item.MagicPower, powerBonus, powerEnchantment));
-        if (i.Item.ArmorPower > 0) stats.Add(new ItemStat("Armor", i.Item.ArmorPower, armorBonus, armorEnchantment));
+        if (i.Item.WeaponAim > 0) stats.Add(new ItemStat("Weapon Aim", R(i.Item.WeaponAim), aimBonus, aimEnchantment));
+        if (i.Item.WeaponPower > 0) stats.Add(new ItemStat("Weapon Power", R(i.Item.WeaponPower), powerBonus, powerEnchantment));
+        if (i.Item.RangedAim > 0) stats.Add(new ItemStat("Ranged Aim", R(i.Item.RangedAim), aimBonus, aimEnchantment));
+        if (i.Item.RangedPower > 0) stats.Add(new ItemStat("Ranged Power", R(i.Item.RangedPower), powerBonus, powerEnchantment));
+        if (i.Item.MagicAim > 0) stats.Add(new ItemStat("Magic Aim", R(i.Item.MagicAim), aimBonus, aimEnchantment));
+        if (i.Item.MagicPower > 0) stats.Add(new ItemStat("Magic Power", R(i.Item.MagicPower), powerBonus, powerEnchantment));
+        if (i.Item.ArmorPower > 0) stats.Add(new ItemStat("Armor", R(i.Item.ArmorPower), armorBonus, armorEnchantment));
 
         if (includeSkillEnchantments)
         {

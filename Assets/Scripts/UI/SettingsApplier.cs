@@ -87,6 +87,7 @@ public static class SettingsApplier
         public const bool TreeWind = true;
         public const bool BattlePets = true;
         public const bool WeaponEffects = true;
+        public const bool LegendaryGlow = true;
         public const bool DungeonLighting = true;
         public const float NightBrightness = 0.75f;
         public const bool AtmosphericHaze = true;
@@ -784,6 +785,8 @@ public static class SettingsApplier
     public static bool WeaponEffects => PlayerSettings.Instance.WeaponEffects.GetValueOrDefault(Defaults.WeaponEffects);
 
     public static void SetWeaponEffects(bool value) => PlayerSettings.Instance.WeaponEffects = value;
+    public static bool LegendaryGlow => PlayerSettings.Instance.LegendaryGlow.GetValueOrDefault(Defaults.LegendaryGlow);
+    public static void SetLegendaryGlow(bool value) => PlayerSettings.Instance.LegendaryGlow = value;
 
     // ---- Dungeon lighting ------------------------------------------------------------------------
     // Dungeons by torchlight. Potato mode leaves them in plain daylight, without changing the setting.

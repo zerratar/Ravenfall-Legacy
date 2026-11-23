@@ -275,6 +275,8 @@ public class PlayerCombat
         owner.SessionStats.IncrementEnemiesKilled();
         // the capstone paths: a new target when it comes back, Thin the Herd's rush, Wildfire's burn moving on
         CombatPaths.Defeated(owner, enemy);
+        // the Legendaries: Soul Harvest heals those who struck it (docs/legendary-design.md)
+        CombatLegendary.Defeated(owner, enemy);
         //Statistics.TotalDamageDone += damage;
 
         var isPlayer = enemy is PlayerController playerController;

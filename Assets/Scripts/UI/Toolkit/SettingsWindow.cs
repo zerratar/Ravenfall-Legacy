@@ -523,6 +523,8 @@ namespace Shinobytes.UI
                 SettingsApplier.SetBattlePets);
             Switch(c, Localization.UI_SETTINGS_WEAPON_EFFECTS, Localization.UI_SETTINGS_WEAPON_EFFECTS_HINT, SettingsApplier.WeaponEffects, SettingsApplier.Defaults.WeaponEffects,
                 SettingsApplier.SetWeaponEffects);
+            Switch(c, Localization.UI_SETTINGS_LEGENDARY_GLOW, Localization.UI_SETTINGS_LEGENDARY_GLOW_HINT, SettingsApplier.LegendaryGlow, SettingsApplier.Defaults.LegendaryGlow,
+                SettingsApplier.SetLegendaryGlow);
             Switch(c, Localization.UI_SETTINGS_DUNGEON_LIGHTING, Localization.UI_SETTINGS_DUNGEON_LIGHTING_HINT, SettingsApplier.DungeonLighting, SettingsApplier.Defaults.DungeonLighting,
                 SettingsApplier.SetDungeonLighting);
             Switch(c, Localization.UI_SETTINGS_HAZE, Localization.UI_SETTINGS_HAZE_HINT, SettingsApplier.AtmosphericHaze, SettingsApplier.Defaults.AtmosphericHaze,

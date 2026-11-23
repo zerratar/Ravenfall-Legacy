@@ -72,6 +72,8 @@ public class PlayerSettings
     public bool? BattlePets;
     /// <summary>Weapons with an element give it off: embers, frost, sparks, venom (off in potato mode).</summary>
     public bool? WeaponEffects;
+    /// <summary>An awakened Legendary glows in its color from rank 3 (off in potato mode).</summary>
+    public bool? LegendaryGlow;
     public bool? DungeonLighting;
     public float? NightBrightness;
     public bool? AtmosphericHaze;
@@ -488,6 +490,7 @@ public class PlayerSettings
             Serialize(sw, "treeWind", obj.TreeWind);
             Serialize(sw, "battlePets", obj.BattlePets);
             Serialize(sw, "weaponEffects", obj.WeaponEffects);
+            Serialize(sw, "legendaryGlow", obj.LegendaryGlow);
             Serialize(sw, "dungeonLighting", obj.DungeonLighting);
             Serialize(sw, "nightBrightness", obj.NightBrightness);
             Serialize(sw, "atmosphericHaze", obj.AtmosphericHaze);

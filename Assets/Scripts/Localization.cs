@@ -606,6 +606,7 @@ public static class Localization
     public static string UI_ACHIEVEMENT_TREASURE = "Treasure Hunter";
     public static string UI_ACHIEVEMENT_ODDITIES = "Odd Things";
     public static string UI_ACHIEVEMENT_PENPAL = "Pen Pal";
+    public static string UI_ACHIEVEMENT_LEGEND = "Legends";
     public static string UI_TITLE_WOODCUTTER_1 = "the Woodcutter";
     public static string UI_TITLE_WOODCUTTER_2 = "the Lumberjack";
     public static string UI_TITLE_WOODCUTTER_3 = "the Forest's Bane";
@@ -667,6 +668,8 @@ public static class Localization
     public static string UI_TITLE_TREASURE_1 = "the Treasure Hunter";
     public static string UI_TITLE_ODDITIES_1 = "the Hoarder";
     public static string UI_TITLE_PENPAL_1 = "zerratar's Pen Pal";
+    public static string UI_TITLE_LEGEND_1 = "Legendbearer";
+    public static string UI_TITLE_LEGEND_2 = "Keeper of Legends";
     public static string UI_TITLE_CAT = "the Cat Whisperer";
     public static string UI_TITLE_FISH = "the Patient";
     public static string UI_TITLE_FOUNDER = "the Founder";
@@ -1186,6 +1189,14 @@ public static class Localization
     public static string UI_FLOAT_FIRST_BLOOD = "First Blood";
     public static string UI_FLOAT_RETRIBUTION = "Retribution";
     public static string UI_FLOAT_GUARDIAN_ANGEL = "Guardian Angel";
+    // the Legendaries' powers (docs/legendary-design.md)
+    public static string UI_FLOAT_SOUL_HARVEST = "Soul Harvest";
+    public static string UI_FLOAT_FEARED = "Feared";
+    public static string UI_FLOAT_BAT_SWARM = "Bat Swarm";
+    public static string UI_FLOAT_IRON_AEGIS = "Iron Aegis";
+    public static string UI_FLOAT_THUNDER_SHOT = "Thunder Shot";
+    public static string UI_FLOAT_LEGENDARY = "Legendary!";
+    public static string UI_FLOAT_LEGENDARY_RANK = "Awakened: rank {0}";
     public static string UI_SETTINGS_EFFECT_WORDS = "Effect words";
     public static string UI_SETTINGS_EFFECT_WORDS_HINT = "A word over a fighter when an element's effect starts on it (Burning, Chilled, Frozen, Stunned, Poisoned) or a hit does nothing (Immune), in the element's color.";
     public static string UI_SETTINGS_WHATSNEW = "What's new";
@@ -1889,6 +1900,10 @@ public static class Localization
     public static string MSG_TOWER_CLEARED = Meta("tower", "success") + "Tower floor {floor} cleared by {players} player(s). Each got {coins} coins, and the chest held {items} item(s).";
     public static string MSG_TOWER_WORLD_FIRST = Meta("tower", "success") + "WORLD FIRST! This stream is the first in the world to clear tower floor {floor}!";
     public static string MSG_TOWER_TOP = Meta("tower", "success") + "Floor {floor} was the last floor there is for now. Your stream has cleared the whole tower! More floors come with later updates.";
+    // the Legendaries (docs/legendary-design.md): one line, at most once a minute; finds that pile up are joined with "; "
+    public static string MSG_LEGENDARY = Meta("legendary", "reward") + "{news}!";
+    public static string MSG_LEGENDARY_FOUND_PART = "{0} found a Legendary, the {1}";
+    public static string MSG_LEGENDARY_AWAKENED_PART = "{0}'s {1} is fully awakened";
     public static string MSG_TOWER_BOSS_LOST_TIME = Meta("tower", "fail") + "Time is up and {boss} still stands. Regroup and try again in {seconds} seconds.";
     public static string MSG_TOWER_BOSS_LOST_FALLEN = Meta("tower", "fail") + "Everyone fell to {boss}. Regroup and try again in {seconds} seconds.";
     public static string MSG_TOWER_CLEAR_FAILED = Meta("tower", "fail") + "The boss fell, but the clear could not be saved: {reason}. The boss can be tried again with !tower boss.";
@@ -2782,6 +2797,18 @@ public static class Localization
     public static string UI_STATS_ELEMENT_RESIST = "{0} resistance";
     public static string UI_STATS_NO_ELEMENTS = "No element damage or resistance";
     public static string UI_TIP_ITEM_HEALTH = "Health";
+    public static string UI_TIP_LEGENDARY = "Legendary";
+    public static string UI_TIP_LEGENDARY_RANK = "Rank {0} of 5";
+    public static string UI_TIP_AWAKENING = "Awakening";
+    public static string UI_TIP_AWAKENING_FULL = "Fully awakened";
+    public static string UI_TIP_AWAKENING_NEXT = "{0} of {1} boss kills to rank {2}";
+    public static string UI_LEGENDARY_SOUL_HARVEST = "Every enemy you struck that falls heals you for {0} of your health.";
+    public static string UI_LEGENDARY_DREAD = "A hit has a {0} chance to freeze the enemy in fear for {1} s. Bosses shrug it off.";
+    public static string UI_LEGENDARY_BAT_SWARM = "Every {0} s a spell sends bats: 3 bites on enemies near the target for {1} of its damage each.";
+    public static string UI_LEGENDARY_IRON_AEGIS = "+{0} thorns that answer every blow. Every 10 s you and allies near get a shield of {1} of your health.";
+    public static string UI_LEGENDARY_THUNDER_SHOT = "Every third shot is a blast: {0} more damage, {1} of it to two enemies around, and a knockback.";
+    public static string UI_SETTINGS_LEGENDARY_GLOW = "Legendary glow";
+    public static string UI_SETTINGS_LEGENDARY_GLOW_HINT = "An awakened Legendary glows in its own color from rank 3, brightest at rank 5. Off in potato mode.";
     public static string UI_BADGE_BROADCASTER = "Streamer";
     public static string UI_BADGE_MODERATOR = "Moderator";
     public static string UI_BADGE_SUBSCRIBER = "Subscriber";
@@ -3273,6 +3300,23 @@ public static class Localization
     /// An item stat or enchantment as shown in a tooltip. The game names them in English and
     /// looks some of them up by that name, so they are only translated here, for display.
     /// </summary>
+    /// <summary>A Legendary's power at a rank, worded for tooltips with the shared library's numbers.</summary>
+    public static string LegendaryPower(RavenNest.Combat.LegendaryPower power, int rank)
+    {
+        var v = RavenNest.Combat.Legendary.Values(power, rank);
+        string P(double share) => (share * 100).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) + "%";
+        string N(double n) => n.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+        switch (power)
+        {
+            case RavenNest.Combat.LegendaryPower.SoulHarvest: return string.Format(UI_LEGENDARY_SOUL_HARVEST, P(v.KillHeal));
+            case RavenNest.Combat.LegendaryPower.Dread: return string.Format(UI_LEGENDARY_DREAD, P(v.FearChance), N(v.FearSeconds));
+            case RavenNest.Combat.LegendaryPower.BatSwarm: return string.Format(UI_LEGENDARY_BAT_SWARM, N(v.SwarmEvery), P(v.SwarmShare));
+            case RavenNest.Combat.LegendaryPower.IronAegis: return string.Format(UI_LEGENDARY_IRON_AEGIS, P(v.Thorns), P(v.ShieldShare));
+            case RavenNest.Combat.LegendaryPower.ThunderShot: return string.Format(UI_LEGENDARY_THUNDER_SHOT, P(v.BlastBonus), P(v.BlastSplash));
+        }
+        return "";
+    }
+
     public static string StatName(string stat)
     {
         switch (stat?.ToUpperInvariant())

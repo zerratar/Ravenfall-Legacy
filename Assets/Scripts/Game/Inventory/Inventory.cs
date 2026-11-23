@@ -522,6 +522,8 @@ public class Inventory : MonoBehaviour
                 }
                 else if (ii.Amount != s.Amount || ii.Soulbound != s.Soulbound || ii.Tag != s.Tag || ii.Flags != s.Flags)
                 {
+                    // a Legendary's tag is its awakening count: its wearer's numbers follow, a new rank is shown
+                    if (ii.Tag != s.Tag) LegendaryNews.TagChanged(player, keep, ii.Tag, s.Tag);
                     ii.Amount = s.Amount;
                     ii.Soulbound = s.Soulbound;
                     ii.Tag = s.Tag;

@@ -71,9 +71,16 @@ public static class CombatRules
     /// <summary>A blow whose path set something off (a first hit, Aftershock's burst, Volley's second arrow): CombatPaths carries it out.</summary>
     public static System.Action<IAttackable, IAttackable, AttackStyle, AttackResult, PathBlow> PathBlowLanded;
 
+    /// <summary>A player's blow before it is worked out: what a worn Legendary changes about it (Thunder Shot's blast; the game's CombatLegendary sets it).</summary>
+    public static System.Func<IAttackable, AttackStyle, AttackOptions, bool, AttackOptions> LegendaryBefore;
+
+    /// <summary>A player's blow after it is worked out: what a worn Legendary sets off (Dread, Bat Swarm, Iron Aegis, Thunder Shot).</summary>
+    public static System.Action<IAttackable, IAttackable, AttackStyle, AttackResult, bool> LegendaryBlowLanded;
+
     // a blow worked out by the new rules, with what the attacker's capstone path changes about it before and sets off after
     private static AttackResult Resolve(IAttackable attacker, IAttackable defender, AttackStyle style, CombatSheet attackerSheet, CombatSheet defenderSheet, AttackOptions options, bool basic)
     {
+        if (LegendaryBefore != null && !attacker.IsEnemy) options = LegendaryBefore(attacker, style, options, basic);
         var state = PathOf != null && !attacker.IsEnemy ? PathOf(attacker) : null;
         if (state != null)
         {
@@ -86,6 +93,7 @@ public static class CombatRules
         if (result.Blocked && PathOf != null && !defender.IsEnemy && defenderSheet.BlockRetort > 0) PathRules.Blocked(PathOf(defender), defenderSheet);
         BlowLanded?.Invoke(attacker, defender, result, defenderSheet); // burn, chill, shock, poison (CombatEffects)
         if (blow.First || blow.Retorted || blow.Splash > 0 || blow.Second > 0) PathBlowLanded?.Invoke(attacker, defender, style, result, blow);
+        if (!attacker.IsEnemy) LegendaryBlowLanded?.Invoke(attacker, defender, style, result, basic);
         return result;
     }
 

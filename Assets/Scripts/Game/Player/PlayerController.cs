@@ -3231,6 +3231,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         var extras = new RavenNest.Combat.GearStats();
         RavenNest.Combat.GearStats[] weaponExtras = null;
         var armorHealth = 0;
+        // worn Legendaries and their awakening ranks (docs/legendary-design.md): the rank comes from the server's tag
+        var legendaries = new List<EquipmentStats.WornLegendary>();
 
         foreach (var s in Stats.SkillList)
         {
@@ -3253,9 +3255,19 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
                 continue;
 
             var stats = e.GetItemStats();
+            // a worn Legendary and its rank (its numbers at that rank come from GetItemStats)
+            var legend = RavenNest.Combat.Legendary.Get(e.Item.Id);
+            var legendRank = 1;
+            if (legend != null)
+            {
+                var kills = RavenNest.Combat.Legendary.KillsOf(e.InventoryItem?.Tag);
+                legendRank = RavenNest.Combat.Legendary.RankOf(kills);
+                legendaries.Add(new EquipmentStats.WornLegendary { Info = legend, Rank = legendRank, Kills = kills });
+            }
+            int AtRank(int v) => legend != null ? RavenNest.Combat.Legendary.AtRank(v, legendRank) : v;
 
             // armour pieces' own armour gives health (combat v2: eight a Vitality level, the rest from armour)
-            if (RavenNest.Combat.CombatMath.IsArmorPiece((int)e.Item.Type)) armorHealth += RavenNest.Combat.CombatMath.ArmorHealth(e.Item.ArmorPower);
+            if (RavenNest.Combat.CombatMath.IsArmorPiece((int)e.Item.Type)) armorHealth += RavenNest.Combat.CombatMath.ArmorHealth(AtRank(e.Item.ArmorPower));
 
             // combat v2's stats beyond aim, power and armour; a weapon's element goes on its own style
             var gear = e.Item.GetGearStats();
@@ -3264,6 +3276,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             // gems in its sockets (combat v2, gems): a weapon's go with its style, like its own element
             var gems = e.GetGemStats();
             if (gems != null) gear.Add(gems);
+            // a Legendary's power, where it is a gear stat (Iron Aegis's thorns)
+            if (legend != null) gear.Add(RavenNest.Combat.Legendary.Stats(legend.Power, legendRank));
             if (gearStyle.HasValue)
             {
                 weaponExtras ??= new RavenNest.Combat.GearStats[4];
@@ -3276,6 +3290,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
             // the item's own numbers here and the enchantment's in the bonus: an ItemStat read as an int is both, which
             // counted every POWER, AIM and ARMOR enchantment twice (combat v2 baseline bug)
+            // (a Legendary's are at its rank already: GetItemStats)
             EquipmentStats.BaseArmorPower += stats.ArmorPower.Value;
             EquipmentStats.BaseWeaponAim += stats.WeaponAim.Value;
             EquipmentStats.BaseWeaponPower += stats.WeaponPower.Value;
@@ -3332,6 +3347,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
         EquipmentStats.Extras = extras;
         EquipmentStats.WeaponExtras = weaponExtras;
+        EquipmentStats.Legendaries = legendaries;
         if (petGearChanged && battlePets != null) battlePets.GearChanged(); // the pet's numbers follow at once
         if (!CombatRules.Enabled) armorHealth = 0;
         var gearHealth = extras[RavenNest.Combat.GearStat.MaxHealth] + armorHealth;

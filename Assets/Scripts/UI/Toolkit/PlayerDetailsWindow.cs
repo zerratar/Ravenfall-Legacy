@@ -1950,6 +1950,16 @@ namespace Shinobytes.UI
                 t.AddRow(label, value, value == Localization.UI_GEM_SOCKET_EMPTY ? null : "rf-tooltip__value--magic");
             }
 
+            // a Legendary: its rank and awakening as rows, its power at that rank as the note below (a sentence does
+            // not fit a value column; docs/legendary-design.md)
+            var legendary = item.GetLegendaryLines();
+            if (legendary.Count == 3)
+            {
+                t.AddRow(legendary[0].Label, legendary[0].Value, "rf-tooltip__value--legendary");
+                t.AddRow(legendary[2].Label, legendary[2].Value, "rf-tooltip__value--legendary");
+                t.SetNote(legendary[1].Label + ". " + legendary[1].Value);
+            }
+
             if (item.Enchantments != null)
             {
                 for (var i = 0; i < item.Enchantments.Count; ++i)
