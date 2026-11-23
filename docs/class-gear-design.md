@@ -501,6 +501,17 @@ its numbers and the simulator comparison are in [taming-gear-design.md](taming-g
   and a pelt from tier 6; a feathered hat or a wolf pelt hood with feathers, then antlers. Browns and greens with the
   Beastmaster tree's teal from tier 4.
 
+## Dark Fortress head pieces (2026-11-23)
+
+Six lines have a third head look from a high tier on, a model of its own from the POLYGON Dark Fortress pack on the
+head bone (item `GenericPrefab`, key "head3", the same stats as the line's other head pieces of the tier):
+Melee **Kettle Helm** (tiers 4 to 8), Dark Knight **Fortress Helm** (6 to 8, a different helm each tier), Paladin
+**Closed Helm** (5 to 8), Witch Hunter **Inquisitor Helm** (5 to 8), Barbarian **Antler Crown** (5 to 8, a horned skull
+at 8) and Mage **Lich Crown** (6 to 8). 23 items. In `GameData.ClassGear.cs` a piece can start at a tier
+(`.Starting(tier)`) and a tier can be a prefab (`.FromPrefab(tier, path, mask)`); the tower's chests pick among all
+three head looks of a tier. They are not in `tools/items/class-gear-parts.txt` (it lists character parts): the preview
+and icon tools for them are in `tools/dark-fortress`. Details, fitting and what is hidden: docs/dark-fortress-design.md.
+
 ## How it is made
 
 Two new cloths, one of each for every tier (the higher tiers take more of it):
