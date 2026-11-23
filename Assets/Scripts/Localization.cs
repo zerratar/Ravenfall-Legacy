@@ -3785,7 +3785,7 @@ public static class Localization
     public static string UI_ROB_TITLE_CHICKENS_3 = "Still Life With Chicken";
     public static string UI_ROB_TITLE_CHICKENS_4 = "Chicken (April Edition)";
     // April 1st (SillySurprises): one line of fake patch notes, silly words in front of item names, pranksters' bottles
-    public static string MSG_APRIL_PATCH_NOTES = Meta("system", "april") + "Patch notes 0.9.7.1: chickens now outrank players. Trees fight back on Thursdays. Fishing has a small chance to catch fish. Fixed a bug where bugs were fixed.";
+    public static string MSG_APRIL_PATCH_NOTES = Meta("system", "april") + "Patch notes {version}: chickens now outrank players. Trees fight back on Thursdays. Fishing has a small chance to catch fish. Fixed a bug where bugs were fixed.";
     public static string UI_APRIL_ITEM_NAME = "{0} {1}";
     public static string[] UI_APRIL_ITEM_WORDS = { "Slightly Haunted", "Probably Cursed", "Lightly Used", "Suspiciously Damp", "Artisanal", "Organic", "Limited Edition", "Pre-Owned", "Mostly Harmless", "Chicken-Approved", "Gently Sneezed On", "Inflatable" };
     public static string UI_BOTTLE_APRIL_1 = "Your shoelace is untied. Made you look. - the Pirates of Away";

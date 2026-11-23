@@ -13,7 +13,7 @@
     "MSG_ADMIN_ONLY_SKIP": "Only game administrators can skip a room or kill the boss, to get a stuck fight going again.",
     "MSG_ALREADY_IN_CLAN": "You cannot join a clan as you're already in one. Please leave your clan first using '!clan leave'",
     "MSG_APPEARANCE_INVALID": "Invalid appearance data",
-    "MSG_APRIL_PATCH_NOTES": "Patch notes 0.9.7.1: chickens now outrank players. Trees fight back on Thursdays. Fishing has a small chance to catch fish. Fixed a bug where bugs were fixed.",
+    "MSG_APRIL_PATCH_NOTES": "Patch notes {version}: chickens now outrank players. Trees fight back on Thursdays. Fishing has a small chance to catch fish. Fixed a bug where bugs were fixed.",
     "MSG_ARENA_ADDED": "{playerName} has been added to the arena.",
     "MSG_ARENA_ADD_FAILED": "{playerName} cannot join the arena right now.",
     "MSG_ARENA_ALREADY_JOINED": "You have already joined the arena.",

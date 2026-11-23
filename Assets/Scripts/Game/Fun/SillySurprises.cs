@@ -184,7 +184,7 @@ public sealed class SillySurprises : MonoBehaviour
         {
             patchNotesSaid = true;
             var game = GameManager.Instance;
-            if (game && game.RavenBot != null) game.RavenBot.Announce(Localization.MSG_APRIL_PATCH_NOTES);
+            if (game && game.RavenBot != null) game.RavenBot.Announce(Localization.MSG_APRIL_PATCH_NOTES.Replace("{version}", NextPatchVersion()));
         }
 
         if (Time.time >= nextHats)
@@ -484,5 +484,24 @@ public sealed class SillySurprises : MonoBehaviour
             if (head) head.localScale = Vector3.one * scale;
         }
         if (scale == 1f) heads.Clear();
+    }
+
+    /// <summary>
+    ///     The fake April patch notes name the patch after the running game (0.9.7.0a gives 0.9.7.1, 0.9.8 gives
+    ///     0.9.8.1), so the joke never names a version that is already old.
+    /// </summary>
+    private static string NextPatchVersion()
+    {
+        var parts = new System.Collections.Generic.List<int>();
+        foreach (var p in (Ravenfall.Version ?? string.Empty).Split('.'))
+        {
+            var digits = new string(System.Linq.Enumerable.ToArray(System.Linq.Enumerable.TakeWhile(p, char.IsDigit)));
+            if (digits.Length == 0) break;
+            parts.Add(int.Parse(digits));
+        }
+        if (parts.Count == 0) return "1.0.0.1";
+        if (parts.Count < 4) parts.Add(1);
+        else parts[3]++;
+        return string.Join(".", parts);
     }
 }
