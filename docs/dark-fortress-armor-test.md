@@ -16,6 +16,126 @@ Not done in this test: the Unity editor check (step 6). The editor-busy flag was
 weapons, helmets and characters into gear and enemies, and stayed set for the whole test, so nothing was imported or
 previewed in Unity. The FBX export was verified by a round trip in Blender instead (see Method step 6).
 
+# Wired in (2026-11-23): the Knight, Barbarian and Necromancer as class gear looks
+
+The owner approved wiring the armor in ("yes go ahead when the editor is free"). Three sets are now real, wearable
+looks of existing class gear items, male and female, through the game's own equip code. No new items, no new
+ItemMaterial values, no stat changes: the items of tiers 7 and 8 of three lines got a new look.
+
+| Line | Tier 7 (look) | Tier 8 (look) | Pack character | Colorway (tier 7 / 8) | Head piece of the same tier (the other agent's) |
+| --- | --- | --- | --- | --- | --- |
+| Dark Knight | Voidknight Chestplate, Gauntlets, Legplates, Warboots | Abyssal (same pieces) | Knight | 01_B violet / 01_A the pack's own | Fortress Helm (Helmet_03 / Helmet_08, the Knight's own helm) |
+| Barbarian | Stormborn Harness, Bracers, Kilt, Fur Boots | Worldbreaker (same pieces) | Barbarian | 02_A blue / 01_A | Antler Crown (Crown_03 / horned skull Mask_03) |
+| Mage | Voidweaver Robe, Gloves, Robe Skirt, Boots | Starcaller (same pieces) | Necromancer | 01_B violet / 01_A, glowing tabard | Lich Crown (Mask_01 / bat-winged Mask_02) |
+
+Why tiers 7 and 8: the top two tiers had the line's tier 6 parts again (tier 7 and 8 only differed by material), and
+the other agent's Dark Fortress head pieces already start there, so body and head now match per tier. Being looks of
+items that exist, they are transmog looks like every other class gear piece (a Rune Chest looking like an Abyssal
+Chestplate was checked in the preview).
+
+**How an item names a part that 0.9.6 games do not have.** The class gear's model ids must stay valid ints for 0.9.6
+games. The new parts are named with extra tokens of -1000 and less: `-(1000 * (position + 1) + index)` takes that
+position's place (`ItemManager.ParseModelIds`, mirrored in the website's `modelIds`). So the Abyssal Chestplate is
+`21,4,15,5,-1030,-3022`: a 0.9.7 game reads torso 30, upper arms 22; a 0.9.6 game parses every token as a number,
+reads only the first four positions and draws the tier 6 chestplate. Leggings are `13,2,-1030` (0.9.6: tier 6 hips
+and knee pad 2), boots `12,-1021`, gloves `1,12,-1019,-2020`. The server rows are in RavenNest's
+`GameData.ClassGear.cs` (`.From(7, ...)`, `.From(8, ...)`, mask `DarkFortressBody`), mirrored in
+`tools/items/class-gear-parts.txt`.
+
+**Flags.** The pauldrons and elbows are part of the upper arm and forearm pieces, the knee caps part of the hips, so
+the chests carry `NoShoulderPads | NoElbowPads` and the leggings `NoKneePads` (docs/class-gear-design.md: "none" is a
+HeadMask flag, the id positions still hold a harmless real index for 0.9.6).
+
+**Part indices** (male and female arrays alike, all three prefabs): torso and hips 29 to 34, upper arms 21 to 26,
+lower arms 19 to 24, hands 18 to 23, legs 20 to 25, in the order Knight 7, Knight 8, Barbarian 7, Barbarian 8,
+Necromancer 7, Necromancer 8. 120 parts, 60 meshes (`Assets/World/DarkFortressArmor/Meshes`, made by the script, not
+versioned like the prefabs).
+
+**The prefab script** `tools/dark-fortress-armor/armor-sets.cs` (rerunnable; the prefabs are not versioned, so the
+script is the record): reads the JSON that `dump_sets.py` writes (mesh data, not FBX: the Dark Fortress rig's bones
+export from Blender with other rest orientations than the game's), finds the mapping from Blender's space into the
+MFH meshes' space by matching the MFH male torso (and left from right by the hand), binds each piece to the player's
+own bones by name (the right hand's fingers are `Finger_01 1` in the prefab) with the MFH parts' own bind poses, and
+appends the parts to the arrays of `Player`, `Player Appearance Items` and `Item Display` (a rerun updates them in
+place, so the indices never move). Each part has the colorway's material of the pack and, when it shows skin, a
+second submesh with `FantasyHero.mat`. To redo: `blender -b --factory-startup --python tools/dark-fortress-armor/dump_sets.py -- <repo> <repo>/Temp/dark-fortress-armor`,
+then `unity command eval_file --file tools/dark-fortress-armor/armor-sets.cs`, then the icons
+(`tools/items/class-gear-icons.cs` with `only=abyssal` etc.) and the website export.
+
+## The code change: the skin slot and the pack's own material
+
+`SyntyPlayerAppearance.SetPartMaterials` (used by `Equip` and by `Get`, the model on its own for chests and icons):
+- a part with **one submesh** is as before: the item's tier material (with the player's skin for a `SkinParts` part);
+- a part with **two submeshes** shows bare skin in the second: `{ item material, player's copy of the body material }`
+  (`SkinOf`: one copy per body material, recolored with the others when the skin color changes, freed on destroy);
+- a part named `_DF...` keeps **its own material** (the pack's atlas it is mapped to): the tier materials paint the
+  MFH atlas and would make nonsense of it;
+- a model on its own gets its skin slot in the item material's `_Color_Skin` (`ShownSkin`), so a loot chest or icon
+  matches the set.
+
+`ItemManager.ParseModelIds` is now the one parser (the appearance used a copy). The mesh combiner keeps the two
+materials (the play captures went through `EquipAll` and `Optimize`).
+
+Website: `export-gear-web.cs` writes a `_DF` part's own picture and glow (`textures/df-*.jpg`) and its skin submesh as
+`<part>__skin` (`gear.json` `ownParts`); `rf-character-gear.js` draws the part with its picture and the skin file with
+the body's material in the wearer's skin, and reads the new model id tokens. Seen on `/dev/gear-preview?wear=Abyssal`
+(and Worldbreaker, Starcaller). The skin files carry the whole piece's vertices (about 90 KB each): could be trimmed.
+
+## Male bulk pass (the owner: "the chests seem to be more to the female side")
+
+The owner was right, and so was the "breasts" impression. The pack dresses its characters on a slim body: on our
+male the Knight's torso sat about 1 cm outside the bare body (18 % of it inside), the waist was cinched, and the
+Knight's and Necromancer's chest plates are two sculpted mounds with a valley and an undercut between them, a
+woman's breastplate shape (the front profile across the chest: two peaks at about 12 cm with a 10.5 cm valley; the
+game's plate is one flat front). The Barbarian's leather was broad already but slim at the waist.
+
+`tools/dark-fortress-armor/male_bulk.py` is a "male" shape key on the uncut character, like the female fit, so the
+cut lines and the seams stay as they were: torso 19 % wider at the chest and 20 % at the waist (a straighter taper),
+the front pushed out 20 %, the chest's middle pulled out to one straight front line from the waist to the chest's
+peak (fills the valley and the undercut, keeps the plate edges and details), pauldrons 45 % bigger and 4.5 cm further
+out, upper arms 24 % and forearms 16 % thicker about their own line, legs 8 %, and nothing inside the male body.
+The female pieces keep the female fit.
+
+| Torso slice (cm) | Chest width / depth | Under the chest | Waist | Upper arm (depth / height) |
+| --- | --- | --- | --- | --- |
+| Game plate (Rune) | 44.0 / 30.7 | 37.6 / 31.0 | 31.8 / 13.1 | 13.5 / 14.2 |
+| Knight before | 46.9 / 27.9 | 34.7 / 25.3 | 32.4 / 26.8 | 9.5 / 11.4 |
+| Knight after | 50.7 / 34.1 | 43.4 / 31.4 | 38.8 / 30.4 | 13.4 / 15.1 |
+| Barbarian before / after | 48.3 / 34.2 to 50.6 / 39.3 | | 32.4 to 38.8 wide | 12.6 / 15.1 to 15.6 / 18.8 |
+| Necromancer before / after | 45.1 / 30.7 to 49.0 / 35.1 | | 37.2 to 44.7 wide | 10.7 / 13.3 to 13.3 / 16.5 |
+
+`docs/mockups/dark-fortress-armor-male-bulk.png`: before and after beside the game's plate and the Tank class gear,
+idle and combat, front, side and the game camera, plus chest close-ups. Honest read: the male Knight now reads as a
+broad armored man and no longer as a breastplate; it is still slimmer than the game's plate, which is mostly the
+plate's huge pauldrons, and that is the Knight's design (fitted plate) rather than a fit problem.
+
+## Verified, and how
+
+In the editor with the real equip code (`tools/items/class-gear-preview.cs`, which can now pose with any of the
+player's clips, `clip=`), and in **play mode on the dev character** (`tools/dark-fortress-armor/armor-play.cs`:
+dresses the joined player through `PlayerEquipment.EquipAll` from items made in memory from the server's rows,
+nothing given or saved, the player's own gear, cape and skin put back after; chat muted and the bot stopped):
+
+- all three sets, tiers 7 and 8, male and female: `docs/mockups/dark-fortress-armor-sets-worn.png`
+- the game's clips (idle, run, sword attack, combat stance, woodcutting, fishing):
+  `docs/mockups/dark-fortress-armor-sets-animations.png`
+- light, medium and dark skin: `docs/mockups/dark-fortress-armor-sets-skin.png` (the bare forearms and hands are the
+  body's skin in every tone)
+- mixed with the game's gear (Rune pieces, a robe with a kilt, a skirt alone, a chest alone):
+  `docs/mockups/dark-fortress-armor-sets-mixed.png`
+- from behind and the side: `docs/mockups/dark-fortress-armor-sets-back-side.png`
+- the icons of the 24 pieces (Item Icon Generator, copied to the website), the server's item rows after a restart, the
+  website figure.
+
+Not verified: an item actually owned and equipped through chat (`!equip`) on a live session, a 0.9.6 game drawing the
+tier 6 fallback (reasoned from its parser, not run), the export on the build machine (the pack and the prefabs are
+local), the female pieces under the male bulk check (left as they were: they read female on purpose).
+
+**The single pieces** (shoulder guards Attach_Armor_01, fur mantle Attach_Fur_01, the Plague Lord's spiked gauntlets
+and pouch belt, the Wraith's fur collar) were not done: listed for later. The two attachments would fit as a chest's
+back piece (the back attachment slot) or new shoulder pads; the gauntlets need a cut of their own (gloves slot); the
+belt would be a hips attachment.
+
 # Second pass (2026-11-23, after the owner's feedback)
 
 The owner: "not bad, but it needs more work". Arms looked broken or twisted (maybe the size), some characters are not

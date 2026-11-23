@@ -222,6 +222,9 @@ def cut(lib, name, coll, cuts=None, cap_uv=None, prepare=None, pads="baked"):
                     v.co = sum((u.co for u in ring), Vector()) / len(ring) - Vector((0, 0, 0.10))
                     if shape_l:
                         v[shape_l] = sum((u[shape_l] for u in ring), Vector()) / len(ring) - Vector((0, 0, 0.10))
+                    male_l = b2.verts.layers.shape.get("male")
+                    if male_l:
+                        v[male_l] = sum((u[male_l] for u in ring), Vector()) / len(ring) - Vector((0, 0, 0.10))
                 caps = [f for f in b2.faces if f not in before]
             if caps:
                 bmesh.ops.triangulate(b2, faces=caps, quad_method="BEAUTY", ngon_method="BEAUTY")
@@ -234,6 +237,8 @@ def cut(lib, name, coll, cuts=None, cap_uv=None, prepare=None, pads="baked"):
             f.smooth = False
         shape = b2.verts.layers.shape.get("female")
         fem = [c for v in b2.verts for c in v[shape]] if shape else None
+        mshape = b2.verts.layers.shape.get("male")
+        male = [c for v in b2.verts for c in v[mshape]] if mshape else None
         me = bpy.data.meshes.new(name + "_" + r)
         b2.to_mesh(me)
         b2.free()
@@ -245,6 +250,8 @@ def cut(lib, name, coll, cuts=None, cap_uv=None, prepare=None, pads="baked"):
             po.shape_key_clear()  # the piece itself is the male one
         if fem is not None:
             po["female"] = fem  # the female positions travel as a flat list on the object
+        if male is not None:
+            po["male"] = male  # the male bulk (male_bulk.py), the same way
         for g in o.vertex_groups:
             po.vertex_groups.new(name=g.name)
         coll.objects.link(po)

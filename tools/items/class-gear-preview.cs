@@ -22,6 +22,8 @@
 //   yaw=28 / pitch=6                  the character turned from the camera, the camera looking down
 //   bg=#22252B                        the background, or "clear" for a transparent one
 //   pose=idle                         a frame of the idle animation, or "tpose" for the prefab's own pose
+//   clip=<asset path> / clipAt=0.1      the clip the pose is a frame of (the relaxed idle by default; any of the player's clips,
+//                                     e.g. Assets/Animations/Crafting Mecanim Animation Pack/Animations/Crafter@Chop-Finish.FBX)
 //   gender=male hair=2 head=0 brows=0 beard=0 skinColor=#C99A7A hairColor=#4A3524 eyeColor=#2B2622
 //   cape=-1 / capeHidden=0            the player's cape (0 to 4, as from the server) and whether the server says it
 //                                     is hidden (SyntyAppearance.CapeHidden)
@@ -450,7 +452,7 @@ void Render(System.Collections.Generic.Dictionary<string, string> baseJob)
         {
             var animator = character.GetComponentInChildren<UnityEngine.Animator>(true);
             UnityEngine.AnimationClip clip = null;
-            foreach (var o in UnityEditor.AssetDatabase.LoadAllAssetsAtPath("Assets/RPG Character Animation Pack/Animations/Relax/RPG-Character@Idle.FBX")) if (o is UnityEngine.AnimationClip c && !c.name.StartsWith("__preview")) { clip = c; break; }
+            foreach (var o in UnityEditor.AssetDatabase.LoadAllAssetsAtPath(J("clip", "Assets/RPG Character Animation Pack/Animations/Relax/RPG-Character@Idle.FBX"))) if (o is UnityEngine.AnimationClip c && !c.name.StartsWith("__preview")) { clip = c; break; }
             if (clip && animator) clip.SampleAnimation(animator.gameObject, clip.length * JF("clipAt", 0.1f));
         }
         foreach (var r in character.GetComponentsInChildren<UnityEngine.SkinnedMeshRenderer>(false)) r.updateWhenOffscreen = true;

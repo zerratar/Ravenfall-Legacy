@@ -1095,7 +1095,7 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
         {
             foreach (var renderer in output.GetComponentsInChildren<SkinnedMeshRenderer>())
             {
-                renderer.sharedMaterial = itemMaterial;
+                SetPartMaterials(renderer.gameObject, renderer, itemMaterial, null);
             }
         }
         return output;
@@ -1105,21 +1105,7 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
     /// The indices of a model id ("27,20,20,0"): the main part first. A token that is not a number is -1, which no
     /// part has, so it is left out and the others keep their places. Empty when the first one is not a number.
     /// </summary>
-    private static int[] ParseModelIds(string modelId)
-    {
-        if (string.IsNullOrEmpty(modelId)) return Array.Empty<int>();
-        var tokens = modelId.Split(',');
-        var ids = new int[tokens.Length];
-        for (var i = 0; i < tokens.Length; ++i)
-        {
-            if (!int.TryParse(tokens[i], out ids[i]))
-            {
-                if (i == 0) return Array.Empty<int>();
-                ids[i] = -1;
-            }
-        }
-        return ids;
-    }
+    private static int[] ParseModelIds(string modelId) => ItemManager.ParseModelIds(modelId);
 
     /// <summary>The part at an index, or null when the set has no such part (an item made for a newer model set).</summary>
     private static GameObject PartAt(GameObject[] parts, int index)
@@ -1453,10 +1439,83 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
         // which has the player's skin; an item's material is for the parts that are the item.
         if (material && renderer && !IsBodyPart(item))
         {
-            renderer.sharedMaterial = WithSkin(item, material);
+            SetPartMaterials(item, renderer, material, this);
         }
 
         return item;
+    }
+
+    /// <summary>
+    /// The materials of an armor part. A part of one submesh takes the item's material (with the player's skin for a
+    /// part in <see cref="SkinParts"/>). A part of two submeshes shows bare skin in the second: that one is drawn with
+    /// the body's material in the player's own skin color, so the skin on the armor is the skin next to it, for every
+    /// skin color (the Dark Fortress armor, docs/dark-fortress-armor-test.md). A part whose name holds "_DF" is drawn
+    /// with its own material, the pack's atlas it is mapped to, whatever the item's tier material is (the tier
+    /// materials paint the MFH atlas). <paramref name="owner"/> is null for a model on its own (loot, icons): its skin
+    /// slot keeps the body material as it is.
+    /// </summary>
+    private static void SetPartMaterials(GameObject part, SkinnedMeshRenderer renderer, Material material, SyntyPlayerAppearance owner)
+    {
+        var mesh = renderer.sharedMesh;
+        var ownMaterial = IsOwnMaterialPart(part);
+        if (!mesh || mesh.subMeshCount < 2)
+        {
+            if (ownMaterial) return;
+            renderer.sharedMaterial = owner ? owner.WithSkin(part, material) : material;
+            return;
+        }
+
+        var current = renderer.sharedMaterials;
+        var materials = new Material[mesh.subMeshCount];
+        materials[0] = ownMaterial && current.Length > 0 && current[0] ? current[0] : material;
+        var skin = current.Length > 1 ? current[1] : null;
+        for (var i = 1; i < materials.Length; ++i)
+        {
+            materials[i] = owner && skin ? owner.SkinOf(skin) : ShownSkin(skin, material);
+        }
+        renderer.sharedMaterials = materials;
+    }
+
+    private static readonly Dictionary<(Material, Color), Material> shownSkins = new Dictionary<(Material, Color), Material>();
+
+    /// <summary>
+    /// The skin slot of a model on its own (a treasure chest's loot, an icon): the body material with the skin color
+    /// the item's tier material has, so it matches the other pieces of its set that show skin.
+    /// </summary>
+    private static Material ShownSkin(Material body, Material item)
+    {
+        if (!body || !item || !item.HasProperty(SkinColorId)) return body;
+        var color = item.GetColor(SkinColorId);
+        if (!shownSkins.TryGetValue((body, color), out var copy) || !copy)
+        {
+            copy = new Material(body) { name = body.name + " (Shown skin)" };
+            copy.SetColor(SkinColorId, color);
+            shownSkins[(body, color)] = copy;
+        }
+        return copy;
+    }
+
+    /// <summary>Parts drawn with their own material (the Dark Fortress armor: "Chr_Torso_Male_DFKnight_01A").</summary>
+    private static bool IsOwnMaterialPart(GameObject part)
+    {
+        return part.name.IndexOf("_DF", StringComparison.Ordinal) >= 0;
+    }
+
+    /// <summary>
+    /// This player's copy of a body material for a part's skin slot, with their skin color (one copy for each body
+    /// material, kept with the other skin copies and recolored with them). A copy handed back is the copy.
+    /// </summary>
+    private Material SkinOf(Material body)
+    {
+        if (!body) return body;
+        foreach (var own in skinMaterials.Values) if (own == body) { own.SetColor(SkinColorId, SkinColor); return own; }
+        if (!skinMaterials.TryGetValue(body, out var copy) || !copy)
+        {
+            copy = new Material(body) { name = body.name + " (Skin)" };
+            skinMaterials[body] = copy;
+        }
+        copy.SetColor(SkinColorId, SkinColor);
+        return copy;
     }
 
     private static bool IsBodyPart(GameObject part)

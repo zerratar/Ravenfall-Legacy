@@ -13,6 +13,9 @@
 #   Gloves:      hands, lower arms
 #   Leggings:    hips, knee pads, then any number of things on the belt (0 to 11: Chr_HipsAttachment_01 to 12)
 #   Boots:       legs
+# Ids of -1000 and less name parts games before 0.9.7 do not have: -(1000 * (position + 1) + index) takes that
+# position's place (ItemManager.ParseModelIds), so the positions before them stay what a 0.9.6 game draws. The Dark
+# Fortress sets (Dark Knight, Barbarian and Mage tiers 7 and 8) use them.
 # A game before 0.9.7 reads all of a head piece's ids, a chest's first four and the leggings' first two as part indices,
 # and only parses the rest as numbers. So every id is a whole number, and those positions always hold a real index:
 # a slot the piece has nothing in is named in the HeadMask (NoShoulderPads, NoElbowPads, NoForearms, NoKneePads) and
@@ -27,12 +30,20 @@ Mage   | HeadCovering | Hood       | 6              | 6              | Hair, Ear
 Mage   | HeadCovering | Hood       | 6,8            | 6,8            | Hair, Ears                  | 3-5
 Mage   | HeadCovering | Hood       | 6,7            | 6,7            | Hair, Ears                  | 6-8
 Mage   | Chest        | Robe       | 27,20,20,0     | 27,20,20,0     | NoShoulderPads, NoElbowPads | 1-5
-Mage   | Chest        | Robe       | 27,20,20,0,4   | 27,20,20,0,4   | NoShoulderPads, NoElbowPads | 6-8
-Mage   | Gloves       | Gloves     | 9,18           | 9,18           | None                        |
+Mage   | Chest        | Robe       | 27,20,20,0,4   | 27,20,20,0,4   | NoShoulderPads, NoElbowPads | 6
+Mage   | Chest        | Robe       | 27,20,20,0,-1033,-3025 | 27,20,20,0,-1033,-3025 | NoShoulderPads, NoElbowPads | 7
+Mage   | Chest        | Robe       | 27,20,20,0,-1034,-3026 | 27,20,20,0,-1034,-3026 | NoShoulderPads, NoElbowPads | 8
+Mage   | Gloves       | Gloves     | 9,18           | 9,18           | None                        | 1-6
+Mage   | Gloves       | Gloves     | 9,18,-1022,-2023 | 9,18,-1022,-2023 | None                      | 7
+Mage   | Gloves       | Gloves     | 9,18,-1023,-2024 | 9,18,-1023,-2024 | None                      | 8
 Mage   | Leggings     | Robe Skirt | 9              | 9              | None                        | 1
 Mage   | Leggings     | Robe Skirt | 9,10,7         | 9,10,7         | NoKneePads                  | 2-3
-Mage   | Leggings     | Robe Skirt | 9,10,7,0       | 9,10,7,0       | NoKneePads                  | 4-8
-Mage   | Boots        | Boots      | 11             | 11             | None                        |
+Mage   | Leggings     | Robe Skirt | 9,10,7,0       | 9,10,7,0       | NoKneePads                  | 4-6
+Mage   | Leggings     | Robe Skirt | 9,10,-1033     | 9,10,-1033     | NoKneePads                  | 7
+Mage   | Leggings     | Robe Skirt | 9,10,-1034     | 9,10,-1034     | NoKneePads                  | 8
+Mage   | Boots        | Boots      | 11             | 11             | None                        | 1-6
+Mage   | Boots        | Boots      | 11,-1024       | 11,-1024       | None                        | 7
+Mage   | Boots        | Boots      | 11,-1025       | 11,-1025       | None                        | 8
 Healer | HeadCovering | Cowl       | 4              | 4              | Hair, Ears                  | 1-2
 Healer | HeadCovering | Cowl       | 4,10           | 4,10           | Hair, Ears                  | 3-5
 Healer | HeadCovering | Cowl       | 4,7            | 4,7            | Hair, Ears                  | 6
@@ -109,12 +120,20 @@ Barbarian   | HeadCovering | Wolf Hood   | 9              | 9              | Hai
 Barbarian   | HeadCovering | Wolf Hood   | 9,6            | 9,6            | Hair, Ears                  | 6-8
 Barbarian   | Chest        | Harness     | 2,5,3,0        | 2,5,3,0        | NoShoulderPads, NoElbowPads | 1-2
 Barbarian   | Chest        | Harness     | 2,5,3,0        | 2,5,3,0        | NoElbowPads                 | 3-5
-Barbarian   | Chest        | Harness     | 2,5,3,0,3      | 2,5,3,0,3      | NoElbowPads                 | 6-8
-Barbarian   | Gloves       | Bracers     | 16,2           | 16,2           | None                        |
+Barbarian   | Chest        | Harness     | 2,5,3,0,3      | 2,5,3,0,3      | NoElbowPads                 | 6
+Barbarian   | Chest        | Harness     | 2,5,3,0,-1031,-3023 | 2,5,3,0,-1031,-3023 | NoShoulderPads, NoElbowPads | 7
+Barbarian   | Chest        | Harness     | 2,5,3,0,-1032,-3024 | 2,5,3,0,-1032,-3024 | NoShoulderPads, NoElbowPads | 8
+Barbarian   | Gloves       | Bracers     | 16,2           | 16,2           | None                        | 1-6
+Barbarian   | Gloves       | Bracers     | 16,2,-1020,-2021 | 16,2,-1020,-2021 | None                      | 7
+Barbarian   | Gloves       | Bracers     | 16,2,-1021,-2022 | 16,2,-1021,-2022 | None                      | 8
 Barbarian   | Leggings     | Kilt        | 1              | 1              | None                        | 1
 Barbarian   | Leggings     | Kilt        | 1,10,11        | 1,10,11        | NoKneePads                  | 2-3
-Barbarian   | Leggings     | Kilt        | 1,10,0,11      | 1,10,0,11      | NoKneePads                  | 4-8
-Barbarian   | Boots        | Fur Boots   | 9              | 9              | None                        |
+Barbarian   | Leggings     | Kilt        | 1,10,0,11      | 1,10,0,11      | NoKneePads                  | 4-6
+Barbarian   | Leggings     | Kilt        | 1,10,-1031     | 1,10,-1031     | NoKneePads                  | 7
+Barbarian   | Leggings     | Kilt        | 1,10,-1032     | 1,10,-1032     | NoKneePads                  | 8
+Barbarian   | Boots        | Fur Boots   | 9              | 9              | None                        | 1-6
+Barbarian   | Boots        | Fur Boots   | 9,-1022        | 9,-1022        | None                        | 7
+Barbarian   | Boots        | Fur Boots   | 9,-1023        | 9,-1023        | None                        | 8
 Samurai     | Helmet       | Kabuto      | 12             | 12             | All                         | 1-2
 Samurai     | Helmet       | Kabuto      | 12,5           | 12,5           | All                         | 3-5
 Samurai     | Helmet       | Kabuto      | 12,3           | 12,3           | All                         | 6-8
@@ -147,11 +166,19 @@ DarkKnight  | HeadCovering | Horned Helm | 10             | 10             | Hai
 DarkKnight  | HeadCovering | Horned Helm | 10,7           | 10,7           | Hair, Ears                  | 6-8
 DarkKnight  | Chest        | Chestplate  | 21,2,15,5      | 21,2,15,5      | None                        | 1-2
 DarkKnight  | Chest        | Chestplate  | 21,7,15,5      | 21,7,15,5      | None                        | 3-5
-DarkKnight  | Chest        | Chestplate  | 21,4,15,5,2    | 21,4,15,5,2    | None                        | 6-8
-DarkKnight  | Gloves       | Gauntlets   | 1,12           | 1,12           | None                        |
+DarkKnight  | Chest        | Chestplate  | 21,4,15,5,2    | 21,4,15,5,2    | None                        | 6
+DarkKnight  | Chest        | Chestplate  | 21,4,15,5,-1029,-3021 | 21,4,15,5,-1029,-3021 | NoShoulderPads, NoElbowPads | 7
+DarkKnight  | Chest        | Chestplate  | 21,4,15,5,-1030,-3022 | 21,4,15,5,-1030,-3022 | NoShoulderPads, NoElbowPads | 8
+DarkKnight  | Gloves       | Gauntlets   | 1,12           | 1,12           | None                        | 1-6
+DarkKnight  | Gloves       | Gauntlets   | 1,12,-1018,-2019 | 1,12,-1018,-2019 | None                      | 7
+DarkKnight  | Gloves       | Gauntlets   | 1,12,-1019,-2020 | 1,12,-1019,-2020 | None                      | 8
 DarkKnight  | Leggings     | Legplates   | 13,1           | 13,1           | None                        | 1-2
-DarkKnight  | Leggings     | Legplates   | 13,2           | 13,2           | None                        | 3-8
-DarkKnight  | Boots        | Warboots    | 12             | 12             | None                        |
+DarkKnight  | Leggings     | Legplates   | 13,2           | 13,2           | None                        | 3-6
+DarkKnight  | Leggings     | Legplates   | 13,2,-1029     | 13,2,-1029     | NoKneePads                  | 7
+DarkKnight  | Leggings     | Legplates   | 13,2,-1030     | 13,2,-1030     | NoKneePads                  | 8
+DarkKnight  | Boots        | Warboots    | 12             | 12             | None                        | 1-6
+DarkKnight  | Boots        | Warboots    | 12,-1020       | 12,-1020       | None                        | 7
+DarkKnight  | Boots        | Warboots    | 12,-1021       | 12,-1021       | None                        | 8
 WitchHunter | Hat          | Buckle Hat  | 8              | 8              | None                        | 1-2
 WitchHunter | Hat          | Buckle Hat  | 8,12           | 8,12           | None                        | 3-5
 WitchHunter | Hat          | Buckle Hat  | 8,9            | 8,9            | None                        | 6-8

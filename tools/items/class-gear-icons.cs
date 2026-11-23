@@ -154,7 +154,8 @@ void RenderIcon(string[] icon)
             if (show) drawn.Add(r);
         }
         if (drawn.Count == 0) { log.Append("NO PARTS " + icon[0] + "\n"); return; }
-        var wrongMaterial = drawn.Find(r => !r.sharedMaterial || r.sharedMaterial.name != icon[2]);
+        // a part with a picture of its own (the Dark Fortress armor, "_DF" in its name) keeps it: SyntyPlayerAppearance.SetPartMaterials
+        var wrongMaterial = drawn.Find(r => !r.sharedMaterial || (r.sharedMaterial.name != icon[2] && !r.name.Contains("_DF")));
         if (wrongMaterial) log.Append("WRONG MATERIAL " + icon[0] + ": " + (wrongMaterial.sharedMaterial ? wrongMaterial.sharedMaterial.name : "none") + "\n");
 
         // the view: the character faces +z, so the camera stands on that side, turned and raised a little

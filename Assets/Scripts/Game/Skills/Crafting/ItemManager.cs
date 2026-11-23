@@ -381,6 +381,49 @@ public class ItemManager : MonoBehaviour
         LoadItemData();
     }
 
+    /// <summary>
+    /// The part indices of a model id ("21,4,15,5"): the main part first, then the others in the game's order for the
+    /// item's type. A token that is not a number is -1, which no part has; empty when the first one is not a number.
+    /// <para>
+    /// A token of -1000 or less names a part that games before 0.9.7 do not have, for one position: -(1000 * (position
+    /// + 1) + index). It takes that position's place and is not a position of its own, so "21,4,15,5,-1029,-3021" is
+    /// torso 29 and upper arms 21 here, and torso 21, upper arms 15 in a 0.9.6 game, which reads every token as a
+    /// number and only the positions it knows (a chest's first four, leggings' first two). That is how the Dark
+    /// Fortress armor (docs/dark-fortress-armor-test.md) is on class gear items that older games still draw.
+    /// </para>
+    /// </summary>
+    public static int[] ParseModelIds(string modelId)
+    {
+        if (string.IsNullOrEmpty(modelId)) return System.Array.Empty<int>();
+        var tokens = modelId.Split(',');
+        var ids = new List<int>(tokens.Length);
+        List<(int position, int index)> newer = null;
+        for (var i = 0; i < tokens.Length; ++i)
+        {
+            if (!int.TryParse(tokens[i], out var id))
+            {
+                if (i == 0) return System.Array.Empty<int>();
+                ids.Add(-1);
+                continue;
+            }
+            if (id <= -1000)
+            {
+                (newer ??= new List<(int, int)>()).Add((-id / 1000 - 1, -id % 1000));
+                continue;
+            }
+            ids.Add(id);
+        }
+        if (newer != null)
+        {
+            foreach (var (position, index) in newer)
+            {
+                while (ids.Count <= position) ids.Add(-1);
+                ids[position] = index;
+            }
+        }
+        return ids.ToArray();
+    }
+
     public void LoadItemData()
     {
         foreach (var item in items)
@@ -390,32 +433,18 @@ public class ItemManager : MonoBehaviour
             int[] MaleAdditionalIndex = new int[0];
             int[] FemaleAdditionalIndex = new int[0];
 
-            if (!string.IsNullOrEmpty(item.FemaleModelId))
+            var femaleIds = ParseModelIds(item.FemaleModelId);
+            if (femaleIds.Length > 0)
             {
-                if (item.FemaleModelId.Contains(","))
-                {
-                    var indices = item.FemaleModelId.Split(',');
-                    FemaleModelID = int.Parse(indices[0]);
-                    FemaleAdditionalIndex = indices.Skip(1).Select(int.Parse).ToArray();
-                }
-                else
-                {
-                    FemaleModelID = int.Parse(item.FemaleModelId);
-                }
+                FemaleModelID = femaleIds[0];
+                FemaleAdditionalIndex = femaleIds.Skip(1).ToArray();
             }
 
-            if (!string.IsNullOrEmpty(item.MaleModelId))
+            var maleIds = ParseModelIds(item.MaleModelId);
+            if (maleIds.Length > 0)
             {
-                if (item.MaleModelId.Contains(","))
-                {
-                    var indices = item.MaleModelId.Split(',');
-                    MaleModelID = int.Parse(indices[0]);
-                    MaleAdditionalIndex = indices.Skip(1).Select(int.Parse).ToArray();
-                }
-                else
-                {
-                    MaleModelID = int.Parse(item.MaleModelId);
-                }
+                MaleModelID = maleIds[0];
+                MaleAdditionalIndex = maleIds.Skip(1).ToArray();
             }
 
             femaleModelId[item.Id] = (FemaleModelID, FemaleAdditionalIndex);

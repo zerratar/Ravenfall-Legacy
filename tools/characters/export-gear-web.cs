@@ -187,7 +187,38 @@ sbyte N8(float x) => (sbyte)UnityEngine.Mathf.RoundToInt(UnityEngine.Mathf.Clamp
 //   'RFG1', vertices, indices (uint32 each), min xyz, max xyz, uv min, uv max (float32)
 //   positions int16 x3 over the bounds (padded to 4 bytes), normals int8 x4, uvs uint16 x2 over their range,
 //   four bone indices and four weights (uint8), the triangles (uint16)
-void WritePart(UnityEngine.GameObject go)
+// A part with a picture of its own (the Dark Fortress armor, named "..._DF<Set>_<colorway>"): its first submesh is the
+// part (drawn with that picture, SyntyPlayerAppearance.SetPartMaterials), its second, if any, its bare skin, written as
+// "<file>__skin" and drawn with the body's material. gear.json's ownParts says which picture and which skin file.
+var ownParts = new System.Collections.Generic.SortedDictionary<string, string>(System.StringComparer.Ordinal);
+var ownTextures = new System.Collections.Generic.Dictionary<UnityEngine.Texture, string>();
+string OwnTexture(UnityEngine.Texture t)
+{
+    if (!t) return null;
+    if (ownTextures.TryGetValue(t, out var have)) return have;
+    var file = "df-" + FileName(t.name).ToLowerInvariant() + ".jpg";
+    SaveTexture(Pixels(t, 1024, 1024), 1024, 1024, file, true);
+    return ownTextures[t] = "textures/" + file;
+}
+void WritePartOrOwn(UnityEngine.GameObject go)
+{
+    var r = go.GetComponentInChildren<UnityEngine.SkinnedMeshRenderer>(true);
+    if (!go.name.Contains("_DF") || !r || !r.sharedMesh) { WritePart(go); return; }
+    var file = partFiles[go];
+    WritePart(go, 0);
+    string skinFile = null;
+    if (r.sharedMesh.subMeshCount > 1) { skinFile = file + "__skin"; WritePart(go, 1, skinFile); }
+    var m = r.sharedMaterials.Length > 0 ? r.sharedMaterials[0] : null;
+    UnityEngine.Texture albedo = null, glow = null;
+    if (m)
+    {
+        foreach (var name in new[] { "_Albedo_Map", "_BaseMap", "_MainTex" }) if (!albedo && m.HasProperty(name)) albedo = m.GetTexture(name);
+        foreach (var name in new[] { "_Emission_Map", "_EmissionMap" }) if (!glow && m.HasProperty(name)) glow = m.GetTexture(name);
+    }
+    ownParts[file] = "{\"tex\":" + Q(OwnTexture(albedo)) + ",\"glow\":" + Q(OwnTexture(glow)) + ",\"skin\":" + Q(skinFile) + "}";
+}
+
+void WritePart(UnityEngine.GameObject go, int only = -1, string fileName = null)
 {
     var pos = new System.Collections.Generic.List<UnityEngine.Vector3>();
     var nrm = new System.Collections.Generic.List<UnityEngine.Vector3>();
@@ -246,6 +277,7 @@ void WritePart(UnityEngine.GameObject go)
         }
         for (var s = 0; s < mesh.subMeshCount; s++)
         {
+            if (only >= 0 && s != only) continue;
             var t = mesh.GetTriangles(s);
             // the mirror turns every triangle inside out: turned back
             for (var k = 0; k + 2 < t.Length; k += 3) { tris.Add(first + t[k]); tris.Add(first + t[k + 2]); tris.Add(first + t[k + 1]); }
@@ -269,7 +301,7 @@ void WritePart(UnityEngine.GameObject go)
     w.Write(skin.ToArray());
     foreach (var t in tris) w.Write((ushort)t);
     w.Flush();
-    System.IO.File.WriteAllBytes(System.IO.Path.Combine(partsDir, partFiles[go] + ".bin"), ms.ToArray());
+    System.IO.File.WriteAllBytes(System.IO.Path.Combine(partsDir, (fileName ?? partFiles[go]) + ".bin"), ms.ToArray());
     partBytes += ms.Length;
 }
 
@@ -694,6 +726,7 @@ void WriteManifest()
     var skinFiles = new System.Collections.Generic.SortedSet<string>(System.StringComparer.Ordinal);
     foreach (var kv in partFiles) if (skinParts.Contains(kv.Key.name)) skinFiles.Add(kv.Value);
     json.Append("\"skinParts\":[" + string.Join(",", System.Linq.Enumerable.Select(skinFiles, Q)) + "],\n");
+    json.Append("\"ownParts\":{" + string.Join(",\n", System.Linq.Enumerable.Select(ownParts, kv => Q(kv.Key) + ":" + kv.Value)) + "},\n");
     // hair under a hat (SyntyPlayerAppearance.HairUnder): the styles that come through each measured hat, and the flat ones worn instead
     var through = (System.Collections.Generic.Dictionary<int, System.Collections.Generic.HashSet<int>>)typeof(SyntyPlayerAppearance).GetField("HairThroughHat", sf).GetValue(null);
     var longHair = (System.Collections.Generic.HashSet<int>)typeof(SyntyPlayerAppearance).GetField("LongHair", sf).GetValue(null);
@@ -730,7 +763,7 @@ step = () =>
         while (watch.ElapsedMilliseconds < 40)
         {
             if (stage == 0) { WriteAtlas(); stage = 1; at2 = 0; }
-            else if (stage == 1) { if (at2 < partQueue.Count) WritePart(partQueue[at2++]); else { stage = 2; at2 = 0; } }
+            else if (stage == 1) { if (at2 < partQueue.Count) WritePartOrOwn(partQueue[at2++]); else { stage = 2; at2 = 0; } }
             else if (stage == 2) { if (at2 < propQueue.Count) WriteProp(propQueue[at2++]); else { stage = 3; at2 = 0; } }
             else if (stage == 3)
             {
