@@ -2871,6 +2871,7 @@ public static class Localization
     public static string UI_TOWER_REGROUP = "Regrouping: {0} s";
     public static string UI_TOWER_NEXT_FLOOR = "Next: floor {0}, {1}";
     public static string UI_TOWER_TRAINING = "Training - the climb waits on floor {0}";
+    public static string UI_TOWER_ROOM = "Room {0} of {1}";
     public static string UI_TOWER_ALL_CLEARED = "Every floor is cleared";
     public static string UI_TOWER_VOTE_BOSS = "Boss vote: starts in {0} s";
     public static string UI_TOWER_VOTE_CLIMB = "Climb vote: up in {0} s";

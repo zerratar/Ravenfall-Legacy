@@ -594,6 +594,113 @@ not repeat itself. Concepts (Image Generator, from scratch, no earlier concept a
 When it is built: raise the Legendary tower requirement (section 20) to the new top band, and model the custom
 shapes in Blender from the picked concepts (memory: concept then Blender).
 
+## 22. Floors of rooms (2026-11-23)
+
+Zerratar (2026-11-23): "can we get some tower floors that are like not just a circled plateau but actual rooms and stuff?
+so it can look like its inside a castle/dungeon/etc? not all of them need to look like it [...] but they actually have to
+move about as they progress?" Every floor so far is one arena: the monsters stand round it and the group fights wherever
+the nearest one is. A floor can now be a **route of rooms** instead, and the group fights its way through it.
+
+**How it plays**
+- A layout with a route (`TowerRoute` on the floor's root) has rooms (`TowerZone`) in order: an arrival, the rooms and
+  corridors between, and the boss's room last. Each room has its own arrival point, its own monster spots and the gate
+  (`TowerGate`) to the next room.
+- All the rooms are filled when the floor is (the kinds dealt out over every spot in route order, as on a one-room
+  floor), so the monsters ahead stand waiting behind their doors. The group only fights the rooms it has reached
+  (`TowerFloor.NearestEnemy` skips the rest), so nobody runs at a shut door.
+- When a room's monsters have all fallen, its gate opens (the ghostfire seal goes out, the leaves swing into the next
+  room, a stone grind) and the players simply walk on to the next room's nearest monster: the walk is the navmesh, no
+  teleport. A room that has had nobody kill anything for 90 seconds while players are on the floor opens anyway, so a
+  monster that cannot be reached never shuts a floor.
+- The rooms before the **hold** (the last room with monsters) stay cleared once cleared. The hold refills like a
+  one-room floor (`Tower.EnemyRespawnSeconds`), so a floor of rooms stays open for training and its quests as long as
+  the stream likes. Floor quests count every kill in every room.
+- **The boss.** When an attempt is called, every gate up to the boss's room opens and everyone walks there during the
+  60 second countdown and waits on an arc in front of the room's arrival (`TowerRoute.RallyPoint`; newcomers arrive
+  there). The boss comes out at the floor's boss point in that room, its intro and fall work as before. After the
+  attempt the players go back to the hold's monsters; the gates stay open.
+- Arriving (`!tower`), getting back up after a knock out and `!tower floor N` all use the room the group is in
+  (`TowerPlace.Spawn` is virtual; `TowerFloor` answers `TowerRoute.Arrival`). When the floor is filled again (a clear,
+  `!tower floor N`) the route starts again at the first room, gates shut, and anyone on it goes back to its arrival.
+- **Progress on screen:** the tower panel's bottom line shows "Room 2 of 4" (the boss's room not counted) while the
+  floor's quests are open and nothing else needs that line (a vote, the boss ready, the countdown and the fight keep
+  it). No new panel, no chat line per room (rooms clear in seconds with a big group; chat would drown).
+- **What does not change:** the server decides the floor, its quests, the boss and the clear exactly as before; the
+  rooms are the game's presentation of the same fight. Level sync, training away, votes, cutscenes, boss help, the
+  boss's slam and spit, the after-clear walk to town: all as on a one-room floor. **A floor without a route works as
+  before**: `Route` is null on floors 1 to 30, every new code path checks it.
+
+**Seeing into rooms from the game's camera**
+- The game's camera orbits the player it follows from 45 degrees up, slowly turning, so any wall can come between it
+  and the fight. `TowerCutaway` (on the floor's root) cuts every wall piece that stands between the camera and what it
+  follows down to its stub, and stands it up again once the camera has turned past it: the far walls always stand with
+  their windows, banners and moonbeams, the near ones show where the room ends. The rule (`TowerCutaway.Between`): the
+  wall's plane parts the camera from the followed player, and the line of sight crosses it within the wall's half
+  length plus 7 m. A cut wall keeps its shadow (so the room's light does not change as the camera turns); what hangs on
+  it hides with it (torch flames too). A few dot products per wall a frame; no setting needed.
+- Each wall piece (`TowerWallPiece`) has its full wall and a stub a metre high. The stubs are the Dark Fortress pack's
+  own 5 m wall cut in Blender with a broken top (`tools/tower/blender/tower_great_hall.py`), so the bricks match; a
+  doorway's stub is the same with the arch's opening cut out. Pillars at the joints are pieces of their own (their
+  stub is their foot).
+- No ceilings or roofs: the halls are roofless ruins (the concept's broken rafters were left out; anything overhead
+  would hide the fight from above).
+- Gates stay standing when their wall is cut: a shut door with its green seal is what tells viewers the way is closed.
+
+**The prototype: the band 4 great hall** (`Assets/Scenes/Tower/Tower_GreatHall.unity`, built by
+`tools/tower/tower-greathall-build.cs`, concept `docs/mockups/tower/band4/floor-b-great-hall.jpg`). Five rooms of 6 m
+Dark Fortress walls on dark stone tiles, about 45 by 110 m, at (0, 0, -6000) like every floor:
+1. **The Gatehall** (arrival, 5 monsters): the skull gate the players came in by behind them, ghostfire braziers, rubble,
+   the fallen.
+2. **The Hall of Arms** (4): a gallery of knights in armor on plinths down both sides, a crimson runner.
+3. **The Chapel** (5): pews either side of an aisle, an altar with candles and two knights, a small font of soul water.
+4. **The Great Hall** (the hold, 10): the violet rune circle (a Blender mesh: rings, a seven pointed star, runes and
+   cracks, glowing), feast tables with food, goblets and candles down both sides, knights between the windows,
+   ghostfire at the corners.
+5. **The Throne Room** (the boss's): a crimson runner to the throne between two great knights, the biggest fires.
+The route zigzags: north, east into the chapel, north into the hall, north into the throne room. Night: cold moonlight
+from high up with moonbeams through the windows on the moon's side (`TowerLightShaft`), a violet-blue dark, crimson
+banners, green ghostfire. The ghostfire flames, candle lights and fill lights sit under a `TowerFx` group that goes
+off in potato mode; the moonbeams already do; the braziers' and the seal's lights stay (the rooms would go black).
+Monster templates: band 1's looks and the Dark Fortress dead, so any floor of 1 to 10 can be tried in it. The audit
+(`tower-audit.cs`, now also checking every room's arrival) passes: 30 checks, no problems.
+
+**Live and dormant.** The system code ships with v0.9.7 but nothing uses it: no floor in RavenNest.Combat names the
+great hall, `TowerFloor.Route` is null in every v0.9.7 layout, and the server is unchanged. The great hall is reachable
+only in the editor, from the admin debug menu's "Tower: Great Hall" (every floor then loads it, the loaded floor climbs
+into it; "Tower: Own Layouts" goes back; `TowerManager.LayoutOverride`), and the scene is not in the build's scene list.
+Band 4 (floors 31 to 40, v0.9.8) wires it in with `LayoutOf` and a scene list entry.
+
+**Played** in the editor against the local server with the dev character and 3 to 7 bots, on floors below the dev
+stream's (so nothing reached the server's climb): each room fought and cleared, the gates opening and the walk on
+through every door, the hold refilling, a boss called (everyone walked to the throne room during the countdown), the
+fight in the throne room with the slam ring, the boss falling, `!tower floor N` putting everyone back at the first room.
+The panel's "Room 3 of 4" was checked by refreshing it in play with the local copy of the stream's floor set to the
+loaded one (a training floor shows its training line there instead).
+Captures from the game's camera: `docs/mockups/tower/band4/great-hall-*.png`.
+
+**Weak spots, for later**
+- A strong group clears a room in a few seconds; with 8 high level bots the whole route took about a minute and the boss
+  of floor 5 fell in about 10 seconds (level sync's numbers, not the rooms'). Band 4's rooms may want more monsters or
+  elites per room once its numbers are set with the simulator.
+- Everyone piles onto the nearest monster, as on every floor: the group reads as one blob from far away.
+- A cut wall pops rather than fades; the camera turns slowly, so it is rare, but it shows.
+- The throne room is plain next to its concept (docs/mockups/tower/band4/boss-throne.jpg): it is the great hall's
+  boss room for now, not the band's top.
+- Outside the rooms is a flat dark void; from a low angle it reads as nothing rather than more fortress.
+
+**Adding rooms to other floors**
+- *A band 1 to 3 layout:* give its builder rooms in order with their spots and an arrival each (TowerZone), a TowerGate
+  in each doorway (leaves, seal, a carving NavMeshObstacle saved disabled), a TowerRoute on the root and `floor.Route`
+  set. Open layouts (the courtyard, the glacier) need only gates or barriers between areas (a fallen tree, an ice wall,
+  a ward), no cutaway. Walled ones (the crypt, the frost vault) get `TowerCutaway` and pieces with stubs: the crypt's
+  low walls could be TowerWallPieces at full height again. Nothing on the server changes; a floor can switch layouts
+  in `LayoutOf` at any update.
+- *The other band 4 floors:* the gatehouse (outdoors) is a route of open areas: the outer bailey, the portcullis as the
+  gate (a TowerGate whose leaf rises instead of swinging: one more mode), the inner yard, the keep's door. The ramparts
+  are rooms along a wall walk: towers as rooms (with cutaway), bridges and wall walks as corridors between them, the
+  chasm below as the void. Both reuse this builder's helpers (wall pieces, stubs, gates, ghostfire) and the same
+  stubs; each wants its own Blender pieces (bridge undersides, the chasm's cliffs, the portcullis).
+
 ## Open questions
 
 - ~~Is the tower always open while a stream is live, or does the streamer open it?~~ Open on every stream: any viewer can

@@ -19,6 +19,10 @@ Each writes its log to `%TEMP%/<name>.txt` (the eval call itself times out after
 | tower-glacier-build.cs | Tower_Glacier (11, 12, 15, 16, 19) | 2 |
 | make-vault.py -> tower-frostvault-build.cs | Tower_FrostVault (13, 14, 17, 18, 20), generated from the crypt's builder | 2 |
 | tower-rimeholt-build.cs | Tower_Rimeholt (town, its resting place and work places) | 2 |
+| tower-greathall-build.cs | Tower_GreatHall: the first floor of rooms (docs/tower-design.md section 22), not in the climb yet; its wall stubs and rune circle from blender/tower_great_hall.py | 4 (v0.9.8) |
+
+A floor of rooms (`TowerRoute`) has its gates' NavMeshObstacles saved disabled, so the audit walks the whole route;
+the game shuts them when it fills the floor. The audit also checks every room's arrival.
 
 `tower-audit.cs` checks a scene (path in `%TEMP%/tower-audit-scene.txt`): every monster spot, the boss, the people, rest
 spots, strolls, work stands and road points can be walked to from the arrival, and where each road ends; it writes

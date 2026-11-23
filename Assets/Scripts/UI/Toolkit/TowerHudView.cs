@@ -323,7 +323,10 @@ namespace Shinobytes.UI
             }
             else
             {
-                Set(phase, "");
+                // a floor of rooms: how far along the route the group is
+                var route = TowerFloor.Loaded ? TowerFloor.Loaded.Route : null;
+                var rooms = route && route.Valid ? route.FightingRooms : 0;
+                Set(phase, rooms > 1 ? string.Format(Localization.UI_TOWER_ROOM, Mathf.Min(route.Active + 1, rooms), rooms) : "");
                 Show(joinPill, true);
                 Set(join, "!tower");
             }

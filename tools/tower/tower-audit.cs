@@ -32,6 +32,7 @@ try
     {
         if (floor.Spawns) { var i = 0; foreach (UnityEngine.Transform s in floor.Spawns) Check("monster " + (i++), s.position, 2f, true); log.AppendLine(" monster spots " + floor.Spawns.childCount); }
         if (floor.BossPoint) Check("boss", floor.BossPoint.position, 2f);
+        if (floor.Route) foreach (var z in floor.Route.Zones) if (z && z.Entry) Check("room arrival " + z.Title, z.Entry.position, 2f);
     }
     if (place is TowerTown town)
     {

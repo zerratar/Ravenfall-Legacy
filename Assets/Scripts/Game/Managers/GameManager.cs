@@ -2350,6 +2350,13 @@ public class GameManager : MonoBehaviour, IGameManager
         {
             tower.ReplayBossFall();
         }
+        // a layout that is not in the climb yet (docs/tower-design.md section 22): every floor loads the band 4 great
+        // hall until pressed again; the floor that is loaded climbs into it. In the editor only: the scene is not in a
+        // build's scene list until band 4 ships
+        if (tower && Application.isEditor && GUI.Button(GetButtonRect(buttonIndex++), TowerManager.LayoutOverride == null ? "Tower: Great Hall" : "Tower: Own Layouts"))
+        {
+            tower.PreviewLayout(TowerManager.LayoutOverride == null ? "Tower_GreatHall" : null);
+        }
 
         if (Arena.Activated)
         {

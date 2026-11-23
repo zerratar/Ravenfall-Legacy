@@ -67,7 +67,11 @@ public abstract class TowerPlace : MonoBehaviour
 
     public Vector3 Centre => transform.position;
 
-    public Vector3 Spawn => SpawnPoint ? SpawnPoint.position : transform.position;
+    /// <summary>
+    ///     Where players arrive and get back up. A floor with a route of rooms (<see cref="TowerRoute"/>) answers the room
+    ///     the group has reached.
+    /// </summary>
+    public virtual Vector3 Spawn => SpawnPoint ? SpawnPoint.position : transform.position;
 
     public bool Contains(Vector3 point)
     {

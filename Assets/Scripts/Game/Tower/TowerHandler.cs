@@ -264,6 +264,15 @@ public class TowerHandler : IAwayHandler
         enemyTarget = null;
         player.attackTarget = null;
         player.Stats.Health.Reset();
+        // a floor of rooms starts again at its first room, behind shut gates: back to its arrival
+        if (target && target.Route && target.Route.Valid && player && !player.Stats.IsDead)
+        {
+            player.InterruptAction();
+            var offset = Random.insideUnitCircle * 3f;
+            var spot = target.Spawn + new Vector3(offset.x, 0f, offset.y);
+            if (UnityEngine.AI.NavMesh.SamplePosition(spot, out var hit, 6f, UnityEngine.AI.NavMesh.AllAreas)) spot = hit.position;
+            player.teleportHandler.Teleport(spot);
+        }
     }
 
     private void Clear()
@@ -292,6 +301,14 @@ public class TowerHandler : IAwayHandler
         {
             // the floor (or town) went away under the player (unloaded): back to the world
             Exit();
+            return;
+        }
+
+        // a floor of rooms (TowerRoute): when the boss is called, everyone walks to the boss's room and waits for it there
+        var route = floor.Route;
+        if (route && route.Valid && route.Rallying && !boss)
+        {
+            UpdateRally(route);
             return;
         }
 
@@ -349,6 +366,31 @@ public class TowerHandler : IAwayHandler
             if (enemyTarget == boss) return;
             enemyTarget.IsUnreachable = true;
             enemyTarget = null;
+        }
+    }
+
+    /// <summary>The boss is called on a floor of rooms: off to a place of one's own in the boss's room, and wait there.</summary>
+    private void UpdateRally(TowerRoute route)
+    {
+        if (enemyTarget || player.attackTarget)
+        {
+            enemyTarget = null;
+            healTarget = null;
+            player.InterruptAction();
+            player.attackTarget = null;
+        }
+        var spot = route.RallyPoint(player);
+        var flat = spot - player.Position;
+        flat.y = 0f;
+        if (flat.sqrMagnitude < 1.5f * 1.5f)
+        {
+            if (player.Movement.IsMoving) player.Movement.Lock();
+            return;
+        }
+        if (!player.Movement.IsMoving || Time.time >= nextStroll)
+        {
+            nextStroll = Time.time + 2f;
+            if (!player.SetDestination(spot)) player.Movement.DisableLocalAvoidance();
         }
     }
 

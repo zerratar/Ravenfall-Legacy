@@ -469,13 +469,45 @@ public sealed class TowerManager : MonoBehaviour
     // will be taken in" and never was. The unload now loads the floor again when someone waits.
     private bool unloading;
 
+    /// <summary>
+    ///     A layout scene to use for every floor instead of the floors' own, or null (always null for players): the
+    ///     admin debug menu's way to try a layout that is not in the climb yet, such as the band 4 great hall
+    ///     (docs/tower-design.md section 22). The floor's monsters, quests and boss stay the stream's floor's.
+    /// </summary>
+    public static string LayoutOverride { get; private set; }
+
+    /// <summary>The scene a floor loads: its own layout, or the debug menu's <see cref="LayoutOverride"/>.</summary>
+    public static string LayoutFor(TowerFloorDefinition floor) => !string.IsNullOrEmpty(LayoutOverride) ? LayoutOverride : floor?.Layout;
+
+    /// <summary>
+    ///     The debug menu: every floor loads <paramref name="layout"/> from now on (null: their own again). A floor that is
+    ///     loaded climbs into it at once, with everyone on it (not during a boss attempt).
+    /// </summary>
+    public bool PreviewLayout(string layout)
+    {
+        if (Phase == TowerPhase.Countdown || Phase == TowerPhase.Fight || Loading || climbing || unloading) return false;
+        LayoutOverride = string.IsNullOrEmpty(layout) ? null : layout;
+        var floor = TowerFloor.Loaded;
+        if (floor && CurrentFloor > 0 && LoadedScene != ScenePath(LayoutFor(Tower.Get(CurrentFloor)))) StartCoroutine(SwitchLayoutRoutine(CurrentFloor));
+        return true;
+    }
+
+    private IEnumerator SwitchLayoutRoutine(int number)
+    {
+        climbing = true;
+        foreach (var p in Players()) if (!pendingJoins.Contains(p)) pendingJoins.Add(p);
+        yield return UnloadRoutine();
+        LoadFloor(number);
+        climbing = false;
+    }
+
     public void LoadFloor(int number)
     {
         var floor = Tower.Get(number);
         if (floor == null || Loading || unloading || TowerFloor.Loaded) return;
         CurrentFloor = number;
         Phase = TowerPhase.Loading;
-        StartCoroutine(LoadRoutine(ScenePath(floor.Layout)));
+        StartCoroutine(LoadRoutine(ScenePath(LayoutFor(floor))));
     }
 
     /// <summary>Loads a floor scene (its path in the project, or its name when it is in the build) next to MainWorld.</summary>
@@ -927,6 +959,9 @@ public sealed class TowerManager : MonoBehaviour
         foreach (var p in Players()) participants.Add(p);
         Phase = TowerPhase.Countdown;
         phaseEnds = Time.time + Tower.BossCountdownSeconds;
+        // a floor of rooms: the way to the boss's room opens and everyone walks there during the countdown
+        var routed = TowerFloor.Loaded ? TowerFloor.Loaded.Route : null;
+        if (routed && routed.Valid) routed.OpenToBoss();
         Announce(Localization.MSG_TOWER_BOSS_COUNTDOWN, CurrentFloor, Tower.BossCountdownSeconds, Definition.Boss.Name);
     }
 
@@ -1236,10 +1271,12 @@ public sealed class TowerManager : MonoBehaviour
         // back in the world when its layout is another)
         if (floor && Phase != TowerPhase.Countdown && Phase != TowerPhase.Fight)
         {
-            if (next.Layout == cleared.Layout)
+            if (LayoutFor(next) == LayoutFor(cleared))
             {
                 CurrentFloor = next.Number;
                 floor.Apply(next);
+                // anyone still on it finds themselves on the new floor (on a floor of rooms: back at its first room)
+                foreach (var p in Players()) p.towerHandler.FloorChanged(floor);
             }
             else
             {
@@ -1301,7 +1338,7 @@ public sealed class TowerManager : MonoBehaviour
             LoadFloor(number);
             return FloorChangeResult.Changed;
         }
-        if (floor.Definition != null && def.Layout == floor.Definition.Layout)
+        if (floor.Definition != null && LayoutFor(def) == LayoutFor(floor.Definition))
         {
             CurrentFloor = number;
             floor.Apply(def);
@@ -1345,6 +1382,7 @@ public sealed class TowerManager : MonoBehaviour
         StopBossIntro();
         var floor = TowerFloor.Loaded;
         if (floor) floor.DespawnBoss(bossDelay);
+        if (floor && floor.Route) floor.Route.EndRally();
         foreach (var p in participants) if (p && p.towerHandler != null) p.towerHandler.BossFightEnded();
         participants.Clear();
         fallen.Clear();
@@ -1807,6 +1845,10 @@ public sealed class TowerManager : MonoBehaviour
         if (Phase == TowerPhase.Countdown && PhaseSecondsLeft <= 0f && !introBoss) StartFight();
         else if (Phase == TowerPhase.Fight) UpdateFight();
         UpdateVotes();
+        // a floor of rooms gathers everyone at the boss only while an attempt is called or fought (a countdown called
+        // off for want of players ends without EndAttempt)
+        var route = TowerFloor.Loaded ? TowerFloor.Loaded.Route : null;
+        if (route && route.Rallying && Phase != TowerPhase.Countdown && Phase != TowerPhase.Fight) route.EndRally();
 
         if (Time.time >= nextReport)
         {

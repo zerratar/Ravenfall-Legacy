@@ -24,6 +24,17 @@ public sealed class TowerFloor : TowerPlace
     /// <summary>Where the boss waits during an attempt.</summary>
     public Transform BossPoint;
 
+    /// <summary>
+    ///     A floor of rooms (docs/tower-design.md section 22), or null for one arena: then the monsters stand on the
+    ///     route's rooms' spots instead of <see cref="Spawns"/>, and the group fights its way from room to room.
+    /// </summary>
+    public TowerRoute Route;
+
+    private readonly Dictionary<EnemyController, int> zones = new Dictionary<EnemyController, int>();
+
+    /// <summary>The route's arrival (the room the group is in) on a floor of rooms.</summary>
+    public override Vector3 Spawn => Route && Route.Valid ? Route.Arrival : base.Spawn;
+
     private readonly List<EnemyController> enemies = new List<EnemyController>();
     private readonly Dictionary<EnemyController, TowerEnemy> kinds = new Dictionary<EnemyController, TowerEnemy>();
     private readonly List<GameObject> spawned = new List<GameObject>();
@@ -59,6 +70,7 @@ public sealed class TowerFloor : TowerPlace
     /// </summary>
     public bool Apply(TowerFloorDefinition floor)
     {
+        if (Route && Route.Valid) return ApplyRoute(floor);
         if (floor == null || !Templates || !Spawns || Spawns.childCount == 0) return false;
         Clear();
         Definition = floor;
@@ -77,6 +89,70 @@ public sealed class TowerFloor : TowerPlace
             kinds[enemy] = kind;
         }
         return true;
+    }
+
+    /// <summary>
+    ///     A floor of rooms: every room's monsters at once (the ones ahead stand waiting behind their gates), the kinds
+    ///     dealt out over all the spots in route order as on a one-room floor. Only the hold's monsters come back after
+    ///     they fall; the rooms before it stay cleared. The route starts again at its first room.
+    /// </summary>
+    private bool ApplyRoute(TowerFloorDefinition floor)
+    {
+        if (floor == null || !Templates || floor.Enemies.Length == 0) return false;
+        Clear();
+        Definition = floor;
+        Route.ResetRoute();
+
+        var made = new Dictionary<string, EnemyDefinition>();
+        var i = 0;
+        for (var z = 0; z < Route.Zones.Length; z++)
+        {
+            var zone = Route.Zones[z];
+            if (!zone || !zone.Spawns) continue;
+            for (var s = 0; s < zone.Spawns.childCount; s++, i++)
+            {
+                var kind = floor.Enemies[i % floor.Enemies.Length];
+                var template = Template(kind.Model);
+                if (!template) continue;
+                if (!made.TryGetValue(kind.Id, out var definition)) made[kind.Id] = definition = Tower.Enemy(floor, kind);
+                var spot = zone.Spawns.GetChild(s);
+                var enemy = Make(template, spot.position, spot.rotation, kind.Scale > 0 ? kind.Scale : 1f);
+                enemy.ApplyRuntimeDefinition(definition, kind.Name, Tower.EnemyRespawnSeconds);
+                enemy.AutomaticRespawn = z >= Route.Hold;
+                enemies.Add(enemy);
+                kinds[enemy] = kind;
+                zones[enemy] = z;
+            }
+        }
+        return true;
+    }
+
+    /// <summary>The room of the route an enemy stands in, or -1 (a one-room floor, the boss, its helpers).</summary>
+    public int ZoneOf(EnemyController enemy) => enemy && zones.TryGetValue(enemy, out var z) ? z : -1;
+
+    /// <summary>The monsters of a room still standing.</summary>
+    public int AliveIn(int zone)
+    {
+        var count = 0;
+        foreach (var kv in zones)
+            if (kv.Value == zone && kv.Key && kv.Key.Stats != null && !kv.Key.Stats.IsDead) count++;
+        return count;
+    }
+
+    /// <summary>A room's gate opened: its monsters are worth walking to again (a path tried while it was shut failed).</summary>
+    public void ZoneOpened(int zone)
+    {
+        foreach (var kv in zones) if (kv.Value <= zone && kv.Key) kv.Key.IsUnreachable = false;
+    }
+
+    /// <summary>Someone in the tower is on this floor (not in the town).</summary>
+    public bool AnyoneOn()
+    {
+        var game = GameManager.Instance;
+        if (!game || game.Players == null) return false;
+        foreach (var p in game.Players.GetAllPlayers())
+            if (p && p.towerHandler != null && p.towerHandler.InTower && p.towerHandler.Floor == this) return true;
+        return false;
     }
 
     /// <summary>The boss of the floor at its spot, full health, facing the arena's middle.</summary>
@@ -177,6 +253,8 @@ public sealed class TowerFloor : TowerPlace
         {
             var e = enemies[i];
             if (!e || e.Stats == null || e.Stats.IsDead || e.IsUnreachable || !e.gameObject.activeInHierarchy) continue;
+            // on a floor of rooms, only the rooms the group has reached: the ones ahead wait behind their gates
+            if (Route && zones.TryGetValue(e, out var zone) && !Route.Open(zone)) continue;
             var d = (e.transform.position - from).sqrMagnitude;
             if (d < bestDistance)
             {
@@ -222,6 +300,7 @@ public sealed class TowerFloor : TowerPlace
         foreach (var go in spawned) if (go) Destroy(go);
         spawned.Clear();
         kinds.Clear();
+        zones.Clear();
         enemies.Clear();
     }
 }
