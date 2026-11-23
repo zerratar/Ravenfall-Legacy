@@ -113,7 +113,7 @@ class Library:
         for o in mfh:
             if o.type != "MESH":
                 bpy.data.objects.remove(o, do_unlink=True)
-        # DF meshes live in the rig's (centimetre) space; MFH ones are now in world meters: give both a rig binding
+        # DF meshes live in the rig's (centimeter) space; MFH ones are now in world meters: give both a rig binding
         for o in self.mfh.values():
             o.parent = self.rig
             o.matrix_parent_inverse = self.rig.matrix_world.inverted()

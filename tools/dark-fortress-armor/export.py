@@ -3,7 +3,9 @@
 # Cuts and fits a Dark Fortress character (cut.py, fit.py) and writes two FBX files for Unity, one per sex, each the
 # rig plus the pieces named the way the MFH parts are (so they can sit beside them in the player's part arrays):
 #   Chr_Torso_Male_DF<Name>, Chr_ArmUpperLeft_Male_DF<Name>, ..., Chr_Hips_Male_DF<Name>, Chr_LegLeft_Male_DF<Name>,
-#   Chr_ShoulderAttachLeft_DF<Name>, Chr_KneeAttachLeft_DF<Name> (pads: one set for both sexes, in the male file).
+#   (since the second pass the pauldrons are in the upper arm pieces and the knee caps in the hips piece; with
+#   cut.cut(pads="separate") they come out as Chr_ShoulderAttachLeft_DF<Name> / Chr_KneeAttachLeft_DF<Name>, one
+#   set for both sexes, in the male file).
 # Left and Right follow the MFH file, which is not consistent: male "LegLeft" parts sit on the character's right
 # side (x < 0), female ones on the left; arms are "Left" at x > 0 for both. The names here copy whatever the MFH
 # base part on that side is called.
@@ -14,6 +16,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 import dfa_lib as L
 import cut as C
 import fit as F
+import skin as S
 
 argv = sys.argv[sys.argv.index("--") + 1:]
 repo, out = argv[0], argv[1]
@@ -27,6 +30,17 @@ lib = L.Library(repo)
 pieces = C.cut(lib, name, lib.src, cuts=cuts, cap_uv=C.dark_uv(bpy.data.images[os.path.basename(L.DF_TEX)]),
                prepare=lambda o: F.add_female_key(lib, o))
 fem, _ = F.morph_female(lib, pieces, lib.src)
+# second pass: robes keep their whole skirt in the leggings and get the game's bare shin above the shoes; bare skin
+# goes to material slot 1, "PlayerBody", which in the game is the player's own body material (FantasyHero.mat copy
+# with their _Color_Skin), its faces' UVs on a skin texel of the MFH atlas
+if cuts and cuts.get("robe"):
+    C.add_bare_shins(lib, pieces, "Male")
+    C.add_bare_shins(lib, fem, "Female")
+body_slot = L.flat_material("PlayerBody", (0.8, 0.6, 0.5))
+box, texel = S.skin_uv_box(repo), S.mfh_skin_texel(repo, lib)
+for set_ in (pieces, fem):
+    for p in set_.values():
+        S.split_skin(p, box, body_slot, texel)
 
 KIND = {"torso": "Torso", "upperarm": "ArmUpper", "lowerarm": "ArmLower", "hand": "Hand", "hips": "Hips",
         "leg": "Leg"}

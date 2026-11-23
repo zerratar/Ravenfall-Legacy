@@ -16,6 +16,150 @@ Not done in this test: the Unity editor check (step 6). The editor-busy flag was
 weapons, helmets and characters into gear and enemies, and stayed set for the whole test, so nothing was imported or
 previewed in Unity. The FBX export was verified by a round trip in Blender instead (see Method step 6).
 
+# Second pass (2026-11-23, after the owner's feedback)
+
+The owner: "not bad, but it needs more work". Arms looked broken or twisted (maybe the size), some characters are not
+humanoid enough (zombie-ish, bent), bare skin on the pieces did not match the body, pauldrons sat oddly. Asked: find
+which characters are really usable, fix pads, the broken-looking limbs and the skin.
+
+**Verdict after the second pass: still good to build on, for five of the thirteen characters** (Knight, Barbarian,
+Necromancer as they are; Inquisitor and Apothecary as robes with some extra work). The broken look was the test's
+hand-made poses, not the pieces; in the game's own animations the pieces move exactly like the original characters
+and like the game's plate set. Bare skin now uses the player's own body material, so it matches for every skin color.
+The pauldrons are baked into the upper arms. The Unity editor was busy again ("dark fortress round 2"), so the check
+through the real appearance code is still open.
+
+## What caused the broken or twisted arms and legs
+
+Checked one by one:
+
+| Suspect | Finding |
+| --- | --- |
+| The hand-made test poses | **The cause.** The first pass posed the bones by stacking rotations about world axes. That rolled whole arms about their own length: palms facing backwards in the "walking stride", forearms rolled 90 degrees and an arm reaching stiffly forward in the "combat stance", elbows bending sideways with arms raised, and in an early version legs crossing. Plates on a rolled arm read as a broken arm. |
+| Bone roll differences | None. Every bone of the Dark Fortress rig has the same rest orientation as the game's rig (0 degrees difference, measured on the bind matrices), as well as the same joint positions. |
+| Size of the pieces | Not bigger than the game's armor. Mean radius around the bone, Knight vs the game's bare body and plate set: upper arm 5.5 cm (body 5.9, plate 6.6), forearm 4.8 (4.7, 6.4), thigh 15.9 (15.0, 20.7), shin 5.5 (6.8, 8.4). Inquisitor, Apothecary and Plague Lord are bulkier only in their robe skirts. |
+| The female reshape | Moves arms and legs by under a centimeter (the female upper arm is about 8 mm thinner than the male); female and male pieces deform the same in every frame. |
+| Weights near the cut lines | The pieces keep the original skin weights and the cuts only split faces, so pieces meet exactly in every frame; the close-ups show no opening or kink at elbow, waist or knee. |
+
+**The fix:** the renders now use the game's own animations. `anim.py` retargets the clips the player animator plays
+(`Assets/Animations/PlayerAnimationController.controller`): the relaxed `Idle` (RPG Character pack,
+`Relax/RPG-Character@Idle`), `Unarmed-Run-Forward`, `Sword-Attack-R1`, the `Armed-Idle` combat stance and the Crafting
+pack's `Chop-Finish` (woodcutting) and `Fishing-Cast`. Those FBX files have no armature, only animated empties
+(`B_Pelvis`, `B_L_UpperArm`, ...); the clip's rest pose and humanoid bone map are read from its `.meta`, the
+player's bone map from `ModularCharacters.fbx.meta`, and each humanoid bone gets the world rotation it has relative
+to the clip's rest put onto the game rig relative to its T-pose, like Mecanim does (with half the hand's roll moved
+onto the forearm, the avatar's `foreArmTwist 0.5`). The Crafting pack's avatar was made from a model standing with its
+arms down; its rest is put into a T-pose first, as Unity's Enforce T-Pose does. A plain game character in the same
+frames (the survey sheet, first column) moves like the game.
+
+## Shoulder pads
+
+The game's own pads (`Chr_ShoulderAttach*`) are rigid on a `Shoulder_Attachment` bone under the clavicle, sit well out
+(the male plate pad 20 reaches x 0.40 m, center x 0.23, top 1.64 m) and are one set for both sexes. The Knight's
+pauldrons hug the shoulder (center x 0.19, out to 0.31, top 1.56) and are skinned half to the clavicle and half to
+the upper arm, so they follow a raised arm part way instead of floating above it. As a rigid game pad they would lose
+that, and in the shared array the female would wear the male one. **Decision: baked into the upper arm pieces** (the
+knee caps likewise into the hips piece). The chest item then carries `NoShoulderPads` (and the leggings
+`NoKneePads`), which also keeps a big game pad from being put on top. `cut.cut(pads="separate")` still makes them
+loose parts if the arrays are wanted later. The pads sheet shows the baked pauldrons next to the game's pads and
+the plate set, male and female, in the idle and the sword attack.
+
+## Skin
+
+How the game colors skin: every body part uses `FantasyHero.mat` (shader `PolygonFantasyHeroCharacters/Shaders/Synty.shadergraph`),
+which starts from the atlas and lerps in flat colors by mask channels; skin is Mask_03 red (black = skin), filled
+with the flat `_Color_Skin` that `SyntyPlayerAppearance` sets from the player's `SkinColor` (stubble is Mask_03 blue,
+`_Color_Stubble`). The Dark Fortress atlas keeps its skin in a block of swatches in the lower left, marked by
+`PolygonGeneric/Textures/SkinMask.png`, and its own `Generic_Standard` shader tints them with `_Skin_Color` - which
+would not match the MFH shader's flat skin.
+
+**Solution (`skin.py`):** every face whose UV lies in the skin swatches goes to a second material slot, and its UVs
+move onto a skin texel of the MFH atlas. In the game that slot gets the player's own body material, the same one their
+bare arms use, so the skin on the armor is the skin next to it, for every color, with no new shader. The robes'
+boots borrow the game's own bare shin the same way (below). Barbarian (7 % of its body faces are skin: forearms, chest
+opening, hands), Necromancer (8 %: upper arms, hands) and Apothecary (10 %: hands) need it; Knight and Inquisitor have
+none. The skin sheet shows all three in a light, a medium and a dark tone, male and female.
+
+## Robes
+
+Inquisitor and Apothecary (and Plague Lord) wear skirts to the ankle. With the knee cut a robe was half leggings, half
+boots. Now `{"robe": 1}`: the whole skirt is the leggings piece; the boots are only the faces on the foot bones (the
+shoes), plus the game's own bare shin above them in the skin slot (`cut.add_bare_shins`), because the game's boots
+slot replaces the whole lower leg and other leggings would leave the shins missing. On the male the game shin is
+thicker than the Inquisitor's boot shaft, so with bare legs the boot reads as a low shoe. In wide lunges the skirt
+stretches between the legs as on the original character (Synty weights it to both thighs).
+
+## Suitability of all thirteen characters
+
+From `survey_v2.py` (picture: the survey sheet). Numbers: how far the surface lies outside the game's male body on
+average (bulk), the share of vertices more than 1 cm inside it (thin, skeletal or rotten), the 95th percentile
+outside (silhouette), and the share of bare skin faces (head excluded).
+
+| Character | Rating | Bulk torso / arms / hips (cm) | Inside torso / arms | Why |
+| --- | --- | --- | --- | --- |
+| Knight | **good** | 1.1 / 0.5 / 1.7 | 18 % / 6 % | Plate on our body shape, no skin. The first set to build. |
+| Barbarian | **good** | 0.9 / 0.8 / 2.2 | 10 % / 3 % | Leather and fur, upright, bare forearms and chest opening take the player's skin. |
+| Necromancer | **good** | 0.9 / 0.9 / 1.2 | 16 % / 5 % | Dark leather armor, upright; bare upper arms take the player's skin; a glowing green tabard (the pack's emissive). |
+| Inquisitor | with work | 1.6 / 1.1 / 4.8 | 4 % / 0 % | Robe (whole skirt as leggings, boots = shoes + game shin); high collar fits the game head. |
+| Apothecary | with work | 0.3 / 0.7 / 5.2 | 18 % / 6 % | Robe with apron and pouches; hands are skin. |
+| Plague Lord | with work | 2.9 / 3.1 / 4.3 | 1 % / 0 % | Bulkiest; spiked gauntlets and belt are good, but the look leans on the tall hat (a head piece) and a ragged robe. |
+| Plague | not suitable | -1.5 / -0.1 / -0.6 | 63 % / 30 % | A rotten, skinny body (63 % of its torso is inside ours), not clothing. |
+| Undead 01 | not suitable | -0.7 / -0.6 / 0.3 | 35 % / 36 % | A skeleton. |
+| Undead 02 | not suitable as a set | 0.6 / -0.1 / 0.2 | 23 % / 24 % | Armor plates over a skeleton; the bones show between them. |
+| Wraith | not suitable as a set | 0.7 / 0.3 / 4.5 | 6 % / 16 % | A ghost: tattered robe over a thin body, glowing hands. |
+| Corpse | not suitable | -1.4 / -1.1 / -1.3 | 52 % / 57 % | A naked body (all of it is skin). |
+| Behemoth, Colossus | not suitable | - | - | Their own bigger rig (`BR_Characters.fbx`, arm span 2.88 m). |
+
+Posture: all of them share the skeleton, so none is bent in its bones; the zombie look of Plague, Undead and Corpse
+is in the mesh (thin limbs, rotten or bony bodies), which the "inside" column catches.
+
+**Single pieces worth taking**, even from characters that are not suitable as a set:
+- `SM_Chr_Attach_Armor_01` (a pair of plate shoulder guards) and `SM_Chr_Attach_Fur_01` (a fur mantle): loose
+  attachments of the pack that sit on the game's body as they are (survey sheet, last two columns). Good as shoulder or
+  back pieces.
+- Plague Lord's spiked gauntlets (gloves) and its belt with pouches.
+- Undead 02's greaves and boots and its pauldrons (plate, but cut from a skeleton: needs a look at what lies under).
+- Wraith's fur collar mantle.
+- The pack's hoods (`SM_Chr_Attach_Hood_01-03`) are head pieces, the other agent's part.
+
+## Second pass renders
+
+All in `docs/mockups/`, retargeted game animations, medium skin tone unless the sheet says otherwise:
+
+| File | What it shows |
+| --- | --- |
+| `dark-fortress-armor-test-v2-survey.png` | Every character beside the plain game body: idle front, side, back and a run frame, plus the two loose attachments on the game body |
+| `dark-fortress-armor-test-v2-<knight, barbarian, necromancer, inquisitor, apothecary>-anim.png` | Original vs fitted male vs fitted female in the idle, run, sword attack and woodcutting chop; front, back, side and the game camera |
+| `dark-fortress-armor-test-v2-<same five>-mix.png` | The pieces worn with the game's own parts (bare body, plate set), five mixes per sex, idle and sword attack, front, game camera and back |
+| `dark-fortress-armor-test-v2-skin.png` | Barbarian, Necromancer, Apothecary in a light, a medium and a dark skin tone, male and female |
+| `dark-fortress-armor-test-v2-knight-pads.png` | Baked pauldrons vs the game's shoulder pads vs the plate set |
+| `dark-fortress-armor-test-v2-knight-seams.png` | Knight close-ups: neck (game camera, behind), shoulders, elbow, waist and knee in game frames |
+
+What I would still look at (critical review): the male MFH head's stubble band reads dark on the medium and dark
+tones in Workbench (the game draws it with `_Color_Stubble`); robe skirts in deep lunges; the Necromancer's glowing
+tabard needs the pack's emissive map in the game material.
+
+## What changed for wiring (on top of the first pass list below)
+
+- Each piece has two material slots: 0 the set's own material (Dark Fortress atlas), 1 the player's body material. The
+  equip code assigns one material per part today (`renderer.sharedMaterial`); it would need to set
+  `sharedMaterials = { item material, body material }` for pieces with a second slot (the body material is the one
+  the `_00` body parts keep).
+- Pads baked: chest items with `NoShoulderPads`, leggings with `NoKneePads`; no new pad indices.
+- Robe sets: leggings = the skirt, boots = shoes with the game's shin.
+- `export.py` writes all of this (`DF<Name>_<Sex>.fbx`, slot 1 named `PlayerBody`).
+- Time per character is unchanged (seconds of compute, 30-60 minutes of review); a robe adds the `robe` flag.
+
+## Second pass scripts
+
+`anim.py` (game clips onto the Blender rig), `skin.py` (skin slot and tone textures), `survey_v2.py`,
+`render_v2.py`, `compose_v2.py`; `cut.py` gained baked pads, robe mode, caps only on cut openings and
+`add_bare_shins`; `export.py` writes the skin slot and robes. Example:
+`blender -b --factory-startup --python tools/dark-fortress-armor/render_v2.py -- <repo> <out> SM_Chr_Inquisitor_01 anim,mix '{"robe": 1}'`,
+then `python tools/dark-fortress-armor/compose_v2.py <out> <survey out> docs/mockups`.
+
+# First pass (kept for reference; pads, poses and the candidate list are superseded above)
+
 ## Renders
 
 All in `docs/mockups/`, Workbench renders with the pack's own texture and flat shading, back faces culled:

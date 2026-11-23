@@ -20,7 +20,8 @@ import numpy as np
 
 HEAD_BONES = ("Head", "Eyes", "Eyebrows", "Jaw")
 
-DEFAULT_CUTS = {"elbow": 0.52, "wrist": 0.795, "waist": 0.90, "knee": 0.40, "arm_z": 1.12}
+DEFAULT_CUTS = {"elbow": 0.52, "wrist": 0.795, "waist": 0.90, "knee": 0.40, "arm_z": 1.12, "robe": 0}
+FOOT_BONES = ("Ankle_L", "Ankle_R", "Ball_L", "Ball_R", "Toes_L", "Toes_R")
 
 
 def dark_uv(image, max_lum=0.08):
@@ -105,9 +106,13 @@ def head_tree(lib, name="Chr_Head_Male_00"):
     return t
 
 
-def cut(lib, name, coll, cuts=None, cap_uv=None, prepare=None):
+def cut(lib, name, coll, cuts=None, cap_uv=None, prepare=None, pads="baked"):
     """Returns {region: object} for one Dark Fortress character. Regions: torso, upperarm_L/R, lowerarm_L/R, hand_L/R,
-    hips, leg_L/R, shoulder_L/R, knee_L/R (missing ones are left out)."""
+    hips, leg_L/R, and with pads="separate" also shoulder_L/R, knee_L/R (missing ones are left out).
+    pads="baked" (the default since the second pass) keeps the pauldrons in the upper arm pieces and the knee caps in
+    the hips piece: they are skinned to the clavicle and shoulder (knee: lower leg), which the game's rigid pad slots
+    (one Shoulder_Attachment bone under the clavicle, shared by both sexes) cannot do, and baked they get the female
+    fit with the rest. The items then carry NoShoulderPads / NoKneePads."""
     c = dict(DEFAULT_CUTS)
     c.update(cuts or {})
     o = to_world_mesh(lib, name, coll)
@@ -116,6 +121,10 @@ def cut(lib, name, coll, cuts=None, cap_uv=None, prepare=None):
     bm = bmesh.new()
     bm.from_mesh(o.data)
     dl, names = _weights(bm, o)
+    # edges that were open in the character itself: never capped (only what a cut opens is)
+    ob = bm.edges.layers.int.new("orig_open")
+    for e in bm.edges:
+        e[ob] = 1 if e.is_boundary else 0
 
     # 1. loose parts that are attachments of their own (pads), decided before any cutting
     region_of = {}
@@ -126,9 +135,9 @@ def cut(lib, name, coll, cuts=None, cap_uv=None, prepare=None):
         if len(isl) > 0.5 * len(bm.faces):
             continue  # the body shell
         if share(("Clavicle_" + side, "Shoulder_" + side)) > 0.9 and cen.z > 1.3 and share(("Shoulder_" + side,)) < 0.8:
-            r = "shoulder_" + side
+            r = ("upperarm_" if pads == "baked" else "shoulder_") + side
         elif share(("LowerLeg_" + side, "UpperLeg_" + side)) > 0.9 and 0.3 < cen.z < 0.55:
-            r = "knee_" + side
+            r = "hips" if pads == "baked" else "knee_" + side
         elif share(HEAD_BONES) > 0.5:
             r = "drop"
         else:
@@ -146,8 +155,9 @@ def cut(lib, name, coll, cuts=None, cap_uv=None, prepare=None):
         _bisect(bm, arm, (s * c["wrist"], 0, 0), (1, 0, 0))
     body = [f for f in free() if 0.6 < f.calc_center_median().z < 1.1 and abs(f.calc_center_median().x) < 0.4]
     _bisect(bm, body, (0, 0, c["waist"]), (0, 0, 1))
-    legs = [f for f in free() if f.calc_center_median().z < 0.62 and abs(f.calc_center_median().x) < 0.4]
-    _bisect(bm, legs, (0, 0, c["knee"]), (0, 0, 1))
+    if not c["robe"]:
+        legs = [f for f in free() if f.calc_center_median().z < 0.62 and abs(f.calc_center_median().x) < 0.4]
+        _bisect(bm, legs, (0, 0, c["knee"]), (0, 0, 1))
 
     # 3. every face to a region. The character's own neck under the collar, where the player's head mesh hides
     # it on a male, goes too: on the thinner female neck it would poke through the skin
@@ -176,6 +186,9 @@ def cut(lib, name, coll, cuts=None, cap_uv=None, prepare=None):
             r = "upperarm_" + side
         elif p.z > c["waist"]:
             r = "torso"
+        elif c["robe"]:
+            # a robe: the whole skirt is the leggings, the boots are only the shoes (the faces on the feet bones)
+            r = "leg_" + side if _face_bone_share(f, dl, names, FOOT_BONES) > 0.5 else "hips"
         elif p.z > c["knee"]:
             r = "hips"
         else:
@@ -195,7 +208,8 @@ def cut(lib, name, coll, cuts=None, cap_uv=None, prepare=None):
         bmesh.ops.delete(b2, geom=[v for v in b2.verts if not v.link_faces], context="VERTS")
         if not r.startswith(("shoulder", "knee")):
             before = set(b2.faces)
-            bmesh.ops.holes_fill(b2, edges=[e for e in b2.edges if e.is_boundary], sides=0)
+            ob2 = b2.edges.layers.int.get("orig_open")
+            bmesh.ops.holes_fill(b2, edges=[e for e in b2.edges if e.is_boundary and not e[ob2]], sides=0)
             caps = [f for f in b2.faces if f not in before]
             # the neck opening: a funnel instead of a flat lid, its tip sunk 10 cm into the chest, so the lid
             # can never cut through the player's own neck (a thin female neck showed dark specks of a flat one)
@@ -242,3 +256,58 @@ def cut(lib, name, coll, cuts=None, cap_uv=None, prepare=None):
     bm.free()
     bpy.data.objects.remove(o, do_unlink=True)
     return out
+
+
+def add_bare_shins(lib, pieces, sex, skin_mat=None, overlap=0.02):
+    """A robe's boots are only shoes (its shins are under the skirt), but the game's boots slot replaces the whole
+    lower leg: worn with other leggings the shins would be missing. So the shoes get the game's own bare shin above
+    them (the MFH base leg of that side and sex, faces above the shoe top), in material slot 1, which in the game is
+    the player's body material: the shin is the player's own skin."""
+    for side in ("L", "R"):
+        p = pieces.get("leg_" + side)
+        if not p:
+            continue
+        # the MFH base leg on this side (the male file names its legs the other way round)
+        cands = ["Chr_LegLeft_%s_00" % sex, "Chr_LegRight_%s_00" % sex]
+        want_plus = side == "L"
+        src = next(lib.mfh[c] for c in cands
+                   if (sum(v.co.x for v in lib.mfh[c].data.vertices) > 0) == want_plus)
+        top = max((p.matrix_world @ v.co).z for v in p.data.vertices)
+        bm = bmesh.new(); bm.from_mesh(p.data)
+        dl = bm.verts.layers.deform.verify()
+        uvl = bm.loops.layers.uv.active
+        tgt_groups = {g.name: g.index for g in p.vertex_groups}
+        sb = bmesh.new(); sb.from_mesh(src.data); sb.transform(src.matrix_world)
+        sdl = sb.verts.layers.deform.active
+        suv = sb.loops.layers.uv.active
+        sgn = {g.index: g.name for g in src.vertex_groups}
+        to_local = p.matrix_world.inverted()
+        vmap = {}
+        if len(p.data.materials) < 2:
+            p.data.materials.append(skin_mat or bpy.data.materials.get("SKIN") or p.data.materials[0])
+        # the shin down to the ankle (its lower faces run inside the shoe shaft, hidden), the foot itself left out
+        floor = min(top - overlap, 0.12)
+        for f in sb.faces:
+            if f.calc_center_median().z < floor:
+                continue
+            vs = []
+            for v in f.verts:
+                if v not in vmap:
+                    nv = bm.verts.new(to_local @ v.co)
+                    for gi, w in v[sdl].items():
+                        n = sgn[gi]
+                        if n not in tgt_groups:
+                            tgt_groups[n] = p.vertex_groups.new(name=n).index
+                        nv[dl][tgt_groups[n]] = w
+                    vmap[v] = nv
+                vs.append(vmap[v])
+            try:
+                nf = bm.faces.new(vs)
+            except ValueError:
+                continue
+            nf.material_index = 1
+            nf.smooth = False
+            for l, sl in zip(nf.loops, f.loops):
+                l[uvl].uv = sl[suv].uv
+        bm.to_mesh(p.data)
+        bm.free(); sb.free()
