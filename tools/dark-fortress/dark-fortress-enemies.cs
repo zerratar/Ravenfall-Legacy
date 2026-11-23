@@ -25,6 +25,13 @@ var table = new[]
     "df-wraith|Crypt Wraith|SM_Chr_Wraith_01|5|2|3.5|0.2",
     "df-grave-knight|Grave Knight|SM_Chr_Knight_01|2|0|3.5|0.1",
     "df-behemoth|Behemoth|SM_Chr_Behemoth_01|2|0|3.5|0.2",
+    // round 2 (2026-11-23): elites and the band 1 bosses
+    "df-inquisitor|Inquisitor|SM_Chr_Inquisitor_01|0|2|3.5|0.1",
+    "df-barbarian|Barbarian|SM_Chr_Barbarian_01|0|0|3.5|0.1",
+    "df-apothecary|Apothecary|SM_Chr_Apothecary_01|0|2|3.5|0.1",
+    "df-necromancer|Necromancer|SM_Chr_Necromancer_01|0|2|3.5|0.2",
+    "df-colossus|Colossus|SM_Chr_Colossus_01|2|0|3.5|0.2",
+    "df-plague-lord|Plague Lord|SM_Chr_Plague_Lord_01|2|2|3.5|0.3",
 };
 var main = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
 var all = UnityEngine.Object.FindObjectsByType<EnemyController>(UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None);

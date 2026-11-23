@@ -26,6 +26,7 @@ public class EffectHandler : MonoBehaviour
     private ProjectileMover activeArrowProjectile;
     private ProjectileMover activeMagicProjectile;
     private GameObject container;
+    private PlayerController player;
 
     private GameObject levelUpInstance;
     private DelayedDeactivate levelUpDelayedDeactivate;
@@ -128,6 +129,10 @@ public class EffectHandler : MonoBehaviour
 
     internal void ShootRangedProjectile(Transform target)
     {
+        // a cannon in the hand fires a cannonball, with its flash, smoke and boom (CannonShot), not an arrow
+        if (!player) player = GetComponent<PlayerController>();
+        if (CannonShot.TryFire(player, target)) return;
+
         var direction = target.position - gameObject.transform.position;
         var rotation = Quaternion.LookRotation(direction);
 

@@ -431,7 +431,7 @@ foreach (var m in models)
 }
 
 // the Dark Fortress dead (docs/dark-fortress-design.md): prefabs of tools/dark-fortress/dark-fortress-enemies.cs
-foreach (var dfId in new[] { "df-undead", "df-undead-soldier", "df-corpse", "df-wraith", "df-grave-knight", "df-behemoth" })
+foreach (var dfId in new[] { "df-undead", "df-undead-soldier", "df-corpse", "df-wraith", "df-grave-knight", "df-behemoth", "df-inquisitor", "df-necromancer", "df-colossus" })
 {
     var dfPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/World/Enemies/DarkFortress/" + dfId + ".prefab");
     if (!dfPrefab) { log.AppendLine("no prefab for " + dfId + " (run tools/dark-fortress/dark-fortress-enemies.cs)"); continue; }

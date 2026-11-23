@@ -396,6 +396,18 @@ foreach (var m in models)
     log.AppendLine("template " + m + " from " + source.name + " scale " + source.transform.lossyScale.x.ToString("0.00"));
 }
 
+// the Dark Fortress (docs/dark-fortress-design.md): prefabs of tools/dark-fortress/dark-fortress-enemies.cs
+foreach (var dfId in new[] { "df-barbarian" })
+{
+    var dfPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/World/Enemies/DarkFortress/" + dfId + ".prefab");
+    if (!dfPrefab) { log.AppendLine("no prefab for " + dfId + " (run tools/dark-fortress/dark-fortress-enemies.cs)"); continue; }
+    var dfCopy = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(dfPrefab, scene);
+    dfCopy.name = dfId;
+    dfCopy.transform.SetParent(templates, false);
+    dfCopy.transform.localPosition = UnityEngine.Vector3.zero;
+    dfCopy.transform.localRotation = UnityEngine.Quaternion.identity;
+}
+
 // ---- navmesh: the floor's own ----
 var surface = root.AddComponent<Unity.AI.Navigation.NavMeshSurface>();
 surface.agentTypeID = 0;

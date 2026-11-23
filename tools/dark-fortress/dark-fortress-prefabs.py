@@ -36,7 +36,15 @@ W = [
     ("DF Cannon 01", "Cannon_01", "bow", 0.8, None),
 ]
 # hand set: name|lp|euler|scale|offset (empty keeps the kind's). The cannon points along the arm when the bow is drawn.
-over = {"DF Cannon 01": ["DF Cannon 01", "", "7.916,290.111,29.916", ""]}
+over = {
+    "DF Cannon 01": ["DF Cannon 01", "", "7.916,290.111,29.916", ""],
+    # shields (round 2, 2026-11-23): the reference rotation turned 90 degrees about the forearm so the face is in front
+    # of the arm, and moved out along the face (and down the kite) so the hand holds it from behind, not through it
+    # the crescent guard stands up and down, so it does not cut into the thigh in the idle
+    "DF Sword 03": ["DF Sword 03", "", "340.918,95.319,254.105", ""],
+    "DF Shield 02": ["DF Shield 02", "", "0.0,354.161,270.0", "0.75", "0,-0.12,0.1"],
+    "DF Shield 01": ["DF Shield 01", "", "0.0,354.161,270.0", "0.72", "0,-0.1,0.06"],
+}
 # the head pieces: the pack's attachments at the Head bone's place (from the game's Head_Attachment), scale 1; the
 # Colossus's are made for a tilted head and are not used
 HEADS = ["Helmet_02", "Helmet_03", "Helmet_06", "Helmet_07", "Helmet_08", "Helmet_09", "Crown_01", "Crown_02", "Crown_03",

@@ -2,14 +2,15 @@
 //
 // Puts the Dark Fortress enemies (tools/dark-fortress/dark-fortress-enemies.cs) into the tower layouts' hidden
 // templates, as prefab instances, so RavenNest.Combat.Tower's floors that name them ("df-undead", "df-behemoth")
-// find their looks: the crypt (floors 4, 7, 9, 10) and the marsh (3, 8). Each scene is opened next to the open one,
+// find their looks: the crypt (floors 4, 7, 9, 10), the marsh (3, 8) and the overgrown halls (1, 2, 5, 6). Each scene is opened next to the open one,
 // changed, saved and closed; the open scene is not touched. A template of the same name is replaced, so it can run
-// again. The crypt and marsh builders add the same templates when they rebuild their scenes.
+// again. The crypt, marsh and overgrown builders add the same templates when they rebuild their scenes.
 var log = new System.Text.StringBuilder();
 var jobs = new[]
 {
-    ("Assets/Scenes/Tower/Tower_Crypt.unity", new[] { "df-undead", "df-undead-soldier", "df-corpse", "df-wraith", "df-grave-knight", "df-behemoth" }),
-    ("Assets/Scenes/Tower/Tower_Marsh.unity", new[] { "df-plague" }),
+    ("Assets/Scenes/Tower/Tower_Crypt.unity", new[] { "df-undead", "df-undead-soldier", "df-corpse", "df-wraith", "df-grave-knight", "df-behemoth", "df-inquisitor", "df-necromancer", "df-colossus" }),
+    ("Assets/Scenes/Tower/Tower_Marsh.unity", new[] { "df-plague", "df-plague-lord", "df-apothecary" }),
+    ("Assets/Scenes/Tower/Tower_Overgrown.unity", new[] { "df-barbarian" }),
 };
 foreach (var (scenePath, ids) in jobs)
 {

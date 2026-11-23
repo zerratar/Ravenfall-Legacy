@@ -3,8 +3,11 @@ abyssal-fortress-helm|Assets/Resources/Character/Appearance/Head/DarkFortress/DF
 archmage-lich-crown|Assets/Resources/Character/Appearance/Head/DarkFortress/DF Mask 01.prefab|head
 archon-closed-helm|Assets/Resources/Character/Appearance/Head/DarkFortress/DF Helmet 07.prefab|head
 batwing-staff|Assets/Resources/Character/Weapons/DarkFortress/DF Staff 01.prefab|weapon
+blightbone-staff|Assets/Resources/Character/Weapons/DarkFortress/DF Staff 02.prefab|weapon
 bloodsworn-kettle-helm|Assets/Resources/Character/Appearance/Head/DarkFortress/DF Helmet 02.prefab|head
+bonewhistle-staff|Assets/Resources/Character/Weapons/DarkFortress/DF Staff 01.prefab|weapon
 champion-kettle-helm|Assets/Resources/Character/Appearance/Head/DarkFortress/DF Helmet 02.prefab|head
+colossus-cleaver|Assets/Resources/Character/Weapons/DarkFortress/DF Sword 02.prefab|weapon
 demonhunter-inquisitor-helm|Assets/Resources/Character/Appearance/Head/DarkFortress/DF Helmet 09.prefab|head
 dreadforged-battleaxe|Assets/Resources/Character/Weapons/DarkFortress/DF Axe 01.prefab|weapon
 dreadforged-cleaver|Assets/Resources/Character/Weapons/DarkFortress/DF Sword 02.prefab|weapon
@@ -14,11 +17,11 @@ dreadforged-staff|Assets/Resources/Character/Weapons/DarkFortress/DF Staff 02.pr
 dreadforged-sword|Assets/Resources/Character/Weapons/DarkFortress/DF Sword 03.prefab|weapon
 exemplar-closed-helm|Assets/Resources/Character/Appearance/Head/DarkFortress/DF Helmet 07.prefab|head
 fortress-hand-cannon|Assets/Resources/Character/Weapons/DarkFortress/DF Cannon 01.prefab|bow
-gardeners-bonesaw|Assets/Resources/Character/Weapons/DarkFortress/DF Saw 01.prefab|weapon
 godslayer-kettle-helm|Assets/Resources/Character/Appearance/Head/DarkFortress/DF Helmet 02.prefab|head
 gravebloom-warhammer|Assets/Resources/Character/Weapons/DarkFortress/DF Hammer 01.prefab|weapon
 grinning-skull|Assets/Resources/Character/Appearance/Head/DarkFortress/DF Mask 04.prefab|head
 hellhorn-mace|Assets/Resources/Character/Weapons/DarkFortress/DF Mace 01.prefab|weapon
+keepward-shield|Assets/Resources/Character/Weapons/DarkFortress/DF Shield 01.prefab|shield
 lightsworn-closed-helm|Assets/Resources/Character/Appearance/Head/DarkFortress/DF Helmet 07.prefab|head
 nightlord-fortress-helm|Assets/Resources/Character/Appearance/Head/DarkFortress/DF Helmet 06.prefab|head
 nightwatch-inquisitor-helm|Assets/Resources/Character/Appearance/Head/DarkFortress/DF Helmet 09.prefab|head
@@ -26,6 +29,7 @@ plague-mitre|Assets/Resources/Character/Appearance/Head/DarkFortress/DF Crown 02
 protector-closed-helm|Assets/Resources/Character/Appearance/Head/DarkFortress/DF Helmet 07.prefab|head
 ravager-antler-crown|Assets/Resources/Character/Appearance/Head/DarkFortress/DF Crown 03.prefab|head
 reaver-kettle-helm|Assets/Resources/Character/Appearance/Head/DarkFortress/DF Helmet 02.prefab|head
+rotbelly-bonesaw|Assets/Resources/Character/Weapons/DarkFortress/DF Saw 01.prefab|weapon
 rotreaper|Assets/Resources/Character/Weapons/DarkFortress/DF Scythe 01.prefab|weapon
 skullcrusher|Assets/Resources/Character/Weapons/DarkFortress/DF Club 01.prefab|weapon
 soulreaver|Assets/Resources/Character/Weapons/DarkFortress/DF Sword 01.prefab|weapon

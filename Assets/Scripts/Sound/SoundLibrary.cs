@@ -61,6 +61,8 @@ public enum SoundKind
     // the Ravebridge shop
     Purchase,
     Sell,
+    // the Fortress Hand Cannon (docs/dark-fortress-design.md): made from the pack's thunder and rock impact
+    CannonShot,
 }
 
 /// <summary>
