@@ -23,15 +23,55 @@ if (UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode) return "not in 
 if (System.IO.File.Exists(donePath)) System.IO.File.Delete(donePath);
 var log = new System.Text.StringBuilder();
 
-// the sets, and the colorway each tier wears: the part's name gets the colorway ("Chr_Torso_Male_DFKnight_01B")
-var sets = new[] { "DFKnight", "DFBarbarian", "DFNecromancer" };
+const string MatDir = "Assets/Synty/PolygonDarkFortress/Materials/Alts/PolygonDarkFortress_Mat_";
+// the sets, and what each of their parts wears: "<suffix>=<material>". The part's name gets the suffix
+// ("Chr_Torso_Male_DFKnight_01B"), which never changes, so the indices stay; the material is a colorway of the pack
+// ("01A": PolygonDarkFortress_Mat_01_A) or a tinted one of ours (a name: DFArmor_<name>.mat in MaterialDir, made below
+// from tools/dark-fortress-armor/colorways.py's textures; docs/dark-fortress-armor-test.md, "Color pass").
+var sets = new[] { "DFKnight", "DFBarbarian", "DFNecromancer",
+    // the single pieces (dump_singles.py, in the files DFSingles_<sex>.json)
+    "DFGuard", "DFFurMantle", "DFUndeadPauldron", "DFWraithCollar", "DFPlagueLord", "DFUndead" };
 var colorways = new System.Collections.Generic.Dictionary<string, string[]>
 {
-    { "DFKnight", new[] { "01B", "01A" } },      // Dark Knight tier 7 (Voidknight: violet), tier 8 (Abyssal)
-    { "DFBarbarian", new[] { "02A", "01A" } },   // Barbarian tier 7 (Stormborn: blue), tier 8
-    { "DFNecromancer", new[] { "01B", "01A" } }, // Mage tier 7 (Voidweaver: violet), tier 8 (Starcaller)
+    { "DFKnight", new[] { "01B=Voidknight", "01A=01A" } },        // Dark Knight tier 7 (Voidknight: violet plate), tier 8 (Abyssal)
+    { "DFBarbarian", new[] { "02A=Stormborn", "01A=01A" } },      // Barbarian tier 7 (Stormborn: storm grey), tier 8 (Worldbreaker)
+    { "DFNecromancer", new[] { "01B=Voidweaver", "01A=01A" } },   // Mage tier 7 (Voidweaver: violet glow), tier 8 (Starcaller: green)
+    { "DFGuard", new[] { "01A=01A" } }, { "DFFurMantle", new[] { "01A=01A" } }, { "DFUndeadPauldron", new[] { "01A=01A" } },
+    { "DFWraithCollar", new[] { "01A=01A" } }, { "DFPlagueLord", new[] { "01A=01A" } }, { "DFUndead", new[] { "01A=01A" } },
 };
-const string MatDir = "Assets/Synty/PolygonDarkFortress/Materials/Alts/PolygonDarkFortress_Mat_";
+// our tinted materials: name -> (the pack's material they start from, albedo, emissive or null)
+const string MaterialDir = "Assets/World/DarkFortressArmor/Materials";
+const string TextureDir = "Assets/World/DarkFortressArmor/Textures";
+var tinted = new System.Collections.Generic.Dictionary<string, string[]>
+{
+    { "Voidknight", new[] { "01_A", "DFArmor_Voidknight_Albedo", null } },
+    { "Stormborn", new[] { "02_A", "DFArmor_Stormborn_Albedo", null } },
+    { "Voidweaver", new[] { "01_B", "DFArmor_Voidweaver_Albedo", "DFArmor_Voidweaver_Emissive" } },
+};
+UnityEngine.Material MaterialOf(string spec)
+{
+    if (spec.Length == 3 && char.IsDigit(spec[0]))
+        return UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(MatDir + spec.Substring(0, 2) + "_" + spec.Substring(2) + ".mat");
+    if (!tinted.TryGetValue(spec, out var t)) return null;
+    var path = MaterialDir + "/DFArmor_" + spec + ".mat";
+    var mat = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(path);
+    if (!mat)
+    {
+        if (!UnityEditor.AssetDatabase.IsValidFolder(MaterialDir)) UnityEditor.AssetDatabase.CreateFolder("Assets/World/DarkFortressArmor", "Materials");
+        UnityEditor.AssetDatabase.CopyAsset(MatDir + t[0] + ".mat", path);
+        mat = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(path);
+    }
+    UnityEngine.Texture Tex(string n) { var tp = TextureDir + "/" + n + ".png"; UnityEditor.AssetDatabase.ImportAsset(tp); return UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Texture>(tp); }
+    var albedo = Tex(t[1]);
+    foreach (var prop in new[] { "_Albedo_Map", "_BaseMap", "_MainTex" }) if (mat.HasProperty(prop)) mat.SetTexture(prop, albedo);
+    if (t[2] != null)
+    {
+        var glow = Tex(t[2]);
+        foreach (var prop in new[] { "_Emission_Map", "_EmissionMap" }) if (mat.HasProperty(prop)) mat.SetTexture(prop, glow);
+    }
+    UnityEditor.EditorUtility.SetDirty(mat);
+    return mat;
+}
 const string BodyMat = "Assets/PolygonFantasyHeroCharacters/Materials/FantasyHero.mat";
 const string MeshDir = "Assets/World/DarkFortressArmor/Meshes";
 var prefabs = new[] { "Assets/Prefabs/Player.prefab", "Assets/Prefabs/Player Appearance Items.prefab", "Assets/Prefabs/Item Display.prefab" };
@@ -74,7 +114,7 @@ float F(object o) => (float)(double)o;
 // ---- the data (read in the first editor frames: the JSON is ~10 MB) --------------------------------------------------
 var data = new System.Collections.Generic.List<System.Collections.Generic.Dictionary<string, object>>();
 var files = new System.Collections.Generic.List<string>();
-foreach (var set in sets)
+foreach (var set in new[] { "DFKnight", "DFBarbarian", "DFNecromancer", "DFSingles" })
 {
     foreach (var sex in new[] { "Male", "Female" })
     {
@@ -242,7 +282,7 @@ foreach (var prefabPath in prefabs)
             var arrays = new[] { "maleTorso", "femaleTorso", "maleArmUpperRight", "maleArmUpperLeft", "femaleArmUpperRight",
                 "femaleArmUpperLeft", "maleArmLowerRight", "maleArmLowerLeft", "femaleArmLowerRight", "femaleArmLowerLeft",
                 "maleHandsRight", "maleHandsLeft", "femaleHandsRight", "femaleHandsLeft", "maleHips", "femaleHips",
-                "maleLegsRight", "maleLegsLeft", "femaleLegsRight", "femaleLegsLeft" };
+                "maleLegsRight", "maleLegsLeft", "femaleLegsRight", "femaleLegsLeft", "shoulderPadsLeft", "shoulderPadsRight" };
             var prefixArray = new System.Collections.Generic.Dictionary<string, string>();
             foreach (var a in arrays)
             {
@@ -287,11 +327,12 @@ foreach (var prefabPath in prefabs)
             var report = new System.Text.StringBuilder();
             foreach (var set in sets)
             {
-                for (int tier = 0; tier < 2; tier++)
+                for (int tier = 0; tier < colorways[set].Length; tier++)
                 {
-                    var cw = colorways[set][tier];
-                    var mat = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(MatDir + cw.Substring(0, 2) + "_" + cw.Substring(2) + ".mat");
-                    if (!mat) { log.AppendLine("no material " + cw); continue; }
+                    var spec = colorways[set][tier].Split('=');
+                    var cw = spec[0];
+                    var mat = MaterialOf(spec[1]);
+                    if (!mat) { log.AppendLine("no material " + colorways[set][tier]); continue; }
                     foreach (var kv in meshes)
                     {
                         if (!kv.Key.EndsWith("_" + set)) continue;
@@ -331,7 +372,9 @@ foreach (var prefabPath in prefabs)
                         var binds = new UnityEngine.Matrix4x4[names.Length];
                         for (int k = 0; k < names.Length; k++)
                         {
-                            if (!boneByName.TryGetValue(names[k], out bones[k])) { log.AppendLine(partName + ": no bone " + names[k]); continue; }
+                            // the pack's Jaw (a few fur mantle corners lean on it) is the head's in the game's rig
+                            if (!boneByName.TryGetValue(names[k], out bones[k]) && !(names[k] == "Jaw" && boneByName.TryGetValue("Head", out bones[k])))
+                            { log.AppendLine(partName + ": no bone " + names[k]); continue; }
                             if (!bindOf.TryGetValue(bones[k], out binds[k]))
                             {
                                 // a bone no MFH part is skinned to: its bind pose from the prefab's rest

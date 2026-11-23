@@ -195,6 +195,12 @@ def cut(lib, name, coll, cuts=None, cap_uv=None, prepare=None, pads="baked"):
             r = "leg_" + side
         region_of[f] = r
 
+    return build_pieces(lib, o, bm, region_of, name, coll, cap_uv)
+
+
+def build_pieces(lib, o, bm, region_of, name, coll, cap_uv, cap=True):
+    """One object per region of region_of (face -> region; "drop" and missing faces are left out), openings a cut
+    made capped (cap=False: none), the shape keys of o carried as lists ("female", "male"); frees bm and o."""
     # 4. one object per region, openings capped
     out = {}
     uv_cap = cap_uv
@@ -206,7 +212,7 @@ def cut(lib, name, coll, cuts=None, cap_uv=None, prepare=None, pads="baked"):
         keep = {f.index for f in bm.faces if region_of.get(f) == r}
         bmesh.ops.delete(b2, geom=[f for f in b2.faces if f.index not in keep], context="FACES")
         bmesh.ops.delete(b2, geom=[v for v in b2.verts if not v.link_faces], context="VERTS")
-        if not r.startswith(("shoulder", "knee")):
+        if cap and not r.startswith(("shoulder", "knee")):
             before = set(b2.faces)
             ob2 = b2.edges.layers.int.get("orig_open")
             bmesh.ops.holes_fill(b2, edges=[e for e in b2.edges if e.is_boundary and not e[ob2]], sides=0)

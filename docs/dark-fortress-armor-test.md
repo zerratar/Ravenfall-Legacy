@@ -16,6 +16,59 @@ Not done in this test: the Unity editor check (step 6). The editor-busy flag was
 weapons, helmets and characters into gear and enemies, and stayed set for the whole test, so nothing was imported or
 previewed in Unity. The FBX export was verified by a round trip in Blender instead (see Method step 6).
 
+# Color pass and single pieces (2026-11-23, approved: "yes do the color pass and the single pieces")
+
+## Color pass
+
+Tier 7 and tier 8 of a set have to read as different tiers at stream distance; the pack's own colorways did not do
+that (Voidknight's 01_B violet barely showed, Voidweaver's tabard glowed white like a lamp). Where no colorway of the
+pack reads clearly, the tier gets a tinted copy of the atlas (`tools/dark-fortress-armor/colorways.py`, Pillow, into
+`Assets/World/DarkFortressArmor/Textures`; `armor-sets.cs` makes `DFArmor_<name>.mat` from the pack's material with
+them; the part names keep their old suffix so the indices stay):
+
+| Tier | Before | Now |
+| --- | --- | --- |
+| Voidknight (Dark Knight 7) | pack 01_B, a hint of violet | the plate a deep violet (every grey of 01_A, luminance kept) |
+| Abyssal (Dark Knight 8) | pack 01_A | unchanged: the Knight's own dark steel |
+| Stormborn (Barbarian 7) | pack 02_A, blue trim on brown leather | the leather and fur a cold storm grey, the blue trim kept |
+| Worldbreaker (Barbarian 8) | pack 01_A | unchanged: brown leather, green trim |
+| Voidweaver (Mage 7) | pack 01_B, white glow | the tabard, runes and their glow violet (albedo and emissive map, where the emissive is lit) |
+| Starcaller (Mage 8) | pack 01_A | unchanged: green glow |
+
+The website export picks the tinted textures up from the materials (`textures/df-dfarmor_*.jpg`).
+`docs/mockups/dark-fortress-armor-colors.png`: the six looks side by side, male and female, at the game camera.
+
+## Single pieces
+
+| Piece | Source | Became | On | Index |
+| --- | --- | --- | --- | --- |
+| Plate shoulder guards | `SM_Chr_Attach_Armor_01` (two loose guards) | shoulder pads, skinned to clavicle and shoulder as the pack has them | Melee Hauberk tiers 7-8 (were pad 8, as at tiers 4-6 with another) | pads 21 |
+| Fur mantle | `SM_Chr_Attach_Fur_01` | shoulder pads (split at the middle into its two sides; always worn together) | Beastmaster Hide Vest 7-8 (were pad 8) | pads 22 |
+| Spiked pauldrons | Undead 02 (loose parts, clean) | shoulder pads | Rogue Tunic 7-8 (had none: the tunic's mask drops NoShoulderPads there) | pads 23 |
+| Mossy fur collar with skulls | Wraith (cut out of its robe: the light moss, fur and bone faces around the neck, not its head) | shoulder pads, split at the middle | Witch Hunter Coat 7-8 (had none: NoShoulderPads dropped there) | pads 24 |
+| Spiked bracers | Plague Lord (the cut, male bulk, female fit) | lower arms; the line's own glove hand stays | Witch Hunter Gloves 7-8 | lower arms 25 |
+| Spiked boots and greaves | Undead 02 (loose parts; the skeleton's glowing shin and the knee shards left out) | legs, with the game's own bare shin above the boot in the player's skin (as the robes' shoes), male bulk, female fit | Rogue Boots 7-8 | legs 26 |
+| Pouch belt | Plague Lord | **not taken**: it is a ring of pustules on its belly over an iron corset band, not pouches; as a belt it would hang a rotten gut on the player | - | - |
+
+The pads are one pair for both sexes like the game's own, 20 % bigger than the pack's and 1.5 cm further out (the pack's
+bodies are slim). All are drawn with the pack's 01_A material (own material: `_DF` in their name), so they keep their
+look on any tier color. 0.9.6 games read the old ids in the old positions (the new parts are tokens of -1000 and less,
+as for the sets): they see tier 6's look. Every piece is a look of an existing item, so transmog takes it like any
+other. Made by `tools/dark-fortress-armor/dump_singles.py` (JSON `DFSingles_<sex>.json`, with `render` a check
+picture), put on the prefabs by the same `armor-sets.cs` (rerun it after `dump_sets.py` and `dump_singles.py`).
+
+Pictures: `docs/mockups/dark-fortress-single-pieces-*.png` (worn in idle, sword attack and run, from behind, and mixed
+with other gear, male and female).
+
+Verified through the real equip code in the editor (`class-gear-preview.cs` with the game's clips; not in play mode
+this time): every piece on male and female, the six colors at the game camera, mixed with Rune plate and the Dark
+Fortress sets; the server's rows after a restart (the new model ids and masks), the 30 icons of the affected items,
+and the website figure (`/dev/gear-preview?wear=Voidknight`, `Voidweaver`, `Godslayer`, `Vanquisher`). Judged: the
+three tier 7 colors read as their own tier at the game camera; the Voidweaver glow is a pale violet next to
+Starcaller's green (it reads lavender through the bloom; fine at stream distance); the Undead pauldrons are dark on
+the Rogue's dark tunic and read mostly by their spikes; the collar sits high, over the Witch Hunter coat's own collar,
+as intended. Not verified: owning and equipping one with `!equip` on a live session.
+
 # Wired in (2026-11-23): the Knight, Barbarian and Necromancer as class gear looks
 
 The owner approved wiring the armor in ("yes go ahead when the editor is free"). Three sets are now real, wearable
@@ -58,8 +111,8 @@ MFH meshes' space by matching the MFH male torso (and left from right by the han
 own bones by name (the right hand's fingers are `Finger_01 1` in the prefab) with the MFH parts' own bind poses, and
 appends the parts to the arrays of `Player`, `Player Appearance Items` and `Item Display` (a rerun updates them in
 place, so the indices never move). Each part has the colorway's material of the pack and, when it shows skin, a
-second submesh with `FantasyHero.mat`. To redo: `blender -b --factory-startup --python tools/dark-fortress-armor/dump_sets.py -- <repo> <repo>/Temp/dark-fortress-armor`,
-then `unity command eval_file --file tools/dark-fortress-armor/armor-sets.cs`, then the icons
+second submesh with `FantasyHero.mat`. To redo: `python tools/dark-fortress-armor/colorways.py <repo>`, `blender -b --factory-startup --python tools/dark-fortress-armor/dump_sets.py -- <repo> <repo>/Temp/dark-fortress-armor`
+and the same with `dump_singles.py`, then `unity command eval_file --file tools/dark-fortress-armor/armor-sets.cs`, then the icons
 (`tools/items/class-gear-icons.cs` with `only=abyssal` etc.) and the website export.
 
 ## The code change: the skin slot and the pack's own material

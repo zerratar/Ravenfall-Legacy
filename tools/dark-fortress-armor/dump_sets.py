@@ -19,9 +19,10 @@ import fit as F
 import skin as S
 import male_bulk as M
 
-argv = sys.argv[sys.argv.index("--") + 1:]
-repo, out = argv[0], argv[1]
-os.makedirs(out, exist_ok=True)
+if __name__ == "__main__":
+    argv = sys.argv[sys.argv.index("--") + 1:]
+    repo, out = argv[0], argv[1]
+    os.makedirs(out, exist_ok=True)
 
 SETS = {"Knight": "SM_Chr_Knight_01", "Barbarian": "SM_Chr_Barbarian_01", "Necromancer": "SM_Chr_Necromancer_01"}
 KIND = {"torso": "Torso", "upperarm": "ArmUpper", "lowerarm": "ArmLower", "hand": "Hand", "hips": "Hips", "leg": "Leg"}
@@ -75,24 +76,25 @@ def dump_piece(o, name):
             "weights": weights}
 
 
-for short, char in SETS.items():
-    L.reset()
-    lib = L.Library(repo)
-    pieces = C.cut(lib, char, lib.src, cap_uv=C.dark_uv(bpy.data.images[os.path.basename(L.DF_TEX)]),
-                   prepare=lambda o: (F.add_female_key(lib, o), M.add_male_key(lib, o)))
-    fem, _ = F.morph_female(lib, pieces, lib.src)
-    # the male pieces get the male bulk (male_bulk.py); the female ones keep the female fit
-    M.apply_male(pieces)
-    body_slot = L.flat_material("PlayerBody", (0.8, 0.6, 0.5))
-    box, texel = S.skin_uv_box(repo), S.mfh_skin_texel(repo, lib)
-    for sex, set_ in (("Male", pieces), ("Female", fem)):
-        parts = []
-        for region, p in sorted(set_.items()):
-            S.split_skin(p, box, body_slot, texel)
-            parts.append(dump_piece(p, part_name(lib, region, sex, short)))
-        ref = lib.mfh["Chr_Torso_Male_00"]
-        refpts = [round(c, 6) for v in ref.data.vertices for c in (ref.matrix_world @ v.co)]
-        path = os.path.join(out, "DF%s_%s.json" % (short, sex))
-        json.dump({"set": "DF" + short, "sex": sex, "parts": parts, "reference": refpts}, open(path, "w"))
-        print("WROTE", path, [(p["name"], len(p["verts"]) // 3, len(p["sub"][1]) // 3) for p in parts])
-print("DONE")
+if __name__ == "__main__":
+    for short, char in SETS.items():
+        L.reset()
+        lib = L.Library(repo)
+        pieces = C.cut(lib, char, lib.src, cap_uv=C.dark_uv(bpy.data.images[os.path.basename(L.DF_TEX)]),
+                       prepare=lambda o: (F.add_female_key(lib, o), M.add_male_key(lib, o)))
+        fem, _ = F.morph_female(lib, pieces, lib.src)
+        # the male pieces get the male bulk (male_bulk.py); the female ones keep the female fit
+        M.apply_male(pieces)
+        body_slot = L.flat_material("PlayerBody", (0.8, 0.6, 0.5))
+        box, texel = S.skin_uv_box(repo), S.mfh_skin_texel(repo, lib)
+        for sex, set_ in (("Male", pieces), ("Female", fem)):
+            parts = []
+            for region, p in sorted(set_.items()):
+                S.split_skin(p, box, body_slot, texel)
+                parts.append(dump_piece(p, part_name(lib, region, sex, short)))
+            ref = lib.mfh["Chr_Torso_Male_00"]
+            refpts = [round(c, 6) for v in ref.data.vertices for c in (ref.matrix_world @ v.co)]
+            path = os.path.join(out, "DF%s_%s.json" % (short, sex))
+            json.dump({"set": "DF" + short, "sex": sex, "parts": parts, "reference": refpts}, open(path, "w"))
+            print("WROTE", path, [(p["name"], len(p["verts"]) // 3, len(p["sub"][1]) // 3) for p in parts])
+    print("DONE")

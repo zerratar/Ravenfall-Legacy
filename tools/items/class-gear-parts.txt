@@ -81,7 +81,7 @@ Melee  | HeadCovering | Coif       | 11,8           | 11,8           | Hair, Ear
 Melee  | HeadCovering | Coif       | 11,7           | 11,7           | Hair, Ears                  | 6-8
 Melee  | Chest        | Hauberk    | 17,13,19,0     | 17,13,19,0     | NoElbowPads                 | 1-3
 Melee  | Chest        | Hauberk    | 17,9,19,0      | 17,9,19,0      | NoElbowPads                 | 4-6
-Melee  | Chest        | Hauberk    | 17,8,19,0,3    | 17,8,19,0,3    | NoElbowPads                 | 7-8
+Melee  | Chest        | Hauberk    | 17,8,19,0,3,-2021 | 17,8,19,0,3,-2021 | NoElbowPads              | 7-8
 Melee  | Gloves       | Gauntlets  | 5,17           | 5,17           | None                        |
 Melee  | Leggings     | Tassets    | 10             | 10             | None                        | 1
 Melee  | Leggings     | Tassets    | 10,10,0        | 10,10,0        | NoKneePads                  | 2-3
@@ -107,13 +107,15 @@ Tank   | Boots        | Sabatons   | 13             | 13             | None     
 Rogue       | HeadCovering | Hood        | 12             | 12             | Hair, Ears                  |
 Rogue       | Mask         | Mask        | 3              | 3              | Beard                       |
 Rogue       | Chest        | Tunic       | 7,20,2,0       | 7,20,2,0       | NoShoulderPads, NoElbowPads | 1-5
-Rogue       | Chest        | Tunic       | 7,20,2,0,5     | 7,20,2,0,5     | NoShoulderPads, NoElbowPads | 6-8
+Rogue       | Chest        | Tunic       | 7,20,2,0,5     | 7,20,2,0,5     | NoShoulderPads, NoElbowPads | 6
+Rogue       | Chest        | Tunic       | 7,20,2,0,5,-2023 | 7,20,2,0,5,-2023 | NoElbowPads               | 7-8
 Rogue       | Gloves       | Gloves      | 4,8            | 4,8            | None                        |
 Rogue       | Leggings     | Breeches    | 24             | 24             | None                        | 1
 Rogue       | Leggings     | Breeches    | 24,10,5        | 24,10,5        | NoKneePads                  | 2
 Rogue       | Leggings     | Breeches    | 24,2,5         | 24,2,5         | None                        | 3
 Rogue       | Leggings     | Breeches    | 24,2,5,9       | 24,2,5,9       | None                        | 4-8
-Rogue       | Boots        | Boots       | 18             | 18             | None                        |
+Rogue       | Boots        | Boots       | 18             | 18             | None                        | 1-6
+Rogue       | Boots        | Boots       | 18,-1026       | 18,-1026       | None                        | 7-8
 Barbarian   | HeadCovering | Bear Hood   | 8              | 8              | Hair, Ears                  | 1-5
 Barbarian   | HeadCovering | Bear Hood   | 8,6            | 8,6            | Hair, Ears                  | 6-8
 Barbarian   | HeadCovering | Wolf Hood   | 9              | 9              | Hair, Ears                  | 1-5
@@ -184,8 +186,10 @@ WitchHunter | Hat          | Buckle Hat  | 8,12           | 8,12           | Non
 WitchHunter | Hat          | Buckle Hat  | 8,9            | 8,9            | None                        | 6-8
 WitchHunter | Helmet       | Plague Mask | 0              | 0              | All                         |
 WitchHunter | Chest        | Coat        | 4,20,18,0      | 4,20,18,0      | NoShoulderPads, NoElbowPads | 1-5
-WitchHunter | Chest        | Coat        | 4,20,18,0,8    | 4,20,18,0,8    | NoShoulderPads, NoElbowPads | 6-8
-WitchHunter | Gloves       | Gloves      | 1,14           | 1,14           | None                        |
+WitchHunter | Chest        | Coat        | 4,20,18,0,8    | 4,20,18,0,8    | NoShoulderPads, NoElbowPads | 6
+WitchHunter | Chest        | Coat        | 4,20,18,0,8,-2024 | 4,20,18,0,8,-2024 | NoElbowPads               | 7-8
+WitchHunter | Gloves       | Gloves      | 1,14           | 1,14           | None                        | 1-6
+WitchHunter | Gloves       | Gloves      | 1,14,-2025     | 1,14,-2025     | None                        | 7-8
 WitchHunter | Leggings     | Coat Skirt  | 5              | 5              | None                        | 1
 WitchHunter | Leggings     | Coat Skirt  | 5,10,1         | 5,10,1         | NoKneePads                  | 2-3
 WitchHunter | Leggings     | Coat Skirt  | 5,10,1,10      | 5,10,1,10      | NoKneePads                  | 4-8
@@ -209,7 +213,8 @@ Beastmaster | HeadCovering | Pelt Hood      | 9,11           | 9,11           | 
 Beastmaster | HeadCovering | Pelt Hood      | 9,3            | 9,3            | Hair, Ears                  | 6-8
 Beastmaster | Chest        | Hide Vest      | 12,20,5,0      | 12,20,5,0      | NoShoulderPads, NoElbowPads | 1-2
 Beastmaster | Chest        | Hide Vest      | 12,0,5,0       | 12,0,5,0       | NoElbowPads                 | 3-5
-Beastmaster | Chest        | Hide Vest      | 12,8,5,0,3     | 12,8,5,0,3     | NoElbowPads                 | 6-8
+Beastmaster | Chest        | Hide Vest      | 12,8,5,0,3     | 12,8,5,0,3     | NoElbowPads                 | 6
+Beastmaster | Chest        | Hide Vest      | 12,8,5,0,3,-2022 | 12,8,5,0,3,-2022 | NoElbowPads               | 7-8
 Beastmaster | Gloves       | Handler Gloves | 6,16           | 6,16           | None                        |
 Beastmaster | Leggings     | Hide Breeches  | 27             | 27             | None                        | 1
 Beastmaster | Leggings     | Hide Breeches  | 27,10,11       | 27,10,11       | NoKneePads                  | 2-3
