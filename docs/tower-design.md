@@ -574,7 +574,7 @@ The Legendary weapons (docs/legendary-design.md) ask for a clear of floor 21 or 
 achievement's highest floor, per character), and the boss of floor 21 and up is their best source: 4% a qualifying
 fighter on the stream's clear, against 0.25% for a heroic dungeon and 0.1% for a raid. Every tower clear also counts a
 boss kill toward awakening a worn Legendary. The line is a constant (21), not "the top band", so band 4 does not lock
-anyone out when it comes.
+anyone out when it comes. **When band 4 ships, raise it** (`Legendary.TowerFloor`; on the release checklist).
 
 ## 21. Band 4 concepts, the Dark Fortress (2026-11-23)
 

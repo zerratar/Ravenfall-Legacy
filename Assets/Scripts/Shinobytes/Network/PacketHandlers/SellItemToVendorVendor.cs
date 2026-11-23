@@ -42,6 +42,13 @@ public class SellItemToVendorVendor : ChatBotCommandHandler<string>
             return;
         }
 
+        // a Legendary is never sold (the server refuses it too): its awakening would go with it for a coin
+        if (global::RavenNest.Combat.Legendary.IsLegendary(item.Item.Id))
+        {
+            client.SendReply(gm, Localization.MSG_LEGENDARY_NO_SELL, item.Item.Name);
+            return;
+        }
+
         var toVendor = item.Count >= int.MaxValue ? int.MaxValue : (int)item.Count;
         var vendorCount = await Game.RavenNest.Players.VendorInventoryItemAsync(player.Id, item.InventoryItem.InstanceId, toVendor);
         if (vendorCount > 0)

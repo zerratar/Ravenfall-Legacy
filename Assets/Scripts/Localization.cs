@@ -1197,6 +1197,7 @@ public static class Localization
     public static string UI_FLOAT_THUNDER_SHOT = "Thunder Shot";
     public static string UI_FLOAT_LEGENDARY = "Legendary!";
     public static string UI_FLOAT_LEGENDARY_RANK = "Awakened: rank {0}";
+    public static string UI_FLOAT_LEGENDS_ECHO = "Legend's Echo";
     public static string UI_SETTINGS_EFFECT_WORDS = "Effect words";
     public static string UI_SETTINGS_EFFECT_WORDS_HINT = "A word over a fighter when an element's effect starts on it (Burning, Chilled, Frozen, Stunned, Poisoned) or a hit does nothing (Immune), in the element's color.";
     public static string UI_SETTINGS_WHATSNEW = "What's new";
@@ -1904,6 +1905,7 @@ public static class Localization
     public static string MSG_LEGENDARY = Meta("legendary", "reward") + "{news}!";
     public static string MSG_LEGENDARY_FOUND_PART = "{0} found a Legendary, the {1}";
     public static string MSG_LEGENDARY_AWAKENED_PART = "{0}'s {1} is fully awakened";
+    public static string MSG_LEGENDARY_NO_SELL = Meta("vendor", "fail") + "Legendaries can't be sold. The {item} stays with you.";
     public static string MSG_TOWER_BOSS_LOST_TIME = Meta("tower", "fail") + "Time is up and {boss} still stands. Regroup and try again in {seconds} seconds.";
     public static string MSG_TOWER_BOSS_LOST_FALLEN = Meta("tower", "fail") + "Everyone fell to {boss}. Regroup and try again in {seconds} seconds.";
     public static string MSG_TOWER_CLEAR_FAILED = Meta("tower", "fail") + "The boss fell, but the clear could not be saved: {reason}. The boss can be tried again with !tower boss.";

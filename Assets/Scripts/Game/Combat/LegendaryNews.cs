@@ -48,6 +48,9 @@ public static class LegendaryNews
         var legend = Legendary.Get(stack.Item.Id);
         if (legend == null) return;
         refresh.Add(player);
+        // Legend's Echo: a find of one it owns already gave it ten boss kills at once (quiet: a word, no chat line)
+        if (Legendary.KillsOf(after) - Legendary.KillsOf(before) >= Legendary.EchoKills)
+            CombatPaths.Word(player, Localization.UI_FLOAT_LEGENDS_ECHO, new Color(0.8f, 0.7f, 1f));
         var from = Legendary.RankOfTag(before);
         var to = Legendary.RankOfTag(after);
         if (to <= from) return;

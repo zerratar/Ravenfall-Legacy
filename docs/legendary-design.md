@@ -12,34 +12,43 @@ keep their models, names, ids and their fortress touch (life steal, fire, thorns
 table for good. Skullcrusher, the Gravebloom Warhammer and the Sunstaff of the Inquisitor stay rare chest uniques, and
 Dreadforged stays crafted.
 
-| Legendary | Type | Needs | Tree whose ending it asks for | Power |
+| Legendary | Type | Worn with | Found by (950) and the ending of | Power |
 |---|---|---|---|---|
-| Soulreaver | 2H sword | Attack 950 | Precision | **Soul Harvest** |
-| Hellhorn Mace | 1H (axe slot) | Attack 950 | Precision | **Dread** |
-| Batwing Staff | staff | Magic 950 | Elements | **Bat Swarm** |
-| Spiked Bulwark | shield | Defense 950 | Bulwark | **Iron Aegis** |
-| Fortress Hand Cannon | bow | Ranged 950 | Marksman | **Thunder Shot** |
+| Soulreaver | 2H sword | Attack 950 | Attack, Precision | **Soul Harvest** |
+| Hellhorn Mace | 1H (axe slot) | Attack 950 | **Strength, Might** | **Dread** |
+| Batwing Staff | staff | Magic 950 | Magic, Elements | **Bat Swarm** |
+| Spiked Bulwark | shield | Defense 950 | Defense, Bulwark | **Iron Aegis** |
+| Fortress Hand Cannon | bow | Ranged 950 | Ranged, Marksman | **Thunder Shot** |
 
-The skill is the one the weapon asks for, so the Hellhorn Mace is an Attack weapon like every one handed weapon (a call
-for the owner: it could ask for Strength and the Might tree instead).
+The Hellhorn Mace is found by Strength 950 and the Might ending (approved 2026-11-23), so it is not a second
+Precision find beside the Soulreaver. Items have no Strength requirement (the classic columns are Attack, Defense,
+Magic, Ranged and Slayer), so it is still worn with Attack 950, like every one handed weapon
+(`LegendaryInfo.Finder`).
 
 ## 2. Who can find one
 
 The server checks all of it per character at the moment a boss falls. A character qualifies for a Legendary when:
 
-1. its level in that Legendary's skill is **950** or more (it is also the item's requirement, so a new player cannot use
+1. its level in that Legendary's finding skill is **950** or more (the item asks for 950 too, so a new player cannot use
    one even if it had one);
 2. it has **fought in a clear of the tower's top band**: a floor of band 3, the Storm Spire (floor 21 and up), whose
    boss fell with the character there. This is the "climber" achievement's progress, which the server already keeps per
    character (`QuestTracker.TowerCleared`). Band 3 is built and playable (floors 21 to 30); the line is a constant
-   (`Legendary.TowerFloor = 21`) so a band 4 does not suddenly lock everyone out (a call: raise it with the next band);
+   (`Legendary.TowerFloor = 21`) so a band 4 does not suddenly lock everyone out. **To do when band 4 ships: raise it**
+   (it is on the release checklist);
 3. it has **chosen its ending** (one of the three capstones) in that skill's combat tree
    (docs/capstone-paths-design.md);
 4. it **does not own that Legendary already** (any stack in its inventory, worn or not).
 
-A character that qualifies for at least one Legendary rolls; a find is one of those it qualifies for, picked at
-random. A character that owns every Legendary it qualifies for does not roll and its bad-luck count stands still (a
-call: it could get something else instead; nothing obvious is worth that much).
+A character that qualifies for at least one Legendary (owned or not) rolls; a find is one of those it does not own
+yet, picked at random.
+
+**Legend's Echo** (approved 2026-11-23): when the character already owns every Legendary it qualifies for, a find
+becomes a Legend's Echo instead: **+10 boss kills** of awakening on its least awakened one of those (the first on a
+tie), and when all of them are at rank 5, a **Flawless gem** of a random kind. It is quiet: a word over the character
+("Legend's Echo"), no chat line; the gem arrives with the boss's rewards. The bad-luck count works as for a find. The
+simulator (`legendary`, its "Finds" part) and a unit test: a dedicated player who qualifies for all five finds them on
+days 19, 40, 61, 82 and 102 (medians), then gets about 1.4 echoes a month.
 
 ## 3. Where they come from
 
@@ -55,8 +64,22 @@ Never crafted, never sold, never in a chest: the five lose their chest drop rows
 once per stream, so the tower is a rare big chance; dungeons and raids are the steady road. The server cannot tell how
 hard a raid was (the game scales the boss to the players there), so a raid counts for less than a heroic dungeon.
 
-A Legendary is **soulbound**: no trading, gifting, marketplace, clan bank or streamer shelves (the existing soulbound
-rules). It sells to a vendor for 1 coin.
+A Legendary is **soulbound** and **stays with the character that found it**:
+
+- no trading, gifting, marketplace, clan bank or streamer shelves (the soulbound rules, and the gift and marketplace
+  checks name Legendaries too);
+- **never sold to the vendor** (approved 2026-11-23): the server's vendor refuses one on every path (one item, the bulk
+  sells by filter or list, the website), the game's `!vendor` answers "Legendaries can't be sold. The Soulreaver stays
+  with you.", and the website shows "Never sold" with no Sell button. Selling destroyed it and its awakening for a coin,
+  which was nearly always an accident;
+- **not sent to the stash or to another of the owner's characters**: other soulbound items may go there (the stash is
+  account bound by design, `UserBankItem.Soulbound`), a Legendary not (one of each per character, its awakening). The
+  server refuses both, the bulk "send to stash" skips it, and the website shows both buttons off with "A Legendary
+  stays with the character that found it.";
+- **disenchanting** made a new stack and dropped the tag (the awakening), the gems, the look and the name of any item;
+  it keeps them now. Enchanting keeps the stack. There is no drop, destroy or salvage of items in the game.
+
+The item row still says 1 coin (an older game reads it), and the vendor never restocks soulbound items anyway.
 
 ### Bad-luck protection
 
@@ -233,6 +256,12 @@ rank 5 (5 sockets, 1,001 power, the full glow, "zerratar's Soulreaver is fully a
 line); the details window's tooltip; the Hall of Legends page with the find and the awakening; the Equipment tab's
 tip card in the gear preview. Everything given was taken back afterwards.
 
+**Follow-ups tested (2026-11-23, second round)**: with Strength 999 and the Might ending (Colossus) the force file
+found the Hellhorn Mace; the server's vendor sold 0 of it, and `!vendor hellhorn mace` answered "Legendaries can't be
+sold. The Hellhorn Mace stays with you." (captured in a client that never sends; chat was muted); the Equipment tab
+(gear preview) shows Send to stash and Send to another character off on a Legendary. The dev character was put back
+exactly (a snapshot diff, the village's coins). Legend's Echo is unit tested and simulated, not played.
+
 **Not tested in play**: a real find (only the forced one; the odds are the unit test's), a tower clear of floor 21+,
 Dread, Bat Swarm, Iron Aegis and Thunder Shot in a fight (the rules are unit tested and simulated, the game code
 compiles and follows Soul Harvest's path), the knockback on the navmesh, the shield on allies, a gem in a 4th or 5th
@@ -247,9 +276,9 @@ Legends), -web-tooltip.png (the Equipment tab).
 - Odds: 4% / 0.25% / 0.1% with bad luck up to ten times; a dedicated player waits about three weeks, a casual one
   two to three months. Raids count less because the server cannot tell a hard raid from an easy one.
 - The tower line is floor 21 as a constant, not "the top band": raise it when band 4 is out, if wanted.
-- The Hellhorn Mace asks for Attack and the Precision ending like the Soulreaver; it could ask for Strength and Might.
-- A character that owns every Legendary it qualifies for stops rolling; it could get something else instead.
 - Ranks need 30 / 90 / 200 / 400 boss kills worn (about 25 days to rank 5 for a dedicated player).
-- The awakening count lives on the inventory item's tag: a Legendary sold to the vendor (for 1 coin) is gone with its
-  ranks; finding the same one again is possible then.
+
+Decided 2026-11-23 (the owner approved all calls): the Hellhorn Mace is found by Strength and Might; owning every one
+gives a Legend's Echo; the tower line stays at floor 21 until band 4; raids keep their lower chance; Legendaries are
+never sold and never leave their finder (section 3).
 - Titles: Legendbearer (one found) and Keeper of Legends (all five), hidden.
