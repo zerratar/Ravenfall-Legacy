@@ -24,6 +24,8 @@ public class PlayerSettings
     public bool? RegattaCamera;
     /// <summary>Ravebridge's goblin uprisings start by themselves now and then (off: only the streamer starts Ravebridge).</summary>
     public bool? RavebridgeUprisings;
+    /// <summary>The silly things in the world, the rare silly moments and the special days' jokes (SillySurprises).</summary>
+    public bool? SillySurprises;
     /// <summary>Chat can go into the tower with !tower (off: the tower is closed on this stream).</summary>
     public bool? TowerOpen;
     /// <summary>Words over fighters when an element's effect starts (Burning, Frozen, Immune).</summary>
@@ -445,6 +447,7 @@ public class PlayerSettings
             Serialize(sw, "canObserveEmptyIslands", obj.CanObserveEmptyIslands);
             Serialize(sw, "regattaCamera", obj.RegattaCamera);
             Serialize(sw, "ravebridgeUprisings", obj.RavebridgeUprisings);
+            Serialize(sw, "sillySurprises", obj.SillySurprises);
             Serialize(sw, "towerOpen", obj.TowerOpen);
             Serialize(sw, "effectWords", obj.EffectWords);
             Serialize(sw, "screenShake", obj.ScreenShake);

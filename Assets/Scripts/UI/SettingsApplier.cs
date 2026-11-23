@@ -115,6 +115,7 @@ public static class SettingsApplier
         public const bool RaceCamera = true;
         // off by default (the owner, 2026-11-23): Ravebridge opens when the streamer starts it
         public const bool RavebridgeUprisings = false;
+        public const bool SillySurprises = true;
         public const bool TowerOpen = true;
         public const bool EffectWords = true;
         public const bool ScreenShake = true;
@@ -1016,6 +1017,14 @@ public static class SettingsApplier
     public static bool RavebridgeUprisings => PlayerSettings.Instance.RavebridgeUprisings.GetValueOrDefault(Defaults.RavebridgeUprisings);
 
     public static void SetRavebridgeUprisings(bool value) => PlayerSettings.Instance.RavebridgeUprisings = value;
+
+    /// <summary>
+    /// The silly surprises (docs/easter-eggs.md): the jokes placed in the world, the rare moments (a tree that says ow)
+    /// and the special days' ones. Never in potato mode.
+    /// </summary>
+    public static bool SillySurprises => SillySurprisesSetting && !(GameManager.Instance && GameManager.Instance.PotatoMode);
+    public static bool SillySurprisesSetting => PlayerSettings.Instance.SillySurprises.GetValueOrDefault(Defaults.SillySurprises);
+    public static void SetSillySurprises(bool value) => PlayerSettings.Instance.SillySurprises = value;
 
     /// <summary>Chat can go into the tower (docs/tower-design.md: open on every stream unless the streamer closes it).</summary>
     public static bool TowerOpen => PlayerSettings.Instance.TowerOpen.GetValueOrDefault(Defaults.TowerOpen);

@@ -33,6 +33,14 @@ public class UseItem : ChatBotCommandHandler<string>
             return;
         }
 
+        // a word that is no item at all ("!use xyzzy"): a line from OddThings, nothing else (docs/easter-eggs.md)
+        var secret = OddThings.SecretUse(inputQuery, player.PlayerName);
+        if (secret != null)
+        {
+            client.SendReply(gm, Localization.MSG_ODD_USE, secret);
+            return;
+        }
+
         // an experience book names the skill it is read for after the item: "gathering book fishing", "large combat book magic 2"
         if (ExperienceBooks.IsBookQuery(inputQuery))
         {
@@ -125,6 +133,13 @@ public class UseItem : ChatBotCommandHandler<string>
         if (BottleUse.Handles(queriedItem.Item))
         {
             await UseBottleOrMapAsync(string.Equals(queriedItem.Item.Name, BottleUse.MapName, StringComparison.OrdinalIgnoreCase), player, inputQuery, gm, client);
+            return;
+        }
+
+        // an odd find (an Old Boot, a Pet Rock) or a tower keepsake (the Rubber Duck): a silly line, the item stays
+        if (OddThings.Handles(queriedItem.Item))
+        {
+            client.SendReply(gm, Localization.MSG_ODD_USE, OddThings.UseLine(queriedItem.Item, player.PlayerName));
             return;
         }
 

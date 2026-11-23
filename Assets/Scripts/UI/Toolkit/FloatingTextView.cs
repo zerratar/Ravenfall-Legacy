@@ -231,7 +231,10 @@ namespace Shinobytes.UI
         /// above the name tag and the skill names: one at a time per character, a newer one replaces it. Bold, outlined
         /// and big enough to read on stream (docs/combat-v2-design.md, numbers on stream).
         /// </summary>
-        public void AddEffect(Transform target, string text, Color color)
+        public void AddEffect(Transform target, string text, Color color) => AddEffect(target, text, color, 1f);
+
+        /// <summary>As <see cref="AddEffect(Transform, string, Color)"/>, staying <paramref name="lifeScale"/> times as long (the silly words, SillySurprises).</summary>
+        public void AddEffect(Transform target, string text, Color color, float lifeScale)
         {
             if (!target || layer == null || string.IsNullOrEmpty(text))
             {
@@ -260,7 +263,7 @@ namespace Shinobytes.UI
             number.TargetId = id;
             number.Height = info.Height + 2.2f; // over the name tag and the skill names, clear of the numbers
             number.Age = 0f;
-            number.Life = lifetime * 1.4f;
+            number.Life = lifetime * 1.4f * Mathf.Max(0.5f, lifeScale);
             number.Value = 0;
             number.Text = text;
             number.Color = color;

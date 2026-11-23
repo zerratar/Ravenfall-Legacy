@@ -107,8 +107,10 @@ public static class BottleUse
             return;
         }
 
-        var note = Note(result.Note).Replace(PlayerPlaceholder, player.Name);
-        client.SendReply(gm, Pictures.Contains(result.Note) ? Localization.MSG_BOTTLE_PICTURE : Localization.MSG_BOTTLE_NOTE, note);
+        // April 1st: a prankster's note instead (docs/easter-eggs.md); the server's roll is only worded differently
+        var april = SillySurprises.AprilBottleNote();
+        var note = (april ?? Note(result.Note)).Replace(PlayerPlaceholder, player.Name);
+        client.SendReply(gm, april == null && Pictures.Contains(result.Note) ? Localization.MSG_BOTTLE_PICTURE : Localization.MSG_BOTTLE_NOTE, note);
     }
 
     /// <summary>A note's words by its number; one this game does not have yet reads as the first.</summary>

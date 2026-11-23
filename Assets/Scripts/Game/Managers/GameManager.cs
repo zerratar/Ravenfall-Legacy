@@ -513,6 +513,8 @@ public class GameManager : MonoBehaviour, IGameManager
         RegisterGameEventHandler<PlayStreakEggEventHandler>((GameEventType)59);
         // a character's outfits per skill were changed on the website (60)
         RegisterGameEventHandler<OutfitsChangedEventHandler>((GameEventType)60);
+        // something odd found while gathering: an Old Boot, a Pet Rock (61, docs/easter-eggs.md)
+        RegisterGameEventHandler<OddFindEventHandler>((GameEventType)61);
         RegisterGameEventHandler<ItemRemoveByCategoryHandler>(GameEventType.ItemRemoveByCategory);
 
         RegisterGameEventHandler<ItemUnequipEventHandler>(GameEventType.ItemUnEquip);
@@ -2261,6 +2263,13 @@ public class GameManager : MonoBehaviour, IGameManager
         if (GUI.Button(GetButtonRect(buttonIndex++), AdminControlData.NoChatBotMessages ? "Chat Notifications OFF" : "Chat Notifications ON"))
         {
             AdminControlData.NoChatBotMessages = !AdminControlData.NoChatBotMessages;
+        }
+
+        // testing the April 1st surprises on any day (docs/easter-eggs.md): by the date, forced on, forced off
+        var april = SillySurprises.ForceAprilFools;
+        if (GUI.Button(GetButtonRect(buttonIndex++), april == null ? "April Fools: by date" : april.Value ? "April Fools: ON" : "April Fools: OFF"))
+        {
+            SillySurprises.ForceAprilFools = april == null ? true : april.Value ? false : (bool?)null;
         }
 
         if (AdminControlData.ControlPlayers)

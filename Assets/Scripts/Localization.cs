@@ -604,6 +604,8 @@ public static class Localization
     public static string UI_ACHIEVEMENT_CLIMBER = "Climber";
     public static string UI_ACHIEVEMENT_NIBBLED = "Nibbled";
     public static string UI_ACHIEVEMENT_TREASURE = "Treasure Hunter";
+    public static string UI_ACHIEVEMENT_ODDITIES = "Odd Things";
+    public static string UI_ACHIEVEMENT_PENPAL = "Pen Pal";
     public static string UI_TITLE_WOODCUTTER_1 = "the Woodcutter";
     public static string UI_TITLE_WOODCUTTER_2 = "the Lumberjack";
     public static string UI_TITLE_WOODCUTTER_3 = "the Forest's Bane";
@@ -663,6 +665,8 @@ public static class Localization
     public static string UI_TITLE_CLIMBER_5 = "the Bane of Glacius";
     public static string UI_TITLE_NIBBLED_1 = "the Bunny Snack";
     public static string UI_TITLE_TREASURE_1 = "the Treasure Hunter";
+    public static string UI_TITLE_ODDITIES_1 = "the Hoarder";
+    public static string UI_TITLE_PENPAL_1 = "zerratar's Pen Pal";
     public static string UI_TITLE_CAT = "the Cat Whisperer";
     public static string UI_TITLE_FISH = "the Patient";
     public static string UI_TITLE_FOUNDER = "the Founder";
@@ -2549,6 +2553,14 @@ public static class Localization
         "Tip: Press F1 when you want the world to yourself.",
         "Tip: The training dummies have been through a lot. Be gentle.",
         "Tip: Somewhere, a rubber duck is floating in a fishing tub.",
+        "Tip: Do not stand on the big fish. It is not a rock.",
+        "Tip: Trees have feelings. Chop gently.",
+        "Tip: Never ask a dwarf about the sheep.",
+        "Tip: The seagulls are organized. Guard your sandwich.",
+        "Tip: Nothing happens when you !use xyzzy. Or does it?",
+        "Tip: Every boot has a story. Most of them are soggy.",
+        "Tip: A rock can be a pet if you believe in it hard enough.",
+        "Tip: There is no cow level.",
     };
 
     public static string UI_SETTINGS_TITLE = "SETTINGS";
@@ -2977,6 +2989,8 @@ public static class Localization
     public static string UI_SETTINGS_NO_RAIDS = "Turn off raids";
     public static string UI_SETTINGS_NO_DUNGEONS = "Turn off dungeons";
     public static string UI_SETTINGS_RAVEBRIDGE_UPRISINGS = "Ravebridge uprisings";
+    public static string UI_SETTINGS_SILLY = "Silly surprises";
+    public static string UI_SETTINGS_SILLY_HINT = "Little jokes hidden around the world, rare silly moments and a few on special days. Always off in potato mode.";
     public static string UI_SETTINGS_TOWER_OPEN = "Tower open to chat";
     public static string UI_SETTINGS_TOWER_OPEN_HINT = "Viewers can go into the tower with !tower and climb it together, by vote when you are away. Turn it off to close the tower on this stream: players inside can still leave.";
     public static string UI_SETTINGS_RAVEBRIDGE_UPRISINGS_HINT = "Off: Ravebridge only opens when you start it. On: now and then the goblins of Ravebridge rise by themselves and pull players into the event.";
@@ -3670,6 +3684,118 @@ public static class Localization
     public static string UI_BOTTLE_NOTE_103 = "THIS IS NOT A TREASURE MAP.";
     public static string UI_BOTTLE_NOTE_104 = "a note so soaked that only one word can still be read: bottles.";
     public static string UI_BOTTLE_NOTE_105 = "a smaller bottle. In it, a smaller note: \"Told you I have more bottles. - z\"";
+
+    // Odd finds (docs/easter-eggs.md): the server finds them while gathering, the game words them
+    public static string MSG_ODD_FIND = Meta("item", "odd find") + "{line}";
+    public static string MSG_ODD_USE = Meta("item", "odd find", "use") + "{line}";
+    public static string UI_FLOAT_ODD_FIND = "Found: {0}!";
+    public static string UI_ODD_FOUND_OLD_BOOT = "{player} reeled in an Old Boot. A left one. The Pirates of Away will want to hear about this.";
+    public static string UI_ODD_FOUND_QUACKERS = "{player} fished up Quackers the rubber duck! Whoever sent that bottle can stop worrying now.";
+    public static string UI_ODD_FOUND_PET_ROCK = "{player} mined out a suspiciously round rock and has decided to keep it as a pet.";
+    public static string UI_ODD_FOUND_BIRDS_NEST = "A Birds Nest fell out of the tree {player} was chopping. It is empty, apart from a note.";
+    public static string UI_ODD_FOUND_LOOKALIKE_POTATO = "{player} dug up a potato that looks a bit like someone famous. Nobody can say who.";
+    public static string UI_ODD_FOUND_VERY_GOOD_STICK = "{player} found a Very Good Stick. Not just a good stick. A very good one.";
+    public static string UI_ODD_OLD_BOOT_1 = "{player} tries on the Old Boot. It is a left boot. It fits! It squelches.";
+    public static string UI_ODD_OLD_BOOT_2 = "{player} shakes the Old Boot. A small crab falls out, looks around and walks off, offended.";
+    public static string UI_ODD_OLD_BOOT_3 = "{player} sniffs the Old Boot. Why would you do that?";
+    public static string UI_ODD_OLD_BOOT_4 = "{player} holds the Old Boot up to the sea. Somewhere on Away, a pirate hopping on one foot sheds a single tear.";
+    public static string UI_ODD_QUACKERS_1 = "Squeak.";
+    public static string UI_ODD_QUACKERS_2 = "{player} squeezes Quackers. Squeak! Far up the tower, in Rimeholt, Sir Quacksalot squeaks back.";
+    public static string UI_ODD_QUACKERS_3 = "Quackers looks at {player}. {player} looks at Quackers. Squeak.";
+    public static string UI_ODD_QUACKERS_4 = "{player} sets Quackers on the water. He floats with great dignity.";
+    public static string UI_ODD_PET_ROCK_1 = "{player} pets the Pet Rock. It does not react. It is a very good rock.";
+    public static string UI_ODD_PET_ROCK_2 = "{player} tells the Pet Rock to sit. It was already sitting. Good rock!";
+    public static string UI_ODD_PET_ROCK_3 = "{player} throws a stick for the Pet Rock. It does not fetch. It never fetches. {player} fetches the stick.";
+    public static string UI_ODD_PET_ROCK_4 = "The Pet Rock has learned a new trick: staying perfectly still. Again.";
+    public static string UI_ODD_BIRDS_NEST_1 = "{player} wears the Birds Nest as a hat. A passing bird looks very interested.";
+    public static string UI_ODD_BIRDS_NEST_2 = "{player} looks in the Birds Nest. Still empty. Still a note saying gone south.";
+    public static string UI_ODD_BIRDS_NEST_3 = "{player} tries to sit in the Birds Nest. It is much too small. Either the bird was tiny, or {player} is huge.";
+    public static string UI_ODD_LOOKALIKE_POTATO_1 = "{player} squints at the Lookalike Potato. Yes! It looks just like... no. It is gone.";
+    public static string UI_ODD_LOOKALIKE_POTATO_2 = "{player} shows the Lookalike Potato around. Everyone agrees it looks like someone. Nobody agrees who.";
+    public static string UI_ODD_LOOKALIKE_POTATO_3 = "The Lookalike Potato has a certain charm. A certain something. A certain potato.";
+    public static string UI_ODD_LOOKALIKE_POTATO_4 = "{player} asks the Lookalike Potato for an autograph. It has no hands. It is a potato.";
+    public static string UI_ODD_VERY_GOOD_STICK_1 = "{player} waves the Very Good Stick around. Every pet within a mile is suddenly paying attention.";
+    public static string UI_ODD_VERY_GOOD_STICK_2 = "{player} throws the Very Good Stick. Somewhere, a dog barks with deep approval.";
+    public static string UI_ODD_VERY_GOOD_STICK_3 = "{player} draws a map in the dirt with the Very Good Stick. It is a map of a stick.";
+    public static string UI_ODD_VERY_GOOD_STICK_4 = "{player} holds the Very Good Stick like a sword. Stick of Doom: +0 attack, +100 style.";
+    // the tower towns' keepsakes, which did nothing when used
+    public static string UI_KEEPSAKE_RUBBER_DUCK_1 = "Squeak. Ylva would be proud of you.";
+    public static string UI_KEEPSAKE_RUBBER_DUCK_2 = "{player} squeezes the Rubber Duck. It squeaks bravely.";
+    public static string UI_KEEPSAKE_HOLY_HAND_GRENADE_1 = "{player} pulls the pin and counts: one, two, five! Three, sir! Three! ...nothing happens. Pip took the boom out, for safety.";
+    public static string UI_KEEPSAKE_HOLY_HAND_GRENADE_2 = "{player} lobs the Holy Hand Grenade. It bounces straight back. Pip says you counted to four.";
+    public static string UI_KEEPSAKE_WOOLLYS_BELL_1 = "Ding. Somewhere above the clouds, a sheep goes baa.";
+    public static string UI_KEEPSAKE_WOOLLYS_BELL_2 = "{player} rings Woolly's Bell. Every sheep on every island looks up at once. Then back down.";
+    // !use with a word that is no item at all
+    public static string UI_SECRET_USE_XYZZY = "Nothing happens.";
+    public static string UI_SECRET_USE_PLUGH = "A hollow voice says: Fool.";
+    public static string UI_SECRET_USE_FORCE = "{player} uses the Force. A pebble wobbles a little. Impressive. Most impressive.";
+    public static string UI_SECRET_USE_HEAD = "{player} uses their head. Ow.";
+    public static string UI_SECRET_USE_CHEATS = "Cheats on! Just kidding. The ravens saw that.";
+    // silly moments over the world (SillySurprises): short words over a tree, a player or a pet
+    public static string UI_FLOAT_OW = "Ow!";
+    public static string UI_FLOAT_SORRY = "Sorry!";
+    public static string UI_FLOAT_ROCK_AND_STONE = "Rock and stone!";
+    public static string UI_FLOAT_SLAP = "Slap!";
+    public static string UI_FLOAT_ZZZ = "Zzz";
+    public static string UI_FLOAT_BRRR = "Brrr!";
+    public static string UI_FLOAT_ARR = "Arr!";
+    // words on the silly signs in the world (SillySurprises, WorldGag)
+    public static string UI_GAG_SIGN_SEAGULLS = "DO NOT FEED THE SEAGULLS";
+    public static string UI_GAG_SIGN_BOOT = "WANTED: ONE LEFT BOOT. REWARD 3 COINS. ASK FOR THE CAPTAIN";
+    public static string UI_GAG_SIGN_BITING = "BITING ANY MINUTE NOW";
+    public static string UI_GAG_SIGN_COW_LEVEL = "THERE IS NO COW LEVEL";
+    public static string UI_GAG_SIGN_ANVIL = "PLEASE DO NOT LEAVE SHEEP ON THE ANVIL";
+    public static string UI_GAG_SIGN_FRIDAY = "BAD LUCK TODAY. PET THE CAT ANYWAY";
+    public static string UI_GAG_SIGN_KING = "ALL HAIL KING CLUCKSWORTH, KING OF EVERYTHING";
+    // Rob Boss, the painter on Home (RobBossPainter): what he says when he starts, and his paintings' titles
+    public static string UI_ROB_GALLERY = "\"{0}\" by Rob Boss. {1} coins. Not for sale.";
+    public static string UI_ROB_QUOTE_1 = "There are no mistakes here. Only happy little goblins.";
+    public static string UI_ROB_QUOTE_2 = "Let's give this tree a friend. Everybody needs a friend. Except that goblin.";
+    public static string UI_ROB_QUOTE_3 = "A little cloud lives right up here. He's shy, so be gentle.";
+    public static string UI_ROB_QUOTE_4 = "Tap, tap, tap. Look at that, a happy little bush moved in.";
+    public static string UI_ROB_QUOTE_5 = "Every rock deserves a cozy blanket of moss.";
+    public static string UI_ROB_QUOTE_6 = "This one goes in the tavern. Next to the other forty.";
+    public static string UI_ROB_QUOTE_7 = "A painting is never done. It just runs out of canvas.";
+    public static string UI_ROB_QUOTE_8 = "We'll put a little light right here, where the sun can find it.";
+    public static string UI_ROB_QUOTE_9 = "Don't tell the woodcutters about this tree. It's our little secret.";
+    public static string UI_ROB_QUOTE_10 = "If a chicken walks into your painting, that's a happy little chicken.";
+    public static string UI_ROB_TITLE_VIEW_1 = "Home, From Up Here";
+    public static string UI_ROB_TITLE_VIEW_2 = "A Quiet Afternoon (Before the Raid)";
+    public static string UI_ROB_TITLE_VIEW_3 = "Happy Little Island";
+    public static string UI_ROB_TITLE_VIEW_4 = "Study of Some Trees, Mostly";
+    public static string UI_ROB_TITLE_PLAYER_1 = "Portrait of {0}";
+    public static string UI_ROB_TITLE_PLAYER_2 = "{0}, Mostly Nose";
+    public static string UI_ROB_TITLE_PLAYER_3 = "{0}, Standing Very Still";
+    public static string UI_ROB_TITLE_PLAYER_4 = "{0}, Who Did Not Ask to Be Painted";
+    public static string UI_ROB_TITLE_WOODCUTTER_1 = "Tree, Moments Before {0}";
+    public static string UI_ROB_TITLE_WOODCUTTER_2 = "{0} and the Tree That Had Plans";
+    public static string UI_ROB_TITLE_WOODCUTTER_3 = "A Happy Little Tree's Last Happy Little Day";
+    public static string UI_ROB_TITLE_CLUCKSWORTH_1 = "Sir Clucksworth, From His Good Side";
+    public static string UI_ROB_TITLE_CLUCKSWORTH_2 = "His Feathered Majesty";
+    public static string UI_ROB_TITLE_CLUCKSWORTH_3 = "The Chicken Sees Everything";
+    public static string UI_ROB_TITLE_LADY_1 = "Lady, Mid-Scream";
+    public static string UI_ROB_TITLE_LADY_2 = "Why Is She Screaming";
+    public static string UI_ROB_TITLE_MONKEYS_1 = "Insufficient Bananas";
+    public static string UI_ROB_TITLE_MONKEYS_2 = "The Monkey Chief, Unimpressed";
+    public static string UI_ROB_TITLE_HAIR_1 = "Self-Portrait";
+    public static string UI_ROB_TITLE_HAIR_2 = "Self-Portrait (Hair Only)";
+    public static string UI_ROB_TITLE_HAIR_3 = "Me, From the Back";
+    public static string UI_ROB_TITLE_CHICKENS_1 = "Chicken No. 1";
+    public static string UI_ROB_TITLE_CHICKENS_2 = "Chicken, Again";
+    public static string UI_ROB_TITLE_CHICKENS_3 = "Still Life With Chicken";
+    public static string UI_ROB_TITLE_CHICKENS_4 = "Chicken (April Edition)";
+    // April 1st (SillySurprises): one line of fake patch notes, silly words in front of item names, pranksters' bottles
+    public static string MSG_APRIL_PATCH_NOTES = Meta("system", "april") + "Patch notes 0.9.7.1: chickens now outrank players. Trees fight back on Thursdays. Fishing has a small chance to catch fish. Fixed a bug where bugs were fixed.";
+    public static string UI_APRIL_ITEM_NAME = "{0} {1}";
+    public static string[] UI_APRIL_ITEM_WORDS = { "Slightly Haunted", "Probably Cursed", "Lightly Used", "Suspiciously Damp", "Artisanal", "Organic", "Limited Edition", "Pre-Owned", "Mostly Harmless", "Chicken-Approved", "Gently Sneezed On", "Inflatable" };
+    public static string UI_BOTTLE_APRIL_1 = "Your shoelace is untied. Made you look. - the Pirates of Away";
+    public static string UI_BOTTLE_APRIL_2 = "This note is written in invisible ink. You are welcome.";
+    public static string UI_BOTTLE_APRIL_3 = "Congratulations! You have won one (1) bottle. You are holding it.";
+    public static string UI_BOTTLE_APRIL_4 = "The tide is canceled today. Please swim responsibly. - the Harbor Master";
+    public static string UI_BOTTLE_APRIL_5 = "This bottle is now a chicken. Please treat it with respect. - King Clucksworth";
+    public static string UI_BOTTLE_APRIL_6 = "zerratar here: I have stopped making bottles. (April Fools. I have so many bottles.)";
+    public static string UI_BOTTLE_APRIL_7 = "Turn around slowly. ...Got you. - a seagull";
+    public static string UI_BOTTLE_APRIL_8 = "Notice: the sea is out of water until further notice. Fish, please hold your breath.";
 
     // ItemUsage
     public static string MSG_ITEM_USAGE_NONE = Meta("info", "item usage", "fail") + "{itemName} is not used in any recipes.";
