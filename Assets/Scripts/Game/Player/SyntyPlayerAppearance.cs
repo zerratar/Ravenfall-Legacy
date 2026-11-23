@@ -235,6 +235,12 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
             return;
         }
 
+        if (IsModelHeadPiece(item))
+        {
+            EquipModelHeadPiece(item);
+            return;
+        }
+
         Transform targetParent;
         if (item.Type == ItemType.Pet)
         {
@@ -445,6 +451,73 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
     public void Unequip(ItemController item)
     {
         UnEquip(item.gameObject);
+
+        // a head piece that is a model of its own: the head it hid comes back
+        if (item && equippedHelmet == item.gameObject)
+        {
+            equippedHelmet = null;
+            equippedHeadHides = HeadMask.None;
+            ShowHead(HeadMask.None);
+        }
+    }
+
+    private static bool IsHeadType(ItemType type)
+    {
+        return type == ItemType.Helmet || type == ItemType.Hat || type == ItemType.Mask || type == ItemType.HeadCovering;
+    }
+
+    /// <summary>
+    /// A piece of head armor that is a model of its own (the Dark Fortress helmets, crowns and masks, docs/dark-fortress-design.md):
+    /// a prefab on the head bone instead of character parts. It takes the place of any head piece made of parts and
+    /// hides what its HeadMask says, as one of those does. Cosmetic hats with a prefab (the Santa Hat) are not this:
+    /// they sit on top of whatever is worn, as they always did.
+    /// </summary>
+    public static bool IsModelHeadPiece(RavenNest.Models.Item item)
+    {
+        return item != null && item.Category == ItemCategory.Armor && IsHeadType(item.Type) && !string.IsNullOrEmpty(item.GenericPrefab);
+    }
+
+    /// <summary>The same for an item as it is drawn (a transmogrified one by its look).</summary>
+    public static bool IsModelHeadPiece(ItemController item)
+    {
+        return item && item.Category == ItemCategory.Armor && IsHeadType(item.Type) && !string.IsNullOrEmpty(item.GenericPrefabPath);
+    }
+
+    private static readonly ItemType[] HeadTypes = { ItemType.Helmet, ItemType.Hat, ItemType.Mask, ItemType.HeadCovering };
+
+    private void EquipModelHeadPiece(ItemController item)
+    {
+        // one head piece at a time: another model head piece goes, whichever head type it is (a cosmetic hat stays)
+        foreach (var type in HeadTypes)
+        {
+            if (!equippedItems.TryGetValue(type, out var currentItem) || !currentItem || currentItem == item) continue;
+            if (type != item.Type && !IsModelHeadPiece(currentItem)) continue;
+            if (currentItem.gameObject) Destroy(currentItem.gameObject);
+            equippedItems.Remove(type);
+            equippedObjects.Remove(type);
+        }
+
+        if (equipmentSlots.Count == 0) UpdateBoneTransforms();
+        if (!equipmentSlots.TryGetValue(ItemType.Helmet, out var bone) || !bone) return;
+
+        // one head piece at a time: the parts of one made of parts go, with their attachments
+        SwitchOff(maleHelmets);
+        SwitchOff(femaleHelmets);
+        SwitchOff(hats);
+        SwitchOff(masks);
+        SwitchOff(headCoverings);
+        SwitchOff(headAttachments);
+        equippedHeadAttachments.Clear();
+
+        equippedItems[item.Type] = item;
+        equippedObjects[item.Type] = item.gameObject;
+        // at the bone's place, unturned, at its true size (as every item on a bone)
+        item.transform.SetParent(bone);
+        item.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+
+        equippedHelmet = item.gameObject;
+        equippedHeadHides = item.HeadMask & HeadMask.All;
+        UpdateHelmetVisibility();
     }
 
 
@@ -1583,6 +1656,13 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
     private int HairUnder(GameObject headPiece, int hair)
     {
         if (!headPiece) return hair;
+        // a head piece that is a model of its own and keeps the hair (the Dark Fortress crowns and the Lich Crown's
+        // half mask): every style is laid flat under it, or the bangs cover the mask and big hair comes through
+        if (headPiece.GetComponent<ItemController>())
+        {
+            var laid = LongHair.Contains(hair) ? FlatLongHair : FlatShortHair;
+            return PartAt(hairs, laid) ? laid : hair;
+        }
         var hat = Array.IndexOf(hats, headPiece);
         if (hat < 0 || !HairThroughHat.TryGetValue(hat, out var through) || !through.Contains(hair)) return hair;
         var flat = LongHair.Contains(hair) ? FlatLongHair : FlatShortHair;

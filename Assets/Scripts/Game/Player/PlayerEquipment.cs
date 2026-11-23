@@ -425,7 +425,8 @@ public class PlayerEquipment : MonoBehaviour
             equipped = equippedObjects.FirstOrDefault(x => x.ItemId == item.ItemId);
         }
 
-        var needMeshRebuild = string.IsNullOrEmpty(item.Item.GenericPrefab) && item.Item.Category == ItemCategory.Armor;
+        // a head piece that is a model of its own hid hair, brows or a beard: the rebuild puts them back
+        var needMeshRebuild = (string.IsNullOrEmpty(item.Item.GenericPrefab) && item.Item.Category == ItemCategory.Armor) || SyntyPlayerAppearance.IsModelHeadPiece(item.Item);
         var removed = false;
         if (equipped != null)
         {

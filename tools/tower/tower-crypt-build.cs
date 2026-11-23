@@ -430,6 +430,18 @@ foreach (var m in models)
     copy.GetComponent<EnemyController>().Island = null;
 }
 
+// the Dark Fortress dead (docs/dark-fortress-design.md): prefabs of tools/dark-fortress/dark-fortress-enemies.cs
+foreach (var dfId in new[] { "df-undead", "df-undead-soldier", "df-corpse", "df-wraith", "df-grave-knight", "df-behemoth" })
+{
+    var dfPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/World/Enemies/DarkFortress/" + dfId + ".prefab");
+    if (!dfPrefab) { log.AppendLine("no prefab for " + dfId + " (run tools/dark-fortress/dark-fortress-enemies.cs)"); continue; }
+    var dfCopy = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(dfPrefab, scene);
+    dfCopy.name = dfId;
+    dfCopy.transform.SetParent(templates, false);
+    dfCopy.transform.localPosition = UnityEngine.Vector3.zero;
+    dfCopy.transform.localRotation = UnityEngine.Quaternion.identity;
+}
+
 // ---- navmesh: the floor's own, from the invisible slabs, walls and pillars ----
 var surface = root.AddComponent<Unity.AI.Navigation.NavMeshSurface>();
 surface.agentTypeID = 0;

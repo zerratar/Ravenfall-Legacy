@@ -1220,8 +1220,10 @@ public class Inventory : MonoBehaviour
                 RemoveByItemId(item.Item.Id, 1);
             }
 
-            var newItemIsGeneric = !string.IsNullOrEmpty(item.Item.GenericPrefab);
-            var oldItemWasGeneric = equip != null && !string.IsNullOrEmpty(equip.Item.GenericPrefab);
+            // a head piece that is a model of its own (the Dark Fortress helmets) changes what of the head shows, so the
+            // character is dressed again from nothing, as for armor made of parts
+            var newItemIsGeneric = !string.IsNullOrEmpty(item.Item.GenericPrefab) && !SyntyPlayerAppearance.IsModelHeadPiece(item.Item);
+            var oldItemWasGeneric = equip != null && !string.IsNullOrEmpty(equip.Item.GenericPrefab) && !SyntyPlayerAppearance.IsModelHeadPiece(equip.Item);
 
             if (updateAppearance && (!newItemIsGeneric || (equip != null && !oldItemWasGeneric)))
             {

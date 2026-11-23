@@ -37,6 +37,11 @@ var entries = new (string Model, UnityEngine.AnimationClip Clip, float Speed)[]
     ("eldara-elven-soldier", cheer2, 0.9f),
     ("ironhill-dragon-purple", Clip(unka, "UAttack Wings R"), 1f),
     ("ironhill-dragon-blue", Clip(unka, "UAttack FireBreath L"), 1f),
+    // the Dark Fortress (docs/dark-fortress-design.md): the Behemoth is the Gardener; the others for bosses to come
+    ("df-behemoth", cheer3, 0.85f),
+    ("df-grave-knight", cheer3, 1f),
+    ("df-undead", cheer1, 1f),
+    ("df-wraith", cheer2, 0.8f),
 };
 if (!UnityEditor.AssetDatabase.IsValidFolder("Assets/Resources/Tower")) UnityEditor.AssetDatabase.CreateFolder("Assets/Resources", "Tower");
 var path = "Assets/Resources/Tower/Boss Taunts.asset";

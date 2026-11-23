@@ -9,6 +9,19 @@ Character/Appearance/Head/Bunny Ears
 Character/Appearance/Head/Cactus Hat
 Character/Appearance/Head/Chef Hat
 Character/Appearance/Head/Crown
+Character/Appearance/Head/DarkFortress/DF Crown 01
+Character/Appearance/Head/DarkFortress/DF Crown 02
+Character/Appearance/Head/DarkFortress/DF Crown 03
+Character/Appearance/Head/DarkFortress/DF Helmet 02
+Character/Appearance/Head/DarkFortress/DF Helmet 03
+Character/Appearance/Head/DarkFortress/DF Helmet 06
+Character/Appearance/Head/DarkFortress/DF Helmet 07
+Character/Appearance/Head/DarkFortress/DF Helmet 08
+Character/Appearance/Head/DarkFortress/DF Helmet 09
+Character/Appearance/Head/DarkFortress/DF Mask 01
+Character/Appearance/Head/DarkFortress/DF Mask 02
+Character/Appearance/Head/DarkFortress/DF Mask 03
+Character/Appearance/Head/DarkFortress/DF Mask 04
 Character/Appearance/Head/Dinosaur Hat
 Character/Appearance/Head/FBI Hat
 Character/Appearance/Head/Fedora
@@ -73,6 +86,22 @@ Character/Weapons/Bows/Mithril Bow
 Character/Weapons/Bows/Phantom Bow
 Character/Weapons/Bows/Rune Bow
 Character/Weapons/Bows/Steel Bow
+Character/Weapons/DarkFortress/DF Axe 01
+Character/Weapons/DarkFortress/DF Cannon 01
+Character/Weapons/DarkFortress/DF Club 01
+Character/Weapons/DarkFortress/DF Hammer 01
+Character/Weapons/DarkFortress/DF Mace 01
+Character/Weapons/DarkFortress/DF Mace 02
+Character/Weapons/DarkFortress/DF Saw 01
+Character/Weapons/DarkFortress/DF Scythe 01
+Character/Weapons/DarkFortress/DF Shield 01
+Character/Weapons/DarkFortress/DF Shield 02
+Character/Weapons/DarkFortress/DF Staff 01
+Character/Weapons/DarkFortress/DF Staff 02
+Character/Weapons/DarkFortress/DF Staff 03
+Character/Weapons/DarkFortress/DF Sword 01
+Character/Weapons/DarkFortress/DF Sword 02
+Character/Weapons/DarkFortress/DF Sword 03
 Character/Weapons/Shields/Abraxas Shield
 Character/Weapons/Shields/Adamantite Shield
 Character/Weapons/Shields/Ancient Shield
