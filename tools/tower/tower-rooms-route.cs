@@ -198,7 +198,9 @@ TowerGate Gate(string name, UnityEngine.Vector3 at, UnityEngine.Vector3 through,
     var wardGo = Group("Ward", seal);
     wardGo.localPosition = new UnityEngine.Vector3(0f, 0f, 0.38f);
     var ward = wardGo.gameObject.AddComponent<TowerWard>();
-    ward.Width = LeafWidth * 2f + 0.5f;
+    // a little narrower than the two leaves: wider, its edges showed from the next room through the crack between
+    // a leaf and the frame
+    ward.Width = LeafWidth * 2f - 0.1f;
     // no higher than the leaves: over them it showed from the next room
     ward.Height = leafTop;
     ward.Apron = 2.2f;

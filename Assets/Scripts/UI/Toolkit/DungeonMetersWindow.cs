@@ -70,6 +70,7 @@ namespace Shinobytes.UI
         private VisualElement window;
         private Label title;
         private Label room;
+        private VisualElement summary;
         private Label timer;
         private readonly Button[] tabs = new Button[3];
         private Label rateHeader;
@@ -168,6 +169,7 @@ namespace Shinobytes.UI
             var totalColumn = root.Q<Label>("meters-col-total");
             if (totalColumn != null) totalColumn.text = Localization.UI_METER_TOTAL;
             room = root.Q<Label>("meters-room");
+            summary = room != null ? room.parent : null;
             timer = root.Q<Label>("meters-timer");
             tabs[0] = root.Q<Button>("meters-tab-damage");
             tabs[1] = root.Q<Button>("meters-tab-healing");
@@ -288,7 +290,10 @@ namespace Shinobytes.UI
                 return;
             }
 
-            // no stacked windows: while the tower panel's floor map lies where this window is, it waits
+            // no stacked windows: it keeps clear of the other windows, the tower panel and the corner pills
+            KeepClear();
+
+            // while the tower panel's floor map lies where this window is (no room beside it), it waits
             // (hidden, not closed: its place is still known when the map goes)
             var covered = TowerHudView.MapShown && window.panel == TowerHudView.PanelOwner && window.worldBound.Overlaps(TowerHudView.PanelBounds);
             window.style.visibility = covered ? Visibility.Hidden : Visibility.Visible;
@@ -301,6 +306,142 @@ namespace Shinobytes.UI
         }
 
         private static bool IsStretch(CombatMeter meter) => meter != null && meter != CombatMeter.Dungeon && meter != CombatMeter.Tower;
+
+        // ---- keeping clear of the other windows --------------------------------------------------------------
+
+        private const float ClearGap = 8f, ClearStep = 24f;
+        private static readonly List<VisualElement> foundWindows = new List<VisualElement>();
+        private readonly List<Rect> blocked = new List<Rect>();
+        private VisualElement cornerPills;
+        // where the window stood (its remembered place) before it was moved out of something's way, and where it
+        // was moved to; it goes back when its place is free again, and a drag by hand makes the new place its own
+        private Vector2? home;
+        private Vector2 nudgedTo;
+
+        /// <summary>
+        /// The window never lies over another HUD window (the player details, the players list, any other), the
+        /// tower panel or the pills in the bottom left corner: where it would, it stands at the nearest free place
+        /// instead, and goes back to its own place when that is free again. Checked on the refresh interval while
+        /// it is shown; the search only runs when something is in the way.
+        /// </summary>
+        private void KeepClear()
+        {
+            var panel = window.panel;
+            if (panel == null) return;
+            var root = panel.visualTree;
+            var screen = root.worldBound;
+            var box = window.worldBound;
+            if (float.IsNaN(box.width) || box.width < 2f || box.height < 2f || float.IsNaN(screen.width) || screen.width < 2f) return;
+
+            // moved by hand since it was put somewhere: that is its place now
+            if (home.HasValue && (box.position - nudgedTo).sqrMagnitude > 9f) home = null;
+
+            blocked.Clear();
+            foundWindows.Clear();
+            root.Query<VisualElement>(className: "rf-window").ToList(foundWindows);
+            foreach (var other in foundWindows)
+            {
+                if (other == window || !Visible(other)) continue;
+                var r = other.worldBound;
+                if (float.IsNaN(r.width) || r.width < 2f || r.height < 2f) continue;
+                blocked.Add(r);
+            }
+            if (TowerHudView.PanelOwner == panel)
+            {
+                var r = TowerHudView.PanelBounds;
+                if (!float.IsNaN(r.width) && r.width > 2f && r.height > 2f) blocked.Add(r);
+            }
+            if (cornerPills == null || cornerPills.panel == null) cornerPills = FindCornerPills(root);
+            if (cornerPills != null && Visible(cornerPills))
+            {
+                // the stack is as big as the pills it shows
+                foreach (var pill in cornerPills.Children())
+                {
+                    if (!Visible(pill)) continue;
+                    var r = pill.worldBound;
+                    if (!float.IsNaN(r.width) && r.width > 2f && r.height > 2f) blocked.Add(r);
+                }
+            }
+
+            var want = home ?? box.position;
+            var wanted = new Rect(want, box.size);
+            if (Free(wanted))
+            {
+                if (home.HasValue) { MoveTo(want, box); home = null; }
+                return;
+            }
+            if (!home.HasValue && Free(box)) return;
+
+            // the nearest free place to its own, on a coarse grid over the screen
+            var best = Vector2.zero;
+            var bestCost = float.MaxValue;
+            for (var y = screen.yMin; y <= screen.yMax - box.height; y += ClearStep)
+            {
+                for (var x = screen.xMin; x <= screen.xMax - box.width; x += ClearStep)
+                {
+                    var cost = (new Vector2(x, y) - want).sqrMagnitude;
+                    if (cost >= bestCost || !Free(new Rect(x, y, box.width, box.height))) continue;
+                    bestCost = cost;
+                    best = new Vector2(x, y);
+                }
+            }
+            if (bestCost == float.MaxValue) return; // no room anywhere at this size: it stays
+            if (!home.HasValue) home = box.position;
+            MoveTo(best, box);
+        }
+
+        // The pills in the bottom left corner ("Bot offline", the server's state): on this panel, or on a panel of
+        // their own (the same screen measure, so their places compare). Looked for until found.
+        private float nextPillSearch;
+
+        private VisualElement FindCornerPills(VisualElement root)
+        {
+            var stack = root.Q<VisualElement>(className: "rf-conn-stack");
+            if (stack != null || Time.unscaledTime < nextPillSearch) return stack;
+            nextPillSearch = Time.unscaledTime + 5f;
+            foreach (var doc in FindObjectsByType<UIDocument>(FindObjectsSortMode.None))
+            {
+                var other = doc.rootVisualElement;
+                if (other == null) continue;
+                stack = other.Q<VisualElement>(className: "rf-conn-stack");
+                if (stack != null) return stack;
+            }
+            return null;
+        }
+
+        private bool Free(Rect rect)
+        {
+            for (var i = 0; i < blocked.Count; ++i)
+            {
+                var b = blocked[i];
+                if (rect.xMin < b.xMax + ClearGap && rect.xMax > b.xMin - ClearGap && rect.yMin < b.yMax + ClearGap && rect.yMax > b.yMin - ClearGap) return false;
+            }
+            return true;
+        }
+
+        private void MoveTo(Vector2 position, Rect box)
+        {
+            var origin = window.parent != null ? window.parent.worldBound.position : Vector2.zero;
+            // through the window's own keeper of its place: it puts the window back where it last had it on every
+            // change of layout, so a place written beside it did not hold
+            if (drag != null) drag.Nudge(position - origin);
+            else
+            {
+                window.style.left = new Length(position.x - origin.x, LengthUnit.Pixel);
+                window.style.top = new Length(position.y - origin.y, LengthUnit.Pixel);
+            }
+            nudgedTo = position;
+        }
+
+        private static bool Visible(VisualElement element)
+        {
+            for (var e = element; e != null; e = e.parent)
+            {
+                var style = e.resolvedStyle;
+                if (style.display == DisplayStyle.None || style.visibility == Visibility.Hidden) return false;
+            }
+            return true;
+        }
 
         /// <summary>A run that is on, or over for less than the linger, and not closed by hand.</summary>
         private bool Live(CombatMeter meter) =>
@@ -368,6 +509,12 @@ namespace Shinobytes.UI
             }
 
             shown = value;
+            // back to its own place before it goes: the next time it shows it starts from there
+            if (!value && home.HasValue)
+            {
+                MoveTo(home.Value, window.worldBound);
+                home = null;
+            }
             window.style.display = value ? DisplayStyle.Flex : DisplayStyle.None;
             if (value)
             {
@@ -424,19 +571,23 @@ namespace Shinobytes.UI
                             var e = meter.Find(id);
                             if (e != null) marked += (marked.Length > 0 ? ", " : string.Empty) + e.Name;
                         }
-                        if (marked.Length > 0) marked = "<color=#F2C14E>" + meter.MarkText + ": " + marked + "</color>   ";
+                        if (marked.Length > 0) marked = "\n<size=17><color=#F2C14E>" + meter.MarkText + ": " + marked + "</color></size>";
                     }
-                    text = (string.IsNullOrEmpty(meter.Outcome) ? Localization.UI_METER_RESULT : meter.Outcome) + "  <size=15>" + marked + "<color=#A79E8A>"
+                    // the names on a line of their own under the outcome: beside it two names ran into the timer
+                    text = (string.IsNullOrEmpty(meter.Outcome) ? Localization.UI_METER_RESULT : meter.Outcome) + "  <size=15><color=#A79E8A>"
                         + string.Format(CultureInfo.InvariantCulture, Localization.UI_METER_CLOSING, left)
-                        + "</color></size>";
+                        + "</color></size>" + marked;
+                    if (summary != null) summary.EnableInClassList("rf-meters__summary--two", marked.Length > 0);
                 }
                 else if (meter != CombatMeter.Dungeon)
                 {
+                    if (summary != null) summary.EnableInClassList("rf-meters__summary--two", false);
                     // a tower run says what it is itself: "MINI BOSS", "FLOOR BOSS", "TRAINING"
                     text = meter.Caption ?? string.Empty;
                 }
                 else
                 {
+                    if (summary != null) summary.EnableInClassList("rf-meters__summary--two", false);
                     if (!dungeon)
                     {
                         var gm = GameManager.Instance;

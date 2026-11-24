@@ -578,6 +578,12 @@ namespace Shinobytes.UI
         /// <summary>
         /// Writes a position after forcing it inside the container.
         /// </summary>
+        /// <summary>
+        /// Puts the window somewhere (kept on screen) without that being a drag: a window that keeps out of another's
+        /// way (the meters window). Nothing is saved by it; the place is saved, as always, when the window is dragged.
+        /// </summary>
+        public void Nudge(Vector2 position) => ApplyClamped(position);
+
         private void ApplyClamped(Vector2 position)
         {
             var container = window.parent;

@@ -42,6 +42,15 @@
     flex-direction: column;
 }
 
+/* A result that names the last blow has two lines: the outcome, and the names under it. */
+.rf-meters__summary.rf-meters__summary--two {
+    height: 72px;
+}
+
+.rf-meters__summary--two .rf-meters__room {
+    white-space: normal;
+}
+
 .rf-meters__spacer {
     flex-grow: 1;
 }

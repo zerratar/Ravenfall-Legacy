@@ -853,9 +853,8 @@ fight (mini boss or floor boss) opens it when the fight begins, after the intro;
 and damage taken, is titled with the fight ("Floor 1, part 10 - Viridia, the Verdant Wyrm"), says "MINI BOSS" or
 "FLOOR BOSS" while it runs and "VICTORY" or "DEFEAT" after, lingers the dungeon's 60 seconds and is hidden by its
 close button until the next fight. On a floor boss the result line names the last blow ("VICTORY  Last blow:
-Bot12876", from the game at once, then as the server gave the title) and the name stands in gold in its row (the
-second picture of worlds2-meters-floorboss.png shows this with made-up numbers; the real result was read from the
-window: Bot25696). **Which run shows: the one the camera is watching.** With the
+Bot12876", from the game at once, then as the server gave the title) and the name stands in gold in its row
+(worlds2-meters-floorboss.png, from a real fight). **Which run shows: the one the camera is watching.** With the
 camera at a place of the tower it is the tower's (a fight while the camera is on its part; its result wherever in
 the tower the camera went, the town after a win); with the camera anywhere else it is the dungeon's as before, and
 it comes back when the camera returns within the linger. It is never over a tower cutscene and never over the
@@ -973,9 +972,9 @@ the best gear for it; won of 200 fights; only the guardians where anything is un
 
 Ten and thirty players won every fight before and after. With 60 seconds in place of 40 a group of five wins 99 to
 100 of 100, two players 71 to 100; with 90 seconds five lose the harder mini bosses about one time in ten and two
-players as often as with no recovery. **The guardians' own numbers were not changed**: with recovery a fresh group
-of five in the best gear does not lose a mini boss in the simulator any more (it lost the harder ones one time in
-two to four before), so if that should come back it has to come from the guardians, floor by floor.
+players as often as with no recovery. **The guardians' own numbers were not changed** in that round: with recovery a
+fresh group of five in the best gear did not lose a mini boss in the simulator any more (it lost the harder ones one
+time in two to four before). The tuning round below put the risk back into the guardians, floor by floor.
 
 **Also played in this round.** The floor map's arrows with pointer events (floor 2 to 1 and back, each greyed at
 its end). A gather objective fed by real gathering: the dev character mining alone, +53 in 336 seconds, which is the
@@ -993,3 +992,118 @@ seconds (designed 5).
 5. **The seal is a curtain of light at every sealed door**, green in the crypt and white-blue in the vault.
 6. **The players list's health bars** now show real health everywhere (they stood full before).
 7. **The meters window's type is larger**, in dungeons too.
+
+### The guardians rebalanced for recovery (2026-11-24, the tuning round)
+
+With recovery (40 seconds, half health; unchanged, one fixed number) a fresh group of five won every guardian, so
+the fights had no risk left. A fight is now only lost when nobody stands at the same moment, and a guardian's health
+does not make that happen: what does is how hard it strikes, because its slam is a share of a blow and reaches
+everyone standing near it. So the risk was put back into the blows, and only a floor boss got more health, to make
+its fight clearly longer than a mini boss's.
+
+**What changed, all in `RavenNest.Combat` (`TowerPressure`, applied in `Tower.Boss(floor, pressure)`):**
+
+- `Fury(floor, floorBoss)`: what a guardian's blows (and with them its slam and spit) are multiplied by against a
+  full group. Mini bosses: **1.45 on floor 1, 2.2 on floor 2, 1.8 on floor 3**; floor bosses: **1.5, 1.65, 1.45**.
+  Floor 2's number is the biggest because its guardians were the softest for their floor (with 1.3 a group of five
+  still won all of them); the aim is the risk, which grows with every floor (below). From floor 4 on there are no
+  guardians to measure: the rule gives floor 3's number and a tenth more with every floor (mini bosses up to 2.6,
+  floor bosses up to 2.2), to be measured when a floor is made.
+- `FloorBossPool` = 1.8: a floor boss's health against a full group, so its fight takes five players about 4.5 to 5
+  minutes where a mini boss takes 3 to 4.
+- `FuryShare`: a group smaller than the part's suggested five meets that share of both (two players: 40% of the extra
+  blows and of the extra health). The small-group mercy and the scaling by pressure work as before, under it.
+- Nothing else: the slam's share, reach and rhythm, the helpers, the enrage and the time limit are as they were.
+  Tried and dropped: a bigger slam alone (with twice its share, 1.2 blows, five still won 99 to 100 of 100 on floors 1
+  and 2), and the same blows for every group (two players fell to 34 of 100 on floor 3).
+
+**The simulator, before and now** (`tower 200`; both with recovery; won of 100, the mini bosses of a floor as lowest
+/ mean / highest, and the minutes a won fight took):
+
+*Fresh synced players:*
+
+| Floor | Players | Mini bosses before | Mini bosses now | Floor boss before | Floor boss now |
+|---|---|---|---|---|---|
+| 1 | 2 | 95 / 99 / 100, 3.2 min | 81 / 94 / 100, 3.3 min | 100, 5.1 min | 100, 6.6 min |
+| 1 | 5 | 100 / 100 / 100, 2.7 min | 72 / 91 / 100, 3.1 min | 100, 2.6 min | 91, 5.1 min |
+| 1 | 10 | 100 / 100 / 100, 1.7 min | 100 / 100 / 100, 1.8 min | 100, 2.3 min | 100, 4.2 min |
+| 1 | 30 | 100 / 100 / 100, 1.2 min | 100 / 100 / 100, 1.2 min | 100, 1.4 min | 100, 2.4 min |
+| 2 | 2 | 100 / 100 / 100, 3.6 min | 84 / 97 / 100, 3.9 min | 100, 4.7 min | 100, 6.1 min |
+| 2 | 5 | 100 / 100 / 100, 2.8 min | 49 / 82 / 100, 3.5 min | 100, 2.2 min | 86, 4.5 min |
+| 2 | 10 | 100 / 100 / 100, 2.2 min | 100 / 100 / 100, 2.3 min | 100, 2.0 min | 100, 3.8 min |
+| 2 | 30 | 100 / 100 / 100, 1.7 min | 100 / 100 / 100, 1.8 min | 100, 1.5 min | 100, 2.6 min |
+| 3 | 2 | 88 / 98 / 100, 4.6 min | 14 / 73 / 97, 4.8 min | 100, 5.9 min | 100, 7.8 min |
+| 3 | 5 | 100 / 100 / 100, 3.2 min | 22 / 70 / 97, 4.0 min | 100, 2.6 min | 90, 5.1 min |
+| 3 | 10 | 100 / 100 / 100, 2.7 min | 100 / 100 / 100, 2.9 min | 100, 2.4 min | 100, 4.4 min |
+| 3 | 30 | 100 / 100 / 100, 2.4 min | 100 / 100 / 100, 2.5 min | 100, 2.1 min | 100, 3.6 min |
+
+*Veterans (a tree's passives on the synced kit):*
+
+| Floor | Players | Mini bosses before | Mini bosses now | Floor boss before | Floor boss now |
+|---|---|---|---|---|---|
+| 1 | 2 | 94 / 99 / 100, 2.3 min | 78 / 92 / 100, 2.3 min | 100, 3.5 min | 100, 4.8 min |
+| 1 | 5 | 100 / 100 / 100, 2.0 min | 97 / 100 / 100, 2.1 min | 100, 2.1 min | 92, 4.1 min |
+| 1 | 10 | 100 / 100 / 100, 1.3 min | 100 / 100 / 100, 1.4 min | 100, 1.7 min | 100, 3.0 min |
+| 1 | 30 | 100 / 100 / 100, 1.0 min | 100 / 100 / 100, 1.0 min | 100, 1.1 min | 100, 1.9 min |
+| 2 | 2 | 99 / 100 / 100, 2.6 min | 23 / 67 / 100, 2.8 min | 100, 3.3 min | 94, 4.7 min |
+| 2 | 5 | 100 / 100 / 100, 2.2 min | 81 / 97 / 100, 2.6 min | 100, 2.1 min | 64, 4.5 min |
+| 2 | 10 | 100 / 100 / 100, 1.8 min | 100 / 100 / 100, 1.9 min | 100, 1.7 min | 100, 3.0 min |
+| 2 | 30 | 100 / 100 / 100, 1.5 min | 100 / 100 / 100, 1.6 min | 100, 1.3 min | 100, 2.2 min |
+| 3 | 2 | 47 / 90 / 100, 3.2 min | 1 / 32 / 64, 3.3 min | 100, 4.0 min | 97, 5.7 min |
+| 3 | 5 | 100 / 100 / 100, 2.6 min | 57 / 91 / 100, 3.1 min | 100, 2.3 min | 76, 4.6 min |
+| 3 | 10 | 100 / 100 / 100, 2.3 min | 100 / 100 / 100, 2.5 min | 100, 2.0 min | 100, 3.6 min |
+| 3 | 30 | 100 / 100 / 100, 2.1 min | 100 / 100 / 100, 2.2 min | 100, 1.8 min | 100, 3.1 min |
+
+Read against the aims (fresh players, no healers or skills): five win a mini boss 91, 82 and 70 times in 100 on
+floors 1, 2 and 3, and the floor bosses 91, 86 and 90, in about 5 minutes against 3 to 4. Two players win 94, 97 and
+73 of 100 mini bosses and every floor boss, in 6 to 8 minutes (the limit is 10). Ten and thirty still win
+everything; their fights take 1.2 to 2.9 minutes for a mini boss and 2.4 to 4.4 for a floor boss.
+
+**What is not right yet.**
+
+- *The spread within a floor is wide.* The hardest mini bosses for five are The Brood Mother (72), The Moo-tant,
+  Refrozen (49), The Thawed Ronin (58), Captain Quackbeard (48), Mother Squall (62) and Master Kaze (22; he was
+  the hardest before recovery too, 4 of 100). One number per floor cannot even them out: that takes each
+  guardian's own numbers.
+- *Veterans do worse than fresh players in two places.* A group's strength counts as pressure, so a guardian is
+  bigger for veterans, and the fury multiplies that: two veterans win 67 of 100 mini bosses on floor 2 and 32 on
+  floor 3 (fresh: 97 and 73), and five veterans win the floor bosses of floors 2 and 3 only 64 and 76 times (fresh:
+  86 and 90). Five veterans against mini bosses do better than fresh players (100, 97, 91). This needs a look at
+  how strength is counted against a guardian; it was not changed here.
+
+**Played after it** (editor, local server, bots; the bots are above the parts' levels, so they are level-synced
+players without skills or healers, as the simulator's):
+
+| Fight | Players | Guardian's health | Outcome | Knockouts | Most down at once | The simulator says |
+|---|---|---|---|---|---|---|
+| Floor 1 boss, Viridia (1-10) | 5 | 98,140 | won after 5.5 min | 9 | 3 (2 left standing) | 91 of 100, 5.1 min |
+| Floor 2 mini boss, Jarl Rimebeard (2-1) | 5 | 75,670 | won after 3.2 min | 4 | 3 (2 left standing) | floor 2: 82 of 100, 3.5 min |
+| Floor 1 boss, Viridia (1-10) | 9 | 169,690 | won after 5.6 min | 18 | 4 (5 left standing) | ten: 100 of 100, 4.2 min |
+| Floor 2 mini boss, Jarl Rimebeard (2-1) | 9 | 111,130 | won after 3.0 min | 6 | 4 (5 left standing) | ten: 100 of 100, 2.3 min |
+
+One fight each, so this says the kind, not the odds. The game agrees with the simulator in kind: the fights last what
+it says for five (a little longer for nine than its ten), a floor boss is clearly the longer fight, players fall all
+through the fight and come back, and with five both fights came down to two players standing at their worst moment:
+one more knockout at the wrong time and they were lost. Nine never came near it. In every fight the meter's damage
+on the guardian was its health to the point. The mini boss played is floor 2's first (the floor 1 boss's win leads
+there); no floor 1 mini boss was played in this round.
+
+**The leftovers of the last round.**
+
+- *The meters window keeps clear.* It never lies over another HUD window (the player details, the players list, any
+  other), the tower panel or the pills in the bottom left corner: where its remembered place would, it stands at the
+  nearest free place (a search on a 24 px grid, only when something is in the way), goes back when its own place is
+  free again, and a drag by hand makes the new place its own. It is moved through `DraggableWindow.Nudge`, which
+  saves nothing (written straight into the style, the window's own keeper put it back on the next layout). Seen:
+  from its remembered place under the "Bot offline" pill it stood 82 px higher, clear of the pill, the player
+  details and the players list; with the players list in its way, beside it. The window's panel measures the
+  screen in pixels, so this was seen at the editor's 2560 by 1440 only; 1920 by 1080 and 1280 by 720 were not
+  captured.
+- *The last blow has a line of its own* under the outcome in the result ("VICTORY  Closes in 52s" and under it "Last
+  blow: Bot53442, Bot36390, Bot28142"), so nothing runs into the timer; seen with three names from a real fight.
+- *Captures retaken:* worlds2-boss-lost.png (the title under the tower panel, clear of the name tags of nine players
+  lying under it) and worlds2-meters-floorboss.png (a real fight of five and its real result).
+- *The line of light at a sealed door's jamb, seen from the next room, is still there.* The curtain is now narrower
+  than the two leaves, which did not remove it: it is the lit side of the doorway seen through the gap the pack's
+  leaf leaves at the frame. Not quick; left.
+- *Not done:* a loss by time, and the first-time intro after Start now.
