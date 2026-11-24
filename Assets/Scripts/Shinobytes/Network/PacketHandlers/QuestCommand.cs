@@ -873,8 +873,8 @@ public static class QuestChat
     }
 
     /// <summary>
-    ///     What a person without a chain says: the innkeeper tells a rumour of the floor the stream is on (only its name,
-    ///     no spoilers past it), or one of their own lines.
+    ///     What a person without a chain says: the innkeeper tells a rumour of the part the stream is on (its number
+    ///     on the floor, its name and its guardian, no spoilers past it), or one of their own lines.
     /// </summary>
     private static string Rumour(RavenNest.Combat.TowerNpc npc)
     {
@@ -887,7 +887,7 @@ public static class QuestChat
             if (line != null) lines.Add(line);
         }
         if (floor != null && (lines.Count == 0 || UnityEngine.Random.value < 0.4f))
-            return string.Format(Localization.UI_TOWN_RUMOUR, floor.Number, floor.Name, floor.Boss.Name);
+            return string.Format(Localization.UI_TOWN_RUMOUR, floor.Part, floor.Name, floor.Boss.Name);
         return lines.Count > 0 ? lines[UnityEngine.Random.Range(0, lines.Count)] : "...";
     }
 

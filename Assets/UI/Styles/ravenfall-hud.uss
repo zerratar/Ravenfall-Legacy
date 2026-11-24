@@ -1293,6 +1293,11 @@
     color: #B9E08F;
 }
 
+/* The part's guardian (a mini boss or the floor boss): the last row, in the panel's accent, waiting behind the others. */
+.rf-tower__quest--guardian .rf-tower__quest-text {
+    color: var(--rf-accent);
+}
+
 .rf-dungeon__enemies {
     flex-direction: row;
     align-items: center;

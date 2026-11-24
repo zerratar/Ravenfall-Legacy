@@ -6,6 +6,16 @@ floating castle: a tower of **100 floors** (for now) that a stream climbs togeth
 floor's quests; after that the stream can **retry the boss as often as it likes** until it wins. Floors come
 out a few at a time: the first ones with the update that brings the new combat, more with every update after.
 
+> **The words changed on 2026-11-24 (v0.9.7, before the tower's first release).** Players now see **floors**, each a
+> world with its own town, and the **parts** of a floor. What this document calls a *band* is a floor (the Overgrown
+> Halls are floor 1, the Frozen Vault floor 2, the Storm Spire floor 3), what it calls a *floor* is a part ("floor 14"
+> is floor 2, part 4), a floor's quests are a part's *objectives*, and its boss is a *mini boss*, or the *floor boss* on
+> a floor's last part (the old floors 10, 20 and 30). The server and the code still count a part by its old floor
+> number, now called its *step*. The sections below keep the words they were written with, as the record of how the
+> tower was built; where a command, a number or a text changed, a line marked *Since 2026-11-24* says so. The shape
+> as built (words, commands, mini bosses and floor bosses, the kinds of objectives, scaling by pressure) is
+> [tower-worlds-proposal.md](tower-worlds-proposal.md), section 12.
+
 Decided with Zerratar (2026-11-06):
 - Every floor: a couple of stream quests, then a floor boss.
 - The boss room opens only after the floor's quests are done; then unlimited retries.
@@ -45,6 +55,9 @@ A floor goes through four states:
   healers, damage.
 - **Fixed difficulty:** unlike raids, which scale to whoever joins, a floor boss has fixed stats for its floor,
   so climbing is a real progression. Each floor shows a suggested group size and combat level.
+  *Since 2026-11-24:* the fixed numbers are what the suggested group of five meets. A bigger or stronger group meets
+  more (health, helpers, a little harder blows), a smaller one less: scaling by pressure, tower-worlds-proposal.md
+  section 12.
 - **Losing:** everyone who fell, or a time limit (for example 10 minutes), ends the attempt. The boss resets
   and can be tried again after a short pause (2 minutes, to regroup). No limit on attempts.
 - **Winning:** the floor is cleared for the stream, and everyone who took part gets the floor's rewards.
@@ -96,12 +109,19 @@ had its town; one per band is a tenth of the work and still gives the climb its 
 - **The village:** a trophy decor piece per band cleared (the village decor system has room for it).
 - **Floor quests** pay as stream quests do today, with the village's share.
 
+*Since 2026-11-24:* every part's clear pays the chest, coins and gear as before (two chest items from a floor boss and
+from every fifth part). The world first that is announced is the floor boss's; the first clear of any other part is
+kept for the website and doubles the coins quietly. The last blow on a floor boss gives a title ("the Finisher").
+
 ## 6. The website
 
 - A **tower page**: the floors that exist, each with its theme, boss and suggested group, the first stream to
   clear it and when.
 - A **leaderboard** of the highest floor per stream.
 - The stream's own climb on its town page.
+
+*Since 2026-11-24:* /tower shows floors with their towns and a card per part with its objectives; the leaderboard
+ranks by floor, then part; the streamer's /town page shows the stream's part and its objectives' progress.
 
 ## 7. Releases
 
@@ -331,6 +351,10 @@ level; the website explains it and shows it on every floor.
 
 - **Climber** (an achievement): the highest floor whose boss fell with the character there; the titles "the Climber"
   (floor 1), "the Spire Walker" (5) and "the Bane of Viridia" (10). More tiers come with the next bands (25, 50, 75, 100).
+  *Since 2026-11-24:* the same steps in the new words: the first part, the middle part of each floor and each floor's
+  boss (floor 1 part 1, 1-5, floor 1 cleared, 2-5, floor 2 cleared, 3-5, floor 3 cleared), worked out from the floors
+  that exist; the website shows the climber's progress as "Floor 2, part 4". New: **Last Blow**, for last blows on
+  floor bosses: "the Finisher" (1), "the Last Word" (3), "the Curtain Call" (10).
 - **Nibbled** (hidden): knocked out during a boss attempt on floor 1, by a bunny; the title "the Bunny Snack". The game
   sends knock-outs during an attempt with the kills report (`TowerKillReport.Falls`); the server counts only the
   stream's own floor.
@@ -392,6 +416,9 @@ Zerratar (2026-11-10): the tower does not stop at ten floors for v0.9.7; keep ad
 - **Towns by name**: `!tower town` goes to the town that is open (players go where the others are), else the stream's
   band's; `!tower town mossgate`, `!tower mossgate` or `!tower rimeholt` goes to that one if the stream has reached it,
   so Mossgate's chains can still be finished. One town is loaded at a time: another opens once the open one is empty.
+- *Since 2026-11-24:* the command is `!tower part 7` (a part of the floor the group is on), `!tower floor 2` (that
+  floor's latest part), `!tower floor 2 part 7` or short `!tower 2-7`; `!tower part` or `!tower floor` alone goes back
+  to the climb. `!tower train 7` still works as `!tower part 7`.
 - **Training on cleared floors** (the open question below, answered): `!tower floor 7` (the streamer and moderators)
   takes everyone in the tower down to a floor the stream has reached; its monsters give experience and count for the
   town chains, but the climb's quests and boss stay on the stream's floor. The same layout refills at once, another is
@@ -484,6 +511,10 @@ ones stay short so the climb is not interrupted.
   stare, the metalons rear up and cast, the dragons roar fire, Emperor Quackers flaps his wings, and the Moo-tant is not
   impressed and goes on eating. Each is timed to end as the camera settles and the name shows. A model with no taunt winds
   up its attack, slowed.
+- *Since 2026-11-24:* a **mini boss** has the short versions (a 5 second intro with "Mini boss of floor 1, part 3" or
+  its line, a 3.2 second fall with "Part 3 cleared" in silver); the **floor boss** has the full ones (9 seconds with
+  "Boss of floor 1, The Overgrown Halls" and its line, a 6.5 second fall with "Floor 1 cleared" in gold). A town's
+  arrival says "Floor 2: The Frozen Vault".
 - **The boss falls (built 2026-11-18).** Every clear: 4.5 seconds round the boss as its death plays in slow motion (from
   the start, not after its swing; a dragon's long death at its own pace so it is down before the end), "Floor 7 cleared"
   in gold, "The Rootbound King falls". The body stays down until it goes, and the players cheer. Without the cutscene
@@ -569,6 +600,10 @@ Colossus and the Plague Lord (their help, slam and spit), and the new monsters o
 clear (the server's trophy roll) was not played: the dev stream is on floor 6, so these were training attempts.
 
 ## 20. Legendaries from the top band (2026-11-23)
+
+*Since 2026-11-24:* "floor 21 or higher" reads "floor 3 or higher": any part of floor 3, the Storm Spire, and every
+guardian on it (mini bosses and the floor boss) is the source. `Legendary.TowerFloor` is 3 now, the floor's number;
+`Legendary.TowerStep` is its first part's step, 21.
 
 The Legendary weapons (docs/legendary-design.md) ask for a clear of floor 21 or higher fought in (the climber
 achievement's highest floor, per character), and the boss of floor 21 and up is their best source: 4% a qualifying
@@ -714,4 +749,6 @@ Captures from the game's camera: `docs/mockups/tower/band4/great-hall-*.png`.
   sent back to the world and quietly dropped out of the climb). In a boss attempt they are out of it for good: the boss
   forgets them, its slams and spits pass them by, and the attempt is lost when every participant has fallen. They still
   share the clear's rewards.
-- ~~Can players train on cleared floors?~~ Yes: `!tower floor N` (section 15) and the towns (section 14).
+- ~~Can players train on cleared floors?~~ Yes: `!tower floor N` (section 15; `!tower part N` since 2026-11-24) and the
+  towns (section 14). Each player going to a cleared part alone, with several parts loaded, is the next step
+  (tower-worlds-proposal.md, section 11).

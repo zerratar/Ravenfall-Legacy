@@ -5,8 +5,9 @@ using RavenNest.Models;
 namespace RavenNest.SDK.Endpoints
 {
     /// <summary>
-    /// The tower on the server (api/tower, docs/tower-design.md): the stream's floor and quests, kills on the floor,
-    /// boss attempts and clears. The server keeps the progress; the game reports what happens on the floor.
+    /// The tower on the server (api/tower, docs/tower-design.md): the stream's part and its objectives, what happens
+    /// on the part, boss attempts and clears. The server keeps the progress; the game reports what happens on the
+    /// part. "floor" in the calls is the part's step: its number counted through every floor of the tower.
     /// </summary>
     public class TowerApi
     {
@@ -22,14 +23,17 @@ namespace RavenNest.SDK.Endpoints
             return request.Create().Build().SendAsync<TowerState>(ApiRequestTarget.Tower, ApiRequestType.Get);
         }
 
-        /// <summary>Kills on the floor since the last report, in the quests' text form ("defeat-hall-goblin:3;...").</summary>
+        /// <summary>
+        /// What happened on the part since the last report, in the objectives' text form: kills per kill objective, every
+        /// kill and hidden things found ("defeat-hall-goblin:3;kills:5;find-boots:1").
+        /// </summary>
         public Task<TowerState> ProgressAsync(int floor, string counts)
         {
             return request.Create().Identifier(floor.ToString()).Method("progress").AddParameter(Uri.EscapeDataString(counts)).Build()
                 .SendAsync<TowerState>(ApiRequestTarget.Tower, ApiRequestType.Post);
         }
 
-        /// <summary>Kills per character and kind on the floors, for the characters' own quests (Mossgate's chains).</summary>
+        /// <summary>Kills per character and kind in the tower, for the characters' own quests (the towns' chains).</summary>
         public Task<bool> KillsAsync(TowerKillReport report)
         {
             return request.Create().Identifier("kills").Build()
@@ -42,10 +46,11 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<TowerState>(ApiRequestTarget.Tower, ApiRequestType.Post);
         }
 
-        public Task<TowerClearResult> ClearedAsync(int floor, Guid[] characterIds)
+        /// <summary>The part's guardian fell: who took part, whose blows landed last and how strong the group was.</summary>
+        public Task<TowerClearResult> ClearedAsync(int floor, TowerClearReport report)
         {
-            return request.Create().Identifier(floor.ToString()).Method("cleared").AddParameter("values", characterIds).Build()
-                .SendAsync<TowerClearResult>(ApiRequestTarget.Tower, ApiRequestType.Post);
+            return request.Create().Identifier(floor.ToString()).Method("cleared").Build()
+                .SendAsync<TowerClearResult, TowerClearReport>(ApiRequestTarget.Tower, ApiRequestType.Post, report);
         }
     }
 }

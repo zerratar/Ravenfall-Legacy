@@ -10,9 +10,14 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-///     The tower (docs/tower-design.md): loads a floor scene next to MainWorld when the first player enters with
-///     !tower, moves the players who join into it and back, counts the floor's quests, runs boss attempts, and unloads
-///     the floor when nobody has been in it for a while. MainWorld is never unloaded: the players who did not join keep
+///     The tower (docs/tower-design.md, and docs/tower-worlds-proposal.md section 12 for its shape): players see floors,
+///     each a world with a town, and the parts of a floor. In this code a "floor" is still one part (a
+///     <see cref="TowerFloorDefinition"/>, a layout scene filled for it) and its number is the part's step, counted
+///     through every floor; RavenNest.Combat.Tower maps steps to floors and parts, and <see cref="TowerWords"/> says
+///     them the players' way. Loads a part's scene next to MainWorld when the first player enters with
+///     !tower, moves the players who join into it and back, counts the part's objectives (kills, hidden things found;
+///     gathering is the server's), runs boss attempts against its guardian (a mini boss, or the floor boss on a floor's
+///     last part), scales the fights by the group's pressure, and unloads the part when nobody has been in it for a while. MainWorld is never unloaded: the players who did not join keep
 ///     training as if nothing happened. While the camera is over the floor, the floor's light and fog replace the
 ///     world's, and the world-wide systems that follow the camera (sea, clouds, cloud shadows, weather) are switched off.
 ///     The stream's progress (its floor, the quests, clears) is the server's (api/tower); this keeps a copy.
@@ -204,7 +209,15 @@ public sealed class TowerManager : MonoBehaviour
         var wasOpen = State != null && State.BossOpen && State.Floor == state.Floor;
         State = state;
         if (state.BossOpen && !wasOpen && Phase == TowerPhase.Open && CurrentFloor == state.Floor && Definition != null)
-            Announce(Localization.MSG_TOWER_BOSS_OPEN, CurrentFloor, Definition.Boss.Name);
+            Announce(Localization.MSG_TOWER_BOSS_OPEN, TowerWords.Floor(CurrentFloor), TowerWords.Part(CurrentFloor), TowerWords.BossKind(CurrentFloor), Definition.Boss.Name);
+    }
+
+    /// <summary>How far one of the stream's part's objectives is, as the server last said.</summary>
+    public int Progress(string objective)
+    {
+        if (State?.Objectives == null) return 0;
+        foreach (var p in State.Objectives) if (p.Id == objective) return p.Count;
+        return 0;
     }
 
     /// <summary>The floor the stream works on: the lowest not cleared, or the top floor when all are.</summary>
@@ -213,17 +226,18 @@ public sealed class TowerManager : MonoBehaviour
     /// <summary>The stream has cleared every floor that exists so far.</summary>
     public bool AllCleared => State != null && State.Floor > Tower.TopFloor;
 
-    /// <summary>"Defeat 30 Feral Bunnies (12/30), Defeat 20 Moss Goblins (done)"</summary>
+    /// <summary>"Defeat 300 Feral Bunnies (120/300), Gather 250 timber (done), Find 3 Stolen Boots (1/3)": the part's counted objectives.</summary>
     public string QuestText()
     {
         var floor = Tower.Get(StreamFloor);
         if (floor == null) return "";
         if (AllCleared) return Localization.MSG_TOWER_QUESTS_CLEARED;
         var parts = new List<string>();
-        foreach (var q in floor.Quests)
+        foreach (var q in floor.Objectives)
         {
-            var count = State?.Quests?.FirstOrDefault(x => x.Id == q.Id)?.Count ?? 0;
-            parts.Add(q.Text + (count >= q.Amount ? " (done)" : " (" + count + "/" + q.Amount + ")"));
+            if (!q.Counted) continue;
+            var count = Progress(q.Id);
+            parts.Add(q.Text + (count >= q.Amount ? " (done)" : " (" + count.ToString("N0", CultureInfo.InvariantCulture) + "/" + q.Amount.ToString("N0", CultureInfo.InvariantCulture) + ")"));
         }
         return string.Join(", ", parts);
     }
@@ -574,7 +588,12 @@ public sealed class TowerManager : MonoBehaviour
         pendingJoins.Clear();
         emptySince = -1f;
         var def = Definition;
-        if (joined > 0 && def != null) Announce(Localization.MSG_TOWER_OPENED, CurrentFloor, def.Name, joined, QuestText());
+        if (joined > 0 && def != null)
+        {
+            if (Training) Announce(Localization.MSG_TOWER_OPENED_TRAINING, TowerWords.Floor(CurrentFloor), TowerWords.Part(CurrentFloor), def.Name, joined);
+            else Announce(Localization.MSG_TOWER_OPENED, TowerWords.Floor(CurrentFloor), TowerWords.Part(CurrentFloor), def.Name, joined, QuestText());
+        }
+        RefreshPressure(true);
     }
 
     /// <summary>Everyone back to the world, then the floor scene goes.</summary>
@@ -613,9 +632,11 @@ public sealed class TowerManager : MonoBehaviour
         LoadedScene = null;
         CurrentFloor = 0;
         unloading = false;
-        // someone typed !tower while it unloaded: the floor loads again for them
+        // someone typed !tower while it unloaded: the floor loads again for them. Not during a climb to another part:
+        // the climbers wait in the same list for the part they asked for, and this sent them back to the stream's
+        // part instead (!tower part 3 from a part of another layout said they were going and never went)
         pendingJoins.RemoveAll(p => !p || p.isDestroyed);
-        if (pendingJoins.Count > 0 && State != null && Phase == TowerPhase.Closed) LoadFloor(StreamFloor);
+        if (!climbing && pendingJoins.Count > 0 && State != null && Phase == TowerPhase.Closed) LoadFloor(StreamFloor);
     }
 
     // ---- Quests ----------------------------------------------------------------------------------------------
@@ -638,12 +659,224 @@ public sealed class TowerManager : MonoBehaviour
 
         var def = Definition;
         if (CurrentFloor != StreamFloor || AllCleared || def == null) return;
-        foreach (var q in def.Quests)
+        var gathers = false;
+        foreach (var q in def.Objectives)
         {
-            if (q.Target != kind.Id) continue;
+            if (q.Kind == TowerObjectiveKind.Gather) gathers = true;
+            if (q.Kind != TowerObjectiveKind.Kill || q.Target != kind.Id) continue;
             pendingKills.TryGetValue(q.Id, out var n);
             pendingKills[q.Id] = n + 1;
         }
+        // a gather objective counts every monster defeated on the part too (what it carried), so a stream with nobody
+        // gathering is never stuck: the server adds them from this count
+        if (gathers)
+        {
+            pendingKills.TryGetValue(Tower.AllKills, out var all);
+            pendingKills[Tower.AllKills] = all + 1;
+        }
+    }
+
+    // ---- Hidden things (find objectives) -----------------------------------------------------------------------
+
+    /// <summary>
+    ///     A find objective's hidden thing that is being looked for now: where it lies and how long it has been searched.
+    ///     Things are found one at a time; which one is next is the server's count.
+    /// </summary>
+    private sealed class Hidden
+    {
+        public int Index = -1;
+        public Vector3 Spot;
+        public float Searched;
+        public bool Reported;
+        public float ReportedAt;
+    }
+
+    private readonly Dictionary<string, Hidden> hidden = new Dictionary<string, Hidden>();
+    private float nextSearch;
+
+    /// <summary>Seconds between two looks at who stands where (the search counts in steps of this).</summary>
+    private const float SearchStep = 1f;
+
+    /// <summary>How far along the search for an objective's next hidden thing is, 0 to 1 (the panel does not show it; the tests do).</summary>
+    public float SearchShare(string objective) =>
+        hidden.TryGetValue(objective, out var h) && h.Index >= 0 ? Mathf.Clamp01(h.Searched / Mathf.Max(1f, Tower.FindSeconds(StreamFloor))) : 0f;
+
+    /// <summary>Where an objective's next hidden thing lies on the loaded part, or null (the tests walk someone there).</summary>
+    public Vector3? HiddenSpot(string objective) => hidden.TryGetValue(objective, out var h) && h.Index >= 0 ? h.Spot : (Vector3?)null;
+
+    /// <summary>
+    ///     The hidden things of the stream's part (find objectives): each lies at one of the part's monster spots, and
+    ///     players who train there find it by themselves. A second of searching counts in full while someone stands
+    ///     near it and a quarter while players are anywhere else on the part (Tower.FindNearMeters, FindFarShare), so
+    ///     it is found whichever way the group roams; nobody types or clicks anything. Found: a word over the finder,
+    ///     and the server counts it with the next report.
+    /// </summary>
+    private void UpdateFinds()
+    {
+        if (Time.time < nextSearch) return;
+        nextSearch = Time.time + SearchStep;
+        var floor = TowerFloor.Loaded;
+        var def = Definition;
+        if (!floor || def == null || State == null || Phase != TowerPhase.Open || CurrentFloor != StreamFloor || AllCleared)
+        {
+            if (hidden.Count > 0) hidden.Clear();
+            return;
+        }
+
+        List<PlayerController> players = null;
+        foreach (var q in def.Objectives)
+        {
+            if (q.Kind != TowerObjectiveKind.Find) continue;
+            var found = Progress(q.Id);
+            if (found >= q.Amount) { hidden.Remove(q.Id); continue; }
+            if (!hidden.TryGetValue(q.Id, out var h)) hidden[q.Id] = h = new Hidden();
+            if (h.Index != found)
+            {
+                // the next one: its place is the same for everyone who comes here (the part, the objective, which one)
+                h.Index = found;
+                h.Searched = 0f;
+                h.Reported = false;
+                h.Spot = HiddenPlace(floor, def.Number, q.Id, found);
+            }
+            // told to the server and not counted yet: asked again after a while (a report can be lost or come too soon)
+            if (h.Reported)
+            {
+                if (Time.time - h.ReportedAt > 30f) { h.Reported = false; h.Searched = Tower.FindSeconds(def.Number); }
+                else continue;
+            }
+
+            players ??= Players();
+            if (players.Count == 0) continue;
+            PlayerController finder = null;
+            var best = float.MaxValue;
+            foreach (var p in players)
+            {
+                if (!p || p.isDestroyed || p.Stats.IsDead) continue;
+                var d = p.Position - h.Spot;
+                d.y = 0f;
+                if (d.sqrMagnitude < best) { best = d.sqrMagnitude; finder = p; }
+            }
+            if (!finder) continue;
+            var near = best <= Tower.FindNearMeters * Tower.FindNearMeters;
+            h.Searched += SearchStep * (near ? 1f : (float)Tower.FindFarShare);
+            if (h.Searched < Tower.FindSeconds(def.Number)) continue;
+
+            h.Reported = true;
+            h.ReportedAt = Time.time;
+            pendingKills[q.Id] = 1;
+            CombatPaths.Word(finder, string.Format(Localization.UI_TOWER_FOUND, q.Target), new Color(1f, 0.9f, 0.5f));
+            FlushKills();
+        }
+    }
+
+    // one of the part's monster spots, picked by the part, the objective and which of its things it is
+    private static Vector3 HiddenPlace(TowerFloor floor, int step, string objective, int index)
+    {
+        var spots = new List<Transform>(floor.Spots());
+        if (spots.Count == 0) return floor.Spawn;
+        unchecked
+        {
+            var hash = 17 + step * 31 + index * 131;
+            foreach (var c in objective) hash = hash * 31 + c;
+            return spots[(hash & 0x7fffffff) % spots.Count].position;
+        }
+    }
+
+    // ---- Pressure ----------------------------------------------------------------------------------------------
+
+    /// <summary>Seconds between two looks at the group on the part.</summary>
+    private const float PressureSeconds = 4f;
+
+    private float nextPressure;
+
+    /// <summary>The average strength of the players on the part beyond fresh level-synced players: 1 to 1.5.</summary>
+    public double GroupStrength { get; private set; } = 1;
+
+    /// <summary>The pressure of the part: the players on it against the group it is made for, times their strength.</summary>
+    public double PartPressure { get; private set; } = 1;
+
+    /// <summary>A player's strength on a part beyond a fresh synced player: skill trees, gems and enchantments (RavenNest.Combat.TowerPressure).</summary>
+    public static double StrengthOf(PlayerController player, int step)
+    {
+        if (!player || !CombatRules.Enabled) return 1;
+        var sheet = CombatRules.Sheet(player);
+        if (sheet == null) return 1;
+        var style = player.TrainingRanged ? AttackStyle.Ranged : player.TrainingMagic ? AttackStyle.Magic : player.TrainingHealing ? AttackStyle.Healing : AttackStyle.Melee;
+        var actives = player.SkillBuild != null ? player.SkillBuild.Loadout.Count : 0;
+        return TowerPressure.Strength(sheet, style, step, actives);
+    }
+
+    /// <summary>
+    ///     Every player's strength on a part, for the group's pressure (TowerPressure.Of): a veteran counts for more
+    ///     than one fresh player, someone far below the part for less than a head.
+    /// </summary>
+    public static List<double> StrengthsOf(IEnumerable<PlayerController> players, int step)
+    {
+        var list = new List<double>();
+        foreach (var p in players)
+            if (p && !p.isDestroyed) list.Add(StrengthOf(p, step));
+        return list;
+    }
+
+    /// <summary>
+    ///     The part's monsters follow the group on it (docs/tower-worlds-proposal.md section 12): looked at every few
+    ///     seconds, and the monsters take the new numbers as they stand untouched or come back.
+    /// </summary>
+    private void RefreshPressure(bool now = false)
+    {
+        if (!now && Time.time < nextPressure) return;
+        nextPressure = Time.time + PressureSeconds;
+        var floor = TowerFloor.Loaded;
+        var def = Definition;
+        if (!floor || def == null) return;
+        var players = Players();
+        // an empty part waits as it is for whoever comes next
+        if (players.Count + pendingJoins.Count == 0) return;
+        var strengths = StrengthsOf(players, def.Number);
+        // those still on their way in count as fresh players until they are here
+        for (var i = strengths.Count; i < pendingJoins.Count; i++) strengths.Add(1);
+        GroupStrength = TowerPressure.GroupStrength(strengths);
+        PartPressure = TowerPressure.Of(strengths, def.GroupSize);
+        floor.SetPressure(PartPressure);
+    }
+
+    /// <summary>The pressure of a boss attempt: its participants against the group the guardian is made for, times their strength.</summary>
+    private double BossPressure(TowerFloorDefinition def)
+    {
+        var fighters = participants.Where(p => p && !p.isDestroyed && p.towerHandler != null && p.towerHandler.InTower);
+        return TowerPressure.Of(StrengthsOf(fighters, def.Number), Tower.BossGroup(def));
+    }
+
+    // ---- The last blow -----------------------------------------------------------------------------------------
+
+    /// <summary>Blows that land within this many seconds of the one a floor boss falls to are a tie: they share its last hit.</summary>
+    public const float LastBlowTie = 0.1f;
+
+    private readonly List<(Guid Player, float At)> blows = new List<(Guid, float)>();
+    private Guid killingBlow;
+
+    // every blow on the attempt's boss: the last few are kept, and the one it fell to
+    private void BossStruck(EnemyController boss, PlayerController player, bool fell)
+    {
+        if (!player) return;
+        blows.Add((player.Id, Time.time));
+        if (blows.Count > 16) blows.RemoveAt(0);
+        if (fell) killingBlow = player.Id;
+    }
+
+    /// <summary>Whose blows landed as the boss fell: the killing blow first, then any within <see cref="LastBlowTie"/> of it.</summary>
+    private Guid[] LastBlows()
+    {
+        var result = new List<Guid>();
+        if (killingBlow == Guid.Empty || blows.Count == 0) return result.ToArray();
+        result.Add(killingBlow);
+        var at = blows[blows.Count - 1].At;
+        for (var i = blows.Count - 1; i >= 0; --i)
+        {
+            if (at - blows[i].At > LastBlowTie) break;
+            if (!result.Contains(blows[i].Player)) result.Add(blows[i].Player);
+        }
+        return result.ToArray();
     }
 
     /// <summary>A player was knocked out during a boss attempt (reported with the kills, for a hidden achievement).</summary>
@@ -748,12 +981,15 @@ public sealed class TowerManager : MonoBehaviour
     /// <summary>Whether the last vote cast opened a new vote (announced to everyone) and did not join one.</summary>
     public bool VoteJustOpened { get; private set; }
 
-    /// <summary>Seconds an open vote ("boss", "climb", "close", "floor 7") has left, 0 when there is none.</summary>
+    /// <summary>The key of a vote to go to a part (by its step): "part 7".</summary>
+    public static string PartVote(int step) => "part " + step.ToString(CultureInfo.InvariantCulture);
+
+    /// <summary>Seconds an open vote ("boss", "climb", "close", "part 7") has left, 0 when there is none.</summary>
     public int VoteSecondsLeft(string key) =>
         votes.TryGetValue(key, out var vote) ? Mathf.Max(0, Mathf.CeilToInt(vote.Ends - Time.time)) : 0;
 
     /// <summary>
-    ///     The open vote that ends first, for the panel: what it is for ("boss", "climb", "close", "floor 7"), the seconds
+    ///     The open vote that ends first, for the panel: what it is for ("boss", "climb", "close", "part 7"), the seconds
     ///     left and the voices still missing for it to pass at once.
     /// </summary>
     public bool TryGetOpenVote(out string key, out int secondsLeft, out int missing, out bool majorityOnly)
@@ -774,7 +1010,7 @@ public sealed class TowerManager : MonoBehaviour
     }
 
     /// <summary>
-    ///     A player in the tower votes for <paramref name="key"/> ("boss", "climb", "close", "floor 7"): the voices still
+    ///     A player in the tower votes for <paramref name="key"/> ("boss", "climb", "close", "part 7"): the voices still
     ///     missing for it to pass at once, 0 when this one decided it (the vote is then over). The first voice opens the
     ///     vote for <see cref="VoteSeconds"/>; when they are up it passes with the voices it has (<see cref="UpdateVotes"/>),
     ///     unless it is <paramref name="majorityOnly"/>.
@@ -830,15 +1066,15 @@ public sealed class TowerManager : MonoBehaviour
             var town = CurrentTown;
             var floor = Tower.Get(StreamFloor);
             if (Climb(null, true, out _) == ClimbResult.Climbing)
-                Announce(Localization.MSG_TOWER_CLIMB_STARTED, town != null ? town.Name : "", StreamFloor, floor != null ? floor.Name : "");
+                Announce(Localization.MSG_TOWER_CLIMB_STARTED, town != null ? town.Name : "", TowerWords.Floor(StreamFloor), TowerWords.Part(StreamFloor), floor != null ? floor.Name : "");
         }
-        else if (key.StartsWith("floor ") && int.TryParse(key.Substring(6), NumberStyles.Integer, CultureInfo.InvariantCulture, out var number))
+        else if (key.StartsWith("part ") && int.TryParse(key.Substring(5), NumberStyles.Integer, CultureInfo.InvariantCulture, out var number))
         {
             var def = Tower.Get(number);
             var result = RequestFloor(null, number, true, out _);
             if (def == null || (result != FloorChangeResult.Changed && result != FloorChangeResult.Climbing)) return;
-            if (number == StreamFloor) Announce(Localization.MSG_TOWER_FLOOR_BACK, number, def.Name);
-            else Announce(Localization.MSG_TOWER_FLOOR_TRAIN, number, def.Name, StreamFloor);
+            if (number == StreamFloor) Announce(Localization.MSG_TOWER_FLOOR_BACK, TowerWords.Floor(number), TowerWords.Part(number), def.Name);
+            else Announce(Localization.MSG_TOWER_FLOOR_TRAIN, TowerWords.Floor(number), TowerWords.Part(number), def.Name, TowerWords.Floor(StreamFloor), TowerWords.Part(StreamFloor));
             votes.Clear();
         }
     }
@@ -866,7 +1102,7 @@ public sealed class TowerManager : MonoBehaviour
             votesNeeded = AddVote("climb", player);
             if (votesNeeded > 0)
             {
-                if (VoteJustOpened) Announce(Localization.MSG_TOWER_CLIMB_VOTE_OPENED, player.PlayerName, StreamFloor, (int)VoteSeconds, votesNeeded);
+                if (VoteJustOpened) Announce(Localization.MSG_TOWER_CLIMB_VOTE_OPENED, player.PlayerName, TowerWords.Floor(StreamFloor), TowerWords.Part(StreamFloor), (int)VoteSeconds, votesNeeded);
                 return ClimbResult.Voted;
             }
         }
@@ -942,7 +1178,7 @@ public sealed class TowerManager : MonoBehaviour
             votesNeeded = AddVote("boss", player);
             if (votesNeeded > 0)
             {
-                if (VoteJustOpened) Announce(Localization.MSG_TOWER_BOSS_VOTE_OPENED, player.PlayerName, CurrentFloor, (int)VoteSeconds, votesNeeded);
+                if (VoteJustOpened) Announce(Localization.MSG_TOWER_BOSS_VOTE_OPENED, player.PlayerName, TowerWords.BossKind(CurrentFloor), TowerWords.Floor(CurrentFloor), TowerWords.Part(CurrentFloor), (int)VoteSeconds, votesNeeded);
                 return BossCallResult.Voted;
             }
         }
@@ -962,7 +1198,7 @@ public sealed class TowerManager : MonoBehaviour
         // a floor of rooms: the way to the boss's room opens and everyone walks there during the countdown
         var routed = TowerFloor.Loaded ? TowerFloor.Loaded.Route : null;
         if (routed && routed.Valid) routed.OpenToBoss();
-        Announce(Localization.MSG_TOWER_BOSS_COUNTDOWN, CurrentFloor, Tower.BossCountdownSeconds, Definition.Boss.Name);
+        Announce(Localization.MSG_TOWER_BOSS_COUNTDOWN, TowerWords.Floor(CurrentFloor), TowerWords.Part(CurrentFloor), Tower.BossCountdownSeconds, TowerWords.BossKind(CurrentFloor), Definition.Boss.Name);
     }
 
     private void StartFight()
@@ -977,14 +1213,18 @@ public sealed class TowerManager : MonoBehaviour
             return;
         }
 
-        var boss = floor.SpawnBoss();
+        // the guardian comes with the numbers the group asks for (scaling by pressure)
+        var boss = floor.SpawnBoss(BossPressure(def));
         if (!boss)
         {
-            Shinobytes.Debug.LogError("TowerManager: floor " + CurrentFloor + " has no template for the boss " + def.Boss.Model);
+            Shinobytes.Debug.LogError("TowerManager: " + Tower.Label(CurrentFloor) + " has no template for the boss " + def.Boss.Model);
             Phase = TowerPhase.Open;
             Announce(Localization.MSG_TOWER_BOSS_CALLED_OFF, def.Boss.Name);
             return;
         }
+        blows.Clear();
+        killingBlow = Guid.Empty;
+        boss.Struck = BossStruck;
 
         // the first time the stream fights this boss: its intro first (still the countdown: a join meanwhile counts)
         if (PlayBossIntro(boss, def, false)) return;
@@ -1003,6 +1243,9 @@ public sealed class TowerManager : MonoBehaviour
             return;
         }
 
+        // someone joined or left during the countdown or the intro: the numbers for the group that fights
+        floor.RescaleBoss(BossPressure(def));
+        fightStrength = TowerPressure.GroupStrength(StrengthsOf(participants, def.Number));
         Phase = TowerPhase.Fight;
         phaseEnds = Time.time + Tower.BossTimeLimitSeconds;
         fightStarted = Time.time;
@@ -1026,6 +1269,9 @@ public sealed class TowerManager : MonoBehaviour
             Shinobytes.Debug.LogError("TowerManager.BossStarted: " + exc.Message);
         }
     }
+
+    // the group's strength when the fight began, for the record of the clear
+    private double fightStrength = 1;
 
     private float SlamInterval(EnemyController boss)
     {
@@ -1160,13 +1406,17 @@ public sealed class TowerManager : MonoBehaviour
     private async void Won(TowerFloorDefinition def, EnemyController boss)
     {
         var floorNumber = CurrentFloor;
+        var floorBoss = def.IsFloorBoss;
         var ids = participants.Where(p => p && !p.isDestroyed).Select(p => p.Id).Distinct().ToArray();
+        var names = participants.Where(p => p && !p.isDestroyed).GroupBy(p => p.Id).ToDictionary(x => x.Key, x => x.First().PlayerName);
         var players = ids.Length;
         var standing = participants.Where(p => p && !p.isDestroyed && !p.Stats.IsDead && p.towerHandler.InTower).ToList();
+        var report = new TowerClearReport { Characters = ids, LastHits = LastBlows(), Strength = fightStrength };
         // the body stays for its fall (slow motion when the cutscene plays), then goes
-        EndAttempt(BossFallSeconds + 1.5f);
+        EndAttempt((floorBoss ? FloorBossFallSeconds : BossFallSeconds) + 1.5f);
         Phase = TowerPhase.Open;
-        Announce(Localization.MSG_TOWER_BOSS_DOWN, def.Boss.Name, floorNumber);
+        if (floorBoss) Announce(Localization.MSG_TOWER_FLOOR_BOSS_DOWN, def.Boss.Name, TowerWords.Floor(floorNumber), TowerWords.FloorName(floorNumber));
+        else Announce(Localization.MSG_TOWER_BOSS_DOWN, def.Boss.Name, TowerWords.Floor(floorNumber), TowerWords.Part(floorNumber));
         PlayBossFall(boss, def, floorNumber);
         foreach (var p in standing) p.Cheer();
 
@@ -1174,7 +1424,7 @@ public sealed class TowerManager : MonoBehaviour
         TowerClearResult result = null;
         try
         {
-            result = await g.RavenNest.Tower.ClearedAsync(floorNumber, ids);
+            result = await g.RavenNest.Tower.ClearedAsync(floorNumber, report);
         }
         catch (Exception exc)
         {
@@ -1188,17 +1438,25 @@ public sealed class TowerManager : MonoBehaviour
             return;
         }
 
-        if (result.WorldFirst) Announce(Localization.MSG_TOWER_WORLD_FIRST, floorNumber);
-        Announce(Localization.MSG_TOWER_CLEARED, floorNumber, players, result.Coins.ToString("N0", CultureInfo.InvariantCulture), result.Rewards?.Length ?? 0);
+        // the world first is the floor boss's; a part's first clear in the world is only said with its coins
+        if (result.WorldFirst) Announce(Localization.MSG_TOWER_WORLD_FIRST, def.Boss.Name, TowerWords.Floor(floorNumber), TowerWords.FloorName(floorNumber));
+        Announce(result.PartFirst && !result.WorldFirst ? Localization.MSG_TOWER_CLEARED_FIRST : Localization.MSG_TOWER_CLEARED,
+            TowerWords.Floor(floorNumber), TowerWords.Part(floorNumber), players, result.Coins.ToString("N0", CultureInfo.InvariantCulture), result.Rewards?.Length ?? 0);
+        // the last blow on a floor boss, as the server decided it: a title (several names when blows landed together)
+        if (result.LastHitBy != null && result.LastHitBy.Length > 0)
+        {
+            var hitters = result.LastHitBy.Select(id => names.TryGetValue(id, out var n) ? n : null).Where(n => !string.IsNullOrEmpty(n)).ToList();
+            if (hitters.Count > 0) Announce(Localization.MSG_TOWER_LAST_HIT, string.Join(", ", hitters), def.Boss.Name, Localization.UI_TITLE_FINISHER_1);
+        }
         if (result.Rewards != null && result.Rewards.Length > 0) AnnounceDrops(g, g.AddItems(result.Rewards));
         if (result.State != null) SetState(result.State);
 
-        // the next floor: after a moment to celebrate, everyone goes down to the town to rest and train until the
-        // stream goes on (!tower climb)
+        // the next part: after a moment to celebrate, everyone goes down to the town to rest and train until the
+        // stream goes on (!tower climb); after a floor boss that is the new floor's town
         var next = Tower.Get(StreamFloor);
         if (AllCleared || next == null)
         {
-            Announce(Localization.MSG_TOWER_TOP, floorNumber);
+            Announce(Localization.MSG_TOWER_TOP);
             return;
         }
         var town = StreamTown;
@@ -1208,7 +1466,8 @@ public sealed class TowerManager : MonoBehaviour
             StartCoroutine(ClimbRoutine(next.Number));
             return;
         }
-        Announce(Localization.MSG_TOWER_TO_TOWN, (int)ClimbDelay, town.Name, next.Number, next.Name);
+        if (floorBoss) Announce(Localization.MSG_TOWER_TO_NEW_TOWN, TowerWords.Floor(next.Number), TowerWords.FloorName(next.Number), (int)ClimbDelay, town.Name, next.Name);
+        else Announce(Localization.MSG_TOWER_TO_TOWN, (int)ClimbDelay, town.Name, TowerWords.Floor(next.Number), TowerWords.Part(next.Number), next.Name);
         StartCoroutine(AfterClearRoutine(def, next, town));
     }
 
@@ -1277,6 +1536,7 @@ public sealed class TowerManager : MonoBehaviour
                 floor.Apply(next);
                 // anyone still on it finds themselves on the new floor (on a floor of rooms: back at its first room)
                 foreach (var p in Players()) p.towerHandler.FloorChanged(floor);
+                RefreshPressure(true);
             }
             else
             {
@@ -1287,14 +1547,14 @@ public sealed class TowerManager : MonoBehaviour
         // a new band's town, the first time the stream gets there: a fly-over with its name
         var arrived = TowerTown.Loaded;
         if (moved > 0 && arrived && arrived.Town == town && Tower.TownFor(cleared.Number) != town) PlayArrival(arrived, false);
-        if (moved > 0) Announce(Localization.MSG_TOWER_IN_TOWN, TowerTown.Loaded && TowerTown.Loaded.Town != null ? TowerTown.Loaded.Town.Name : town.Name, next.Number, next.Name);
+        if (moved > 0) Announce(Localization.MSG_TOWER_IN_TOWN, TowerTown.Loaded && TowerTown.Loaded.Town != null ? TowerTown.Loaded.Town.Name : town.Name, TowerWords.Floor(next.Number), TowerWords.Part(next.Number), next.Name);
     }
 
     public enum FloorChangeResult { Changed, Climbing, Same, Locked, Busy, Voted, NotInTower }
 
     /// <summary>
-    ///     !tower floor N from chat: the streamer or a moderator changes the floor at once (<see cref="ChangeFloor"/>);
-    ///     anyone else in the tower votes for that floor.
+    ///     !tower part N, !tower floor N and !tower 2-7 from chat (<paramref name="number"/> is the part's step): the
+    ///     streamer or a moderator moves everyone at once (<see cref="ChangeFloor"/>); anyone else in the tower votes for it.
     /// </summary>
     public FloorChangeResult RequestFloor(PlayerController player, int number, bool canForce, out int votesNeeded)
     {
@@ -1306,10 +1566,10 @@ public sealed class TowerManager : MonoBehaviour
         if (!canForce)
         {
             if (!CanVote(player)) return FloorChangeResult.NotInTower;
-            votesNeeded = AddVote("floor " + number, player);
+            votesNeeded = AddVote(PartVote(number), player);
             if (votesNeeded > 0)
             {
-                if (VoteJustOpened) Announce(Localization.MSG_TOWER_FLOOR_VOTE_OPENED, player.PlayerName, number, def.Name, (int)VoteSeconds, votesNeeded);
+                if (VoteJustOpened) Announce(Localization.MSG_TOWER_FLOOR_VOTE_OPENED, player.PlayerName, TowerWords.Floor(number), TowerWords.Part(number), def.Name, (int)VoteSeconds, votesNeeded);
                 return FloorChangeResult.Voted;
             }
         }
@@ -1343,6 +1603,7 @@ public sealed class TowerManager : MonoBehaviour
             CurrentFloor = number;
             floor.Apply(def);
             foreach (var p in Players()) p.towerHandler.FloorChanged(floor);
+            RefreshPressure(true);
             return FloorChangeResult.Changed;
         }
         StartCoroutine(ClimbRoutine(number));
@@ -1418,11 +1679,27 @@ public sealed class TowerManager : MonoBehaviour
         if (slamRing) slamRing.SetActive(false);
     }
 
+    /// <summary>The tower's last announcements as chat would read them, newest last (the tests read them; chat may be muted).</summary>
+    public static readonly List<string> Said = new List<string>();
+
     private void Announce(string message, params object[] args)
     {
+        var texts = args.Select(a => a?.ToString() ?? "").ToArray();
+        Said.Add(Rendered(message, texts));
+        if (Said.Count > 40) Said.RemoveAt(0);
         var g = Game;
         if (!g || g.RavenBot == null) return;
-        g.RavenBot.Announce(message, args.Select(a => a?.ToString() ?? "").ToArray());
+        g.RavenBot.Announce(message, texts);
+    }
+
+    /// <summary>A chat message with its named places filled in order, the way the bot does it.</summary>
+    public static string Rendered(string message, object[] args)
+    {
+        var i = 0;
+        var text = System.Text.RegularExpressions.Regex.Replace(message ?? "", @"\{[a-zA-Z]\w*\}", m => args != null && i < args.Length ? (args[i++]?.ToString() ?? "") : m.Value);
+        // without the category and tags in front ("%[category:tower]%%[tags:info]%")
+        var meta = text.LastIndexOf("]%", System.StringComparison.Ordinal);
+        return text.StartsWith("%[") && meta > 0 ? text.Substring(meta + 2) : text;
     }
 
     // ---- Cutscenes --------------------------------------------------------------------------------------------
@@ -1504,8 +1781,8 @@ public sealed class TowerManager : MonoBehaviour
         if (definition == null || !SettingsApplier.Cutscenes) return false;
         var key = ArrivalKey(definition);
         if (!replay && PlayerPrefs.GetInt(key, 0) == 1) return false;
-        var band = Tower.Bands.FirstOrDefault(b => b.Number == definition.Band);
-        var line = band != null ? string.Format(Localization.UI_TOWER_TOWN_LINE, band.FirstFloor, band.LastFloor, band.Name) : "";
+        var band = Tower.FloorInfo(definition.Band);
+        var line = band != null ? string.Format(Localization.UI_TOWER_TOWN_LINE, band.Number, band.Name) : "";
         // at the end the camera goes to someone in the town
         return TowerCutscene.Play(this, town.CutscenePoses(false), ArrivalSeconds, definition.Name, line, town.TitleColor, town.TitleOutline,
             () => TownPlayers().FirstOrDefault(), () =>
@@ -1517,14 +1794,26 @@ public sealed class TowerManager : MonoBehaviour
 
     // ---- The bosses' cutscenes: the intro the first time, the fall every time
 
-    /// <summary>How long a boss's intro and its fall take, and how long their names show at the end.</summary>
-    public const float BossIntroSeconds = 7f, BossIntroTitleSeconds = 4.2f, BossFallSeconds = 4.5f, BossFallTitleSeconds = 3.4f;
+    /// <summary>
+    ///     How long a mini boss's intro and its fall take, and how long their names show at the end: short, so the climb
+    ///     is not interrupted (docs/tower-worlds-proposal.md section 12).
+    /// </summary>
+    public const float BossIntroSeconds = 5f, BossIntroTitleSeconds = 3.2f, BossFallSeconds = 3.2f, BossFallTitleSeconds = 2.4f;
+
+    /// <summary>The floor boss's: the full ones, for the big fight that opens the next floor.</summary>
+    public const float FloorBossIntroSeconds = 9f, FloorBossIntroTitleSeconds = 5f, FloorBossFallSeconds = 6.5f, FloorBossFallTitleSeconds = 4.6f;
+
+    /// <summary>The size of a mini boss's name and of a floor boss's, in its intro and at its fall.</summary>
+    public const int BossTitleSize = 76, FloorBossTitleSize = 104;
 
     /// <summary>The earliest the boss taunts in its intro, and how slow its fall is.</summary>
     public const float TauntAt = 1.1f, FallSpeed = 0.35f;
 
     /// <summary>The boss's name in its intro: a menacing red.</summary>
     public static readonly Color BossColor = new Color(1f, 0.42f, 0.32f), BossOutline = new Color(0.24f, 0.03f, 0.02f);
+
+    /// <summary>"Part 7 cleared" after a mini boss: silver, where a cleared floor is gold.</summary>
+    public static readonly Color PartColor = new Color(0.86f, 0.9f, 0.95f), PartOutline = new Color(0.1f, 0.13f, 0.18f);
 
     private EnemyController introBoss;
     private bool introPlaying;
@@ -1544,16 +1833,22 @@ public sealed class TowerManager : MonoBehaviour
         var key = BossKey(def.Number);
         if (!replay && PlayerPrefs.GetInt(key, 0) == 1) return false;
         var (positions, forwards) = BossShot(boss, false);
-        var line = string.IsNullOrEmpty(def.Boss.Line)
-            ? string.Format(Localization.UI_TOWER_BOSS_FLOOR, def.Number)
+        // a mini boss: who it is and where; a floor boss: that it is the floor's, then what it has to say
+        var floorBoss = def.IsFloorBoss;
+        var seconds = floorBoss ? FloorBossIntroSeconds : BossIntroSeconds;
+        var who = floorBoss
+            ? string.Format(Localization.UI_TOWER_FLOOR_BOSS_LINE, def.Floor, TowerWords.FloorName(def.Number))
+            : string.Format(Localization.UI_TOWER_BOSS_FLOOR, def.Floor, def.Part);
+        var line = string.IsNullOrEmpty(def.Boss.Line) ? who
+            : floorBoss ? who + "\n" + string.Format(Localization.UI_TOWER_BOSS_QUOTE, def.Boss.Line)
             : string.Format(Localization.UI_TOWER_BOSS_QUOTE, def.Boss.Line);
         var model = def.Boss.Model;
         var taunted = false;
         // timed to end as the camera settles under its face and its name shows (a loop, the cow eating, from early on)
         var entry = TowerBossTaunts.Get() ? TowerBossTaunts.Get().For(model) : null;
-        var tauntAt = entry != null && !entry.Loops ? Mathf.Max(TauntAt, BossIntroSeconds - entry.Seconds - 0.4f) : TauntAt;
+        var tauntAt = entry != null && !entry.Loops ? Mathf.Max(TauntAt, seconds - entry.Seconds - 0.4f) : TauntAt;
         introBoss = boss;
-        introPlaying = TowerCutscene.Play(this, positions, forwards, BossIntroSeconds, def.Boss.Name, line, BossColor, BossOutline,
+        introPlaying = TowerCutscene.Play(this, positions, forwards, seconds, def.Boss.Name, line, BossColor, BossOutline,
             SomeoneToWatch, () =>
             {
                 StopTaunt();
@@ -1573,7 +1868,7 @@ public sealed class TowerManager : MonoBehaviour
                     return;
                 }
                 if (Phase == TowerPhase.Countdown) BeginFight(wasFor);
-            }, BossIntroTitleSeconds, 96, t =>
+            }, floorBoss ? FloorBossIntroTitleSeconds : BossIntroTitleSeconds, floorBoss ? FloorBossTitleSize : BossTitleSize, t =>
             {
                 // played through: back to its own idle
                 if (taunt != null && taunt.Done) StopTaunt();
@@ -1587,7 +1882,7 @@ public sealed class TowerManager : MonoBehaviour
             return false;
         }
         // the countdown shows the time the intro takes (a !tower now answers with it)
-        if (Phase == TowerPhase.Countdown) phaseEnds = Time.time + BossIntroSeconds;
+        if (Phase == TowerPhase.Countdown) phaseEnds = Time.time + seconds;
         return true;
     }
 
@@ -1608,18 +1903,27 @@ public sealed class TowerManager : MonoBehaviour
     }
 
     /// <summary>
-    ///     The boss has fallen: a few seconds round it while it falls in slow motion, "Floor 7 cleared". Every clear, when
-    ///     cutscenes are on and the camera is free; the players cheer meanwhile.
+    ///     The guardian has fallen: a few seconds round it while it falls in slow motion. A mini boss: a short moment,
+    ///     "Part 7 cleared" in silver. The floor boss: the long one, "Floor 1 cleared" in gold with the floor's name.
+    ///     Every clear, when cutscenes are on and the camera is free; the players cheer meanwhile.
     /// </summary>
     private bool PlayBossFall(EnemyController boss, TowerFloorDefinition def, int floorNumber)
     {
         if (!boss || def == null || !SettingsApplier.Cutscenes) return false;
         var (positions, forwards) = BossShot(boss, true);
-        var played = TowerCutscene.Play(this, positions, forwards, BossFallSeconds, string.Format(Localization.UI_TOWER_FLOOR_CLEARED, floorNumber),
-            string.Format(Localization.UI_TOWER_BOSS_FALLS, def.Boss.Name), CutsceneScreen.Gold, CutsceneScreen.GoldOutline, SomeoneToWatch, null,
-            BossFallTitleSeconds, 100, top: true);
+        var floorBoss = def.IsFloorBoss;
+        var seconds = floorBoss ? FloorBossFallSeconds : BossFallSeconds;
+        var title = floorBoss
+            ? string.Format(Localization.UI_TOWER_FLOOR_CLEARED, TowerWords.Floor(floorNumber))
+            : string.Format(Localization.UI_TOWER_PART_CLEARED, TowerWords.Part(floorNumber));
+        var line = floorBoss
+            ? string.Format(Localization.UI_TOWER_FLOOR_BOSS_FALLS, def.Boss.Name, TowerWords.FloorName(floorNumber))
+            : string.Format(Localization.UI_TOWER_BOSS_FALLS, def.Boss.Name);
+        var played = TowerCutscene.Play(this, positions, forwards, seconds, title, line,
+            floorBoss ? CutsceneScreen.Gold : PartColor, floorBoss ? CutsceneScreen.GoldOutline : PartOutline, SomeoneToWatch, null,
+            floorBoss ? FloorBossFallTitleSeconds : BossFallTitleSeconds, floorBoss ? FloorBossTitleSize : BossTitleSize, top: true);
         // its death from the start, slowly, held at the end (it goes with the body)
-        if (played && TowerBossTaunts.Fall(boss, FallSpeed, BossFallSeconds - 0.8f) == null)
+        if (played && TowerBossTaunts.Fall(boss, FallSpeed, seconds - 0.8f) == null)
         {
             var animator = boss.GetComponentInChildren<Animator>();
             if (animator) animator.speed = FallSpeed;
@@ -1791,7 +2095,7 @@ public sealed class TowerManager : MonoBehaviour
         var movement = boss.GetComponent<EnemyMovementController>();
         if (movement) movement.Die();
         PlayBossFall(boss, def, def.Number);
-        floor.DespawnBoss(BossFallSeconds + 1.5f);
+        floor.DespawnBoss((def.IsFloorBoss ? FloorBossFallSeconds : BossFallSeconds) + 1.5f);
         return true;
     }
 
@@ -1845,6 +2149,8 @@ public sealed class TowerManager : MonoBehaviour
         if (Phase == TowerPhase.Countdown && PhaseSecondsLeft <= 0f && !introBoss) StartFight();
         else if (Phase == TowerPhase.Fight) UpdateFight();
         UpdateVotes();
+        UpdateFinds();
+        if (Phase == TowerPhase.Open) RefreshPressure();
         // a floor of rooms gathers everyone at the boss only while an attempt is called or fought (a countdown called
         // off for want of players ends without EndAttempt)
         var route = TowerFloor.Loaded ? TowerFloor.Loaded.Route : null;

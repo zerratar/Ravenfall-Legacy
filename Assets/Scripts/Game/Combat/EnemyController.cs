@@ -22,6 +22,12 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
     /// <summary>A definition made while playing (a tower floor's monsters and bosses), used instead of the asset's.</summary>
     [NonSerialized] public RavenNest.Combat.EnemyDefinition RuntimeDefinition;
 
+    /// <summary>A player's blow landed on this enemy (true: it fell to it). The tower follows its guardians' last blows.</summary>
+    [NonSerialized] public Action<EnemyController, PlayerController, bool> Struck;
+
+    /// <summary>The enemy is about to come back: the tower gives its monsters the numbers the group asks for now.</summary>
+    [NonSerialized] public Action<EnemyController> Respawning;
+
     /// <summary>
     ///     Gives the enemy a definition made while playing (docs/tower-design.md): its levels, gear numbers, element and
     ///     attack speed from it, a name to show, and how long it stays down; full health.
@@ -1066,6 +1072,7 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
             var took = Mathf.Max(0, Mathf.Min(damage, (int)Stats.Health.CurrentValue));
             Stats.Health.Add(-damage);
             HeroHelpers.Damage(player, took);
+            Struck?.Invoke(this, player, Stats.IsDead);
 
             var aggroMultiplier = 1f;
             // a one-handed sword draws attention, for those fighting with it: an archer or mage who still had one on
@@ -1217,6 +1224,7 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
         attackerAggro.Clear();
         transform.position = spawnPoint;
         //transform.rotation = spawnRotation;
+        Respawning?.Invoke(this);
         Stats.Health.Reset();
         if (movement) movement.Revive();
         Unlock();

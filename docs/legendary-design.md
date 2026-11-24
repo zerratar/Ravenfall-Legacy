@@ -31,11 +31,13 @@ The server checks all of it per character at the moment a boss falls. A characte
 
 1. its level in that Legendary's finding skill is **950** or more (the item asks for 950 too, so a new player cannot use
    one even if it had one);
-2. it has **fought in a clear of the tower's top band**: a floor of band 3, the Storm Spire (floor 21 and up), whose
-   boss fell with the character there. This is the "climber" achievement's progress, which the server already keeps per
-   character (`QuestTracker.TowerCleared`). Band 3 is built and playable (floors 21 to 30); the line is a constant
-   (`Legendary.TowerFloor = 21`) so a band 4 does not suddenly lock everyone out. **To do when band 4 ships: raise it**
-   (it is on the release checklist);
+2. it has **fought in a clear on the tower's top floor**: any part of floor 3, the Storm Spire, whose guardian (a mini
+   boss or the floor boss) fell with the character there. This is the "climber" achievement's progress, which the
+   server already keeps per character as the part's step (`QuestTracker.TowerCleared`). Floor 3 is built and playable;
+   the line is a constant (`Legendary.TowerFloor = 3`, as a step `Legendary.TowerStep` = 21) so a floor 4 does not
+   suddenly lock everyone out. **To do when floor 4 ships: raise it** (it is on the release checklist).
+   (Until 2026-11-24 floors were called bands and parts floors, so this read "floor 21 and up": the same part, floor 3,
+   part 1. See docs/tower-worlds-proposal.md section 12.);
 3. it has **chosen its ending** (one of the three capstones) in that skill's combat tree
    (docs/capstone-paths-design.md);
 4. it **does not own that Legendary already** (any stack in its inventory, worn or not).
@@ -56,7 +58,7 @@ Only these bosses, only when they fall with the character in the fight:
 
 | Source | Base chance a qualifying character |
 |---|---|
-| a tower boss of floor 21 and up, on the stream's clear | 4% |
+| a guardian on tower floor 3 or above (a mini boss or the floor boss), on the stream's clear | 4% |
 | the boss of a Legendary (heroic) dungeon, tier 4 | 0.25% |
 | a raid boss | 0.10% |
 
@@ -275,10 +277,10 @@ Legends), -web-tooltip.png (the Equipment tab).
 
 - Odds: 4% / 0.25% / 0.1% with bad luck up to ten times; a dedicated player waits about three weeks, a casual one
   two to three months. Raids count less because the server cannot tell a hard raid from an easy one.
-- The tower line is floor 21 as a constant, not "the top band": raise it when band 4 is out, if wanted.
+- The tower line is floor 3 as a constant, not "the top floor": raise it when floor 4 is out, if wanted.
 - Ranks need 30 / 90 / 200 / 400 boss kills worn (about 25 days to rank 5 for a dedicated player).
 
 Decided 2026-11-23 (the owner approved all calls): the Hellhorn Mace is found by Strength and Might; owning every one
-gives a Legend's Echo; the tower line stays at floor 21 until band 4; raids keep their lower chance; Legendaries are
+gives a Legend's Echo; the tower line stays at floor 3 (then called floor 21) until floor 4; raids keep their lower chance; Legendaries are
 never sold and never leave their finder (section 3).
 - Titles: Legendbearer (one found) and Keeper of Legends (all five), hidden.

@@ -8,8 +8,9 @@ namespace Shinobytes.UI
 {
     /// <summary>
     /// The tower panel in the top centre status column, under the raid and dungeon panels and one of their family: the
-    /// floor the stream is on, its quests with their progress, the boss countdown and fight (time left, the boss's
-    /// health), the town between floors, how many are inside and what to type next.
+    /// floor and part the stream is on, the part's objectives with their progress (kills, gathering, hidden things, and
+    /// the guardian that waits behind them), the boss countdown and fight (time left, the boss's health), the town
+    /// between parts, how many are inside and what to type next.
     /// </summary>
     /// <remarks>
     /// Before this, nothing on screen showed the climb: viewers only learned the floor, the quests or a countdown by
@@ -26,7 +27,8 @@ namespace Shinobytes.UI
     public class TowerHudView : MonoBehaviour
     {
         private const float RefreshSeconds = 0.25f;
-        private const int MaxQuests = 4;
+        // a part's counted objectives (two kinds of kills and a gather or a find, today) and its guardian
+        private const int MaxQuests = 6;
 
         private VisualElement hud;
         private Label title, floorLabel, timer, clock, barText, people, phase, join;
@@ -200,7 +202,11 @@ namespace Shinobytes.UI
                 if (voteKey == "boss") { voteText = string.Format(Localization.UI_TOWER_VOTE_BOSS, voteSeconds); voteCommand = "!tower boss"; }
                 else if (voteKey == "climb") { voteText = string.Format(Localization.UI_TOWER_VOTE_CLIMB, voteSeconds); voteCommand = "!tower climb"; }
                 else if (voteKey == "close") { voteText = string.Format(Localization.UI_TOWER_VOTE_CLOSE, voteSeconds, voteMissing); voteCommand = "!tower close"; }
-                else if (voteKey.StartsWith("floor ")) { voteText = string.Format(Localization.UI_TOWER_VOTE_FLOOR, voteSeconds, voteKey.Substring(6)); voteCommand = "!tower " + voteKey; }
+                else if (voteKey.StartsWith("part ") && int.TryParse(voteKey.Substring(5), NumberStyles.Integer, CultureInfo.InvariantCulture, out var voteStep))
+                {
+                    voteText = string.Format(Localization.UI_TOWER_VOTE_FLOOR, voteSeconds, TowerWords.Floor(voteStep), TowerWords.Part(voteStep));
+                    voteCommand = "!tower " + Tower.Short(voteStep);
+                }
             }
 
             Set(title, Localization.UI_TOWER_TITLE);
@@ -229,14 +235,14 @@ namespace Shinobytes.UI
                 }
                 else
                 {
-                    Set(phase, string.Format(Localization.UI_TOWER_NEXT_FLOOR, stream.Number, stream.Name));
+                    Set(phase, string.Format(Localization.UI_TOWER_NEXT_FLOOR, stream.Floor, stream.Part, stream.Name));
                     Show(joinPill, true);
                     Set(join, "!tower climb");
                 }
                 return;
             }
 
-            Set(floorLabel, here != null ? string.Format(Localization.UI_TOWER_FLOOR, here.Number, here.Name) : "");
+            Set(floorLabel, here != null ? string.Format(Localization.UI_TOWER_FLOOR, here.Floor, here.Part, here.Name) : "");
             Show(liveDot, fighting || countdown);
             Show(clock, fighting || countdown);
             Set(timer, fighting || countdown ? Clock(tower.PhaseSecondsLeft) : "");
@@ -260,40 +266,49 @@ namespace Shinobytes.UI
             {
                 Show(bar, false);
                 Show(quests, false);
-                Set(phase, voteText ?? string.Format(Localization.UI_TOWER_TRAINING, tower.StreamFloor));
+                Set(phase, voteText ?? string.Format(Localization.UI_TOWER_TRAINING, TowerWords.Floor(tower.StreamFloor), TowerWords.Part(tower.StreamFloor)));
                 Show(joinPill, true);
-                Set(join, voteCommand ?? "!tower floor");
+                Set(join, voteCommand ?? "!tower part");
                 return;
             }
 
-            // the floor's quests: one row each, and all of them together in the bar
-            var done = 0L;
-            var total = 0L;
+            // the part's objectives: one row each (kills, gathering, hidden things), then the guardian that waits behind
+            // them; the bar is how far they are together, each counting the same whatever its numbers
+            var done = 0;
+            var total = 0;
+            var share = 0f;
             var rows = 0;
             if (stream != null && !tower.AllCleared)
             {
-                foreach (var q in stream.Quests)
+                foreach (var q in stream.Objectives)
                 {
-                    var count = 0;
-                    if (tower.State.Quests != null)
-                        foreach (var p in tower.State.Quests)
-                            if (p.Id == q.Id) { count = p.Count; break; }
-                    count = Mathf.Clamp(count, 0, q.Amount);
-                    done += count;
-                    total += q.Amount;
-                    if (rows >= questRows.Count) continue;
+                    if (rows >= questRows.Count) break;
                     var row = questRows[rows++];
                     Show(row.row, true);
+                    if (!q.Counted)
+                    {
+                        // the guardian: named, with no count
+                        Set(row.text, string.Format(stream.IsFloorBoss ? Localization.UI_TOWER_ROW_FLOOR_BOSS : Localization.UI_TOWER_ROW_MINI_BOSS, stream.Boss.Name));
+                        Set(row.count, "");
+                        row.row.EnableInClassList("rf-tower__quest--done", false);
+                        row.row.EnableInClassList("rf-tower__quest--guardian", true);
+                        continue;
+                    }
+                    var count = Mathf.Clamp(tower.Progress(q.Id), 0, q.Amount);
+                    total++;
+                    if (count >= q.Amount) done++;
+                    share += q.Amount > 0 ? count / (float)q.Amount : 1f;
                     Set(row.text, q.Text);
-                    Set(row.count, count.ToString(CultureInfo.InvariantCulture) + " / " + q.Amount.ToString(CultureInfo.InvariantCulture));
+                    Set(row.count, HudFormat.Grouped(count) + " / " + HudFormat.Grouped(q.Amount));
                     row.row.EnableInClassList("rf-tower__quest--done", count >= q.Amount);
+                    row.row.EnableInClassList("rf-tower__quest--guardian", false);
                 }
             }
             for (var i = rows; i < questRows.Count; i++) Show(questRows[i].row, false);
             // the rows while there is something left to do; all done, the bar and the boss line say it
             Show(quests, rows > 0 && done < total);
             Show(bar, total > 0);
-            SetFill(total > 0 ? done / (float)total : 0f);
+            SetFill(total > 0 ? share / total : 0f);
             Set(barText, string.Format(Localization.UI_TOWER_QUESTS, done, total));
 
             var bossName = here != null && here.Boss != null ? here.Boss.Name : "";
@@ -317,7 +332,8 @@ namespace Shinobytes.UI
             else if (tower.State.BossOpen)
             {
                 var wait = tower.RetrySecondsLeft;
-                Set(phase, wait > 0f ? string.Format(Localization.UI_TOWER_REGROUP, Mathf.CeilToInt(wait)) : string.Format(Localization.UI_TOWER_BOSS_READY, bossName));
+                Set(phase, wait > 0f ? string.Format(Localization.UI_TOWER_REGROUP, Mathf.CeilToInt(wait))
+                    : string.Format(here != null && here.IsFloorBoss ? Localization.UI_TOWER_FLOOR_BOSS_READY : Localization.UI_TOWER_BOSS_READY, bossName));
                 Show(joinPill, true);
                 Set(join, "!tower boss");
             }

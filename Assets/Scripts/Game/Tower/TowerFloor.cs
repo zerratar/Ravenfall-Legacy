@@ -65,11 +65,67 @@ public sealed class TowerFloor : TowerPlace
     }
 
     /// <summary>
+    ///     The pressure the monsters standing now were made for (RavenNest.Combat.TowerPressure): the players on the part
+    ///     against the group it is made for, times their strength. 1 until someone asks for another.
+    /// </summary>
+    public double Pressure { get; private set; } = 1;
+
+    /// <summary>The spots monsters stand on: the layout's, or the rooms' on a floor of rooms.</summary>
+    public IEnumerable<Transform> Spots()
+    {
+        if (Route && Route.Valid)
+        {
+            foreach (var zone in Route.Zones)
+            {
+                if (!zone || !zone.Spawns) continue;
+                for (var i = 0; i < zone.Spawns.childCount; ++i) yield return zone.Spawns.GetChild(i);
+            }
+            yield break;
+        }
+        if (!Spawns) yield break;
+        for (var i = 0; i < Spawns.childCount; ++i) yield return Spawns.GetChild(i);
+    }
+
+    /// <summary>
+    ///     The part's monsters follow the fight's pressure: those that stand untouched take the new numbers now, the
+    ///     others when they come back (<see cref="EnemyController.Respawning"/>). They come back sooner under a crowd.
+    /// </summary>
+    public void SetPressure(double pressure)
+    {
+        if (Definition == null || System.Math.Abs(pressure - Pressure) < 0.02) return;
+        Pressure = pressure;
+        scaled.Clear();
+        foreach (var e in enemies)
+        {
+            if (!e || e.Stats == null || e.Stats.IsDead || e.InCombat || e.Stats.Health.CurrentValue < e.Stats.Health.MaxValue) continue;
+            Rescale(e);
+        }
+    }
+
+    private readonly Dictionary<string, EnemyDefinition> scaled = new Dictionary<string, EnemyDefinition>();
+
+    // one of the part's monsters at the pressure of the moment
+    private EnemyDefinition Scaled(TowerEnemy kind)
+    {
+        if (!scaled.TryGetValue(kind.Id, out var definition)) scaled[kind.Id] = definition = Tower.Enemy(Definition, kind, Pressure);
+        return definition;
+    }
+
+    private float RespawnSeconds => (float)TowerPressure.RespawnSeconds(Definition != null ? Definition.Floor : 1, Pressure);
+
+    private void Rescale(EnemyController enemy)
+    {
+        if (Definition == null || !kinds.TryGetValue(enemy, out var kind)) return;
+        enemy.ApplyRuntimeDefinition(Scaled(kind), kind.Name, RespawnSeconds);
+    }
+
+    /// <summary>
     ///     Fills the floor for <paramref name="floor"/>: its monsters on the spots, at its level, with the band's element.
     ///     Monsters of the floor before go first. Returns false when the scene has no templates or spots (the test floor).
     /// </summary>
     public bool Apply(TowerFloorDefinition floor)
     {
+        scaled.Clear();
         if (Route && Route.Valid) return ApplyRoute(floor);
         if (floor == null || !Templates || !Spawns || Spawns.childCount == 0) return false;
         Clear();
@@ -81,10 +137,11 @@ public sealed class TowerFloor : TowerPlace
             var kind = floor.Enemies[i % floor.Enemies.Length];
             var template = Template(kind.Model);
             if (!template) continue;
-            if (!made.TryGetValue(kind.Id, out var definition)) made[kind.Id] = definition = Tower.Enemy(floor, kind);
+            if (!made.TryGetValue(kind.Id, out var definition)) made[kind.Id] = definition = Scaled(kind);
             var spot = Spawns.GetChild(i);
             var enemy = Make(template, spot.position, spot.rotation, kind.Scale > 0 ? kind.Scale : 1f);
-            enemy.ApplyRuntimeDefinition(definition, kind.Name, Tower.EnemyRespawnSeconds);
+            enemy.ApplyRuntimeDefinition(definition, kind.Name, RespawnSeconds);
+            enemy.Respawning = Rescale;
             enemies.Add(enemy);
             kinds[enemy] = kind;
         }
@@ -114,10 +171,11 @@ public sealed class TowerFloor : TowerPlace
                 var kind = floor.Enemies[i % floor.Enemies.Length];
                 var template = Template(kind.Model);
                 if (!template) continue;
-                if (!made.TryGetValue(kind.Id, out var definition)) made[kind.Id] = definition = Tower.Enemy(floor, kind);
+                if (!made.TryGetValue(kind.Id, out var definition)) made[kind.Id] = definition = Scaled(kind);
                 var spot = zone.Spawns.GetChild(s);
                 var enemy = Make(template, spot.position, spot.rotation, kind.Scale > 0 ? kind.Scale : 1f);
-                enemy.ApplyRuntimeDefinition(definition, kind.Name, Tower.EnemyRespawnSeconds);
+                enemy.ApplyRuntimeDefinition(definition, kind.Name, RespawnSeconds);
+                enemy.Respawning = Rescale;
                 enemy.AutomaticRespawn = z >= Route.Hold;
                 enemies.Add(enemy);
                 kinds[enemy] = kind;
@@ -155,8 +213,14 @@ public sealed class TowerFloor : TowerPlace
         return false;
     }
 
-    /// <summary>The boss of the floor at its spot, full health, facing the arena's middle.</summary>
-    public EnemyController SpawnBoss()
+    /// <summary>The pressure the boss of the attempt was made for (its helpers come by it too).</summary>
+    public double BossPressure { get; private set; } = 1;
+
+    /// <summary>
+    ///     The part's guardian at its spot, full health, facing the arena's middle, with the numbers the fight's
+    ///     <paramref name="pressure"/> asks for (1: the fixed numbers for the suggested group).
+    /// </summary>
+    public EnemyController SpawnBoss(double pressure = 1)
     {
         DespawnBoss();
         if (Definition == null) return null;
@@ -166,7 +230,8 @@ public sealed class TowerFloor : TowerPlace
         var point = BossPoint ? BossPoint : transform;
         Boss = Make(template, point.position, point.rotation, b.Scale);
         Boss.AutomaticRespawn = false;
-        Boss.ApplyRuntimeDefinition(Tower.Boss(Definition), b.Name, 0f);
+        BossPressure = pressure;
+        Boss.ApplyRuntimeDefinition(Tower.Boss(Definition, pressure), b.Name, 0f);
         // its fall is shown (TowerManager): the body stays until it is despawned
         var movement = Boss.GetComponent<EnemyMovementController>();
         if (movement) movement.KeepBody = true;
@@ -174,8 +239,20 @@ public sealed class TowerFloor : TowerPlace
     }
 
     /// <summary>
-    ///     The boss calls help: <paramref name="count"/> of the floor's first monster around it, at the floor's level, no
-    ///     respawn. They go with the boss when the attempt ends.
+    ///     The boss before the fight begins, when the group changed during its countdown or intro: the numbers for the
+    ///     pressure the fight starts with, full health.
+    /// </summary>
+    public void RescaleBoss(double pressure)
+    {
+        if (!Boss || Definition == null || System.Math.Abs(pressure - BossPressure) < 0.02) return;
+        BossPressure = pressure;
+        Boss.ApplyRuntimeDefinition(Tower.Boss(Definition, pressure), Definition.Boss.Name, 0f);
+    }
+
+    /// <summary>
+    ///     The boss calls help: the floor's first monster around it, at the floor's level, no respawn; how many and how
+    ///     tough by the fight's pressure (<paramref name="count"/> is what the boss calls for the suggested group). They
+    ///     go with the boss when the attempt ends.
     /// </summary>
     public int SpawnAdds(int count)
     {
@@ -183,7 +260,8 @@ public sealed class TowerFloor : TowerPlace
         var kind = Definition.Enemies[0];
         var template = Template(kind.Model);
         if (!template) return 0;
-        var definition = Tower.Enemy(Definition, kind);
+        count = TowerPressure.Helpers(count, Definition.Floor, BossPressure);
+        var definition = Tower.Enemy(Definition, kind, BossPressure, true);
         var made = 0;
         for (var i = 0; i < count; ++i)
         {
@@ -302,5 +380,6 @@ public sealed class TowerFloor : TowerPlace
         kinds.Clear();
         zones.Clear();
         enemies.Clear();
+        scaled.Clear();
     }
 }
