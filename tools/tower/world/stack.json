@@ -1,0 +1,60 @@
+{
+  "note": "The tower that stands in the main world (docs/world-tower.md): where it is and its stack of sections, one per floor, bottom first. Read by tools/tower/world/world_tower.py (Blender, makes the models and stack-built.json) and by tools/tower/world/world-tower-build.cs (Unity, makes Assets/Scenes/Tower/WorldTower.unity). To add a floor's section: add it to 'sections' (a style world_tower.py knows, or 'unbuilt' for a plain dark one), run both scripts again. Nothing assumes a number of floors; the cloud cap always sits on the last section.",
+  "position": [
+    405,
+    -60
+  ],
+  "seaLevel": -3.31,
+  "faces": [
+    60,
+    40
+  ],
+  "baseRadius": 80,
+  "minRadius": 30,
+  "sections": [
+    {
+      "floor": 1,
+      "style": "overgrown",
+      "height": 90,
+      "glow": [
+        1.0,
+        0.72,
+        0.28
+      ]
+    },
+    {
+      "floor": 2,
+      "style": "frost",
+      "height": 70,
+      "glow": [
+        0.45,
+        0.82,
+        1.0
+      ]
+    },
+    {
+      "floor": 3,
+      "style": "storm",
+      "height": 62,
+      "glow": [
+        0.78,
+        0.62,
+        1.0
+      ]
+    },
+    {
+      "floor": 4,
+      "style": "fortress",
+      "height": 84,
+      "glow": [
+        0.4,
+        1.0,
+        0.32
+      ]
+    }
+  ],
+  "cap": {
+    "style": "cloud",
+    "height": 130
+  }
+}
