@@ -45,6 +45,16 @@ otherwise; `SillyBob` gently bobs a floating thing while it is on screen.
 | `home-april-king-clucksworth` | Home, in front of the town hall fountain (-20, 8, -118), **April 1st only** | King Clucksworth, a hen in a big crown, and ALL HAIL KING CLUCKSWORTH, KING OF EVERYTHING. |
 | `Templates` (hidden) | none | The fish for the fish slap, the party hat and the traffic cone for April 1st. |
 
+### At the tower's foot (since 2026-11-24)
+
+Not in the World Gags prefab: it is part of the world tower's own scene (`Assets/Scenes/Tower/WorldTower.unity`, made
+by `tools/tower/world/world-tower-build.cs`; docs/world-tower.md). It is a `WorldGag` too, shown by `WorldTower` with
+the same Silly surprises setting.
+
+| Key | Where | What |
+|---|---|---|
+| `tower-elevator-out-of-order` | The tower's entrance plaza, in the wall to the right of the great gate (about 317, 2, -52) | A little brass elevator door, 3 m high in the foot of a tower that vanishes into the clouds, its floor dial stuck at the bottom and its call button still glowing from being pressed. The sign beside it: OUT OF ORDER. PLEASE TAKE THE STAIRS. ALL OF THEM (`UI_GAG_SIGN_ELEVATOR`; the words are in the scene, and a translation is picked up when Localization has the field.) |
+
 ## Rob Boss paints (since 2026-11-23)
 
 `RobBoss` is the painter on the hill on Home (-91, 16, 128), standing at an easel whose canvas

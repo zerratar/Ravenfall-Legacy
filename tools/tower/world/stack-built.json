@@ -121,8 +121,8 @@
      "lod1": 96
     },
     "Clouds": {
-     "lod0": 13760,
-     "lod1": 2480
+     "lod0": 16320,
+     "lod1": 2800
     }
    },
    "top": 0.0
@@ -133,15 +133,15 @@
   "model": "WorldTower_Islet",
   "parts": {
    "Islet": {
-    "lod0": 11760,
-    "lod1": 5440
+    "lod0": 11792,
+    "lod1": 4576
    },
    "Plaza": {
     "lod0": 2236,
     "lod1": 2140
    },
    "Flame": {
-    "lod0": 160
+    "lod0": 136
    },
    "Flock": {
     "lod0": 56
@@ -208,7 +208,7 @@
  },
  "baseRadius": 80.0,
  "triangles": {
-  "lod0": 98475,
-  "lod1": 24352
+  "lod0": 101043,
+  "lod1": 23808
  }
 }

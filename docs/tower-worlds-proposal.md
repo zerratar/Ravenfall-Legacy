@@ -112,6 +112,7 @@ rising from the clouds behind the islands.
   the stream's best climbers), and `!tower` goes in.
 - Built in Blender from concepts first (memory: concept then Blender), one model with a section per floor so new
   floors are added on top. It follows the potato mode setting (a lower detail model, no glow animation).
+- **Built 2026-11-24:** docs/world-tower.md (the tower on its islet, the light by progress, the plaza; visiting it and the gates' beams are not done).
 
 ## 7. Per stream progress, and a little shared
 

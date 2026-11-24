@@ -555,7 +555,7 @@ def overgrown(r_seat, h, lod, seed):
         if near_gate(a): continue
         W.block(a, -2.6, 2.6, 2.0, T, -0.5, 6.0, 1.6, col=jit(stone2, 0.05, rnd))
     # the terrace: a wide ledge on corbels, grass on top
-    grass = (0.36, 0.54, 0.22)
+    grass = (0.38, 0.49, 0.2)
     ledge(g, R, T, 8.0, 3.0, segs, mixc(stone2, moss2, 0.35), grass)
     if lod == 0:
         for i in range(48):
@@ -658,11 +658,11 @@ def storm(r_seat, h, lod, seed):
         return jit(c, 0.08, rnd)
     courses(g, R, -2.0, h - 6.0, 11 if lod == 0 else 5, segs, col, rnd)
     broken = lambda a: n3(math.cos(a) * 2.0, math.sin(a) * 2.0, 4.2) > 0.28
-    ledge(g, R, 20.0, 4.0, 2.4, segs, stone2, stone, skip=broken)
+    ledge(g, R, 24.0, 4.0, 2.4, segs, stone2, stone, skip=broken)
     frame = mul(stone2, 0.8)
     tint = (0.92, 0.86, 1.0)
-    windows_ring(W, 8.0, 32 if lod == 0 else 16, 2.3, 5.4, WINDOW, frame, rnd, lod)
-    windows_ring(W, 27.0, 30 if lod == 0 else 15, 2.3, 5.4, WINDOW, frame, rnd, lod)
+    windows_ring(W, 6.0, 32 if lod == 0 else 16, 2.3, 5.4, WINDOW, frame, rnd, lod)
+    windows_ring(W, 28.5, 30 if lod == 0 else 15, 2.3, 5.4, WINDOW, frame, rnd, lod)
     windows_ring(W, 48.5, 28 if lod == 0 else 14, 2.3, 5.4, WINDOW, frame, rnd, lod)
     rune_band(g, R, 36.0, 45.5, segs, (0.22, 0.2, 0.32), tint, "gale", 4, rnd, lod)
     ledge(g, R, h - 6.0, 3.2, 2.4, segs, stone2, stone)
@@ -681,8 +681,8 @@ def storm(r_seat, h, lod, seed):
     for i in range(n):
         a = i * TAU / n + rnd.uniform(-0.1, 0.1)
         r = rnd.uniform(rb + 13, rb + 36)
-        z = rnd.uniform(14, 34)
-        rr = rnd.uniform(14, 23)
+        z = rnd.uniform(5, 17)          # low round the section: its rune band and upper windows stay in the clear
+        rr = rnd.uniform(13, 20)
         blob(ring, P(r, a, z), rr, rr, rr * 0.55, 2 if lod == 0 else 1, 0.3, (0.5, 0.5, 0.6), (0.2, 0.2, 0.27), rnd.uniform(0, 50), kind=CLOUD, phase=rnd.uniform(0, 1))
         if i % 2 == 0:
             rr2 = rr * 0.7
@@ -690,7 +690,7 @@ def storm(r_seat, h, lod, seed):
     for i in range(7 if lod == 0 else 4):
         a = rnd.uniform(0, TAU)
         r0 = rb + rnd.uniform(16, 28)
-        pts = [P(r0, a, 22.0)]
+        pts = [P(r0, a, 12.0)]
         for k in range(5):
             last = pts[-1]
             pts.append(last + Vector((rnd.uniform(-3.5, 3.5), rnd.uniform(-3.5, 3.5), -rnd.uniform(5, 9))))
@@ -820,7 +820,7 @@ def cap(r_seat, h, lod, seed):
     # uneven round its rim so no two sides look the same
     def reach(a): return 1.0 + 0.22 * n3(math.cos(a) * 1.2, math.sin(a) * 1.2, 5.5) + 0.12 * n3(math.cos(a) * 2.7, math.sin(a) * 2.7, 1.5)
     def puff(r, a, z, rr, t, squash=0.5):
-        blob(clouds, P(r, a, z), rr * rnd.uniform(1.0, 1.3), rr * rnd.uniform(1.0, 1.3), rr * squash, 2 if lod == 0 else 1, 0.3, mixc(grey, white, t), mixc(grey_under, under, t), rnd.uniform(0, 80), kind=CLOUD, phase=rnd.uniform(0, 1), freq=1.3, flat_bottom=z0)
+        blob(clouds, P(r, a, z), rr * rnd.uniform(1.0, 1.3), rr * rnd.uniform(1.0, 1.3), rr * squash, 2 if lod == 0 else 1, 0.3, mixc(grey, white, t), mixc(grey_under, under, t), rnd.uniform(0, 80), kind=CLOUD, phase=rnd.uniform(0, 1), freq=1.3, flat_bottom=z0 + rnd.uniform(-5, 6))
     z0 = 34.0      # the cloud's floor: the crown below stays in the clear
     # the floor: two rings of flat puffs, their undersides level
     n = 14 if lod == 0 else 9
@@ -844,6 +844,10 @@ def cap(r_seat, h, lod, seed):
     for i in range(4):
         a = i * TAU / 4 + rnd.uniform(-0.3, 0.3)
         puff(rnd.uniform(10, 50), a, z0 + rnd.uniform(52, 66), rnd.uniform(40, 50), 1.0, 0.62)
+    # two small clouds standing off it, so it is not one round thing on a stalk
+    for r, a, n in ((262, 1.2, 3), (300, 4.1, 3), (245, 2.9, 2)) if lod == 0 else ((262, 1.2, 2), (300, 4.1, 2)):
+        for k in range(n):
+            puff(r + rnd.uniform(-16, 16), a + rnd.uniform(-0.05, 0.05), z0 + rnd.uniform(0, 14), rnd.uniform(22, 34), rnd.uniform(0.7, 1.0), 0.55)
     return {"Body": g, "Clouds": clouds}, 0.0
 
 
@@ -870,7 +874,7 @@ def ground(a, r):
     sh = shore(a)
     x, y = r * math.cos(a), r * math.sin(a)
     if r >= sh:
-        z = -0.4 - (r - sh) * 0.42 - 1.5 * (0.5 + 0.5 * n3(x * 0.05, y * 0.05, 2.0)) * min(1.0, (r - sh) / 10.0)
+        z = -0.4 - (r - sh) * 0.8 - 1.5 * (0.5 + 0.5 * n3(x * 0.05, y * 0.05, 2.0)) * min(1.0, (r - sh) / 10.0)
         z = max(z, -30.0)
     else:
         t = (sh - r) / max(1.0, sh - (R0 - 2.0))
@@ -888,7 +892,7 @@ def islet(lod, seed):
     rnd = random.Random(seed)
     g = Geo()
     segs = 144 if lod == 0 else 72
-    radii = [R0 + k for k in ((-4, 2, 7, 13, 19, 25, 31, 37, 43, 49, 56, 64, 72, 82, 96, 116) if lod == 0 else (-4, 3, 10, 19, 28, 37, 47, 58, 70, 86, 116))]
+    radii = [R0 + k for k in ((-4, 2, 7, 13, 19, 25, 31, 37, 43, 49, 55, 62, 70, 80, 92) if lod == 0 else (-4, 3, 10, 19, 28, 37, 47, 58, 72, 92))]
     grid = []
     for ri, r in enumerate(radii):
         row = []
@@ -901,12 +905,12 @@ def islet(lod, seed):
             rj = r + k * rnd.uniform(-1.6, 1.6)
             row.append((P(rj, aj, z + k * rnd.uniform(-0.5, 0.9) * (1.0 if z > 0.5 else 0.3)), flat))
         grid.append(row)
-    rock, rock2, grass, grass2, sand, wet, deep = (0.52, 0.52, 0.52), (0.42, 0.42, 0.44), (0.38, 0.55, 0.24), (0.3, 0.47, 0.2), (0.76, 0.7, 0.5), (0.3, 0.32, 0.33), (0.16, 0.25, 0.3)
+    rock, rock2, grass, grass2, sand, wet, deep = (0.52, 0.52, 0.52), (0.42, 0.42, 0.44), (0.4, 0.5, 0.2), (0.33, 0.44, 0.18), (0.76, 0.7, 0.5), (0.3, 0.32, 0.33), (0.05, 0.1, 0.14)
     def color(tri, flat):
         n = poly_normal(tri).normalized()
         zc = (tri[0].z + tri[1].z + tri[2].z) / 3
         nz = abs(n.z)
-        if zc < -0.7: return mixc(wet, deep, clamp01(-zc / 8.0))
+        if zc < -0.7: return mixc(wet, deep, clamp01(-zc / 7.0))
         if zc < 0.7: return jit(sand if nz > 0.93 else wet, 0.05, rnd)
         if flat > 0.6: return jit(mixc(grass, (0.5, 0.48, 0.34), 0.35), 0.05, rnd)
         if nz > 0.82: return jit(grass if rnd.random() < 0.6 else grass2, 0.06, rnd)
@@ -1199,10 +1203,18 @@ def egg(seed):
 def flame(seed):
     """A fire for a brazier's bowl, a metre and a half high, its foot at the origin. A phase of 1 or more tells the
     shader it is a small flame (it wavers less)."""
-    rnd = random.Random(seed)
     g = Geo()
-    blob(g, (0, 0, 0.75), 0.5, 0.5, 0.95, 1, 0.35, (1.0, 0.72, 0.2), (1.0, 0.36, 0.08), 3.0, kind=FLAME, glow=1.0, phase=1.3)
-    blob(g, (0, 0, 0.5), 0.3, 0.3, 0.55, 1, 0.3, (1.0, 0.95, 0.6), (1.0, 0.7, 0.25), 7.0, kind=FLAME, glow=1.0, phase=1.7)
+    def tongue(c, r, h, lean, phase):
+        # a spindle: yellow and wide low down, drawn out to an orange point that leans a little
+        c = Vector(c)
+        mid = c + Vector((lean[0] * 0.3, lean[1] * 0.3, h * 0.3))
+        cyl(g, c, mid, r * 0.5, r, 6, (1.0, 0.82, 0.3), cap0=True, cap1=False, glow=1.0, kind=FLAME, phase=phase, shade=False)
+        cyl(g, mid, mid + Vector((lean[0] * 0.2, lean[1] * 0.2, h * 0.3)), r, r * 0.6, 6, (1.0, 0.58, 0.12), cap1=False, glow=1.0, kind=FLAME, phase=phase, shade=False)
+        cyl(g, mid + Vector((lean[0] * 0.2, lean[1] * 0.2, h * 0.3)), c + Vector((lean[0], lean[1], h)), r * 0.6, 0.0, 6, (1.0, 0.34, 0.06), glow=1.0, kind=FLAME, phase=phase, shade=False)
+    tongue((0, 0, 0), 0.34, 1.3, (0.05, 0.02), 1.3)
+    tongue((0.22, 0.08, 0), 0.22, 0.85, (0.22, 0.1), 1.5)
+    tongue((-0.2, 0.12, 0), 0.2, 0.7, (-0.2, 0.06), 1.7)
+    tongue((0.02, -0.22, 0), 0.21, 0.78, (0.0, -0.2), 1.9)
     return g
 
 
@@ -1238,11 +1250,11 @@ def export(name):
     return path
 
 
-def render(name, cam_loc, look, lens=35, size=(1280, 1600), ortho=None):
+def render(name, cam_loc, look, lens=35, size=(1280, 1600), ortho=None, flat=False):
     scene = bpy.context.scene
     scene.render.engine = "BLENDER_WORKBENCH"
     sh = scene.display.shading
-    sh.light = "STUDIO"
+    sh.light = "FLAT" if flat else "STUDIO"      # flat: the colors as they are, to judge the palette
     sh.color_type = "VERTEX"
     sh.show_cavity = False
     sh.show_shadows = False
@@ -1346,6 +1358,10 @@ if PREVIEWS:
     render("fortress", (300, -360, 420), (0, 0, 345), lens=40, size=(1600, 1000))
     render("frost", (260, -300, 170), (0, 0, 150), lens=35, size=(1600, 1000))
     render("islet-top", (0, -40, 700), (0, -40, 0), lens=50, size=(1400, 1400))
+    # as the game sees it from the nearest shores: eye height, 320 m off, the game's field of view
+    render("from-shore", (60, -330, 6), (0, 0, 120), lens=18, size=(1920, 1080))
+    render("from-shore-side", (-300, 160, 6), (0, 0, 120), lens=18, size=(1920, 1080))
+    render("from-shore-colors", (60, -330, 6), (0, 0, 120), lens=18, size=(1920, 1080), flat=True)
     # the far models, as the world sees them from most islands
     clear()
     for name, geo, base in everything_far:

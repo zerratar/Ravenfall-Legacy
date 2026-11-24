@@ -206,7 +206,25 @@ const string Jungle = "Assets/PolygonNatureBiomes/PNB_Tropical_Jungle/Prefabs/";
 
 // the hero climber on the pedestal, looking out over the plaza to the sea
 var ped = V("pedestal");
-Put(FK + "SM_Prop_Statue_Hero_01.prefab", ped + new UnityEngine.Vector3(-0.3f, 0f, 0f), 180f + 28f, 2.1f);
+{
+    // of pale stone like the plaza, three times life size, facing the middle of the plaza
+    var stonePath = Folder + "/Statue.mat";
+    var stone = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(stonePath);
+    if (!stone) { stone = new UnityEngine.Material(UnityEngine.Shader.Find("Universal Render Pipeline/Lit")); UnityEditor.AssetDatabase.CreateAsset(stone, stonePath); }
+    stone.SetColor("_BaseColor", new UnityEngine.Color(0.66f, 0.64f, 0.6f)); stone.SetFloat("_Smoothness", 0.12f);
+    UnityEditor.EditorUtility.SetDirty(stone);
+    var yaw = UnityEngine.Mathf.Atan2(plaza.x - ped.x, plaza.z - ped.z) * UnityEngine.Mathf.Rad2Deg;
+    var statue = Put(FK + "SM_Prop_Statue_Hero_01.prefab", ped, yaw, 3f);
+    if (statue)
+    {
+        foreach (var r in statue.GetComponentsInChildren<UnityEngine.Renderer>()) { var ms = r.sharedMaterials; for (var i = 0; i < ms.Length; i++) ms[i] = stone; r.sharedMaterials = ms; }
+        // stood by the middle of what it is made of, not by its pivot
+        var b = new UnityEngine.Bounds(); var first = true;
+        foreach (var r in statue.GetComponentsInChildren<UnityEngine.Renderer>()) { if (first) { b = r.bounds; first = false; } else b.Encapsulate(r.bounds); }
+        var want = root.transform.TransformPoint(ped);
+        statue.transform.position += new UnityEngine.Vector3(want.x - b.center.x, want.y - b.min.y, want.z - b.center.z);
+    }
+}
 
 // banners down the gate's pilasters
 foreach (var side in new[] { -1f, 1f })
@@ -217,12 +235,13 @@ const string BigBrazier = "Assets/PolygonAncientEmpire/Prefabs/Props/SM_Prop_Bra
 const string Bowl = "Assets/PolygonDungeon/Prefabs/Props/SM_Prop_Brazier_01.prefab";
 foreach (var side in new[] { -1f, 1f })
 {
-    var p = Ground(side * 13.2f, V("stairFoot").z + 1.5f);
-    Put(BigBrazier, p, 0f, 1.5f);
-    Fire(p + UnityEngine.Vector3.up * 2.75f, 1.9f, true);
+    // on the ends of the stair's cheeks (clear of the elevator's door beside the stair)
+    var p = new UnityEngine.Vector3(side * 10.1f, gate.y + 1.3f, V("stairFoot").z + 0.4f);
+    Put(BigBrazier, p, 0f, 1.25f);
+    Fire(p + UnityEngine.Vector3.up * 2.05f, 1.5f, true);
     var q = new UnityEngine.Vector3(side * 6.6f, level + 0.12f, plaza.z - plazaR - 2.0f);
-    Put(BigBrazier, q, 0f, 1.2f);
-    Fire(q + UnityEngine.Vector3.up * 2.2f, 1.5f, true);
+    Put(BigBrazier, q, 0f, 1.1f);
+    Fire(q + UnityEngine.Vector3.up * 1.8f, 1.3f, true);
 }
 {
     // the wall's posts stand where world_tower.py put them: two arcs, seven posts each, between the quay and the stair
@@ -234,7 +253,7 @@ foreach (var side in new[] { -1f, 1f })
             var t = UnityEngine.Mathf.Lerp(t0, t1, k / 6f);
             var p = new UnityEngine.Vector3(plaza.x + (plazaR - 0.5f) * UnityEngine.Mathf.Cos(t), level + 2.6f, plaza.z + (plazaR - 0.5f) * UnityEngine.Mathf.Sin(t));
             Put(Bowl, p, R(0f, 360f), 1.25f);
-            Fire(p + UnityEngine.Vector3.up * 0.55f, 1.25f, false);
+            Fire(p + UnityEngine.Vector3.up * 0.5f, 0.95f, false);
         }
 }
 
@@ -266,7 +285,7 @@ bool Clear(float x, float z)
     if (new UnityEngine.Vector2(x - slab.x, z - slab.z).magnitude < 8.5f) return false;
     if (new UnityEngine.Vector2(x - ped.x, z - ped.z).magnitude < 6.5f) return false;
     var egg = V("egg");
-    if (new UnityEngine.Vector2(x - egg.x, z - egg.z).magnitude < 6f) return false;
+    if (new UnityEngine.Vector2(x - egg.x, z - egg.z).magnitude < 9f) return false;
     return true;
 }
 var planted = 0;
@@ -285,17 +304,8 @@ for (var tries = 0; tries < 900 && planted < 64; tries++)
     planted++;
 }
 log.AppendLine("planted " + planted);
-// rocks where the bastion meets the island's own stone, half sunk
-var rocks = new[] { "SM_Env_Rock_01", "SM_Env_Rock_02", "SM_Env_Rock_03", "SM_Env_Rock_04" };
-for (var k = 0; k < 16; k++)
-{
-    var t = R(0f, UnityEngine.Mathf.PI * 2f);
-    // clear of the quay (toward -z) and of the way to the gate (toward +z)
-    if (UnityEngine.Mathf.Abs(UnityEngine.Mathf.DeltaAngle(t * UnityEngine.Mathf.Rad2Deg, -90f)) < 26f || UnityEngine.Mathf.Abs(UnityEngine.Mathf.DeltaAngle(t * UnityEngine.Mathf.Rad2Deg, 90f)) < 48f) continue;
-    var rr = plazaR + 4.5f + R(0.5f, 4f);
-    var p = Ground(plaza.x + rr * UnityEngine.Mathf.Cos(t), plaza.z + rr * UnityEngine.Mathf.Sin(t), 0f);
-    Put(Jungle + rocks[rng.Next(rocks.Length)] + ".prefab", p - UnityEngine.Vector3.up * 0.4f, R(0f, 360f), R(1.6f, 3.2f));
-}
+// (no Synty rocks: the jungle pack's are brown and textured and sat on the grey islet like something dropped; the
+// islet's own boulders are part of its model)
 
 // the pier: the Vikings' dock pieces out from the quay's stone landing, a few barrels and crates on the landing
 var quay = V("quayHead");
@@ -348,7 +358,9 @@ TMPro.TextMeshPro Words(string name, UnityEngine.Transform parent, UnityEngine.V
     var door = Part("Egg_Near");
     door.SetParent(eggRoot.transform, true);
     var sign = V("eggSign");
-    var post = Put("Assets/Polygonal Fantasy Pack/Environment Prefabs/Misc/Text Signboard 01.prefab", Ground(sign.x + 0.4f, sign.z - 0.6f) - UnityEngine.Vector3.up * 0.05f, 180f - 16f, 2.3f, eggRoot.transform);
+    // between the stair and the door, turned to the plaza (beside the stone it would stand hidden behind it)
+    var eggAt = V("egg");
+    var post = Put("Assets/Polygonal Fantasy Pack/Environment Prefabs/Misc/Text Signboard 01.prefab", Ground(eggAt.x - 3.6f, eggAt.z - 2.2f) - UnityEngine.Vector3.up * 0.05f, 180f + 14f, 2.3f, eggRoot.transform);
     if (post)
     {
         UnityEngine.Transform face = null;

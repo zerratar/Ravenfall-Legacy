@@ -3838,6 +3838,8 @@ public static class Localization
     public static string UI_GAG_SIGN_ANVIL = "PLEASE DO NOT LEAVE SHEEP ON THE ANVIL";
     public static string UI_GAG_SIGN_FRIDAY = "BAD LUCK TODAY. PET THE CAT ANYWAY";
     public static string UI_GAG_SIGN_KING = "ALL HAIL KING CLUCKSWORTH, KING OF EVERYTHING";
+    // the sign by the elevator at the foot of the tower in the main world (docs/easter-eggs.md, WorldTower)
+    public static string UI_GAG_SIGN_ELEVATOR = "OUT OF ORDER. PLEASE TAKE THE STAIRS. ALL OF THEM";
     // Rob Boss, the painter on Home (RobBossPainter): what he says when he starts, and his paintings' titles
     public static string UI_ROB_GALLERY = "\"{0}\" by Rob Boss. {1} coins. Not for sale.";
     public static string UI_ROB_QUOTE_1 = "There are no mistakes here. Only happy little goblins.";
