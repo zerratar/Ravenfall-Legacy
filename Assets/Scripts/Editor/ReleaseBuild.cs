@@ -84,6 +84,27 @@ public static class ReleaseBuild
         return result.ok;
     }
 
+    // The tower's places are scenes the game loads by name, and the build's scene list is not in git
+    // (EditorBuildSettings.asset), so a machine with a plain list would build a game with no tower.
+    // Every scene in Assets/Scenes/Tower is added here unless it is a test or a place not released yet.
+    private static readonly string[] TowerScenesLeftOut = { "TowerTest", "Tower_GreatHall" };
+
+    private static string[] WithTowerScenes(System.Collections.Generic.IEnumerable<string> listed, StringBuilder log)
+    {
+        var scenes = listed.Select(x => x.Replace('\\', '/')).ToList();
+        const string folder = "Assets/Scenes/Tower";
+        if (!Directory.Exists(folder)) return scenes.ToArray();
+        foreach (var file in Directory.GetFiles(folder, "*.unity").OrderBy(x => x))
+        {
+            var path = file.Replace('\\', '/');
+            if (TowerScenesLeftOut.Contains(Path.GetFileNameWithoutExtension(path))) continue;
+            if (scenes.Any(x => string.Equals(x, path, StringComparison.OrdinalIgnoreCase))) continue;
+            scenes.Add(path);
+            log.AppendLine("Scene added for the tower: " + path);
+        }
+        return scenes.ToArray();
+    }
+
     private static (bool ok, string log) BuildAll()
     {
         Directory.CreateDirectory(Path.GetDirectoryName(LogPath));
@@ -93,7 +114,7 @@ public static class ReleaseBuild
 
         var standalone = NamedBuildTarget.Standalone;
         var backend = UnityEditor.PlayerSettings.GetScriptingBackend(standalone);
-        var scenes = EditorBuildSettings.scenes.Where(x => x.enabled).Select(x => x.path).ToArray();
+        var scenes = WithTowerScenes(EditorBuildSettings.scenes.Where(x => x.enabled).Select(x => x.path), log);
         var ok = true;
         try
         {
