@@ -23,6 +23,12 @@ namespace RavenNest.SDK.Endpoints
             return request.Create().Build().SendAsync<TowerState>(ApiRequestTarget.Tower, ApiRequestType.Get);
         }
 
+        /// <summary>The stream's best climbers, for the stone and the statue at the foot of the tower in the main world (WorldTower).</summary>
+        public Task<WorldTowerClimber[]> ClimbersAsync()
+        {
+            return request.Create().Identifier("climbers").Build().SendAsync<WorldTowerClimber[]>(ApiRequestTarget.Tower, ApiRequestType.Get);
+        }
+
         /// <summary>
         /// What happened on the part since the last report, in the objectives' text form: kills per kill objective, every
         /// kill and hidden things found ("defeat-hall-goblin:3;kills:5;find-boots:1").

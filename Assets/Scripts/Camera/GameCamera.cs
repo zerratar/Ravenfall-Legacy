@@ -162,6 +162,16 @@ public class GameCamera : MonoBehaviour
                 return;
             }
 
+            // the tower camera key: to the players in the tower, and back to what was watched outside
+            // (WorldTowerCamera, which is told what is watched so it knows both ends); not from the race camera, not
+            // in build mode
+            WorldTowerCamera.Track(this);
+            if (state != GameCameraType.Race && !building && Keybinds.Pressed(Keybinds.Action.TowerCamera))
+            {
+                WorldTowerCamera.Toggle();
+                return;
+            }
+
             if (Keybinds.Held(Keybinds.Action.FreeCamera))
             {
                 EnableFreeCamera();
@@ -409,7 +419,8 @@ public class GameCamera : MonoBehaviour
             observedPlayerIndex = (observedPlayerIndex + 1) % playerCount;
             player = playerManager.GetPlayerByIndex(observedPlayerIndex);
             if (!player) return true;
-            if (CanObservePlayer(player)) break;
+            // (after the tower camera key the rotation stays on the side it took the camera to: WorldTowerCamera)
+            if (CanObservePlayer(player) && WorldTowerCamera.Follows(player)) break;
         }
         if (!player) return true;
         ObservePlayer(player);
@@ -570,6 +581,30 @@ public class GameCamera : MonoBehaviour
         orbitCamera.TargetTransform = player.transform;
         orbitCamera.enabled = true;
         islandObserveCamera.enabled = false;
+    }
+
+    /// <summary>
+    /// The streamer picks who to watch (the tower camera key and its button, WorldTowerCamera): the camera goes to
+    /// the player as Next player would. False while something has the camera for a reason: a cutscene, the race
+    /// camera, a character played by hand, the forced free camera.
+    /// </summary>
+    public bool Watch(PlayerController player)
+    {
+        if (!player || forcedFreeCamera || controlled || state == GameCameraType.Cinematic || state == GameCameraType.Race) return false;
+        if (!CanObservePlayer(player)) return false;
+        state = GameCameraType.Observe;
+        focusTargetCamera.enabled = false;
+        ObservePlayer(player);
+        return true;
+    }
+
+    /// <summary>As <see cref="Watch(PlayerController)"/>, for an island's view.</summary>
+    public bool Watch(IslandController island)
+    {
+        if (!island || forcedFreeCamera || controlled || state == GameCameraType.Cinematic || state == GameCameraType.Race) return false;
+        state = GameCameraType.Island;
+        ObserveIsland(island);
+        return true;
     }
 
     public void EnableFocusTargetCamera(Transform transform)

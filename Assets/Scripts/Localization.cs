@@ -2619,6 +2619,7 @@ public static class Localization
     public static string UI_KEY_FREE_CAMERA = "Free camera (hold)";
     public static string UI_KEY_NEXT_ISLAND = "Watch the next island";
     public static string UI_KEY_RACE_CAMERA = "Back to the race camera (regatta)";
+    public static string UI_KEY_TOWER_CAMERA = "Tower camera: to the tower and back";
     public static string UI_KEY_TRACKER = "Show or hide the quest tracker";
     public static string UI_REGATTA_CAMERA_BACK = "Return to race camera ({0})";
     public static string UI_REGATTA_CAMERA_BACK_IN = "Back to the race camera in {0} s";
@@ -2945,6 +2946,10 @@ public static class Localization
     public static string UI_METER_RESET = "Count from now";
     public static string UI_METER_HIDE_TOWER = "Hide until the next boss fight";
     public static string UI_TOWER_METERS = "Meters";
+    // the tower panel's camera button: where its press (or the tower camera key, {0}) takes the camera
+    public static string UI_TOWER_CAMERA_IN = "Tower ({0})";
+    public static string UI_TOWER_CAMERA_OUT = "World ({0})";
+    public static string UI_TOWER_CAMERA_NOBODY = "Nobody is in the tower";
     public static string UI_TOWER_CHALLENGE = "Challenge";
     public static string UI_TOWER_START_NOW = "Start now";
     public static string UI_TOWER_STANDING = "{0} standing";
@@ -3045,6 +3050,8 @@ public static class Localization
     public static string UI_SETTINGS_RACE_CAMERA = "Regatta camera";
     public static string UI_SETTINGS_SCREEN_SHAKE = "Screen shake";
     public static string UI_SETTINGS_SCREEN_SHAKE_HINT = "Hero mode's hits and the Kraken's roar shake the camera. Always off in potato mode.";
+    public static string UI_SETTINGS_TOWER_LOOKS = "Looks at the tower";
+    public static string UI_SETTINGS_TOWER_LOOKS_HINT = "Now and then, while nothing else is going on and nobody is steering the camera, the camera takes a slow look at the tower on the horizon and comes back. About every quarter of an hour, for a few seconds; any key or mouse movement ends it.";
     public static string UI_SETTINGS_CUTSCENES = "Cutscenes";
     public static string UI_SETTINGS_CUTSCENES_HINT = "A short scene the first time something big happens: Ravebridge rising from the sea, the tower opening, a new tower town. It takes the camera for a few seconds; Esc skips it.";
     public static string UI_SETTINGS_RACE_CAMERA_HINT = "The banana island regatta gets its own camera: the start, the leaders, close battles, the buoys and the finish. Any camera key takes the camera back.";
@@ -3871,6 +3878,14 @@ public static class Localization
     public static string UI_GAG_SIGN_KING = "ALL HAIL KING CLUCKSWORTH, KING OF EVERYTHING";
     // the sign by the elevator at the foot of the tower in the main world (docs/easter-eggs.md, WorldTower)
     public static string UI_GAG_SIGN_ELEVATOR = "OUT OF ORDER. PLEASE TAKE THE STAIRS. ALL OF THEM";
+    // the islet at the foot of the tower in the main world (WorldTower): a calm place players sail to
+    public static string MSG_TOWER_ISLET = Meta("tower", "info") + "You are at the foot of the tower. There is nothing to train here, but you keep learning as on your island. !tower to go in, !sail and an island's name to leave.";
+    public static string MSG_TOWER_WALK_IN = Meta("tower", "info") + "You walk up the stair and in through the tower's gate.";
+    // a row of the leaderboard stone at the tower's foot: the place, the climber's name, how many of the stream's clears they fought in
+    public static string UI_TOWER_STONE_ROW = "{0}. {1}  {2}";
+    public static string UI_TOWER_STONE_TITLE = "BEST CLIMBERS";
+    // the sign on the quay at the tower's foot (docs/easter-eggs.md): the ferry only turns in there for someone
+    public static string UI_GAG_SIGN_FERRY_TIMES = "FERRY TIMETABLE: WHEN SOMEONE ASKS FOR IT. ASK NICELY";
     // Rob Boss, the painter on Home (RobBossPainter): what he says when he starts, and his paintings' titles
     public static string UI_ROB_GALLERY = "\"{0}\" by Rob Boss. {1} coins. Not for sale.";
     public static string UI_ROB_QUOTE_1 = "There are no mistakes here. Only happy little goblins.";

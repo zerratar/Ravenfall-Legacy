@@ -25,6 +25,9 @@ Shader "Hidden/Ravenfall/SkyClouds"
 
             // x floor (m), y ceiling (m), z coverage, w puff size (m)
             float4 _CloudSlab;
+            // a bank that stays put whatever the weather (round the top of the tower in the main world): xy where
+            // (world x and z), z how wide (m, 0 for none), w the height it stands from (m)
+            float4 _CloudTower;
             // x density, y steps, z absorption, w how much the fine noise tears the edges
             float4 _CloudParams;
             // xy wind offset (m, already times time), z haze per metre, w haze start (m)
@@ -98,9 +101,18 @@ Shader "Hidden/Ravenfall/SkyClouds"
                 float banks = Noise3(q * 0.23 + 5.7);
                 float cover = lerp(_CloudSlab.z, _CloudFrontLook.x, FrontSide(p));
                 float cov = saturate(cover * (0.7 + 0.6 * banks));
+                // the tower's own bank: full cover near it and a somewhat thicker body, from its height up
+                float stay = 0.0;
+                if (_CloudTower.z > 0.0)
+                {
+                    // ragged at its rim (the distance is pushed about by a slow noise), so it is a heap of cloud and no disc
+                    float away = distance(p.xz, _CloudTower.xy) * (0.7 + 0.7 * Noise3(q * 0.9 + 1.3));
+                    stay = (1.0 - smoothstep(_CloudTower.z * 0.35, _CloudTower.z, away)) * smoothstep(_CloudTower.w - 30.0, _CloudTower.w + 25.0, p.y);
+                    cov = max(cov, stay);
+                }
                 // the body (about 0.5 on average), cut at a threshold the coverage sets, thinned toward the ceiling so the tops are domes, and
                 // the lowest few percent fading in so the underside is not a flat cut
-                float body = Fbm3(q * 1.7);
+                float body = Fbm3(q * 1.7) + stay * 0.2;
                 // a thin cover thins out much faster, so a clear day is clear; at about half cover and over it is as before
                 float bare = 1.0 - cov;
                 float thresh = 0.68 - 0.28 * cov + 0.12 * bare * bare * bare + hf * hf * 0.22;

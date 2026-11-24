@@ -45,6 +45,13 @@ namespace Shinobytes.UI
         private Label title, floorLabel, timer, clock, barText, people, phase, join;
         private VisualElement liveDot, bar, fill, quests, joinPill;
         private Button mapButton, metersButton, actionButton;
+        // the camera's way to the tower and back (WorldTowerCamera), and its short word when nobody is in the tower
+        private Button cameraButton;
+        private Label cameraText;
+        private VisualElement cameraWord;
+        private Label cameraWordText;
+        private string cameraWords;
+        private float cameraWordUntil = -1f;
         private Label actionText, mapText, metersText;
         // squeezed between the windows at the screen's sides (the players list, the player details): the header's
         // buttons are their icons, and the chat hint gives way to the streamer's button
@@ -141,7 +148,39 @@ namespace Shinobytes.UI
             Show(metersText, !value);
             mapButton.EnableInClassList("rf-tower__mapbtn--icon", value);
             metersButton.EnableInClassList("rf-tower__mapbtn--icon", value);
+            Show(cameraText, !value);
+            cameraButton.EnableInClassList("rf-tower__mapbtn--icon", value);
             ShowJoin(joinWanted);
+        }
+
+        /// <summary>A short word in the status column for a few seconds: the tower camera key pressed with nobody in the tower (the panel is not up then).</summary>
+        public static void Word(string text, float seconds = 3f)
+        {
+            if (!instance) return;
+            instance.cameraWords = text;
+            instance.cameraWordUntil = Time.unscaledTime + seconds;
+            instance.nextRefresh = 0f;
+        }
+
+        private void RefreshWord()
+        {
+            var show = cameraWordUntil > 0f && Time.unscaledTime < cameraWordUntil;
+            if (!show && cameraWord == null) return;
+            if (cameraWord == null || cameraWord.panel == null)
+            {
+                cameraWord = Box("rf-raid", "rf-raid--tower");
+                cameraWord.name = "tower-camera-word";
+                // as wide as its words, in the middle of the column
+                cameraWord.style.width = StyleKeyword.Auto;
+                cameraWord.style.minWidth = StyleKeyword.Auto;
+                cameraWord.style.alignSelf = Align.Center;
+                cameraWordText = Text("rf-raid__title");
+                cameraWord.Add(cameraWordText);
+                column.Add(cameraWord);
+            }
+            Set(cameraWordText, cameraWords ?? "");
+            Show(cameraWord, show);
+            if (!show) cameraWordUntil = -1f;
         }
 
         private void OnEnable() => instance = this;
@@ -219,6 +258,7 @@ namespace Shinobytes.UI
             {
                 if (!Build()) return;
             }
+            RefreshWord();
             Refresh();
         }
 
@@ -270,6 +310,16 @@ namespace Shinobytes.UI
             metersButton.Add(metersIcon);
             metersButton.Add(metersText);
             top.Add(metersButton);
+            // and the camera's way to the tower and back out to the world (WorldTowerCamera; its key does the same)
+            cameraButton = new Button(() => WorldTowerCamera.Toggle()) { text = "" };
+            cameraButton.AddToClassList("rf-tower__mapbtn");
+            var cameraIcon = Text("rf-icon", "rf-tower__mapbtn-icon");
+            cameraIcon.text = "\uf03d";
+            cameraText = Text("rf-tower__mapbtn-text");
+            cameraButton.tooltip = Localization.UI_KEY_TOWER_CAMERA;
+            cameraButton.Add(cameraIcon);
+            cameraButton.Add(cameraText);
+            top.Add(cameraButton);
             hud.Add(top);
 
             bar = Box("rf-raid__bar");
@@ -438,6 +488,10 @@ namespace Shinobytes.UI
             // the part's meters: on a part, and not during a boss fight (the fight opens them itself)
             Show(metersButton, watched != null && !fighting);
             metersButton.EnableInClassList("rf-tower__mapbtn--on", DungeonMetersWindow.StretchOpen);
+            // the camera button says where its press goes: to the tower, or back out to the world (lit while there)
+            var atTower = WorldTowerCamera.AtTower;
+            Set(cameraText, string.Format(atTower ? Localization.UI_TOWER_CAMERA_OUT : Localization.UI_TOWER_CAMERA_IN, Keybinds.Label(Keybinds.Action.TowerCamera)));
+            cameraButton.EnableInClassList("rf-tower__mapbtn--on", atTower);
             var onClimb = tower.Players().Count;
             // everyone between parts: the town, and the part that waits
             var resting = !trip && onClimb == 0 && inTown > 0 && !fighting && !countdown;

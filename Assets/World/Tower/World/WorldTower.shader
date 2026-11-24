@@ -5,7 +5,7 @@
 //   color rgb   the face's color (sRGB); for a glowing face the color it glows in
 //   color a     how much the face glows when its floor is lit
 //   uv.x        the kind: 0 solid, 1 falling water, 2 cloud, 3 flame, 4 pane (a window or a rune: dark glass until
-//               lit), 5 lightning
+//               lit), 5 lightning, 6 ember (coals that glow faintly whatever the floor's state)
 //   uv.y        along the flow for water, a phase for clouds, flames and lightning
 //
 // Seen from every island: the tower stands far past the camera's view distance (650 m, 100 in potato mode), so the
@@ -15,6 +15,11 @@
 // squeezed depth, so the rest of the air between here and the tower's real place is added in the fragment stage
 // (_WorldTowerHaze, set by WorldTower.cs from the Haze setting). What is under the sea is cut away when squeezed (the
 // far sea writes no depth to hide it).
+//
+// No top: above _WorldTowerFade.x (a height in the world) the tower thins out, dithered, and takes the cloud's color,
+// and is gone at the height where the sky's cloud layer ends. The part up there is drawn after the opaque things
+// (WorldTower.cs gives its material a later queue), so it is not in the depth the sky's clouds read and they lie over
+// it wherever they are along the view: the tower goes up into the cloud.
 //
 // Per floor (one material instance each, WorldTower.cs): _Glow 0 for a floor not reached, 1 for a cleared one, and
 // _Pulse for the floor the stream is on. _WorldTowerAnimate 0 (potato mode) stops the pulse, the bobbing cloud, the
@@ -48,12 +53,27 @@ Shader "Ravenfall/WorldTower"
         float _WorldTowerSea;           // the sea's height
         float4 _WorldTowerHaze;         // x density per metre (0: no haze), y 1 / height scale, z base height, w start distance
         float4 _WorldTowerHazeColor;    // linear
+        float4 _WorldTowerFade;         // x the height (world y) the tower begins to fade into cloud at, y 1 / the metres it takes; y 0: no fade
+        float4 _WorldTowerCloudColor;   // linear: what it fades toward
 
         #define KIND_WATER(k) ((k) > 0.5 && (k) < 1.5)
         #define KIND_CLOUD(k) ((k) > 1.5 && (k) < 2.5)
         #define KIND_FLAME(k) ((k) > 2.5 && (k) < 3.5)
         #define KIND_PANE(k) ((k) > 3.5 && (k) < 4.5)
-        #define KIND_BOLT(k) ((k) > 4.5)
+        #define KIND_BOLT(k) ((k) > 4.5 && (k) < 5.5)
+        #define KIND_EMBER(k) ((k) > 5.5)
+
+        // how far into the cloud a point is: 0 below the fade, 1 where the tower is gone
+        float TowerFade(float3 positionWS)
+        {
+            return saturate((positionWS.y - _WorldTowerFade.x) * _WorldTowerFade.y);
+        }
+
+        float TowerDither(float2 pixel)
+        {
+            // interleaved gradient noise: even from pixel to pixel, so a dithered fade reads as thinning mist
+            return frac(52.9829189 * frac(dot(pixel, float2(0.06711056, 0.00583715))));
+        }
 
         // The world position after the kind's own movement: clouds bob, flames waver.
         float3 TowerWorld(float3 positionOS, float2 data)
@@ -99,9 +119,12 @@ Shader "Ravenfall/WorldTower"
 
         // What is not drawn at all: lightning between strikes, fire on a floor that is dark, and the part under the
         // sea of a tower seen from afar. Every pass asks this, so the depth agrees with the color.
-        void TowerCut(float2 data, float3 positionWS, float ratio)
+        void TowerCut(float2 data, float3 positionWS, float ratio, float2 pixel)
         {
             float t = _Time.y;
+            // cloud is what the tower fades into: it stays whole (the low-poly cloud over the top, where no sky clouds are drawn)
+            float fade = KIND_CLOUD(data.x) ? 0.0 : TowerFade(positionWS);
+            if (fade > 0.0) clip(TowerDither(pixel) - fade * 1.02);
             if (KIND_BOLT(data.x))
             {
                 float cycle = frac(t * 0.19 + data.y);
@@ -187,7 +210,7 @@ Shader "Ravenfall/WorldTower"
             half4 Fragment(Varyings input) : SV_Target
             {
                 float2 data = float2(input.kind, input.flow);
-                TowerCut(data, input.positionWS, input.ratio);
+                TowerCut(data, input.positionWS, input.ratio, input.positionCS.xy);
 
                 float3 P = input.positionWS;
                 float t = _Time.y * _WorldTowerAnimate;
@@ -201,6 +224,12 @@ Shader "Ravenfall/WorldTower"
                 if (KIND_BOLT(input.kind))
                 {
                     color = base * 7.0;
+                }
+                else if (KIND_EMBER(input.kind))
+                {
+                    // coals: a faint glow while the floor is dark, bright once it is lit
+                    half breathe = 0.85 + 0.15 * sin(t * 2.1 + input.flow * 20.0);
+                    color = base * _GlowTint.rgb * (0.22 + 0.9 * glow) * breathe * _GlowBoost * 0.6;
                 }
                 else if (KIND_FLAME(input.kind))
                 {
@@ -266,6 +295,9 @@ Shader "Ravenfall/WorldTower"
                     float extra = HazeDepth(dist, camWS, dirY) - HazeDepth(dist * input.ratio, camWS, dirY);
                     color = lerp(color, _WorldTowerHazeColor.rgb, saturate(1.0 - exp(-max(extra, 0.0))));
                 }
+                // into the cloud: what is left of it takes the cloud's color as it thins
+                float fade = KIND_CLOUD(input.kind) ? 0.0 : TowerFade(P);
+                if (fade > 0.0) color = lerp(color, _WorldTowerCloudColor.rgb, saturate(fade * 1.6));
                 return half4(color, 1);
             }
             ENDHLSL
@@ -357,7 +389,7 @@ Shader "Ravenfall/WorldTower"
 
             half4 Fragment(Varyings input) : SV_Target
             {
-                TowerCut(input.data, input.positionWS, input.ratio);
+                TowerCut(input.data, input.positionWS, input.ratio, input.positionCS.xy);
                 return input.positionCS.z;
             }
             ENDHLSL
@@ -402,7 +434,7 @@ Shader "Ravenfall/WorldTower"
 
             half4 Fragment(Varyings input) : SV_Target
             {
-                TowerCut(input.data, input.positionWS, input.ratio);
+                TowerCut(input.data, input.positionWS, input.ratio, input.positionCS.xy);
                 return half4(normalize(input.normalWS), 0.0);
             }
             ENDHLSL

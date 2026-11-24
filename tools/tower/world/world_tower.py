@@ -11,7 +11,7 @@
 #   color rgb   the face's color (sRGB); for a glowing face the color it glows in
 #   color a     how much the face glows when its floor is lit (windows, runes, flames); 0 for stone
 #   uv.x        the kind: 0 solid, 1 falling water, 2 cloud, 3 flame, 4 pane (a window or a rune: dark glass until its
-#               floor is lit), 5 lightning
+#               floor is lit), 5 lightning, 6 ember (a faint glow whatever the floor's state: coals waiting for a fire)
 #   uv.y        along the flow for water, a phase for clouds, flames and lightning
 # Each FBX holds <Part>_Near and <Part>_Far objects (Body, and for some sections Ring, Rocks, Clouds; the islet has
 # Islet, Plaza, Egg, and the Flame and Flock that Unity copies about). Far is the low detail model for far away and
@@ -35,7 +35,7 @@ with open(os.path.join(HERE, "stack.json")) as f:
 
 TAU = math.pi * 2
 FRONT = -math.pi / 2          # the gate's side
-SOLID, WATER, CLOUD, FLAME, PANE, BOLT = 0.0, 1.0, 2.0, 3.0, 4.0, 5.0
+SOLID, WATER, CLOUD, FLAME, PANE, BOLT, EMBER = 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0
 
 
 # ---- small helpers -----------------------------------------------------------------------------------------------
@@ -289,9 +289,21 @@ class Wall:
             self.g.add([b0, b1, j1, j0], mul(frame, 1.1), away=mid)
 
 
-def courses(g, R, z0, z1, rows, segs, colfn, rnd, skip=None, d=0.0, cut=None):
+def weather(col, a, z, row, rnd):
+    """Stone is never one color: courses differ a little, single blocks are darker or paler, and stains run down."""
+    k = 1.0 + (0.035 if row % 2 else -0.035)
+    k *= 1.0 + 0.07 * n3(math.cos(a) * 9.0, math.sin(a) * 9.0, z * 0.012)       # streaks down the wall
+    roll = rnd.random()
+    if roll < 0.09: k *= rnd.uniform(0.72, 0.84)
+    elif roll < 0.15: k *= rnd.uniform(1.1, 1.18)
+    return mul(col, k)
+
+
+def courses(g, R, z0, z1, rows, segs, colfn, rnd, skip=None, d=0.0, cut=None, joints=0.0, proud=0.0):
     """The wall itself: courses of huge stone blocks, every other course shifted half a block. cut = (half width in
-    metres, height) leaves the gate's opening out at the front: the blocks beside it are trimmed to its edge."""
+    metres, height) leaves the gate's opening out at the front: the blocks beside it are trimmed to its edge.
+    joints (metres) leaves a dark joint round every block (the near model); proud is the share of blocks that stand
+    a little out of the wall."""
     for j in range(rows):
         za, zb = lerp(z0, z1, j / rows), lerp(z0, z1, (j + 1) / rows)
         off = (0.5 if j % 2 else 0.0) * TAU / segs
@@ -308,10 +320,30 @@ def courses(g, R, z0, z1, rows, segs, colfn, rnd, skip=None, d=0.0, cut=None):
                 pieces = []
                 if r0 < -ah: pieces.append((FRONT + r0, FRONT + min(r1, -ah)))
                 if r1 > ah: pieces.append((FRONT + max(r0, ah), FRONT + r1))
-            col = colfn(am, zm, rnd)
+            col = weather(colfn(am, zm, rnd), am, zm, j, rnd)
+            out = rnd.uniform(0.3, 0.7) if proud > 0 and rnd.random() < proud else 0.0
             for b0, b1 in pieces:
                 if b1 - b0 < 1e-4: continue
-                g.add([P(R(za) + d, b0, za), P(R(za) + d, b1, za), P(R(zb) + d, b1, zb), P(R(zb) + d, b0, zb)], col, away=(0, 0, zm))
+                if joints <= 0:
+                    g.add([P(R(za) + d, b0, za), P(R(za) + d, b1, za), P(R(zb) + d, b1, zb), P(R(zb) + d, b0, zb)], col, away=(0, 0, zm))
+                    continue
+                # the joint: the wall itself, dark, a hand's width behind the block's face
+                dark = mul(col, 0.42)
+                g.add([P(R(za) + d - 0.16, b0, za), P(R(za) + d - 0.16, b1, za), P(R(zb) + d - 0.16, b1, zb), P(R(zb) + d - 0.16, b0, zb)], dark, away=(0, 0, zm))
+                ja = joints / R(zm)
+                c0, c1, ya, yb = b0 + ja, b1 - ja, za + joints, zb - joints
+                if c1 - c0 < 1e-4 or yb <= ya: continue
+                f = d + out
+                face = [P(R(ya) + f, c0, ya), P(R(ya) + f, c1, ya), P(R(yb) + f, c1, yb), P(R(yb) + f, c0, yb)]
+                back = [P(R(ya) + d - 0.16, c0, ya), P(R(ya) + d - 0.16, c1, ya), P(R(yb) + d - 0.16, c1, yb), P(R(yb) + d - 0.16, c0, yb)]
+                g.add(face, col, away=(0, 0, zm))
+                if out > 0:
+                    # a block standing proud has sides: its top catches the light, its underside is in shade
+                    mid = (face[0] + face[2] + back[0] + back[2]) / 4
+                    g.add([face[3], face[2], back[2], back[3]], mul(col, 1.12), away=mid)
+                    g.add([face[0], face[1], back[1], back[0]], mul(col, 0.6), away=mid)
+                    g.add([face[0], face[3], back[3], back[0]], mul(col, 0.8), away=mid)
+                    g.add([face[1], face[2], back[2], back[1]], mul(col, 0.9), away=mid)
 
 
 def ledge(g, R, z, out, th, segs, side, top, inn=1.0, skip=None, under=None):
@@ -520,7 +552,7 @@ def windows_ring(W, z, count, w, h, tint, frame, rnd, lod, skip=None, dark=0.2):
         a = FRONT + (i + 0.5) * TAU / count
         if skip and skip(a): continue
         # some rooms are dim, a few dark: nobody lights every window of a tower
-        bright = 0.0 if rnd.random() < dark * 0.4 else rnd.uniform(0.45, 1.0)
+        bright = 0.0 if rnd.random() < dark * 0.4 else rnd.uniform(0.45, 1.0)       # dark above 2.5: none lit
         W.window(a, z, w, h, jit(tint, 0.08, rnd), frame, bright, lod)
 
 
@@ -544,11 +576,12 @@ def overgrown(r_seat, h, lod, seed):
         return jit(c, 0.07, rnd)
     near_gate = lambda a: adiff(a, FRONT) < GATE_HALF
     T = 34.0        # the terrace's height
+    J = 0.16 if lod == 0 else 0.0
     # the plinth leans out; the gate's opening is left out of the wall
     gate = (6.7, 25.0)
     Rp = lambda z: R(z) + 4.0 * (1 - clamp01(z / 14.0)) ** 1.2
-    courses(g, Rp, -6.0, 14.0, 5 if lod == 0 else 2, segs + (32 if lod == 0 else 0), col, rnd, cut=gate)
-    courses(g, R, 14.0, h - 7.0, 14 if lod == 0 else 6, segs, col, rnd, cut=gate)
+    courses(g, Rp, -6.0, 14.0, 5 if lod == 0 else 2, segs + (32 if lod == 0 else 0), col, rnd, cut=gate, joints=J, proud=0.1 if lod == 0 else 0.0)
+    courses(g, R, 14.0, h - 7.0, 14 if lod == 0 else 6, segs, col, rnd, cut=gate, joints=J, proud=0.1 if lod == 0 else 0.0)
     # buttresses up to the terrace
     for i in range(16):
         a = FRONT + (i + 0.5) * TAU / 16
@@ -580,7 +613,31 @@ def overgrown(r_seat, h, lod, seed):
     for i in range(30 if lod == 0 else 16):
         a = rnd.uniform(0, TAU)
         jungle_tree(g, P(rt - rnd.uniform(0.5, 9.0), a, h - 4.4), rnd.uniform(13, 23), rnd, lod)
+    # bushes and moss cushions clinging to the wall, thickest low down and under the ledges
+    for i in range(90 if lod == 0 else 30):
+        a = rnd.uniform(0, TAU)
+        z = rnd.choice([rnd.uniform(4, 30), rnd.uniform(4, 30), rnd.uniform(T + 4, 52), rnd.uniform(66, h - 9)])
+        if adiff(a, FRONT) * R(z) < 12.0 and z < 36.0: continue
+        rr = rnd.uniform(1.8, 4.6) * (1.5 if lod else 1.0)
+        leaf = LEAF_TOP[rnd.randrange(len(LEAF_TOP))]
+        blob(g, P(R(z) + rr * 0.25, a, z), rr, rr, rr * rnd.uniform(0.5, 0.8), 1 if lod == 0 else 0, 0.3, leaf, LEAF_BOT, rnd.uniform(0, 60), rnd=rnd)
+    # growth along the terrace's rim and the roof's parapet: a hedge of bushes between the trees
+    for i in range(56 if lod == 0 else 20):
+        a = rnd.uniform(0, TAU)
+        rr = rnd.uniform(2.0, 4.0) * (1.4 if lod else 1.0)
+        leaf = LEAF_TOP[rnd.randrange(len(LEAF_TOP))]
+        if i % 2: blob(g, P(R(T) + rnd.uniform(4.5, 7.6), a, T + 3.0 + rr * 0.4), rr, rr, rr * 0.7, 1 if lod == 0 else 0, 0.3, leaf, LEAF_BOT, rnd.uniform(0, 60), rnd=rnd)
+        else: blob(g, P(rt + rnd.uniform(0.0, 2.2), a, h - 4.4 + rr * 0.4), rr, rr, rr * 0.7, 1 if lod == 0 else 0, 0.3, leaf, LEAF_BOT, rnd.uniform(0, 60), rnd=rnd)
+    # a few flowering creepers: pale and pink dots of blossom in the green
+    if lod == 0:
+        for i in range(70):
+            a = rnd.uniform(0, TAU)
+            z = rnd.choice([rnd.uniform(6, 30), rnd.uniform(T + 4, 50), rnd.uniform(68, h - 10)])
+            if adiff(a, FRONT) * R(z) < 12.0 and z < 36.0: continue
+            rr = rnd.uniform(0.5, 1.0)
+            blob(g, P(R(z) + 0.6, a, z), rr, rr, rr, 0, 0.2, rnd.choice([(0.98, 0.82, 0.9), (1.0, 0.95, 0.7), (0.95, 0.6, 0.75)]), (0.8, 0.5, 0.6), rnd.uniform(0, 60))
     vines(g, W, T + 0.5, 64, 6, 24, rnd, lod, skip=lambda a: adiff(a, FRONT) < 0.12, d=8.3)
+    vines(g, W, 53.5, 36, 5, 16, rnd, lod, d=1.3)
     vines(g, W, T, 44, 8, 26, rnd, lod, skip=near_gate)
     vines(g, W, h - 6.0, 70, 6, 22, rnd, lod, d=3.9)
     vines(g, W, h - 7.5, 44, 8, 24, rnd, lod)
@@ -605,7 +662,7 @@ def frost(r_seat, h, lod, seed):
         c = mixc(stone, stone2, 0.5 + 0.5 * n3(math.cos(a) * 3, math.sin(a) * 3, z * 0.05))
         f = smooth((n3(math.cos(a) * 2.5 + 9, math.sin(a) * 2.5, z * 0.035) + 0.05) * 2.0)
         return jit(mixc(c, ice if rnd.random() < 0.7 else snow, f * 0.75), 0.06, rnd)
-    courses(g, R, -2.0, h - 6.0, 12 if lod == 0 else 5, segs, col, rnd)
+    courses(g, R, -2.0, h - 6.0, 12 if lod == 0 else 5, segs, col, rnd, joints=0.16 if lod == 0 else 0.0, proud=0.08 if lod == 0 else 0.0)
     for i in range(12):
         a = FRONT + (i + 0.5) * TAU / 12
         W.block(a, -2.2, 2.2, 0.0, 26.0, -0.5, 4.5, 1.2, col=jit(stone2, 0.05, rnd))
@@ -623,8 +680,8 @@ def frost(r_seat, h, lod, seed):
     icicles(g, R, h - 6.0, 3.4, 80, rnd, lod)
     icicles(g, lambda z: R(z) + 1.0, 41.0, 0.6, 44, rnd, lod, 2.0, 6.0)
     # the terrace it stands on (the roof of the section below): crystals, drifts and pines
-    for i in range(13 if lod == 0 else 8):
-        a = i * TAU / (13 if lod == 0 else 8) + rnd.uniform(-0.15, 0.15)
+    for i in range(17 if lod == 0 else 9):
+        a = i * TAU / (17 if lod == 0 else 9) + rnd.uniform(-0.12, 0.12)
         for k in range(5 if lod == 0 else 2):
             hh = rnd.uniform(10, 34) * (1.0 if k else 1.25)
             out = Vector((math.cos(a), math.sin(a), 0))
@@ -638,9 +695,35 @@ def frost(r_seat, h, lod, seed):
         pine(g, P(rb + rnd.uniform(3.0, 12.0), rnd.uniform(0, TAU), 0.0), rnd.uniform(11, 19), rnd, lod)
     for i in range(14 if lod == 0 else 7):
         pine(g, P(rt - rnd.uniform(0.5, 9.0), rnd.uniform(0, TAU), h - 3.6), rnd.uniform(10, 17), rnd, lod)
-    # frozen falls
+    # frozen falls, from the band and from the cornice
     for a in (FRONT - 0.7, FRONT + 1.4, FRONT + 3.3):
         waterfall(g, R, a, 40.0, 1.0, 5.5, 2.5, rnd, lod, ice=True)
+    for a in (FRONT + 0.5, FRONT + 2.4, FRONT - 2.0, FRONT - 3.0):
+        waterfall(g, R, a, 61.0, 29.0, 4.5, 2.0, rnd, lod, ice=True)
+    # ice grown over the wall in sheets: slabs standing a little proud of it, pale, with a jagged lower edge
+    for i in range(26 if lod == 0 else 12):
+        a = rnd.uniform(0, TAU)
+        zt = rnd.choice([rnd.uniform(14, 25), rnd.uniform(34, 40), rnd.uniform(52, 63)])
+        wide, tall = rnd.uniform(5, 11), rnd.uniform(6, 13)
+        tint = mixc(ice, snow, rnd.uniform(0.1, 0.7))
+        teeth = 4
+        for k in range(teeth):
+            s0, s1 = -wide / 2 + wide * k / teeth, -wide / 2 + wide * (k + 1) / teeth
+            drop = tall * rnd.uniform(0.55, 1.0)
+            dd = 0.5 if lod == 0 else 0.8
+            g.add([W.p(a, s0, zt, dd), W.p(a, s1, zt, dd), W.p(a, (s0 + s1) / 2 + rnd.uniform(-0.6, 0.6), zt - drop, dd)], jit(tint, 0.05, rnd), away=(0, 0, zt))
+            g.add([W.p(a, s0, zt, dd), W.p(a, s1, zt, dd), W.p(a, s1, zt + 1.2, 0.0), W.p(a, s0, zt + 1.2, 0.0)], mixc(tint, snow, 0.5), away=(0, 0, zt - 3))
+    # snow lying on what sticks out: the buttresses' heads and the lower window sills
+    for i in range(12):
+        a = FRONT + (i + 0.5) * TAU / 12
+        rr = 2.6
+        blob(g, P(R(26) + 2.0, a, 25.2), rr, rr, rr * 0.5, 1 if lod == 0 else 0, 0.2, snow, (0.74, 0.84, 0.95), rnd.uniform(0, 30))
+    # crystals standing on the ledge too, smaller
+    for i in range(16 if lod == 0 else 7):
+        a = rnd.uniform(0, TAU)
+        hh = rnd.uniform(5, 12)
+        out = Vector((math.cos(a), math.sin(a), 0))
+        crystal(g, P(R(28) + rnd.uniform(1.5, 4.0), a, 27.6), hh * 0.14, hh, out * rnd.uniform(0.1, 0.5), rnd)
     return {"Body": g}, rt + 2.2
 
 
@@ -656,7 +739,7 @@ def storm(r_seat, h, lod, seed):
     def col(a, z, rnd):
         c = mixc(stone, stone2, 0.5 + 0.5 * n3(math.cos(a) * 3.4, math.sin(a) * 3.4, z * 0.06))
         return jit(c, 0.08, rnd)
-    courses(g, R, -2.0, h - 6.0, 11 if lod == 0 else 5, segs, col, rnd)
+    courses(g, R, -2.0, h - 6.0, 11 if lod == 0 else 5, segs, col, rnd, joints=0.16 if lod == 0 else 0.0, proud=0.12 if lod == 0 else 0.0)
     broken = lambda a: n3(math.cos(a) * 2.0, math.sin(a) * 2.0, 4.2) > 0.28
     ledge(g, R, 24.0, 4.0, 2.4, segs, stone2, stone, skip=broken)
     frame = mul(stone2, 0.8)
@@ -717,72 +800,105 @@ def storm(r_seat, h, lod, seed):
 
 
 def fortress(r_seat, h, lod, seed):
-    """Floor 4, the Dark Fortress: black stone flaring out over the storm, spikes, turrets and green fire."""
+    """Floor 4, the Dark Fortress: dark slate flaring out over the storm, ribbed with fins, two crowns of teeth,
+    turrets with spires at three heights, a keep with horns. Dark until the stream reaches it: its windows are black
+    glass and its fire bowls hold only embers, a faint green that says something waits."""
     rnd = random.Random(seed)
     g = Geo()
     r0 = r_seat - 3.0                 # where it grows out of the roof below
-    rw = r_seat + 8.0                 # the fortress wall, wider than what carries it
+    rw = r_seat + 9.0                 # the fortress wall, wider than what carries it
     def R(z):
         if z < 16.0: return lerp(r0, rw, smooth(z / 16.0))
-        return rw - 2.0 * clamp01((z - 16.0) / (h - 16.0))
+        return rw - 2.5 * clamp01((z - 16.0) / (h - 16.0))
     W = Wall(g, R)
     segs = 48 if lod == 0 else 24
-    stone, stone2, edge = (0.15, 0.15, 0.19), (0.1, 0.1, 0.13), (0.24, 0.24, 0.3)
+    # slate, not black: dark enough to be the fortress, light enough that its shapes catch the sun
+    stone, stone2, edge, pale = (0.27, 0.28, 0.35), (0.19, 0.2, 0.26), (0.38, 0.39, 0.48), (0.5, 0.51, 0.6)
     green = (0.5, 1.0, 0.36)
+    J = 0.16 if lod == 0 else 0.0
     def col(a, z, rnd):
-        return jit(mixc(stone, stone2, 0.5 + 0.5 * n3(math.cos(a) * 3.4, math.sin(a) * 3.4, z * 0.06)), 0.1, rnd)
-    courses(g, R, -2.0, 16.0, 4 if lod == 0 else 2, segs, col, rnd)
-    courses(g, R, 16.0, 64.0, 9 if lod == 0 else 4, segs, col, rnd)
-    # machicolations under the flare, and spikes thrusting out of it
+        return jit(mixc(stone, stone2, 0.5 + 0.5 * n3(math.cos(a) * 3.4, math.sin(a) * 3.4, z * 0.06)), 0.08, rnd)
+    courses(g, R, -2.0, 16.0, 4 if lod == 0 else 2, segs, col, rnd, joints=J)
+    courses(g, R, 16.0, 64.0, 10 if lod == 0 else 4, segs, col, rnd, joints=J, proud=0.1 if lod == 0 else 0.0)
+    # machicolations under the flare: a row of brackets with a pale lip over them
     if lod == 0:
         for i in range(36):
-            W.block(i * TAU / 36, -1.0, 1.0, 9.0, 16.0, -0.4, 0.2, 2.2, col=edge)
-    for i in range(18 if lod == 0 else 9):
-        a = (i + 0.5) * TAU / (18 if lod == 0 else 9)
-        p0 = P(R(14) - 1.5, a, 14.0)
-        d = (Vector((math.cos(a), math.sin(a), 0)) + Vector((0, 0, -0.25 + 0.5 * (i % 2)))).normalized()
-        cyl(g, p0, p0 + d * rnd.uniform(12, 20), 1.8, 0.0, 4, stone2, turn=0.5)
-    frame = edge
-    windows_ring(W, 19.0, 36 if lod == 0 else 18, 1.8, 9.0, green, frame, rnd, lod, dark=0.1)
-    windows_ring(W, 35.0, 36 if lod == 0 else 18, 1.8, 7.0, green, frame, rnd, lod, dark=0.1)
-    rune_band(g, R, 48.0, 59.0, segs, (0.07, 0.08, 0.09), green, "trident", 4, rnd, lod)
-    # the crown: a ledge of jagged teeth
-    ledge(g, R, 64.0, 4.0, 2.6, segs, edge, stone)
-    battlements(g, R, 66.6, 4.0, 44 if lod == 0 else 22, 2.6 if lod == 0 else 5.0, 5.0, stone, rnd, thick=1.6, jag=1.2)
-    disc(g, R(66) + 2.6, 66.6, segs, stone2)
-    # turrets round the crown, each with a spire; green fire between them
+            W.block(i * TAU / 36, -1.0, 1.0, 8.0, 16.0, -0.4, 0.2, 3.0, col=edge)
+    ledge(g, R, 16.0, 3.2, 1.6, segs, edge, pale)
+    # spikes thrusting out of the flare, long and short
+    n = 20 if lod == 0 else 10
+    for i in range(n):
+        a = (i + 0.5) * TAU / n
+        p0 = P(R(12) - 1.5, a, 12.0)
+        d = (Vector((math.cos(a), math.sin(a), 0)) + Vector((0, 0, -0.3 + 0.55 * (i % 2)))).normalized()
+        cyl(g, p0, p0 + d * (rnd.uniform(16, 24) if i % 2 else rnd.uniform(9, 13)), 1.9, 0.0, 4, edge if i % 2 else stone2, turn=0.5)
+    # fins: sixteen ribs up the wall, each ending in a point above the first crown
+    fins = 16
+    for i in range(fins):
+        a = FRONT + (i + 0.5) * TAU / fins
+        W.block(a, -1.5, 1.5, 17.6, 60.0, -0.4, 3.6, 2.0, col=jit(edge, 0.05, rnd))
+        tip = W.p(a, 0.0, 70.0, 1.2)
+        base = [W.p(a, -1.5, 60.0, -0.4), W.p(a, 1.5, 60.0, -0.4), W.p(a, 1.5, 60.0, 2.0), W.p(a, -1.5, 60.0, 2.0)]
+        mid = (base[0] + base[2]) / 2 + Vector((0, 0, 3))
+        for k in range(4):
+            g.add([base[k], base[(k + 1) % 4], tip], mul(edge, 0.8 + 0.1 * k), away=mid)
+    frame = pale
+    # tall slits between the fins, two tiers, and a row of small ones under the crown
+    windows_ring(W, 20.0, 32 if lod == 0 else 16, 1.7, 11.0, green, frame, rnd, lod, dark=0.1)
+    windows_ring(W, 35.5, 32 if lod == 0 else 16, 1.7, 8.0, green, frame, rnd, lod, dark=0.1)
+    if lod == 0: windows_ring(W, 60.2, 64, 0.9, 2.6, green, frame, rnd, lod, dark=0.2)
+    rune_band(g, R, 47.0, 58.0, segs, (0.1, 0.11, 0.13), green, "trident", 4, rnd, lod)
+    # the first crown: a ledge of jagged teeth, tall and short in turn
+    ledge(g, R, 64.0, 4.4, 2.6, segs, edge, pale)
+    battlements(g, R, 66.6, 4.4, 48 if lod == 0 else 24, 2.4 if lod == 0 else 4.8, 4.0, stone, rnd, thick=1.6, jag=1.6)
+    disc(g, R(66) + 3.0, 66.6, segs, stone2)
+    # turrets round the crown at two heights, each with a collar, slit windows and a spire
     turrets = 8
     for i in range(turrets):
         a = FRONT + (i + 0.5) * TAU / turrets
-        c = P(R(50) + 2.5, a, 0)
-        cyl(g, c + Vector((0, 0, 42)), c + Vector((0, 0, 80)), 5.2, 5.6, 8, stone, cap1=True)
-        cyl(g, c + Vector((0, 0, 34)), c + Vector((0, 0, 42)), 1.0, 5.2, 8, stone2, cap1=False)
-        cyl(g, c + Vector((0, 0, 80)), c + Vector((0, 0, 83)), 6.6, 6.6, 8, edge, cap0=True)
-        cyl(g, c + Vector((0, 0, 83)), c + Vector((0, 0, 83 + rnd.uniform(20, 30))), 6.0, 0.0, 8, stone2)
-        # the turret's own slit windows, drawn round its own middle
+        tall = i % 2 == 0
+        top = 86.0 if tall else 76.0
+        c = P(R(50) + 3.0, a, 0)
+        rad = 5.8 if tall else 4.6
+        cyl(g, c + Vector((0, 0, 40)), c + Vector((0, 0, top)), rad, rad + 0.5, 8, stone, cap1=True)
+        cyl(g, c + Vector((0, 0, 30)), c + Vector((0, 0, 40)), 1.0, rad, 8, stone2, cap1=False)
+        cyl(g, c + Vector((0, 0, top)), c + Vector((0, 0, top + 3)), rad + 1.6, rad + 1.6, 8, pale, cap0=True)
+        cyl(g, c + Vector((0, 0, top + 3)), c + Vector((0, 0, top + 3 + (rnd.uniform(30, 38) if tall else rnd.uniform(18, 24)))), rad + 0.9, 0.0, 8, stone2)
+        if lod == 0:
+            # teeth round the turret's collar
+            for k in range(8):
+                aa = k * TAU / 8
+                q = c + Vector((math.cos(aa), math.sin(aa), 0)) * (rad + 1.3) + Vector((0, 0, top + 3))
+                cyl(g, q, q + Vector((0, 0, 3.2)), 0.7, 0.0, 4, edge)
         for k in range(3):
             aa = a + (k - 1) * 0.9
-            base = c + Vector((math.cos(aa), math.sin(aa), 0)) * 5.75
+            base = c + Vector((math.cos(aa), math.sin(aa), 0)) * (rad + 0.45)
             t = Vector((-math.sin(aa), math.cos(aa), 0))
-            pane = [base + t * -0.7 + Vector((0, 0, 66)), base + t * 0.7 + Vector((0, 0, 66)), base + t * 0.7 + Vector((0, 0, 73)), base + Vector((0, 0, 75)), base + t * -0.7 + Vector((0, 0, 73))]
-            g.add(pane, green, glow=rnd.uniform(0.6, 1.0), kind=PANE, away=c + Vector((0, 0, 70)))
-        # fire in an iron bowl between this turret and the next
+            z0 = top - 16.0
+            pane = [base + t * -0.7 + Vector((0, 0, z0)), base + t * 0.7 + Vector((0, 0, z0)), base + t * 0.7 + Vector((0, 0, z0 + 7)), base + Vector((0, 0, z0 + 9)), base + t * -0.7 + Vector((0, 0, z0 + 7))]
+            g.add(pane, green, glow=rnd.uniform(0.6, 1.0), kind=PANE, away=c + Vector((0, 0, z0 + 4)))
+        # an iron bowl between this turret and the next: embers always, green fire once the floor is reached
         af = a + TAU / turrets / 2
-        b = P(R(66) + 1.0, af, 69.2)
-        if i % 2 == 0:
-            cyl(g, b - Vector((0, 0, 2.6)), b, 1.2, 3.6, 6, edge, cap0=True)
-            blob(g, b + Vector((0, 0, 4.5)), 3.2, 3.2, 6.5, 1, 0.35, (0.75, 1.0, 0.5), (0.3, 0.95, 0.25), rnd.uniform(0, 50), kind=FLAME, glow=1.0, phase=rnd.uniform(0, 1))
-            if lod == 0: blob(g, b + Vector((0, 0, 3.5)), 1.8, 1.8, 3.8, 1, 0.3, (0.92, 1.0, 0.8), (0.6, 1.0, 0.45), rnd.uniform(0, 50), kind=FLAME, glow=1.0, phase=rnd.uniform(0, 1))
-    # the keep inside the crown, rising into the cloud
-    Rk = lambda z: R(66) - 14.0 - 2.0 * clamp01((z - 66) / 30)
-    courses(g, Rk, 66.6, h + 6.0, 4 if lod == 0 else 2, segs // 2, col, rnd)
+        b = P(R(66) + 1.6, af, 70.2)
+        cyl(g, b - Vector((0, 0, 3.6)), b, 1.2, 3.8, 6, pale, cap0=True)
+        blob(g, b + Vector((0, 0, 0.2)), 2.9, 2.9, 1.0, 1 if lod == 0 else 0, 0.3, (0.55, 1.0, 0.4), (0.25, 0.8, 0.2), rnd.uniform(0, 50), kind=EMBER, glow=1.0, phase=rnd.uniform(0, 1))
+        blob(g, b + Vector((0, 0, 5.0)), 3.2, 3.2, 7.0, 1, 0.35, (0.75, 1.0, 0.5), (0.3, 0.95, 0.25), rnd.uniform(0, 50), kind=FLAME, glow=1.0, phase=rnd.uniform(0, 1))
+        if lod == 0: blob(g, b + Vector((0, 0, 3.8)), 1.8, 1.8, 4.0, 1, 0.3, (0.92, 1.0, 0.8), (0.6, 1.0, 0.45), rnd.uniform(0, 50), kind=FLAME, glow=1.0, phase=rnd.uniform(0, 1))
+    # the keep inside the crown: its own fins, a second crown, horns, and it goes on up into the cloud
+    Rk = lambda z: R(66) - 13.0 - 2.0 * clamp01((z - 66) / 30)
+    courses(g, Rk, 66.6, h + 6.0, 5 if lod == 0 else 2, segs // 2, col, rnd, joints=J)
     Wk = Wall(g, Rk)
-    windows_ring(Wk, 71.0, 16 if lod == 0 else 8, 2.0, 9.0, green, frame, rnd, lod, dark=0.1)
-    for i in range(12 if lod == 0 else 6):
-        a = (i + 0.5) * TAU / (12 if lod == 0 else 6)
-        p0 = P(Rk(82) - 1.0, a, 82.0)
-        d = (Vector((math.cos(a), math.sin(a), 0)) * 0.55 + Vector((0, 0, 1.0))).normalized()
-        cyl(g, p0, p0 + d * rnd.uniform(14, 24), 2.0, 0.0, 4, stone2)
+    for i in range(8):
+        Wk.block(FRONT + i * TAU / 8, -1.2, 1.2, 67.0, 88.0, -0.4, 2.6, 1.4, col=jit(edge, 0.05, rnd))
+    windows_ring(Wk, 71.0, 16 if lod == 0 else 8, 1.8, 10.0, green, frame, rnd, lod, dark=0.1)
+    ledge(g, Rk, 88.0, 3.0, 2.0, segs // 2, edge, pale)
+    battlements(g, Rk, 90.0, 3.0, 20 if lod == 0 else 10, 2.2 if lod == 0 else 4.4, 3.4, stone, rnd, thick=1.4, jag=1.4)
+    n = 12 if lod == 0 else 6
+    for i in range(n):
+        a = (i + 0.5) * TAU / n
+        p0 = P(Rk(84) - 1.0, a, 84.0)
+        d = (Vector((math.cos(a), math.sin(a), 0)) * (0.75 if i % 2 else 0.45) + Vector((0, 0, 1.0))).normalized()
+        cyl(g, p0, p0 + d * rnd.uniform(16, 28), 2.2, 0.0, 4, edge if i % 2 else stone2)
     return {"Body": g}, Rk(h) + 4.0
 
 
@@ -806,49 +922,51 @@ def unbuilt(r_seat, h, lod, seed):
 
 
 def cap(r_seat, h, lod, seed):
-    """Above the last built section: the tower goes on into cloud, so it has no top."""
+    """Above the last built section the tower goes on: more floors, dark, ledge over ledge, narrowing a little. The
+    game fades it out with height into the sky's own cloud layer (the shader, WorldTower.cs), so it has no top from
+    anywhere. "Lid" is a low-poly cloud for when the game draws no sky clouds (potato mode, or the setting off)."""
     rnd = random.Random(seed)
     g = Geo()
     rb = max(24.0, r_seat - 5.0)
-    R = lambda z: rb - 4.0 * clamp01(z / h)
-    stone, stone2 = (0.3, 0.3, 0.35), (0.24, 0.24, 0.29)
+    R = lambda z: rb - 9.0 * clamp01(z / h)
+    W = Wall(g, R)
+    segs = 32 if lod == 0 else 16
+    stone, stone2, edge = (0.33, 0.34, 0.4), (0.26, 0.27, 0.33), (0.42, 0.43, 0.5)
     col = lambda a, z, rnd: jit(mixc(stone, stone2, 0.5 + 0.5 * n3(math.cos(a) * 3, math.sin(a) * 3, z * 0.06)), 0.07, rnd)
-    courses(g, R, -2.0, 60.0, 6 if lod == 0 else 3, 32 if lod == 0 else 16, col, rnd)
-    clouds = Geo()
+    courses(g, R, -2.0, h, max(4, int(h / 7)) if lod == 0 else max(3, int(h / 16)), segs, col, rnd)
+    # the floors to come: a ledge, a ring of dark windows and a few ribs every 38 m
+    z = 20.0
+    while z < h - 10.0:
+        ledge(g, R, z, 2.6, 1.8, segs, edge, stone)
+        windows_ring(W, z + 8.0, 22 if lod == 0 else 11, 2.2, 5.5, WINDOW, stone2, rnd, lod, dark=5.0)
+        if lod == 0:
+            for i in range(10):
+                W.block(FRONT + (i + 0.5) * TAU / 10, -1.2, 1.2, z + 1.8, z + 30.0, -0.3, 1.8, 0.8, col=jit(stone2, 0.05, rnd))
+        z += 38.0
+    lid = Geo()
     white, under, grey, grey_under = (1.0, 1.0, 1.0), (0.74, 0.81, 0.94), (0.86, 0.87, 0.93), (0.56, 0.59, 0.72)
-    # one wide cumulus with a flat floor, heaped over the tower: wide enough to be a cloud bank and not a mushroom, and
-    # uneven round its rim so no two sides look the same
     def reach(a): return 1.0 + 0.22 * n3(math.cos(a) * 1.2, math.sin(a) * 1.2, 5.5) + 0.12 * n3(math.cos(a) * 2.7, math.sin(a) * 2.7, 1.5)
+    z0 = 34.0
     def puff(r, a, z, rr, t, squash=0.5):
-        blob(clouds, P(r, a, z), rr * rnd.uniform(1.0, 1.3), rr * rnd.uniform(1.0, 1.3), rr * squash, 2 if lod == 0 else 1, 0.3, mixc(grey, white, t), mixc(grey_under, under, t), rnd.uniform(0, 80), kind=CLOUD, phase=rnd.uniform(0, 1), freq=1.3, flat_bottom=z0 + rnd.uniform(-5, 6))
-    z0 = 34.0      # the cloud's floor: the crown below stays in the clear
-    # the floor: two rings of flat puffs, their undersides level
-    n = 14 if lod == 0 else 9
-    for i in range(n):
-        a = i * TAU / n + rnd.uniform(-0.12, 0.12)
-        puff(rnd.uniform(140, 185) * reach(a), a, z0 + rnd.uniform(4, 10), rnd.uniform(36, 50), rnd.uniform(0.45, 0.8), 0.46)
-    n = 10 if lod == 0 else 7
-    for i in range(n):
-        a = i * TAU / n + rnd.uniform(-0.15, 0.15)
-        puff(rnd.uniform(74, 112) * reach(a), a, z0 + rnd.uniform(4, 12), rnd.uniform(40, 54), rnd.uniform(0.5, 0.85), 0.5)
-    # round the tower itself, so the shaft goes into cloud whichever way it is seen
-    n = 6 if lod == 0 else 5
-    for i in range(n):
-        a = i * TAU / n + rnd.uniform(-0.2, 0.2)
-        puff(rb + 14, a, z0 + rnd.uniform(8, 16), rnd.uniform(30, 38), rnd.uniform(0.5, 0.85), 0.45)
-    # the heaped top, whiter
-    n = 9 if lod == 0 else 6
-    for i in range(n):
-        a = i * TAU / n + rnd.uniform(-0.2, 0.2)
-        puff(rnd.uniform(40, 120) * reach(a), a, z0 + rnd.uniform(26, 40), rnd.uniform(38, 52), rnd.uniform(0.9, 1.0), 0.62)
-    for i in range(4):
-        a = i * TAU / 4 + rnd.uniform(-0.3, 0.3)
-        puff(rnd.uniform(10, 50), a, z0 + rnd.uniform(52, 66), rnd.uniform(40, 50), 1.0, 0.62)
-    # two small clouds standing off it, so it is not one round thing on a stalk
-    for r, a, n in ((262, 1.2, 3), (300, 4.1, 3), (245, 2.9, 2)) if lod == 0 else ((262, 1.2, 2), (300, 4.1, 2)):
-        for k in range(n):
-            puff(r + rnd.uniform(-16, 16), a + rnd.uniform(-0.05, 0.05), z0 + rnd.uniform(0, 14), rnd.uniform(22, 34), rnd.uniform(0.7, 1.0), 0.55)
-    return {"Body": g, "Clouds": clouds}, 0.0
+        blob(lid, P(r, a, z), rr * rnd.uniform(1.0, 1.3), rr * rnd.uniform(1.0, 1.3), rr * squash, 1, 0.3, mixc(grey, white, t), mixc(grey_under, under, t), rnd.uniform(0, 80), kind=CLOUD, phase=rnd.uniform(0, 1), freq=1.3, flat_bottom=z0 + rnd.uniform(-5, 6))
+    if lod == 1:
+        for i in range(9):
+            a = i * TAU / 9 + rnd.uniform(-0.12, 0.12)
+            puff(rnd.uniform(140, 185) * reach(a), a, z0 + rnd.uniform(4, 10), rnd.uniform(36, 50), rnd.uniform(0.45, 0.8), 0.46)
+        for i in range(7):
+            a = i * TAU / 7 + rnd.uniform(-0.15, 0.15)
+            puff(rnd.uniform(74, 112) * reach(a), a, z0 + rnd.uniform(4, 12), rnd.uniform(40, 54), rnd.uniform(0.5, 0.85), 0.5)
+        for i in range(5):
+            a = i * TAU / 5 + rnd.uniform(-0.2, 0.2)
+            puff(rb + 14, a, z0 + rnd.uniform(8, 16), rnd.uniform(30, 38), rnd.uniform(0.5, 0.85), 0.45)
+        for i in range(6):
+            a = i * TAU / 6 + rnd.uniform(-0.2, 0.2)
+            puff(rnd.uniform(40, 120) * reach(a), a, z0 + rnd.uniform(26, 40), rnd.uniform(38, 52), rnd.uniform(0.9, 1.0), 0.62)
+        for i in range(4):
+            a = i * TAU / 4 + rnd.uniform(-0.3, 0.3)
+            puff(rnd.uniform(10, 50), a, z0 + rnd.uniform(52, 66), rnd.uniform(40, 50), 1.0, 0.62)
+        return {"Body": g, "Lid": lid}, 0.0
+    return {"Body": g}, 0.0
 
 
 STYLES = {"overgrown": overgrown, "frost": frost, "storm": storm, "fortress": fortress, "unbuilt": unbuilt, "cloud": cap}
@@ -959,6 +1077,7 @@ def plaza(lod, seed):
     the quay's stone steps, the leaderboard stone and the statue's pedestal. Its glow is always on."""
     rnd = random.Random(seed)
     g = Geo()
+    runes = Geo()       # the stone's carved rows, their own object: the game hides them when it has names to show
     stone, stone2, dark, pale = (0.62, 0.6, 0.55), (0.52, 0.5, 0.47), (0.36, 0.34, 0.32), (0.78, 0.75, 0.68)
     gold = (1.0, 0.8, 0.36)
     FACE = R0 + 5.0             # how far out the gate's face stands
@@ -1130,17 +1249,19 @@ def plaza(lod, seed):
             kn = (k + 1) % len(face)
             a, b = fp[k], fp[kn]
             g.add([a, b, b - fwd * 0.25, a - fwd * 0.25], dark, away=mid)
-        # carved rows under the words: the climbers' names nobody can read yet (the game has no list of them at hand)
-        for row in range(2):
+        # carved rows under the words, where the best climbers' names go: they stand in the names' place until the
+        # game has a list for this stream (their own object, which the game hides then)
+        # (five rows, where world-tower-build.cs puts the five names: the same heights)
+        for row in range(5):
             for k in range(7):
-                gx, gy = (k - 3) * 0.085 * w, h * (0.235 - 0.08 * row)
-                gw, gh = 0.05 * w, 0.055 * h
+                gx, gy = (k - 3) * 0.085 * w, h * (0.42 - 0.068 * row)
+                gw, gh = 0.045 * w, 0.042 * h
                 for x0, y0, x1, y1 in GLYPHS[rnd.randrange(len(GLYPHS))]:
                     a = c + right * (gx + (x0 - 0.5) * gw) + Vector((0, 0, gy + (y0 - 0.5) * gh)) + fwd * (th / 2 + 0.3)
                     b = c + right * (gx + (x1 - 0.5) * gw) + Vector((0, 0, gy + (y1 - 0.5) * gh)) + fwd * (th / 2 + 0.3)
                     if (b - a).length < 1e-6: continue
                     nrm = (b - a).normalized().cross(fwd) * 0.05
-                    g.add([a - nrm, b - nrm, b + nrm, a + nrm], (0.46, 0.46, 0.52), away=mid)
+                    runes.add([a - nrm, b - nrm, b + nrm, a + nrm], (0.46, 0.46, 0.52), away=mid)
         # the crown over the words
         for x0, y0, x1, y1 in SIGILS["crown"]:
             s = w * 0.2
@@ -1171,7 +1292,7 @@ def plaza(lod, seed):
         "slab": [slab_c.x, slab_c.y, slab_c.z], "slabFacing": math.degrees(slab_face), "slabSize": [9.0, 12.5, 2.0],
         "pedestal": [ped.x, ped.y, PLAZA_Z + 5.0], "plazaLevel": PLAZA_Z,
     }
-    return g, marks
+    return g, marks, runes
 
 
 def egg(seed):
@@ -1314,8 +1435,11 @@ for lod in (0, 1):
     gi = islet(lod, 7)
     gi.to_object("Islet_%s" % ("Near" if lod == 0 else "Far"))
     info["parts"].setdefault("Islet", {})["lod%d" % lod] = gi.tris()
-    gp, m = plaza(lod, 11)
+    gp, m, gr = plaza(lod, 11)
     marks.update(m)
+    if lod == 0:
+        gr.to_object("Runes_Near")
+        info["parts"]["Runes"] = {"lod0": gr.tris()}
     gp.to_object("Plaza_%s" % ("Near" if lod == 0 else "Far"))
     info["parts"].setdefault("Plaza", {})["lod%d" % lod] = gp.tris()
     (everything if lod == 0 else everything_far).append(("Islet", gi, 0.0))

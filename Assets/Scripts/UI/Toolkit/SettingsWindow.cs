@@ -338,6 +338,8 @@ namespace Shinobytes.UI
                 SettingsApplier.ScreenShakeSetting, SettingsApplier.Defaults.ScreenShake, SettingsApplier.SetScreenShake);
             Switch(c, Localization.UI_SETTINGS_CUTSCENES, Localization.UI_SETTINGS_CUTSCENES_HINT,
                 SettingsApplier.Cutscenes, SettingsApplier.Defaults.Cutscenes, SettingsApplier.SetCutscenes);
+            Switch(c, Localization.UI_SETTINGS_TOWER_LOOKS, Localization.UI_SETTINGS_TOWER_LOOKS_HINT,
+                SettingsApplier.TowerLooksSetting, SettingsApplier.Defaults.TowerLooks, SettingsApplier.SetTowerLooks);
 
             Section(c, Localization.UI_SETTINGS_SECTION_FREE_CAMERA);
             SliderRow(c, Localization.UI_SETTINGS_FREE_SPEED, Localization.UI_SETTINGS_FREE_SPEED_HINT, 10f, 200f,
@@ -1114,6 +1116,7 @@ namespace Shinobytes.UI
             KeyRow(c, Keybinds.Action.NextPlayer);
             KeyRow(c, Keybinds.Action.FreeCamera);
             KeyRow(c, Keybinds.Action.NextIsland);
+            KeyRow(c, Keybinds.Action.TowerCamera);
             KeyRow(c, Keybinds.Action.PlayerDetails);
             KeyRow(c, Keybinds.Action.ControlPlayer);
 

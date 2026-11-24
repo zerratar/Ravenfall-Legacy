@@ -21,6 +21,7 @@ using UnityEngine.Rendering.Universal;
 public static class SkyClouds
 {
     private static readonly int SlabId = Shader.PropertyToID("_CloudSlab");
+    private static readonly int TowerId = Shader.PropertyToID("_CloudTower");
     private static readonly int ParamsId = Shader.PropertyToID("_CloudParams");
     private static readonly int WindId = Shader.PropertyToID("_CloudWind");
     private static readonly int SunDirId = Shader.PropertyToID("_CloudSunDir");
@@ -114,6 +115,13 @@ public static class SkyClouds
 
     /// <summary>The place's own cloud layer this frame, or null for the sky's (<see cref="Layer"/>).</summary>
     public static Layer? Place;
+
+    /// <summary>
+    ///     A bank of cloud that stays where it is whatever the weather: round the top of the tower in the main world
+    ///     (WorldTower sets it), so the tower goes up into cloud on a clear day too. x and y where (the world's x and
+    ///     z), z how wide (m), w the height it stands from (m); z 0 for none.
+    /// </summary>
+    public static Vector4 Tower;
 
     /// <summary>The setting: volumetric clouds on or off.</summary>
     public static bool Enabled { get; set; } = true;
@@ -260,6 +268,7 @@ public static class SkyClouds
             m.SetVector(SlabId, new Vector4(l.Floor, l.Ceiling, l.Coverage, l.PuffSize));
         }
         else m.SetVector(SlabId, new Vector4(Floor, Ceiling, Coverage, PuffSize));
+        m.SetVector(TowerId, place.HasValue ? Vector4.zero : Tower);
         // a place keeps its own light day and night: no stars in its clouds
         m.SetFloat(NightId, place.HasValue ? 0f : Night());
         // a storm cloud is thicker and darker all through (Weather.Dark)

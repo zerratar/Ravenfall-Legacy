@@ -47,13 +47,15 @@ otherwise; `SillyBob` gently bobs a floating thing while it is on screen.
 
 ### At the tower's foot (since 2026-11-24)
 
-Not in the World Gags prefab: it is part of the world tower's own scene (`Assets/Scenes/Tower/WorldTower.unity`, made
-by `tools/tower/world/world-tower-build.cs`; docs/world-tower.md). It is a `WorldGag` too, shown by `WorldTower` with
-the same Silly surprises setting.
+Not in the World Gags prefab: they are part of the world tower's own scene (`Assets/Scenes/Tower/WorldTower.unity`,
+made by `tools/tower/world/world-tower-build.cs`; docs/world-tower.md). Each is a `WorldGag` too, shown by `WorldTower`
+with the same Silly surprises setting. The places are as the tower stands since it was moved south of Home the same
+day (60, -700); they move with it.
 
 | Key | Where | What |
 |---|---|---|
-| `tower-elevator-out-of-order` | The tower's entrance plaza, in the wall to the right of the great gate (about 317, 2, -52) | A little brass elevator door, 3 m high in the foot of a tower that vanishes into the clouds, its floor dial stuck at the bottom and its call button still glowing from being pressed. The sign beside it: OUT OF ORDER. PLEASE TAKE THE STAIRS. ALL OF THEM (`UI_GAG_SIGN_ELEVATOR`; the words are in the scene, and a translation is picked up when Localization has the field.) |
+| `tower-elevator-out-of-order` | The tower's entrance plaza, in the wall to the right of the great gate (about 30, 3, -598) | A little brass elevator door, 3 m high in the foot of a tower that vanishes into the clouds, its floor dial stuck at the bottom and its call button still glowing from being pressed. The sign beside it: OUT OF ORDER. PLEASE TAKE THE STAIRS. ALL OF THEM (`UI_GAG_SIGN_ELEVATOR`; the words are in the scene, and a translation is picked up when Localization has the field.) |
+| `tower-ferry-timetable` | The stone landing at the head of the tower's pier (about 47, -2, -516), turned to whoever comes up from the boat | A sign board: FERRY TIMETABLE: WHEN SOMEONE ASKS FOR IT. ASK NICELY (`UI_GAG_SIGN_FERRY_TIMES`). It is the truth: the ferry only turns in to the tower's pier when a passenger is bound for it or someone waits there (docs/world-tower.md, "Visiting"). |
 
 ## Rob Boss paints (since 2026-11-23)
 

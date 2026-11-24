@@ -78,6 +78,26 @@ public class IslandManager : MonoBehaviour
 
     public IslandController[] All => islands;
 
+    /// <summary>
+    ///     An island that is not under this object: the islet at the foot of the world tower, which lives in a scene of
+    ///     its own that loads after the main world (WorldTower). Named, found and sailed to like the others from then on.
+    /// </summary>
+    public void Register(IslandController island)
+    {
+        EnsureIslands();
+        if (!island || System.Array.IndexOf(islands, island) >= 0) return;
+        var list = new List<IslandController>(islands) { island };
+        islands = list.ToArray();
+    }
+
+    /// <summary>Takes a registered island out again, as its scene goes.</summary>
+    public void Unregister(IslandController island)
+    {
+        if (islands == null) return;
+        var list = new List<IslandController>(islands);
+        if (list.Remove(island)) islands = list.ToArray();
+    }
+
     public IslandController Get(Island targetIsland)
     {
         EnsureIslands();

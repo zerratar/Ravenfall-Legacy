@@ -764,7 +764,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         // training away from the islands: the rate is learned on them, and paid in calm places (a tower town while not
         // resting, a tower floor for a skill its fights do not train, Ravebridge)
         Progression.TrackTraining(GameTime.deltaTime);
-        if (InRavebridge || (towerHandler != null && towerHandler.TrainsAway)) Progression.TrainAway(GameTime.deltaTime);
+        if (InRavebridge || (towerHandler != null && towerHandler.TrainsAway) || WorldTower.Calm(this)) Progression.TrainAway(GameTime.deltaTime);
 
         using (EffectsMarker.Auto()) UpdateActiveEffects();
 
@@ -1276,6 +1276,14 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         if (Island == null || hasNotReachedFerryDestination)
         {
             LateGotoClosest(type, silent);
+            return;
+        }
+
+        // the islet at the foot of the world tower is a calm place: nothing to train, the player takes a place on the
+        // plaza and goes on learning as on their island (WorldTower)
+        if (WorldTower.Calm(this))
+        {
+            WorldTower.Settle(this, silent);
             return;
         }
 

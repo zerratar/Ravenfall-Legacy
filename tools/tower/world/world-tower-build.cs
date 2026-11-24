@@ -7,7 +7,16 @@
 // The game loads it beside the main world at the start (WorldTowerScene in Assets/Scripts/Game/Tower/WorldTower.cs).
 //
 // The tower's own shapes are the Blender models, all drawn with one material (Ravenfall/WorldTower). The plaza is
-// dressed with Synty props: the hero's statue, the banners, braziers, palms, ferns, rocks, the pier, the sign.
+// dressed with Synty props: the hero's statue, the banners, braziers, palms, ferns, the pier, the sign.
+//
+// What it makes, under the root "World Tower" (at stack.json's position, the gate turned to its "faces"):
+//   Visuals   everything that is only seen, at stack.json's "scale" (the models are made at 1): the stack, the foot,
+//             the props, the lamps, the stone's words, the egg, the gulls, the statue. Hidden while the tower is not drawn.
+//   Place     the islet as a place players go (WorldTowerVisit.cs), always there: the island and its dock, the ground
+//             to stand on, places on the plaza, the gate and the tunnel's end.
+// and beside it "World Tower ferry": the ferry's way from Heim to the pier and on to Atria, in the world's own terms
+// (read from the ferry's ring in the open MainWorld, which is only looked at). Run tools/tower/world/sea-chart-islet.py
+// first: the ferry's ways are checked against the chart.
 var log = new System.Text.StringBuilder();
 var logPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "world-tower-build.txt");
 try
@@ -15,6 +24,9 @@ try
 if (UnityEngine.Application.isPlaying) { System.IO.File.WriteAllText(logPath, "not in play mode"); return "not in play mode"; }
 var repo = System.IO.Path.GetDirectoryName(UnityEngine.Application.dataPath);
 var built = Newtonsoft.Json.Linq.JObject.Parse(System.IO.File.ReadAllText(System.IO.Path.Combine(repo, "tools", "tower", "world", "stack-built.json")));
+var stackFile = Newtonsoft.Json.Linq.JObject.Parse(System.IO.File.ReadAllText(System.IO.Path.Combine(repo, "tools", "tower", "world", "stack.json")));
+// how much bigger than the models the tower stands in the world
+var S = stackFile["scale"] != null ? (float)(double)stackFile["scale"] : 1f;
 const string Folder = "Assets/World/Tower/World";
 const string Models = Folder + "/Models/";
 const string ScenePath = "Assets/Scenes/Tower/WorldTower.unity";
@@ -76,6 +88,10 @@ var toward = new UnityEngine.Vector3(F(built["faces"][0]) - at.x, 0f, F(built["f
 root.transform.rotation = UnityEngine.Quaternion.LookRotation(-toward, UnityEngine.Vector3.up);
 var tower = root.AddComponent<WorldTower>();
 tower.Shared = mat;
+var vis = new UnityEngine.GameObject("Visuals").transform; vis.SetParent(root.transform, false);
+vis.localScale = UnityEngine.Vector3.one * S;
+tower.Visuals = vis.gameObject;
+var place = new UnityEngine.GameObject("Place").transform; place.SetParent(root.transform, false);
 
 var sections = new System.Collections.Generic.List<WorldTower.Section>();
 var turning = new System.Collections.Generic.List<UnityEngine.Transform>();
@@ -105,7 +121,13 @@ UnityEngine.GameObject Model(string name, UnityEngine.Transform parent, WorldTow
         r.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
         var mesh = r.GetComponent<UnityEngine.MeshFilter>().sharedMesh;
         var t = mesh ? mesh.triangles.Length / 3 : 0;
-        if (r.name.EndsWith("_Far")) { far.Add(r); r.enabled = false; tris1 += t; }
+        if (r.name.StartsWith("Lid"))
+        {
+            // the low-poly cloud over the top, for when the game draws no sky clouds: the game shows and hides it
+            tower.Lid = r.gameObject; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; r.receiveShadows = false;
+            log.AppendLine("lid " + t + " triangles");
+        }
+        else if (r.name.EndsWith("_Far")) { far.Add(r); r.enabled = false; tris1 += t; }
         else if (r.name.StartsWith("Flock") || r.name.StartsWith("Flame")) { }
         else { near.Add(r); tris0 += t; }
         if (r.name.StartsWith("Ring") || r.name.StartsWith("Clouds")) { turning.Add(r.transform); speeds.Add(r.name.StartsWith("Ring") ? 1.1f : -0.35f); }
@@ -116,7 +138,8 @@ UnityEngine.GameObject Model(string name, UnityEngine.Transform parent, WorldTow
 }
 
 // ---- the stack: one section per floor, then the cap ----
-var stack = new UnityEngine.GameObject("Stack").transform; stack.SetParent(root.transform, false);
+var stack = new UnityEngine.GameObject("Stack").transform; stack.SetParent(vis, false);
+var builtTop = 0f;
 UnityEngine.GameObject firstFloor = null;
 foreach (var s in built["sections"])
 {
@@ -126,20 +149,34 @@ foreach (var s in built["sections"])
     holder.localPosition = new UnityEngine.Vector3(0f, F(s["base"]), 0f);
     var section = new WorldTower.Section { Floor = cap ? 0 : floor };
     var go = Model((string)s["model"], holder, section);
+    if (!cap) builtTop = UnityEngine.Mathf.Max(builtTop, (F(s["base"]) + F(s["height"])) * S);
     if (floor == 1) firstFloor = go;
     sections.Add(section);
 }
 
 // ---- the foot: the islet, the plaza, the egg; their light is always on ----
 var foot = new WorldTower.Section { Floor = 0, AlwaysLit = true };
-var footHolder = new UnityEngine.GameObject("Foot").transform; footHolder.SetParent(root.transform, false);
+var footHolder = new UnityEngine.GameObject("Foot").transform; footHolder.SetParent(vis, false);
 var isletGo = Model((string)built["islet"]["model"], footHolder, foot);
 UnityEngine.Transform Part(string name) { foreach (var t in isletGo.GetComponentsInChildren<UnityEngine.Transform>(true)) if (t.name == name) return t; log.AppendLine("no part " + name); return null; }
 UnityEngine.Mesh MeshOf(string name) { var t = Part(name); return t ? t.GetComponent<UnityEngine.MeshFilter>().sharedMesh : null; }
-// what can be stood on: the low detail islet and the plaza
-var isletCollider = Part("Islet_Far").gameObject.AddComponent<UnityEngine.MeshCollider>();
-var plazaCollider = Part("Plaza_Near").gameObject.AddComponent<UnityEngine.MeshCollider>();
-if (firstFloor) foreach (var t in firstFloor.GetComponentsInChildren<UnityEngine.Transform>(true)) if (t.name == "Body_Far") t.gameObject.AddComponent<UnityEngine.MeshCollider>();
+// what can be stood on: the low detail islet, the plaza, the tower's own wall. Under Place, where the models are but
+// apart from them, so the ground stays when what is seen is hidden
+var ground = new UnityEngine.GameObject("Ground").transform; ground.SetParent(place, false);
+UnityEngine.MeshCollider Solid(UnityEngine.Transform part)
+{
+    var go = new UnityEngine.GameObject(part.name + " (ground)");
+    go.transform.SetParent(ground, false);
+    go.transform.SetPositionAndRotation(part.position, part.rotation);
+    go.transform.localScale = part.lossyScale;
+    var c = go.AddComponent<UnityEngine.MeshCollider>();
+    c.sharedMesh = part.GetComponent<UnityEngine.MeshFilter>().sharedMesh;
+    return c;
+}
+var isletCollider = Solid(Part("Islet_Far"));
+var plazaCollider = Solid(Part("Plaza_Near"));
+if (firstFloor) foreach (var t in firstFloor.GetComponentsInChildren<UnityEngine.Transform>(true)) if (t.name == "Body_Far") Solid(t);
+UnityEngine.Physics.SyncTransforms();
 // the flame and the flock are templates: hidden here, copied where they are wanted
 var flameMesh = MeshOf("Flame_Near"); var flockMesh = MeshOf("Flock_Near");
 Part("Flame_Near").gameObject.SetActive(false); Part("Flock_Near").gameObject.SetActive(false);
@@ -151,18 +188,18 @@ var footNear = new System.Collections.Generic.List<UnityEngine.Renderer>(foot.Ne
     log.AppendLine("plaza middle (local) " + local.ToString("0.0") + " wanted " + V("plaza").ToString("0.0"));
 }
 
-// the ground under a point of the foot, in the root's own terms
+// the ground under a point of the foot, in the models' own terms (Visuals')
 UnityEngine.Vector3 Ground(float x, float z, float fallback = 4.85f)
 {
-    var from = root.transform.TransformPoint(new UnityEngine.Vector3(x, 120f, z));
+    var from = vis.TransformPoint(new UnityEngine.Vector3(x, 120f, z));
     var ray = new UnityEngine.Ray(from, UnityEngine.Vector3.down);
     var best = float.MaxValue;
     foreach (var c in new[] { plazaCollider, isletCollider })
-        if (c.Raycast(ray, out var hit, 200f) && hit.distance < best) best = hit.distance;
-    return new UnityEngine.Vector3(x, best < float.MaxValue ? 120f - best : fallback, z);
+        if (c.Raycast(ray, out var hit, 200f * S) && hit.distance < best) best = hit.distance;
+    return new UnityEngine.Vector3(x, best < float.MaxValue ? 120f - best / S : fallback, z);
 }
-var props = new UnityEngine.GameObject("Props").transform; props.SetParent(root.transform, false);
-var extras = new UnityEngine.GameObject("Extras").transform; extras.SetParent(root.transform, false);
+var props = new UnityEngine.GameObject("Props").transform; props.SetParent(vis, false);
+var extras = new UnityEngine.GameObject("Extras").transform; extras.SetParent(vis, false);
 tower.Extras = extras.gameObject;
 var rng = new System.Random(24);
 float R(float a, float b) => a + (float)rng.NextDouble() * (b - a);
@@ -197,7 +234,7 @@ void Fire(UnityEngine.Vector3 local, float size, bool lamp)
     var l = new UnityEngine.GameObject("Firelight").AddComponent<UnityEngine.Light>();
     l.transform.SetParent(extras, false);
     l.transform.localPosition = local + UnityEngine.Vector3.up * (1.2f * size);
-    l.type = UnityEngine.LightType.Point; l.color = new UnityEngine.Color(1f, 0.72f, 0.42f); l.range = 16f; l.intensity = 3f; l.shadows = UnityEngine.LightShadows.None;
+    l.type = UnityEngine.LightType.Point; l.color = new UnityEngine.Color(1f, 0.72f, 0.42f); l.range = 16f * S; l.intensity = 3f; l.shadows = UnityEngine.LightShadows.None;
 }
 
 var plaza = V("plaza"); var plazaR = F(built["marks"]["plazaRadius"]); var gate = V("gate"); var level = F(built["marks"]["plazaLevel"]);
@@ -214,15 +251,25 @@ var ped = V("pedestal");
     stone.SetColor("_BaseColor", new UnityEngine.Color(0.66f, 0.64f, 0.6f)); stone.SetFloat("_Smoothness", 0.12f);
     UnityEditor.EditorUtility.SetDirty(stone);
     var yaw = UnityEngine.Mathf.Atan2(plaza.x - ped.x, plaza.z - ped.z) * UnityEngine.Mathf.Rad2Deg;
-    var statue = Put(FK + "SM_Prop_Statue_Hero_01.prefab", ped, yaw, 3f);
+    // where a statue stands: the stream's best climber is cast here by the game (WorldTowerClimbers.cs); until there
+    // is one, the nameless hero
+    var spot = new UnityEngine.GameObject("Statue spot").transform; spot.SetParent(vis, false);
+    spot.localPosition = ped; spot.localRotation = UnityEngine.Quaternion.Euler(0f, yaw, 0f);
+    tower.StatueSpot = spot; tower.Stone = stone;
+    var statue = Put(FK + "SM_Prop_Statue_Hero_01.prefab", ped, yaw, 3f, vis);
     if (statue)
     {
+        statue.name = "Statue (the nameless hero)";
         foreach (var r in statue.GetComponentsInChildren<UnityEngine.Renderer>()) { var ms = r.sharedMaterials; for (var i = 0; i < ms.Length; i++) ms[i] = stone; r.sharedMaterials = ms; }
         // stood by the middle of what it is made of, not by its pivot
         var b = new UnityEngine.Bounds(); var first = true;
         foreach (var r in statue.GetComponentsInChildren<UnityEngine.Renderer>()) { if (first) { b = r.bounds; first = false; } else b.Encapsulate(r.bounds); }
-        var want = root.transform.TransformPoint(ped);
+        var want = vis.TransformPoint(ped);
         statue.transform.position += new UnityEngine.Vector3(want.x - b.center.x, want.y - b.min.y, want.z - b.center.z);
+        tower.GenericStatue = statue;
+        // a climber in stone stands as tall as the hero does (the spot is under Visuals: in the models' metres)
+        tower.StatueHeight = b.size.y / S;
+        log.AppendLine("statue " + b.size.y.ToString("0.0") + " m tall in the world");
     }
 }
 
@@ -262,7 +309,7 @@ foreach (var side in new[] { -1f, 1f })
     var l = new UnityEngine.GameObject("Gate light").AddComponent<UnityEngine.Light>();
     l.transform.SetParent(extras, false);
     l.transform.localPosition = new UnityEngine.Vector3(0f, 15f, gate.z - 4f);
-    l.type = UnityEngine.LightType.Point; l.color = new UnityEngine.Color(1f, 0.8f, 0.5f); l.range = 48f; l.intensity = 4.5f; l.shadows = UnityEngine.LightShadows.None;
+    l.type = UnityEngine.LightType.Point; l.color = new UnityEngine.Color(1f, 0.8f, 0.5f); l.range = 48f * S; l.intensity = 4.5f; l.shadows = UnityEngine.LightShadows.None;
 }
 
 // ivy over the gate's shoulders
@@ -309,8 +356,20 @@ log.AppendLine("planted " + planted);
 
 // the pier: the Vikings' dock pieces out from the quay's stone landing, a few barrels and crates on the landing
 var quay = V("quayHead");
-for (var k = 0; k < 3; k++)
-    Put("Assets/PolygonVikings/Prefabs/Props/SM_Prop_Dock_0" + (k == 2 ? 2 : 1) + ".prefab", new UnityEngine.Vector3(0f, quay.y - 0.05f, quay.z - 2.5f - 5f * k), 0f, 1f);
+const int PierPieces = 3;
+for (var k = 0; k < PierPieces; k++)
+    Put("Assets/PolygonVikings/Prefabs/Props/SM_Prop_Dock_0" + (k == PierPieces - 1 ? 2 : 1) + ".prefab", new UnityEngine.Vector3(0f, quay.y - 0.05f, quay.z - 2.5f - 5f * k), 0f, 1f);
+var pierEnd = new UnityEngine.Vector3(0f, quay.y, quay.z - 5f * PierPieces);
+// the pier's planks are walked on: one flat deck for the ground, level with the landing (the pieces' own shapes have
+// posts and end beams the navmesh will not cross, which cut the pier in two at the first seam)
+{
+    var deck = new UnityEngine.GameObject("Pier deck (ground)");
+    deck.transform.SetParent(ground, false);
+    var a = vis.TransformPoint(new UnityEngine.Vector3(0f, quay.y, quay.z + 0.5f));
+    var b = vis.TransformPoint(new UnityEngine.Vector3(0f, quay.y, pierEnd.z + 0.3f));
+    deck.transform.SetPositionAndRotation((a + b) / 2f - UnityEngine.Vector3.up * 0.1f, UnityEngine.Quaternion.LookRotation((b - a).normalized, UnityEngine.Vector3.up));
+    deck.AddComponent<UnityEngine.BoxCollider>().size = new UnityEngine.Vector3(3.4f * S, 0.2f, (b - a).magnitude);
+}
 Put("Assets/PolygonPirates/Prefabs/Props/SM_Prop_Barrel_01.prefab", new UnityEngine.Vector3(-3.9f, quay.y, quay.z + 3.6f), 20f, 1.25f);
 Put("Assets/PolygonPirates/Prefabs/Props/SM_Prop_Barrel_01.prefab", new UnityEngine.Vector3(-3.6f, quay.y, quay.z + 2.2f), 80f, 1.25f);
 Put("Assets/PolygonPirates/Prefabs/Props/SM_Prop_Crate_01.prefab", new UnityEngine.Vector3(3.8f, quay.y, quay.z + 3.4f), 12f, 1.4f);
@@ -343,49 +402,69 @@ TMPro.TextMeshPro Words(string name, UnityEngine.Transform parent, UnityEngine.V
     var fwd = new UnityEngine.Vector3(UnityEngine.Mathf.Cos(facing), 0f, UnityEngine.Mathf.Sin(facing));
     var turn = UnityEngine.Quaternion.LookRotation(-fwd, UnityEngine.Vector3.up);   // words are read looking along +z
     var gold = new UnityEngine.Color(1f, 0.86f, 0.45f);
-    var holder = new UnityEngine.GameObject("Leaderboard words").transform; holder.SetParent(root.transform, false);
-    tower.SlabPlace = Words("Place", holder, slab + fwd * (st / 2 + 0.33f) + UnityEngine.Vector3.up * (sh * 0.565f), turn, sw * 0.68f, sh * 0.27f, gold, "FLOOR 1\nPART 1", 80f);
-    tower.SlabName = Words("Floor name", holder, slab + fwd * (st / 2 + 0.33f) + UnityEngine.Vector3.up * (sh * 0.36f), turn, sw * 0.68f, sh * 0.12f, new UnityEngine.Color(0.92f, 0.9f, 0.84f), "The Overgrown Halls", 40f);
+    var pale = new UnityEngine.Color(0.92f, 0.9f, 0.84f);
+    var holder = new UnityEngine.GameObject("Leaderboard words").transform; holder.SetParent(vis, false);
+    // the smooth face runs from a tenth of the stone's height to seven tenths: the stream's place at the top, the
+    // floor's name, then the best climbers, a row each (the carved runes stand in their place until there are names)
+    UnityEngine.Vector3 At(float up) => slab + fwd * (st / 2 + 0.33f) + UnityEngine.Vector3.up * (sh * up);
+    tower.SlabPlace = Words("Place", holder, At(0.635f), turn, sw * 0.66f, sh * 0.125f, gold, "FLOOR 1\nPART 1", 80f);
+    tower.SlabName = Words("Floor name", holder, At(0.535f), turn, sw * 0.68f, sh * 0.06f, pale, "The Overgrown Halls", 40f);
+    tower.ClimbersTitle = Words("Climbers title", holder, At(0.478f), turn, sw * 0.68f, sh * 0.04f, gold, "", 30f);
+    var rows = new TMPro.TextMeshPro[5];
+    for (var i = 0; i < rows.Length; i++)
+    {
+        rows[i] = Words("Climber " + (i + 1), holder, At(0.42f - 0.068f * i), turn, sw * 0.68f, sh * 0.06f, i == 0 ? gold : pale, "", 40f);
+        rows[i].textWrappingMode = TMPro.TextWrappingModes.NoWrap;
+        rows[i].overflowMode = TMPro.TextOverflowModes.Overflow;
+    }
+    tower.ClimberRows = rows;
+    var runes = Part("Runes_Near");
+    tower.SlabRunes = runes ? runes.gameObject : null;
 }
 
-// ---- the easter egg (docs/easter-eggs.md): the elevator that is out of order, and its sign ----
+// ---- the easter eggs (docs/easter-eggs.md): the elevator that is out of order with its sign, and the ferry's
+// timetable on the quay ----
+// a sign board with words from a Localization field, under a gag of its own
+WorldGag SignGag(string name, string gagKey, UnityEngine.Vector3 local, float yaw, string key, string fallback)
 {
-    var eggRoot = new UnityEngine.GameObject("Egg (elevator)");
-    eggRoot.transform.SetParent(root.transform, false);
+    var eggRoot = new UnityEngine.GameObject(name);
+    eggRoot.transform.SetParent(vis, false);
     var gag = eggRoot.AddComponent<WorldGag>();
-    gag.Key = "tower-elevator-out-of-order";
+    gag.Key = gagKey;
     gag.Texts = new TMPro.TextMeshPro[0]; gag.TextKeys = new string[0];
-    var door = Part("Egg_Near");
-    door.SetParent(eggRoot.transform, true);
-    var sign = V("eggSign");
+    var post = Put("Assets/Polygonal Fantasy Pack/Environment Prefabs/Misc/Text Signboard 01.prefab", local, yaw, 2.3f, eggRoot.transform);
+    if (!post) return gag;
+    UnityEngine.Transform face = null;
+    foreach (var mf in post.GetComponentsInChildren<UnityEngine.MeshFilter>()) if (mf.name.EndsWith("Text")) face = mf.transform;
+    if (!face) { log.AppendLine("no text face on the sign board"); return gag; }
+    var mb = face.GetComponent<UnityEngine.MeshFilter>().sharedMesh.bounds;
+    face.GetComponent<UnityEngine.MeshRenderer>().sharedMaterial = signFace;
+    var field = typeof(Localization).GetField(key);
+    var words = Words("Words", face, new UnityEngine.Vector3(mb.center.x, mb.center.y, mb.max.z + 0.006f), UnityEngine.Quaternion.Euler(0f, 180f, 0f), mb.size.x * 0.86f, mb.size.y * 0.84f,
+        new UnityEngine.Color(0.97f, 0.91f, 0.74f), field != null ? (string)field.GetValue(null) : fallback, 1.2f);
+    words.fontSizeMin = 0.05f; words.lineSpacing = -12f;
+    gag.Texts = new[] { words }; gag.TextKeys = new[] { key };
+    return gag;
+}
+{
     // between the stair and the door, turned to the plaza (beside the stone it would stand hidden behind it)
     var eggAt = V("egg");
-    var post = Put("Assets/Polygonal Fantasy Pack/Environment Prefabs/Misc/Text Signboard 01.prefab", Ground(eggAt.x - 3.6f, eggAt.z - 2.2f) - UnityEngine.Vector3.up * 0.05f, 180f + 14f, 2.3f, eggRoot.transform);
-    if (post)
-    {
-        UnityEngine.Transform face = null;
-        foreach (var mf in post.GetComponentsInChildren<UnityEngine.MeshFilter>()) if (mf.name.EndsWith("Text")) face = mf.transform;
-        if (face)
-        {
-            var mb = face.GetComponent<UnityEngine.MeshFilter>().sharedMesh.bounds;
-            face.GetComponent<UnityEngine.MeshRenderer>().sharedMaterial = signFace;
-            const string key = "UI_GAG_SIGN_ELEVATOR";
-            var field = typeof(Localization).GetField(key);
-            var words = Words("Words", face, new UnityEngine.Vector3(mb.center.x, mb.center.y, mb.max.z + 0.006f), UnityEngine.Quaternion.Euler(0f, 180f, 0f), mb.size.x * 0.86f, mb.size.y * 0.84f,
-                new UnityEngine.Color(0.97f, 0.91f, 0.74f), field != null ? (string)field.GetValue(null) : "OUT OF ORDER. PLEASE TAKE THE STAIRS. ALL OF THEM", 1.2f);
-            words.fontSizeMin = 0.05f; words.lineSpacing = -12f;
-            gag.Texts = new[] { words }; gag.TextKeys = new[] { key };
-        }
-        else log.AppendLine("no text face on the sign board");
-    }
-    tower.Egg = gag;
+    var elevator = SignGag("Egg (elevator)", "tower-elevator-out-of-order", Ground(eggAt.x - 3.6f, eggAt.z - 2.2f) - UnityEngine.Vector3.up * 0.05f, 180f + 14f,
+        "UI_GAG_SIGN_ELEVATOR", "OUT OF ORDER. PLEASE TAKE THE STAIRS. ALL OF THEM");
+    var door = Part("Egg_Near");
+    door.SetParent(elevator.transform, true);
+    tower.Egg = elevator;
+    // on the stone landing at the head of the pier, turned to whoever comes up it
+    var timetable = SignGag("Egg (ferry timetable)", "tower-ferry-timetable", new UnityEngine.Vector3(-4.3f, quay.y - 0.05f, quay.z + 0.9f), 180f - 12f,
+        "UI_GAG_SIGN_FERRY_TIMES", "FERRY TIMETABLE: WHEN SOMEONE ASKS FOR IT. ASK NICELY");
+    tower.MoreEggs = new[] { timetable };
 }
 
 // ---- gulls: three flocks at different heights, each on a pivot the game turns round the tower ----
 var flocks = new System.Collections.Generic.List<UnityEngine.Transform>();
 foreach (var (radius, height, size) in new[] { (128f, 46f, 1.5f), (112f, 150f, 1.7f), (150f, 96f, 1.5f), (96f, 236f, 1.8f) })
 {
-    var pivot = new UnityEngine.GameObject("Gulls").transform; pivot.SetParent(root.transform, false);
+    var pivot = new UnityEngine.GameObject("Gulls").transform; pivot.SetParent(vis, false);
     pivot.localRotation = UnityEngine.Quaternion.Euler(0f, R(0f, 360f), 0f);
     var go = new UnityEngine.GameObject("Flock");
     go.transform.SetParent(pivot, false);
@@ -404,32 +483,198 @@ tower.Sections = sections.ToArray();
 tower.Turning = turning.ToArray(); tower.TurnSpeeds = speeds.ToArray();
 tower.Bobbing = bobbing.ToArray(); tower.Flocks = flocks.ToArray();
 
-// ---- a navmesh for the plaza and the quay, for the day players come here (docs/world-tower.md, "Visiting") ----
+// ---- how the top goes into cloud (WorldTower.cs): the heights follow the stack ----
+var capTop = F(built["height"]) * S;
+tower.BuiltHeight = builtTop;
+// the shaft stands clear for a little over the last section, then the sky's bank takes it and it thins out inside
+tower.CloudFrom = builtTop + (capTop - builtTop) * 0.3f;
+tower.CloudRadius = 260f;
+tower.FadeFrom = builtTop + (capTop - builtTop) * 0.33f;
+tower.FadeTo = capTop - 11f;
+log.AppendLine("built to " + builtTop.ToString("0") + " m, shaft to " + capTop.ToString("0") + " m, fades " + tower.FadeFrom.ToString("0") + " to " + tower.FadeTo.ToString("0") + " m, cloud from " + tower.CloudFrom.ToString("0") + " m");
+
+// ---- ramps over the steps (the quay's and the stair's), unseen: the navmesh goes up them whatever the steps' height ----
+void Ramp(string name, UnityEngine.Vector3 low, UnityEngine.Vector3 high, float width)
+{
+    var go = new UnityEngine.GameObject(name);
+    go.transform.SetParent(ground, false);
+    var a = vis.TransformPoint(low); var b = vis.TransformPoint(high);
+    var along = b - a;
+    go.transform.SetPositionAndRotation((a + b) / 2f - UnityEngine.Vector3.up * 0.1f, UnityEngine.Quaternion.LookRotation(along.normalized, UnityEngine.Vector3.up));
+    var box = go.AddComponent<UnityEngine.BoxCollider>();
+    box.size = new UnityEngine.Vector3(width * S, 0.2f, along.magnitude + 0.6f);
+}
+Ramp("Ramp (quay steps)", new UnityEngine.Vector3(0f, quay.y, quay.z + 5f), new UnityEngine.Vector3(0f, level + 0.12f, quay.z + 5f + 1.3f * 7f), 8.6f);
+Ramp("Ramp (stair)", V("stairFoot"), V("gate"), 11f);
+UnityEngine.Physics.SyncTransforms();
+
+// ---- a navmesh for the plaza, the stair into the gate's tunnel, the quay and the pier ----
 var surface = root.AddComponent<Unity.AI.Navigation.NavMeshSurface>();
 surface.agentTypeID = 0;
-// the entrance only: the plaza, the stair into the gate's tunnel, the quay, the grass beside them; not the sea floor
+// the entrance only: not the sea floor, not the cliffs
 surface.collectObjects = Unity.AI.Navigation.CollectObjects.Volume;
-surface.center = new UnityEngine.Vector3(0f, 21f, (V("quayHead").z + V("tunnelEnd").z) / 2f);
-surface.size = new UnityEngine.Vector3(104f, 40f, V("tunnelEnd").z - V("quayHead").z + 4f);
+var navNear = pierEnd.z - 1f; var navFar = V("tunnelEnd").z + 2f;
+surface.center = new UnityEngine.Vector3(0f, 21f, (navNear + navFar) / 2f) * S;
+surface.size = new UnityEngine.Vector3(104f, 40f, navFar - navNear) * S;
 surface.useGeometry = UnityEngine.AI.NavMeshCollectGeometry.PhysicsColliders;
 surface.layerMask = 25556799;
 surface.BuildNavMesh();
 var navPath = DataFolder + "/NavMesh.asset";
 if (surface.navMeshData) { UnityEditor.AssetDatabase.DeleteAsset(navPath); UnityEditor.AssetDatabase.CreateAsset(surface.navMeshData, navPath); log.AppendLine("navmesh " + surface.navMeshData.sourceBounds); }
-// from the pier's landing to the mouth of the gate
+bool Walk(UnityEngine.Vector3 fromModel, UnityEngine.Vector3 toModel, out UnityEngine.Vector3 onMesh)
 {
-    var a = root.transform.TransformPoint(V("quayHead") + new UnityEngine.Vector3(0f, 0.2f, 2.5f));
-    var b = root.transform.TransformPoint(V("gate") + new UnityEngine.Vector3(0f, 0.2f, 3f));
+    var a = vis.TransformPoint(fromModel + UnityEngine.Vector3.up * 0.2f);
+    var b = vis.TransformPoint(toModel + UnityEngine.Vector3.up * 0.2f);
+    onMesh = a;
     var okA = UnityEngine.AI.NavMesh.SamplePosition(a, out var ha, 3f, -1); var okB = UnityEngine.AI.NavMesh.SamplePosition(b, out var hb, 3f, -1);
+    if (okA) onMesh = ha.position;
     var path = new UnityEngine.AI.NavMeshPath();
-    var walk = okA && okB && UnityEngine.AI.NavMesh.CalculatePath(ha.position, hb.position, -1, path) && path.status == UnityEngine.AI.NavMeshPathStatus.PathComplete;
-    log.AppendLine("walk quay to gate: " + (walk ? "yes" : "NO") + " (quay on mesh " + okA + ", gate on mesh " + okB + ")");
+    return okA && okB && UnityEngine.AI.NavMesh.CalculatePath(ha.position, hb.position, -1, path) && path.status == UnityEngine.AI.NavMeshPathStatus.PathComplete;
 }
-// markers for that day
-foreach (var (name, mark) in new[] { ("Arrival (quay)", "quayHead"), ("Gate", "gate"), ("Plaza", "plaza") })
+var tunnelMark = V("tunnelEnd") + new UnityEngine.Vector3(0f, 0f, -5f);    // a little short of the tunnel's end wall
+var gateMark = V("gate") + new UnityEngine.Vector3(0f, 0f, 2f);
+var landing = quay + new UnityEngine.Vector3(0f, 0f, 2.5f);
+var pierSpot = pierEnd + new UnityEngine.Vector3(0f, 0f, 2.2f);
+var walkLanding = Walk(landing, gateMark, out var landingOn);
+var walkPier = Walk(pierSpot, gateMark, out var pierOn);
+var walkTunnel = Walk(gateMark, tunnelMark, out var gateOn);
+var walkPlaza = Walk(plaza, gateMark, out var plazaOn);
+log.AppendLine("walk: landing to gate " + (walkLanding ? "yes" : "NO") + ", pier's end to gate " + (walkPier ? "yes" : "NO") + ", gate to tunnel's end " + (walkTunnel ? "yes" : "NO") + ", plaza to gate " + (walkPlaza ? "yes" : "NO"));
+
+// ---- the islet as a place (WorldTowerVisit.cs): an island like the others, its dock, where to stand ----
+UnityEngine.Transform Mark(string name, UnityEngine.Vector3 world, UnityEngine.Transform parent = null)
 {
-    var m = new UnityEngine.GameObject(name).transform; m.SetParent(root.transform, false);
-    m.localPosition = V(mark); m.localRotation = UnityEngine.Quaternion.identity;
+    var m = new UnityEngine.GameObject(name).transform; m.SetParent(parent ? parent : place, false);
+    m.position = world; m.rotation = root.transform.rotation;
+    return m;
+}
+IslandController like = null;
+foreach (var other in UnityEngine.Object.FindObjectsByType<IslandController>(UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None))
+    if (other.Identifier == "Home") like = other;
+if (!like) log.AppendLine("NO HOME ISLAND FOUND (is MainWorld open?): the islet's layer and tag are the defaults");
+{
+    // the sphere takes in the tunnel, the plaza, the quay, the pier and the ferry's stop off its end, and no other island's
+    var middle = new UnityEngine.Vector3(0f, 8f, -108f);
+    var islandGo = new UnityEngine.GameObject("Tower islet");
+    islandGo.transform.SetParent(place, false);
+    islandGo.transform.position = vis.TransformPoint(middle);
+    if (like) { islandGo.layer = like.gameObject.layer; islandGo.tag = like.gameObject.tag; }
+    var sphere = islandGo.AddComponent<UnityEngine.SphereCollider>();
+    sphere.isTrigger = true; sphere.center = UnityEngine.Vector3.zero; sphere.radius = 112f;
+    var island = islandGo.AddComponent<IslandController>();
+    island.Island = WorldTower.IslandValue;
+    island.Identifier = "Tower";
+    island.LevelRequirement = 1;
+    island.OpenToAllLevels = true;
+    island.AllowRaidWar = false;
+    island.SpawnPositionTransform = Mark("Spawn", plazaOn, islandGo.transform);
+    island.CameraPanTarget = Mark("Camera pan target", vis.TransformPoint(plaza + UnityEngine.Vector3.up * 2f), islandGo.transform);
+    tower.Islet = island;
+
+    // the dock: at the pier's end if the planks can be walked, else on the stone landing
+    var dockGo = new UnityEngine.GameObject("Dock");
+    dockGo.transform.SetParent(islandGo.transform, false);
+    var dockAt = walkPier ? pierOn : landingOn;
+    dockGo.transform.position = dockAt;
+    dockGo.transform.rotation = root.transform.rotation;
+    if (like && like.DockingArea) { dockGo.layer = like.DockingArea.gameObject.layer; dockGo.tag = like.DockingArea.gameObject.tag; }
+    var dockBox = dockGo.AddComponent<UnityEngine.BoxCollider>();
+    dockBox.isTrigger = true; dockBox.center = UnityEngine.Vector3.up * 1f; dockBox.size = new UnityEngine.Vector3(4.5f, 3f, 4.5f);
+    var dock = dockGo.AddComponent<DockController>();
+    dock.DockPositionTransform = Mark("Dock position", dockAt, dockGo.transform);
+    island.DockingArea = dock;
+    log.AppendLine("dock at " + dockAt.ToString("0.0") + (walkPier ? " (the pier's end)" : " (the landing: the pier is not walkable)"));
+
+    // places to stand on the plaza: two rings, clear of the way from the quay to the stair
+    var spots = new System.Collections.Generic.List<UnityEngine.Transform>();
+    foreach (var (around, count, turnBy) in new[] { (plazaR * 0.42f, 6, 0.4f), (plazaR * 0.74f, 10, 0.1f) })
+        for (var k = 0; k < count; k++)
+        {
+            var t = turnBy + k * UnityEngine.Mathf.PI * 2f / count;
+            var p = new UnityEngine.Vector3(plaza.x + around * UnityEngine.Mathf.Cos(t), plaza.y, plaza.z + around * UnityEngine.Mathf.Sin(t));
+            if (UnityEngine.Mathf.Abs(p.x - plaza.x) < 3.2f) continue;
+            var world = vis.TransformPoint(p + UnityEngine.Vector3.up * 0.2f);
+            if (!UnityEngine.AI.NavMesh.SamplePosition(world, out var hit, 2f, -1)) continue;
+            var m = Mark("Spot " + (spots.Count + 1), hit.position);
+            spots.Add(m);
+        }
+    tower.Spots = spots.ToArray();
+    tower.Gate = Mark("Gate", gateOn);
+    tower.TunnelEnd = Mark("Tunnel end", vis.TransformPoint(tunnelMark));
+    log.AppendLine("islet: sphere at " + islandGo.transform.position.ToString("0") + " radius " + sphere.radius + ", " + spots.Count + " places on the plaza, layer " + islandGo.layer);
+    // no other island's sphere may reach into this one
+    foreach (var other in UnityEngine.Object.FindObjectsByType<IslandController>(UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None))
+    {
+        if (other == island) continue;
+        var os = other.GetComponent<UnityEngine.SphereCollider>();
+        if (!os) continue;
+        var gap = UnityEngine.Vector3.Distance(other.transform.TransformPoint(os.center), islandGo.transform.position) - os.radius - sphere.radius;
+        if (gap < 20f) log.AppendLine((gap < 0f ? "OVERLAPS " : "close to ") + other.Identifier + " by " + gap.ToString("0") + " m");
+    }
+
+    // ---- the ferry's way to the pier and on (PathSelector.RegisterStop): after Heim it turns in to a stop off the
+    // pier's end, then goes on to Atria. In the world's own terms, like the ring's splines: a holder at the origin ----
+    UnityEngine.Splines.SplineContainer ring = null;
+    foreach (var sc in UnityEngine.Object.FindObjectsByType<UnityEngine.Splines.SplineContainer>(UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None))
+        if (sc.name == "Heim => Atria") ring = sc;
+    if (!ring) log.AppendLine("NO FERRY RING FOUND (Heim => Atria; is MainWorld open?): no ferry stop");
+    else
+    {
+        var ferryRoot = new UnityEngine.GameObject("World Tower ferry");
+        UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(ferryRoot, scene);
+        var front = -root.transform.forward; var side = root.transform.right;      // the way the gate faces, and across it
+        var seaY = ((UnityEngine.Vector3)ring.EvaluatePosition(0f)).y;
+        // a point by how far out from the tower's middle along the gate's line, and how far to the side
+        UnityEngine.Vector3 Off(float along, float across) { var p = root.transform.position + front * along + side * across; p.y = seaY; return p; }
+        // which side Heim lies on: the ferry comes in from there and leaves by the other
+        var heim = (UnityEngine.Vector3)ring.EvaluatePosition(0f);
+        var inSide = UnityEngine.Vector3.Dot(heim - root.transform.position, side) < 0f ? -1f : 1f;
+        var stopAlong = -pierEnd.z * S + 8f;
+        var stop = Off(stopAlong, 0f);
+        UnityEngine.Splines.SplineContainer Way(string name, System.Collections.Generic.List<UnityEngine.Vector3> points)
+        {
+            var go = new UnityEngine.GameObject(name);
+            go.transform.SetParent(ferryRoot.transform, false);
+            var container = go.AddComponent<UnityEngine.Splines.SplineContainer>();
+            var spline = container.Spline;
+            spline.Clear();
+            foreach (var p in points) spline.Add(new UnityEngine.Splines.BezierKnot(new Unity.Mathematics.float3(p.x, seaY, p.z)), UnityEngine.Splines.TangentMode.AutoSmooth);
+            spline.Closed = false;
+            return container;
+        }
+        var to = new System.Collections.Generic.List<UnityEngine.Vector3>();
+        for (var i = 0; i <= 4; i++) to.Add(ring.EvaluatePosition(i / 16f));      // out of Heim as the ring goes
+        to.Add(Off(stopAlong + 85f, inSide * 85f)); to.Add(Off(stopAlong + 35f, inSide * 60f)); to.Add(Off(stopAlong + 7f, inSide * 32f)); to.Add(stop);
+        var from = new System.Collections.Generic.List<UnityEngine.Vector3> { stop, Off(stopAlong + 7f, -inSide * 30f), Off(stopAlong + 25f, -inSide * 62f) };
+        for (var i = 8; i <= 16; i++) from.Add(ring.EvaluatePosition(i / 16f));   // and on into Atria as the ring goes
+        tower.FerryTo = Way("Heim => Tower", to);
+        tower.FerryFrom = Way("Tower => Atria", from);
+        tower.FerryAfterPath = 3; tower.FerryNext = "Atria";
+        // the stop must lie in the islet's sphere (the ferry asks which island it has docked at) and both ways over water
+        log.AppendLine("ferry stop " + stop.ToString("0.0") + ", " + UnityEngine.Vector3.Distance(stop, islandGo.transform.position).ToString("0") + " m from the sphere's middle (radius " + sphere.radius + "), " + UnityEngine.Vector3.Distance(stop, dockAt).ToString("0") + " m from the dock");
+        try
+        {
+            var chart = Newtonsoft.Json.Linq.JObject.Parse(System.IO.File.ReadAllText(System.IO.Path.Combine(UnityEngine.Application.streamingAssetsPath, "Sailing", "sea-chart.json")));
+            float cell = F(chart["cell"]), ox = F(chart["originX"]), oz = F(chart["originZ"]); int cw = (int)chart["width"], ch = (int)chart["height"];
+            var bits = System.Convert.FromBase64String((string)chart["water"]);
+            bool Water(UnityEngine.Vector3 p) { var x = UnityEngine.Mathf.FloorToInt((p.x - ox) / cell); var z = UnityEngine.Mathf.FloorToInt((p.z - oz) / cell); if (x < 0 || z < 0 || x >= cw || z >= ch) return false; var i = z * cw + x; return (bits[i >> 3] & (1 << (i & 7))) != 0; }
+            foreach (var way in new[] { tower.FerryTo, tower.FerryFrom })
+            {
+                var length = way.Spline.GetLength(); var dry = 0; var count = 0; var worst = "";
+                for (var d = 30f; d < length - 30f; d += 5f)
+                {
+                    var p = (UnityEngine.Vector3)UnityEngine.Splines.SplineUtility.EvaluatePosition(way.Spline, d / length);
+                    count++;
+                    if (!Water(p)) { dry++; if (worst.Length < 80) worst += " " + p.x.ToString("0") + "," + p.z.ToString("0"); }
+                }
+                log.AppendLine("ferry way " + way.name + ": " + length.ToString("0") + " m, " + (dry == 0 ? "all over water" : "NOT WATER at " + dry + " of " + count + ":" + worst));
+            }
+            var end = ((UnityEngine.Vector3)UnityEngine.Splines.SplineUtility.EvaluateTangent(tower.FerryTo.Spline, 1f)).normalized;
+            log.AppendLine("ferry heading at the stop " + (UnityEngine.Mathf.Atan2(end.x, end.z) * UnityEngine.Mathf.Rad2Deg).ToString("0.0"));
+            foreach (var d in chart["docks"]) if ((string)d["island"] == "Tower") log.AppendLine("chart dock Tower " + F(d["x"]).ToString("0.0") + "," + F(d["z"]).ToString("0.0") + " heading " + F(d["heading"]).ToString("0.0") + ", " + UnityEngine.Vector2.Distance(new UnityEngine.Vector2(F(d["x"]), F(d["z"])), new UnityEngine.Vector2(stop.x, stop.z)).ToString("0.0") + " m from the ferry's stop");
+        }
+        catch (System.Exception e) { log.AppendLine("sea chart check failed: " + e.Message); }
+    }
 }
 
 UnityEditor.EditorUtility.SetDirty(tower);
@@ -438,7 +683,7 @@ UnityEditor.AssetDatabase.SaveAssets();
 var saved = UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene, ScenePath);
 UnityEditor.SceneManagement.EditorSceneManager.CloseScene(scene, true);
 log.AppendLine("triangles: tower near " + tris0 + ", far " + tris1 + ", props " + propTris);
-log.AppendLine("tower at " + at.ToString("0.0") + " height " + F(built["height"]) + " sections " + sections.Count);
+log.AppendLine("tower at " + at.ToString("0.0") + " scale " + S + " height " + (F(built["height"]) * S).ToString("0") + " sections " + sections.Count);
 log.AppendLine(saved ? "SAVED " + ScenePath : "SAVE FAILED");
 }
 catch (System.Exception e) { log.AppendLine("EXCEPTION " + e); }

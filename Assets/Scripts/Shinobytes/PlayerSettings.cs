@@ -34,6 +34,8 @@ public class PlayerSettings
     public bool? ScreenShake;
     /// <summary>The cutscenes the first time something big happens (Ravebridge rising, the tower opening, a tower town).</summary>
     public bool? Cutscenes;
+    /// <summary>Now and then, while nothing is going on, the camera takes a slow look at the tower in the main world (WorldTower).</summary>
+    public bool? TowerLooks;
     public bool? DownloadUpdatesEarly;
     public bool? InstallUpdatesAutomatically;
     public bool? QuestTracker;
@@ -454,6 +456,7 @@ public class PlayerSettings
             Serialize(sw, "effectWords", obj.EffectWords);
             Serialize(sw, "screenShake", obj.ScreenShake);
             Serialize(sw, "cutscenes", obj.Cutscenes);
+            Serialize(sw, "towerLooks", obj.TowerLooks);
             Serialize(sw, "downloadUpdatesEarly", obj.DownloadUpdatesEarly);
             Serialize(sw, "installUpdatesAutomatically", obj.InstallUpdatesAutomatically);
             Serialize(sw, "questTracker", obj.QuestTracker);

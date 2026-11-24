@@ -53,6 +53,14 @@ public class TowerCommand : ChatBotCommandHandler<string>
             return;
         }
 
+        // from the plaza at the foot of the tower in the main world, a player who goes in walks in through the gate
+        // first; the command runs again when they are inside (WorldTower)
+        if (WorldTower.WalksInFirst(player, action, () => Handle(data, gm, client)))
+        {
+            client.SendReply(gm, Localization.MSG_TOWER_WALK_IN);
+            return;
+        }
+
         try
         {
             switch (action)

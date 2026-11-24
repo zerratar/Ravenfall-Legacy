@@ -14,6 +14,44 @@ public class PathSelector : MonoBehaviour
     [SerializeField] private SplineContainer toMangrove;
     [SerializeField] private SplineContainer fromMangrove;
     public const int EldaraPath = 5, HomePath = 6, ToMangrovePath = 7, FromMangrovePath = 8;
+
+    // a stop another scene adds to the ring (the pier at the foot of the world tower, WorldTower): after one of the
+    // ring's paths the ferry sails "to" and then "from", which stands in for the ring's next path; only while
+    // "wanted" says someone is bound there or waiting there, so nobody else's crossing is made longer
+    public const int ExtraToPath = 9, ExtraFromPath = 10;
+    private SplineContainer extraTo, extraFrom;
+    private Spline extraToSpline, extraFromSpline;
+    private int extraAfter = -1;
+    private int extraResume;
+    private System.Func<bool> extraWanted;
+
+    /// <summary>The island at the added stop, and where the ferry is bound when it leaves it; null with no stop.</summary>
+    public string ExtraStopName { get; private set; }
+    public string ExtraNextName { get; private set; }
+
+    public void RegisterStop(int afterPath, SplineContainer to, SplineContainer from, string name, string next, System.Func<bool> wanted)
+    {
+        if (!to || !from || splines == null || splines.Length == 0) return;
+        to.Spline.Warmup();
+        from.Spline.Warmup();
+        extraTo = to;
+        extraFrom = from;
+        extraToSpline = to.Spline;
+        extraFromSpline = from.Spline;
+        extraAfter = afterPath;
+        extraResume = (afterPath + 2) % splines.Length;
+        extraWanted = wanted;
+        ExtraStopName = name;
+        ExtraNextName = next;
+    }
+
+    /// <summary>The stop goes with its scene; a leg the ferry is on is sailed to its end.</summary>
+    public void UnregisterStop(SplineContainer to)
+    {
+        if (extraTo != to) return;
+        extraAfter = -1;
+        extraWanted = null;
+    }
     [SerializeField] private float stopBetweenPaths = 8f;
     [SerializeField] private float movementSpeed = 9f;
     private int pathIndex = 0;
@@ -133,7 +171,8 @@ public class PathSelector : MonoBehaviour
     private void StartNewPath()
     {
         pathIndex = NextPath(pathIndex);
-        currentSpline = pathIndex == ToMangrovePath ? toMangrove.Spline : pathIndex == FromMangrovePath ? fromMangrove.Spline : splines[pathIndex].Spline;
+        currentSpline = pathIndex == ToMangrovePath ? toMangrove.Spline : pathIndex == FromMangrovePath ? fromMangrove.Spline
+            : pathIndex == ExtraToPath ? extraToSpline : pathIndex == ExtraFromPath ? extraFromSpline : splines[pathIndex].Spline;
         pathLength = currentSpline.GetLength();
         UpdateFerrySpeed();
         elapsed = 0f;
@@ -146,6 +185,9 @@ public class PathSelector : MonoBehaviour
         if (current == EldaraPath && toMangrove && fromMangrove && MangroveOpen()) return ToMangrovePath;
         if (current == ToMangrovePath) return FromMangrovePath;
         if (current == FromMangrovePath) return 0;
+        if (current == extraAfter && extraAfter >= 0 && extraToSpline != null && extraFromSpline != null && (extraWanted == null || extraWanted())) return ExtraToPath;
+        if (current == ExtraToPath) return ExtraFromPath;
+        if (current == ExtraFromPath) return extraResume;
         return (current + 1) % splines.Length;
     }
 

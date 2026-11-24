@@ -23,7 +23,7 @@ public static class Keybinds
     {
         ToggleHud, PlayerDetails, NextPlayer, FreeCamera, NextIsland, ControlPlayer,
         Search, ExpRate, Logos, UiBigger, UiSmaller, Graphics, Physics, SaveState, Reload,
-        StartRaid, StartDungeon, RaceCamera, QuestTracker,
+        StartRaid, StartDungeon, RaceCamera, QuestTracker, TowerCamera,
     }
 
     [Flags]
@@ -121,6 +121,8 @@ public static class Keybinds
         new Def { Action = Action.RaceCamera, Default = new Binding(KeyCode.R), Trigger = Trigger.Down, Name = () => Localization.UI_KEY_RACE_CAMERA },
         // the quest tracker shown or hidden, as its setting
         new Def { Action = Action.QuestTracker, Default = new Binding(KeyCode.F7), Trigger = Trigger.Up, Name = () => Localization.UI_KEY_TRACKER },
+        // the camera to the players in the tower, and back to what it was watching outside (WorldTowerCamera)
+        new Def { Action = Action.TowerCamera, Default = new Binding(KeyCode.T), Trigger = Trigger.Down, Name = () => Localization.UI_KEY_TOWER_CAMERA },
     };
 
     private static readonly Dictionary<Action, Binding> current = new Dictionary<Action, Binding>();

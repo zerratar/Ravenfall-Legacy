@@ -1,13 +1,13 @@
 {
  "note": "Made by tools/tower/world/world_tower.py from stack.json; read by tools/tower/world/world-tower-build.cs. Heights in metres above the sea, radii in metres.",
  "position": [
-  405,
-  -60
+  60,
+  -700
  ],
  "seaLevel": -3.31,
  "faces": [
-  60,
-  40
+  0,
+  -100
  ],
  "sections": [
   {
@@ -25,8 +25,8 @@
    "cap": false,
    "parts": {
     "Body": {
-     "lod0": 31491,
-     "lod1": 5259
+     "lod0": 48685,
+     "lod1": 6257
     }
    },
    "top": 76.4
@@ -46,8 +46,8 @@
    "cap": false,
    "parts": {
     "Body": {
-     "lod0": 14747,
-     "lod1": 3102
+     "lod0": 19811,
+     "lod1": 3870
     }
    },
    "top": 58.60000000000001
@@ -67,8 +67,8 @@
    "cap": false,
    "parts": {
     "Body": {
-     "lod0": 6756,
-     "lod1": 1231
+     "lod0": 8338,
+     "lod1": 1257
     },
     "Ring": {
      "lod0": 7480,
@@ -96,19 +96,19 @@
    "cap": false,
    "parts": {
     "Body": {
-     "lod0": 8622,
-     "lod1": 2364
+     "lod0": 15948,
+     "lod1": 3590
     }
    },
-   "top": 38.92941176470589
+   "top": 40.56176470588236
   },
   {
    "floor": 0,
    "style": "cloud",
    "model": "WorldTower_Cap",
    "base": 306.0,
-   "height": 130,
-   "seat": 38.92941176470589,
+   "height": 120,
+   "seat": 40.56176470588236,
    "glow": [
     1,
     1,
@@ -117,18 +117,17 @@
    "cap": true,
    "parts": {
     "Body": {
-     "lod0": 384,
-     "lod1": 96
+     "lod0": 4934,
+     "lod1": 611
     },
-    "Clouds": {
-     "lod0": 16320,
-     "lod1": 2800
+    "Lid": {
+     "lod1": 2480
     }
    },
    "top": 0.0
   }
  ],
- "height": 436.0,
+ "height": 426.0,
  "islet": {
   "model": "WorldTower_Islet",
   "parts": {
@@ -136,9 +135,12 @@
     "lod0": 11792,
     "lod1": 4576
    },
+   "Runes": {
+    "lod0": 240
+   },
    "Plaza": {
-    "lod0": 2236,
-    "lod1": 2140
+    "lod0": 2138,
+    "lod1": 2042
    },
    "Flame": {
     "lod0": 136
@@ -208,7 +210,7 @@
  },
  "baseRadius": 80.0,
  "triangles": {
-  "lod0": 101043,
-  "lod1": 23808
+  "lod0": 120581,
+  "lod1": 26923
  }
 }

@@ -1079,7 +1079,9 @@ namespace Shinobytes.UI
                 return;
             }
 
-            if (player.Chunk == null && !isSailing)
+            // (not on the islet at the tower's foot: nothing is trained there, and the player keeps learning as on their
+            // island, so the card shows the skill and its time to the next level as usual: WorldTower.Calm)
+            if (player.Chunk == null && !isSailing && !WorldTower.Calm(player))
             {
                 var status = !player.Island ? Localization.UI_DETAILS_INELIGIBLE : Localization.UI_DETAILS_LEVEL_TOO_LOW;
                 ShowTraining("rf-training--warning", icon, title, percent, progress, status, "rf-training__status--warning",

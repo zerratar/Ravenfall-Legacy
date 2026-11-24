@@ -16,16 +16,23 @@ using UnityEngine.SceneManagement;
 ///     <para>Seen from far: the game's view distance ends long before the tower, so its shader (Ravenfall/WorldTower)
 ///     draws it squeezed in front of the far plane and this gives its renderers bounds that are never culled. Past
 ///     <see cref="FarDistance"/> the low detail models show.</para>
+///     <para>No top: over the last floor's section the tower goes on as a plain shaft, which the shader thins out
+///     from <see cref="FadeFrom"/> up and turns toward the cloud's color, and this asks the sky's clouds
+///     (<see cref="SkyClouds.Tower"/>) to keep a bank round it up there, so it rises into a real cloud and is gone
+///     inside it. Where the game draws no sky clouds (potato mode, or the setting off) a low-poly cloud lies over
+///     the fade instead (<see cref="Lid"/>).</para>
 ///     <para>Potato mode: the low detail models at every distance, no breathing light, no drifting cloud, bobbing
-///     rocks, lightning or gulls, no lamps; steady light stays. It needs no setting of its own: the cost while it is
-///     in view is its triangles (docs/world-tower.md has the numbers).</para>
+///     rocks, lightning or gulls, no lamps, no camera looks; steady light stays.</para>
+///     <para>The other parts of this class: the islet as a place players sail to (WorldTowerVisit.cs), the camera's
+///     looks at the tower (WorldTowerMoments.cs), the stream's best climbers on the stone and as the statue
+///     (WorldTowerClimbers.cs).</para>
 /// </summary>
-public sealed class WorldTower : MonoBehaviour
+public sealed partial class WorldTower : MonoBehaviour
 {
     [Serializable]
     public sealed class Section
     {
-        [Tooltip("The floor it shows (1, 2, 3...); 0 for the cloud cap and the foot.")]
+        [Tooltip("The floor it shows (1, 2, 3...); 0 for what stands over the last floor and for the foot.")]
         public int Floor;
         [Tooltip("What draws up close, and from far away or in potato mode.")]
         public Renderer[] Near = new Renderer[0];
@@ -46,18 +53,29 @@ public sealed class WorldTower : MonoBehaviour
     /// </summary>
     public static int PreviewStep;
 
+    [Tooltip("Everything that is only seen (the models, the props, the words): hidden while the tower is not drawn.")]
+    public GameObject Visuals;
     [Tooltip("The material every piece is drawn with (Ravenfall/WorldTower); each section gets its own copy at the start.")]
     public Material Shared;
     public Section[] Sections = new Section[0];
 
     [Tooltip("Past this many metres from the camera the low detail models show.")]
-    public float FarDistance = 950f;
+    public float FarDistance = 1150f;
     [Tooltip("Within this many metres the tower casts shadows.")]
-    public float ShadowDistance = 260f;
+    public float ShadowDistance = 320f;
     [Tooltip("Past this the tower is not drawn at all: the tower's own floors and towns lie far out at sea.")]
     public float HideDistance = 3600f;
 
-    [Tooltip("Turned slowly round the tower: the storm's cloud ring, the cloud cap. Degrees a second each.")]
+    [Tooltip("Metres above the sea where the tower begins to thin out into cloud, and where it is gone.")]
+    public float FadeFrom = 410f;
+    public float FadeTo = 505f;
+    [Tooltip("The bank of sky cloud kept round the tower's top: from this height (m above the sea) and this wide (m).")]
+    public float CloudFrom = 395f;
+    public float CloudRadius = 260f;
+    [Tooltip("A low-poly cloud over the top, shown only while the game draws no sky clouds.")]
+    public GameObject Lid;
+
+    [Tooltip("Turned slowly round the tower: the storm's cloud ring. Degrees a second each.")]
     public Transform[] Turning = new Transform[0];
     public float[] TurnSpeeds = new float[0];
     [Tooltip("Rocks adrift: they rise and sink a little.")]
@@ -68,6 +86,8 @@ public sealed class WorldTower : MonoBehaviour
     public GameObject Extras;
     [Tooltip("The easter egg by the gate (docs/easter-eggs.md): shown with the Silly surprises setting.")]
     public WorldGag Egg;
+    [Tooltip("The other eggs on the islet (the ferry's timetable on the quay), shown with the same setting.")]
+    public WorldGag[] MoreEggs = new WorldGag[0];
 
     [Tooltip("The leaderboard stone's words: where the stream is, and the floor's name.")]
     public TMPro.TextMeshPro SlabPlace;
@@ -79,6 +99,8 @@ public sealed class WorldTower : MonoBehaviour
     private static readonly int SeaId = Shader.PropertyToID("_WorldTowerSea");
     private static readonly int HazeId = Shader.PropertyToID("_WorldTowerHaze");
     private static readonly int HazeColorId = Shader.PropertyToID("_WorldTowerHazeColor");
+    private static readonly int FadeId = Shader.PropertyToID("_WorldTowerFade");
+    private static readonly int CloudColorId = Shader.PropertyToID("_WorldTowerCloudColor");
 
     /// <summary>How much the floor the stream is on dims as it breathes.</summary>
     private const float Pulse = 0.6f;
@@ -89,11 +111,13 @@ public sealed class WorldTower : MonoBehaviour
     private bool? shown;
     private bool? extras;
     private bool? egg;
+    private bool? lid;
     private bool animate = true;
     private int step = -1;
     private int cleared = -1;
     private float nextLook;
     private Vector3[] bobFrom;
+    private Material lidMaterial;
 
     private void Awake()
     {
@@ -116,8 +140,27 @@ public sealed class WorldTower : MonoBehaviour
         for (var i = 0; i < Bobbing.Length; ++i) if (Bobbing[i]) bobFrom[i] = Bobbing[i].localPosition;
         Shader.SetGlobalFloat(SeaId, SeaChart.Sea);
         Shader.SetGlobalFloat(AnimateId, 1f);
+        var sea = transform.position.y;
+        Shader.SetGlobalVector(FadeId, new Vector4(sea + FadeFrom, 1f / Mathf.Max(1f, FadeTo - FadeFrom), 0f, 0f));
+        if (Lid)
+        {
+            // the low-poly cloud over the top: drawn like the rest (squeezed in from far, never culled), with no light of its own
+            if (Shared)
+            {
+                lidMaterial = new Material(Shared) { name = Shared.name + " (lid)", hideFlags = HideFlags.DontSave };
+                lidMaterial.SetFloat(GlowId, 0f);
+                lidMaterial.SetFloat(PulseId, 0f);
+            }
+            foreach (var r in Lid.GetComponentsInChildren<Renderer>(true))
+            {
+                Prepare(r, lidMaterial, always);
+                r.shadowCastingMode = ShadowCastingMode.Off;
+            }
+            Lid.SetActive(false);
+        }
         Words();
         Detail(true);
+        nextIdleLook = Time.time + UnityEngine.Random.Range(IdleLookMinutesMin, IdleLookMinutesMax) * 60f;
     }
 
     private static void Prepare(Renderer r, Material material, Bounds always)
@@ -131,8 +174,14 @@ public sealed class WorldTower : MonoBehaviour
 
     private void OnDestroy()
     {
+        EndMoment(false);
+        LeavePlace();
+        ClearStatue();
+        SkyClouds.Tower = Vector4.zero;
+        Shader.SetGlobalVector(FadeId, Vector4.zero);
         if (Instance == this) Instance = null;
         foreach (var section in Sections) if (section.Material) Destroy(section.Material);
+        if (lidMaterial) Destroy(lidMaterial);
     }
 
     private void LateUpdate()
@@ -144,6 +193,8 @@ public sealed class WorldTower : MonoBehaviour
             Look();
         }
         Shine(Time.deltaTime);
+        Visitors();
+        Moments();
         if (!animate || shown == false) return;
         var dt = Time.deltaTime;
         for (var i = 0; i < Turning.Length; ++i)
@@ -154,7 +205,7 @@ public sealed class WorldTower : MonoBehaviour
             if (Flocks[i]) Flocks[i].Rotate(0f, (5.5f + 1.3f * i) * (i % 2 == 0 ? 1f : -1f) * dt, 0f, Space.Self);
     }
 
-    /// <summary>Twice a second: the stream's progress, the camera's distance, potato mode, the haze.</summary>
+    /// <summary>Twice a second: the stream's progress, the camera's distance, potato mode, the haze, the cloud.</summary>
     private void Look()
     {
         var game = GameManager.Instance;
@@ -164,6 +215,7 @@ public sealed class WorldTower : MonoBehaviour
             animate = !potato;
             Shader.SetGlobalFloat(AnimateId, animate ? 1f : 0f);
         }
+        if (!placed) EnterPlace();
 
         if (!view || !view.isActiveAndEnabled) view = Camera.main;
         var eye = view ? view.transform.position : transform.position;
@@ -175,12 +227,22 @@ public sealed class WorldTower : MonoBehaviour
         if (shown != show)
         {
             shown = show;
-            for (var i = 0; i < transform.childCount; ++i) transform.GetChild(i).gameObject.SetActive(show);
+            // what is seen goes; the place itself (the island, its dock, the ferry's way) stays where it is
+            if (Visuals) Visuals.SetActive(show);
             far = null;
             extras = null;
             egg = null;
+            lid = null;
         }
+        // the sky's clouds keep a bank round the top while the tower shows and they are drawn at all
+        var clouds = show && SkyClouds.Active;
+        SkyClouds.Tower = clouds ? new Vector4(transform.position.x, transform.position.z, CloudRadius, transform.position.y + CloudFrom) : Vector4.zero;
         if (!show) return;
+        if (Lid && lid != !clouds)
+        {
+            lid = !clouds;
+            Lid.SetActive(!clouds);
+        }
 
         // the low detail models from far away (a band of 60 m so it does not flip back and forth) and in potato mode
         var wantFar = potato || distance > FarDistance + (far == true ? -30f : 30f);
@@ -204,6 +266,7 @@ public sealed class WorldTower : MonoBehaviour
         {
             egg = SettingsApplier.SillySurprises;
             Egg.Show(egg.Value);
+            foreach (var more in MoreEggs) if (more) more.Show(egg.Value);
         }
 
         // the game's haze reads the squeezed depth; the shader adds the rest of the air with the same numbers
@@ -213,8 +276,13 @@ public sealed class WorldTower : MonoBehaviour
         var sky = tri ? RenderSettings.ambientSkyColor.linear : RenderSettings.ambientLight.linear;
         var equator = tri ? RenderSettings.ambientEquatorColor.linear : RenderSettings.ambientLight.linear;
         Shader.SetGlobalVector(HazeColorId, Color.Lerp(sky, equator, 0.55f) * 0.95f);
+        // what the top fades toward: a cloud's own color in this light
+        var sun = RenderSettings.sun;
+        var lit = sun && sun.isActiveAndEnabled ? sun.color.linear * (Mathf.Clamp(sun.intensity, 0f, 2f) * 0.5f) : Color.black;
+        Shader.SetGlobalVector(CloudColorId, Color.Lerp(sky, equator, 0.3f) * 0.8f + lit);
 
         Progress();
+        Climbers();
     }
 
     private void Detail(bool near)
@@ -244,11 +312,18 @@ public sealed class WorldTower : MonoBehaviour
         step = now;
         // nothing known yet: every floor dark
         cleared = now > 0 ? Tower.FloorsCleared(now - 1) : -1;
-        // a floor that fell while the game was running flares up before it settles
-        if (before >= 0 && cleared > before)
-            foreach (var section in Sections)
-                if (section.Floor > before && section.Floor <= cleared) section.Flash = 1f;
+        // a floor that fell while the game was running flares up before it settles: with the camera on it if it can
+        // be had (WorldTowerMoments), else at once
+        if (before >= 0 && cleared > before) FloorFell(cleared);
         Words();
+        climbersDue = Time.time + 3f;
+    }
+
+    /// <summary>The floor's section flares: its light jumps and settles over a few seconds.</summary>
+    private void Flare(int floor)
+    {
+        foreach (var section in Sections)
+            if (section.Floor == floor) section.Flash = 1f;
     }
 
     /// <summary>The floor the stream is on, 0 when it has cleared them all or nothing is known.</summary>
@@ -260,7 +335,8 @@ public sealed class WorldTower : MonoBehaviour
         foreach (var section in Sections)
         {
             if (!section.Material || section.AlwaysLit) continue;
-            var lit = section.Floor > 0 && (section.Floor <= cleared || section.Floor == current);
+            // a floor whose flare waits for the camera stays as it was until then
+            var lit = section.Floor > 0 && (section.Floor <= cleared || section.Floor == current) && !(section.Floor == waitingFloor && waitingFloor > 0);
             var target = lit ? 1f : 0f;
             section.Glow = Mathf.MoveTowards(section.Glow, target, dt * 0.45f);
             section.Flash = Mathf.MoveTowards(section.Flash, 0f, dt * 0.3f);

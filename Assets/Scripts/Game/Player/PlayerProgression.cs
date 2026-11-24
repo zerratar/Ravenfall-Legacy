@@ -116,6 +116,8 @@ public class PlayerProgression
             if (!p || p.IsAway || p.InRavebridge || p.raidHandler.InRaid || p.onsenHandler.InOnsen || p.duelHandler.InDuel
                 || p.arenaHandler.InArena || p.streamRaidHandler.InWar || p.Stats.IsDead) return false;
             if (p.ferryHandler.OnFerry) return p.ActiveSkill == Skill.Sailing;
+            // the islet at the world tower's foot has nothing to train: time there teaches the rate nothing
+            if (WorldTower.Calm(p)) return false;
             return p.Island != null;
         }
     }

@@ -754,6 +754,36 @@ Captures from the game's camera: `docs/mockups/tower/band4/great-hall-*.png`.
   chasm below as the void. Both reuse this builder's helpers (wall pieces, stubs, gates, ghostfire) and the same
   stubs; each wants its own Blender pieces (bridge undersides, the chasm's cliffs, the portcullis).
 
+## 23. The tower camera key (2026-11-24)
+
+The owner: "can you easily switch between the tower camera and game camera? in case you want to see outside tower and
+then be able to go back to normal tower camera?" Before this there was no one-press way: the camera follows a player,
+so the streamer pressed Next player (Tab) until someone in the tower came up, Next island (Ctrl+I) to get out, or
+clicked a player in the list.
+
+- **One key there and back**: `Keybinds.Action.TowerCamera`, **T** by default, rebindable under Settings > Keys >
+  Camera ("Tower camera: to the tower and back"). Modeled on the regatta's race camera key (`RaceCamera`), and read in
+  the same place (`GameCamera.Update`); the logic is `WorldTowerCamera` (`Assets/Scripts/Game/Tower/WorldTowerCamera.cs`).
+- **A button on the tower panel** (`TowerHudView`), beside Map and Meters: "Tower (T)" while the camera is in the
+  world, "World (T)" (lit) while it is in the tower. The panel is up whenever anyone is in the tower, wherever the
+  camera is, so the way back is always on screen; nothing new is stacked on another panel.
+- **To the tower**: the player the camera last watched there if still there, else someone on the climb's part, else
+  someone in the town, else anyone in the tower. With nobody in the tower the key only says "Nobody is in the tower"
+  in the status column for three seconds.
+- **Back**: the player the camera watched outside if still outside, or that island's view, else the first player
+  outside the tower, else the islands.
+- Both ends are remembered for as long as the game runs: `GameCamera` tells `WorldTowerCamera` every frame who or
+  what is watched, so players picked with Tab or a click in between are the ends too.
+- **It stays on that side**: after the key the camera's own rotation (the timer, Next player) goes round the players
+  on that side only (`WorldTowerCamera.Follows`, asked in `GameCamera.ObserveNextPlayer`), until the streamer picks
+  someone on the other side (a click, the search, Next island), presses the key again, or nobody is left there.
+  Without it the rotation took the camera out of the tower again ten seconds after the key took it in. Before the
+  key is first used the rotation is as it was, tower and world mixed.
+- **What it leaves alone**: a cutscene (the Cinematic state takes no camera key), the race camera, build mode, a
+  character played by hand and the hero's view (the camera's update never reaches the key then). The world tower's
+  own camera looks (docs/world-tower.md) keep off for 30 seconds after the key or the button was used.
+- The look (sky, light, weather, music) switches with the camera as it does for Next player (`TowerLook`).
+
 ## Open questions
 
 - ~~Is the tower always open while a stream is live, or does the streamer open it?~~ Open on every stream: any viewer can
