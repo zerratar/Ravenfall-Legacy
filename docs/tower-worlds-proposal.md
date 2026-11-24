@@ -156,3 +156,87 @@ What all streams do share:
 - Gate ranks: from the stream's climb only, or also from the joined players' levels?
 - Where the tower stands in the world, and how big.
 - What the last hit gives.
+
+## 11. Review against the tower as built, and what to do in v0.9.7 (2026-11-24)
+
+The owner (2026-11-24): if the tower ships one way in v0.9.7 and changes shape in v0.9.8, players have to unlearn it.
+So check the plan hard, and if it holds, do the shape now even if v0.9.7 takes longer. This section is that check.
+
+### What the tower already does (so it is not new work)
+
+- Progress per stream, world firsts and a leaderboard (server `StreamTower`, `TowerClear`; website /tower).
+- Quests before each boss (two kill quests per floor), the boss opened by the streamer or one voice in chat.
+- A town per band with people, personal quest chains, a place to train every skill and a resting place.
+- Training on floors already reached (`!tower floor 7`), but only for the whole group at once.
+- Level sync: on a floor everyone fights at most at the floor's level, gear capped too.
+- Room-to-room floors (the great hall prototype, 2026-11-23).
+
+So the plan is mostly a new **shape and name** for what exists, plus three real additions (below).
+
+### Weak points found, and the fix for each
+
+1. **A stream of idle players must never get stuck on an objective.** Every objective counts by itself from normal
+   play: kills by whoever trains on the part, materials counted from what the stream's players gather anyway (counted,
+   not taken from bags), a guardian beaten. Nothing asks a player to click at a moment or hand something in. Personal
+   town quests stay optional and pay personal rewards; they never block the stream.
+2. **Small streams.** Fixed bosses tuned for five to eight players lock a two-player stream out. See "Scaling" below.
+3. **"Each floor is one world scene" would mean rebuilding three bands.** Instead: a floor is a **town with areas
+   around it**. The layouts that exist become the floor's areas (floor 1: the courtyard, the marsh, the crypt), each
+   still its own scene loaded when used. A floor map (in the tower panel and on the website) shows the town in the
+   middle, the areas and their parts, lit as they are cleared. It reads as one world without rebuilding anything.
+4. **Free training on cleared parts for each player** needs more than one area loaded at once (today: one). Allow up
+   to three areas beside the town: where the push is, and two more opened by whoever asks first; a player asking for a
+   fourth is offered the open ones. Each loaded area costs about 20 MB and its monsters' updates; potato mode keeps it
+   at one.
+5. **Losing bosses nobody wants to lose.** The bunny family, the Quackers and the Moo-tants stay: every part keeps its
+   guardian, now called a mini boss, with the short intro; the floor boss (today's floors 10, 20, 30) gets the full
+   cutscene, the world first and the trophy. Fewer "big" bosses, no content lost.
+6. **Numbers already in players' heads and in the data.** The server keeps its plain step number (1 to 30) inside;
+   only what is shown changes ("Floor 2, part 4"). Titles, the Legendary rule ("floor 21" becomes "floor 3"), chat
+   replies, about 65 game texts and the website are rewritten once. No migration.
+7. **Gates and breaks are a rework of dungeons and raids, not of the tower.** They can come one version later without
+   anyone unlearning the tower, as long as part objectives are built as a list of kinds, so "bring a Sigil from a
+   gate" is one more kind later.
+
+### Scaling (the owner's call, 2026-11-24)
+
+"Scale the enemies dynamically a bit to make them more difficult if all players are high levels, but not overly much
+on lower bands; first levels are okay to be easier, each gets more difficult."
+
+Level sync already takes away levels and gear above a floor. What still flattens a floor is **how many** players
+there are and what sync does not cap (skill trees, gems, enchantments). Proposal:
+
+- **A pressure number** per fight: the players in it against the floor's suggested group (five), times how much
+  stronger than a fresh level-synced player they are on average (trees, gems, enchantments; 1.0 to about 1.5).
+- **Monsters in a room** come in numbers and health by pressure, so a room takes a group about as long whether five
+  or thirty are in it.
+- **Mini bosses and floor bosses** get health and helpers by pressure, their blows a little; never below the fixed
+  floor numbers for a full group.
+- **Small groups get some mercy, less with every floor:** under the suggested group the boss shrinks toward the
+  group's size, down to 50% on floor 1, 65% on floor 2, 80% on floor 3, 90% from floor 4 on.
+- **How hard the scaling bites grows with the floor:** floor 1 follows pressure at 40%, floor 2 at 60%, floor 3 at
+  80%, floor 4 and on in full. So the first floor stays friendly for any stream, and the top is a real fight for
+  everyone.
+- World firsts stay fair: a clear is measured against the group that did it. The numbers come from the combat
+  simulator before anything is played.
+
+### The cut
+
+**In v0.9.7 (the shape; so nothing has to be unlearned):**
+1. Floors and parts everywhere: game, chat commands, server replies, titles, the Legendary rule, website, docs.
+2. Mini bosses and floor bosses (intros, cutscenes, rewards and world firsts follow the floor boss).
+3. Objectives as a list of kinds per part (kills, materials the stream gathers, find things, the guardian), all
+   passive; the two kill quests per part become the simplest case.
+4. Each player's free entry to cleared parts, up to three areas loaded.
+5. The floor map in the tower panel and on the website.
+6. Scaling by pressure, from the simulator.
+7. Rooms: the crypt and the frost vault (already rooms without doors) get doors and the route, so floors 1 and 2 have
+   parts the group moves through.
+8. The tower standing in the main world, lit by the stream's progress (it is what makes the tower a place; it can
+   slip to v0.9.8 if time runs out, nothing depends on it).
+
+**In v0.9.8 (content on the same shape):** floor 4, the Dark Fortress, with the ghost quarter and the great hall;
+dungeons as ranked gates in the look of a reached floor; raids as breaks; gate items as an objective kind.
+
+Rough size of the v0.9.7 part: two to three weeks of building on top of what is there, then the playtest that
+v0.9.7 needs anyway.
