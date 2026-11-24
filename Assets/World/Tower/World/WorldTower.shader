@@ -8,7 +8,7 @@
 //               lit), 5 lightning
 //   uv.y        along the flow for water, a phase for clouds, flames and lightning
 //
-// Seen from every island: the tower stands far past the camera's view distance (650 m, 500 in potato mode), so the
+// Seen from every island: the tower stands far past the camera's view distance (650 m, 100 in potato mode), so the
 // vertex stage pulls what lies beyond nine tenths of the view distance in toward the camera along its own line of
 // sight. On screen nothing moves (a point stays on its ray), only its depth is squeezed into the last tenth of the
 // view, in the same order, so the tower hides itself correctly and is never cut off by the far plane. The game's haze reads that

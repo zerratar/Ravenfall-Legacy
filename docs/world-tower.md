@@ -152,7 +152,9 @@ the right.
 Built now: the islet's ground and the plaza have colliders, and the scene carries its own navmesh for the entrance
 (the pier's landing, the steps, the plaza, the stair, the tunnel to the light). The builder checks that the landing
 and the gate's mouth are joined by a walk. Markers `Arrival (quay)`, `Plaza` and `Gate` are in the scene. Own boats
-sail round the islet (`tools/tower/world/sea-chart-islet.py` marks it as land on the sea chart).
+sail round the islet (`tools/tower/world/sea-chart-islet.py` marks it as land on the sea chart; checked by asking the
+chart for its routes: Eldara to Heim ran 11 m from the tower's middle before and passes 147 m off now, and no route
+between two docks comes nearer than 144 m; no boat was watched sailing it).
 
 Not built, because each step needs the server or the MainWorld scene saved:
 
@@ -222,6 +224,8 @@ are more than six or so.
 | `built-from-eldara.jpg` | From Eldara's west side, 300 m, over its roofs; lightning in the storm ring |
 | `built-from-ironhill.jpg` | From Ironhill's south shore, 530 m |
 | `built-from-kyo.jpg` | From Kyo, 770 m (past the view distance): Home lies in front of the tower's foot, as it should |
+| `built-from-war.jpg` | From War, 1.5 km, zoomed in: the far model, hazed by the real distance |
+| `built-from-ravebridge.jpg` | From Ravebridge, 2.6 km, zoomed in: the fortress and the cloud over Ravebridge's hills, which hide the rest |
 | `built-wide-over-home.jpg` | From high over Home: the tower against Home's houses |
 | `built-plaza.jpg` | The foot and the plaza from above the pier |
 | `built-gate-and-stone.jpg` | The gate, the statue, the braziers and the leaderboard stone with the stream's real place |
