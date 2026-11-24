@@ -25,6 +25,17 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
     /// <summary>A player's blow landed on this enemy (true: it fell to it). The tower follows its guardians' last blows.</summary>
     [NonSerialized] public Action<EnemyController, PlayerController, bool> Struck;
 
+    /// <summary>
+    ///     The damage numbers over this enemy add up into one, as over a dungeon or raid boss (a tower guardian: with
+    ///     nine players on it a number each was a cloud nobody could read).
+    /// </summary>
+    [NonSerialized] public bool MergeDamage;
+
+    /// <summary>They add up into one once <see cref="CrowdAttackers"/> players are on it (a tower part's monsters under a crowd).</summary>
+    [NonSerialized] public bool MergeWhenCrowded;
+
+    public const int CrowdAttackers = 5;
+
     /// <summary>The enemy is about to come back: the tower gives its monsters the numbers the group asks for now.</summary>
     [NonSerialized] public Action<EnemyController> Respawning;
 
@@ -1064,7 +1075,7 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
             InCombat = true;
 
             if (damageCounterManager)
-                damageCounterManager.Add(transform, damage, false, IsDungeonBoss || IsRaidBoss);//IsDungeonBoss || IsRaidBoss || this.Attackers.Count >= 5);
+                damageCounterManager.Add(transform, damage, false, IsDungeonBoss || IsRaidBoss || MergeDamage || (MergeWhenCrowded && Attackers.Count >= CrowdAttackers));
             //dc.Color = player.PlayerNameHexColor;
 
             // the helpers' score counts what the blow took, not the overkill (a level 999 one-shotting goblins
@@ -1072,6 +1083,8 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
             var took = Mathf.Max(0, Mathf.Min(damage, (int)Stats.Health.CurrentValue));
             Stats.Health.Add(-damage);
             HeroHelpers.Damage(player, took);
+            // the tower's meters (a boss fight, or the part being trained on): what the blow took, whatever dealt it
+            TowerManager.MeterHit(player, this, took);
             Struck?.Invoke(this, player, Stats.IsDead);
 
             var aggroMultiplier = 1f;

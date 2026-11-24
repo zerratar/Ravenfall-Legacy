@@ -2987,6 +2987,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         Stats.Health.Add(-damage);
         if (angelHeal > 0) Heal(angelHeal);
         if (dungeonHandler != null && dungeonHandler.InDungeon) CombatMeter.Dungeon.AddTaken(this, damage);
+        else TowerManager.MeterOf(this)?.AddTaken(this, damage);
         //if (damage > 0)
         //{
         //    Statistics.TotalDamageTaken += damage;

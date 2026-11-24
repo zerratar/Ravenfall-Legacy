@@ -117,7 +117,7 @@
     margin-bottom: 0;
     padding-left: 0;
     padding-right: 0;
-    font-size: 15px;
+    font-size: 18px;
     color: var(--rf-text-dim);
     background-color: var(--rf-row-alt);
     border-left-width: 0;
@@ -161,15 +161,15 @@
 }
 
 .rf-meters .rf-meters__col {
-    font-size: 12px;
+    font-size: 15px;
     color: var(--rf-text-dim);
     letter-spacing: 1px;
 }
 
-/* When the window is resized, the extra width is shared: the player column takes three parts and
+/* When the window is resized, the extra width is shared: the player column takes eight parts and
    each number column one, so the numbers get room too instead of only the bar growing. */
 .rf-meters .rf-meters__col--player {
-    flex-grow: 3;
+    flex-grow: 8;
     flex-basis: 0;
     min-width: 0;
     padding-right: var(--rf-space-3);
@@ -177,13 +177,13 @@
 
 .rf-meters .rf-meters__col--num {
     flex-grow: 1;
-    flex-basis: 84px;
+    flex-basis: 88px;
     -unity-text-align: middle-right;
 }
 
 .rf-meters .rf-meters__col--pct {
     flex-grow: 1;
-    flex-basis: 76px;
+    flex-basis: 84px;
     -unity-text-align: middle-right;
 }
 
@@ -222,19 +222,19 @@
 
 .rf-meters .rf-meter-row__rank {
     width: 28px;
-    font-size: 16px;
+    font-size: 18px;
     color: var(--rf-text-dim);
     -unity-text-align: middle-center;
 }
 
 .rf-meters .rf-meter-row__icon {
     width: 28px;
-    font-size: 17px;
+    font-size: 18px;
     margin-right: var(--rf-space-2);
 }
 
 .rf-meter-row__main {
-    flex-grow: 3;
+    flex-grow: 8;
     flex-basis: 0;
     min-width: 0;
     overflow: hidden;
@@ -242,7 +242,7 @@
 }
 
 .rf-meters .rf-meter-row__name {
-    font-size: 16px;
+    font-size: 20px;
     color: var(--rf-text);
     text-overflow: ellipsis;
     overflow: hidden;
@@ -286,24 +286,24 @@
 
 .rf-meters .rf-meter-row__total {
     flex-grow: 1;
-    flex-basis: 84px;
-    font-size: 17px;
+    flex-basis: 88px;
+    font-size: 20px;
     color: var(--rf-text);
     -unity-text-align: middle-right;
 }
 
 .rf-meters .rf-meter-row__rate {
     flex-grow: 1;
-    flex-basis: 84px;
-    font-size: 16px;
+    flex-basis: 88px;
+    font-size: 19px;
     color: var(--rf-text);
     -unity-text-align: middle-right;
 }
 
 .rf-meters .rf-meter-row__pct {
     flex-grow: 1;
-    flex-basis: 76px;
-    font-size: 16px;
+    flex-basis: 84px;
+    font-size: 19px;
     color: var(--rf-text-dim);
     -unity-text-align: middle-right;
 }
@@ -314,7 +314,7 @@
 }
 
 .rf-meters .rf-meters__empty {
-    font-size: 15px;
+    font-size: 18px;
     color: var(--rf-text-dim);
     -unity-text-align: middle-center;
     /* fills the body while the list is hidden, so the note is centred in the window */
@@ -328,19 +328,19 @@
 }
 
 .rf-meters .rf-meters__total-caption {
-    font-size: 16px;
+    font-size: 18px;
     color: var(--rf-text);
     letter-spacing: 1px;
     margin-right: var(--rf-space-5);
 }
 
 .rf-meters .rf-meters__total {
-    font-size: 18px;
+    font-size: 20px;
     color: var(--rf-accent);
     margin-right: var(--rf-space-5);
 }
 
 .rf-meters .rf-meters__total-rate {
-    font-size: 18px;
+    font-size: 20px;
     color: var(--rf-accent);
 }

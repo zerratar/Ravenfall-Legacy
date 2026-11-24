@@ -9,13 +9,14 @@ using RavenNest.Combat;
 /// !tower talk elm (one of the town's people: their quest chain, or a rumour), !tower map (the floor map on screen for a
 /// while), and the choices for everyone, which the streamer or a moderator makes at once and anyone in the tower can
 /// vote for (section 16): !tower boss (an attempt on the part's guardian), !tower climb (from the town up to the next
-/// part), !tower all part 3 (everyone on the tower's parts goes to a part already reached) and !tower close (everyone
+/// part), !tower all part 3 (the climbing group goes to a part already reached) and !tower close (everyone
 /// out for now). !tower vote climb is the same as !tower climb.
 /// A place typed alone takes only the player who types it, the streamer too, to a part the stream has cleared, to
 /// train there: !tower part 7 (a part of the floor they are on), !tower floor 2 (that floor's latest part),
 /// !tower floor 2 part 7, or short !tower 2-7; !tower train 7 is !tower part 7. !tower part or !tower floor alone is
-/// !tower: back to the climb. With all in front (or everyone, group) it is everyone on the tower's parts who goes, as
-/// !tower part 7 did before; !tower all alone brings them back to the climb.
+/// !tower: back to the climb. With all in front (or everyone, group) it is the climbing group that goes, as
+/// !tower part 7 did before; !tower all alone brings it back to the climb. Players who went to a cleared part by
+/// themselves stay where they are (as those in the town do) until they type !tower.
 /// </summary>
 public class TowerCommand : ChatBotCommandHandler<string>
 {
@@ -62,7 +63,9 @@ public class TowerCommand : ChatBotCommandHandler<string>
                     return;
                 case "boss":
                 case "challenge":
-                    Boss(tower, player, canForce, gm, client);
+                    // !tower boss now (or start, go): the streamer or a moderator skips the countdown
+                    var bossArg = space < 0 ? "" : text.Substring(space + 1).Trim().ToLowerInvariant();
+                    Boss(tower, player, canForce, bossArg == "now" || bossArg == "start" || bossArg == "go", gm, client);
                     return;
                 case "climb":
                 case "up":
@@ -96,8 +99,8 @@ public class TowerCommand : ChatBotCommandHandler<string>
                 case "all":
                 case "everyone":
                 case "group":
-                    // !tower all part 7, !tower all 2-7: everyone on the tower's parts goes there (votes but for the
-                    // streamer); alone: everyone back to the climb's part
+                    // !tower all part 7, !tower all 2-7: the climbing group goes there (votes but for the streamer);
+                    // alone: the group back to the climb's part. Those on a part of their own stay
                     MoveAll(tower, player, space < 0 ? "" : text.Substring(space + 1).Trim(), canForce, gm, client);
                     return;
                 case "map":
@@ -163,7 +166,8 @@ public class TowerCommand : ChatBotCommandHandler<string>
                 // never up to it)
                 var warning = Warning(player, current);
                 if (result == TowerManager.JoinResult.Elsewhere)
-                    // no place for the climb's part (potato mode keeps one part open): where everyone trains
+                    // no place for the climb's part (potato mode keeps one part open; or the group trains on a
+                    // cleared part while two more are open): to where the group trains
                     client.SendReply(gm, Localization.MSG_TOWER_JOINED_TRAINING + warning, TowerWords.Floor(here), TowerWords.Part(here), current != null ? current.Name : "", TowerWords.Floor(tower.StreamFloor), TowerWords.Part(tower.StreamFloor));
                 else if (tower.Phase == TowerManager.TowerPhase.Countdown)
                     client.SendReply(gm, Localization.MSG_TOWER_JOINED_ATTEMPT + warning, TowerWords.Floor(here), TowerWords.Part(here), ((int)tower.PhaseSecondsLeft).ToString(CultureInfo.InvariantCulture));
@@ -357,13 +361,31 @@ public class TowerCommand : ChatBotCommandHandler<string>
         client.SendReply(gm, Localization.MSG_TOWER_LEFT);
     }
 
-    private static void Boss(TowerManager tower, PlayerController player, bool canForce, GameMessage gm, GameClient client)
+    /// <param name="now">
+    ///     !tower boss now: the countdown is skipped. Only the streamer or a moderator; for them !tower boss typed
+    ///     again while it counts does the same. A viewer's is refused, the countdown goes on.
+    /// </param>
+    private static void Boss(TowerManager tower, PlayerController player, bool canForce, bool now, GameMessage gm, GameClient client)
     {
         var floor = Tower.Get(tower.StreamFloor);
+        if (tower.Phase == TowerManager.TowerPhase.Countdown && (now || canForce))
+        {
+            if (!canForce) client.SendReply(gm, Localization.MSG_TOWER_BOSS_NOW_DENIED, ((int)tower.PhaseSecondsLeft).ToString(CultureInfo.InvariantCulture));
+            // the fight's start is announced; false: the guardian's intro already plays, a moment
+            else if (!tower.StartBossNow()) client.SendReply(gm, Localization.MSG_TOWER_BOSS_UNDER_WAY);
+            return;
+        }
+        if (now && !canForce)
+        {
+            client.SendReply(gm, Localization.MSG_TOWER_BOSS_NOW_DENIED, ((int)Tower.BossCountdownSeconds).ToString(CultureInfo.InvariantCulture));
+            return;
+        }
         switch (tower.CallBoss(player, canForce, out var needed))
         {
             case TowerManager.BossCallResult.Started:
-                return; // the countdown is announced
+                // the countdown is announced; with "now" it is cut short at once
+                if (now) tower.StartBossNow();
+                return;
             case TowerManager.BossCallResult.Voted:
                 // the first voice is announced to everyone (the vote opened); a later one gets where it stands
                 if (!tower.VoteJustOpened) client.SendReply(gm, Localization.MSG_TOWER_BOSS_VOTE, TowerWords.BossKind(tower.StreamFloor), TowerWords.Floor(tower.StreamFloor), TowerWords.Part(tower.StreamFloor), needed, tower.VoteSecondsLeft("boss"));
@@ -552,9 +574,10 @@ public class TowerCommand : ChatBotCommandHandler<string>
     }
 
     /// <summary>
-    ///     !tower all part 7: everyone on the tower's parts goes to a part the stream has reached (<paramref name="arg"/>
-    ///     as <see cref="TryPlace"/> takes it), or with nothing back to the part the climb is on. The streamer or a
-    ///     moderator at once, anyone else in the tower by vote.
+    ///     !tower all part 7: the climbing group goes to a part the stream has reached (<paramref name="arg"/> as
+    ///     <see cref="TryPlace"/> takes it), or with nothing back to the part the climb is on. The streamer or a
+    ///     moderator at once, anyone else of the group by vote. Players who went to a cleared part by themselves stay
+    ///     there (<see cref="TowerManager.OnOwnWay"/>).
     /// </summary>
     private static void MoveAll(TowerManager tower, PlayerController player, string arg, bool canForce, GameMessage gm, GameClient client)
     {
@@ -578,6 +601,10 @@ public class TowerCommand : ChatBotCommandHandler<string>
                 return;
             case TowerManager.MoveResult.NotInTower:
                 client.SendReply(gm, Localization.MSG_TOWER_ENTER_TO_VOTE);
+                return;
+            case TowerManager.MoveResult.OwnWay:
+                var own = tower.AreaOf(player);
+                client.SendReply(gm, Localization.MSG_TOWER_MOVE_OWN_WAY, TowerWords.Floor(own != null ? own.Step : number), TowerWords.Part(own != null ? own.Step : number));
                 return;
             case TowerManager.MoveResult.Moved:
                 if (number == tower.StreamFloor) client.SendReply(gm, Localization.MSG_TOWER_FLOOR_BACK, f, p, def.Name);

@@ -21,6 +21,29 @@ public sealed class CombatMeter
     /// <summary>The meter for the current or most recent dungeon run.</summary>
     public static readonly CombatMeter Dungeon = new CombatMeter();
 
+    /// <summary>
+    /// The meter for the current or most recent tower boss fight, a mini boss or a floor boss (TowerManager
+    /// begins and ends it; each loaded part of the tower has one of its own for the time it is trained on).
+    /// </summary>
+    public static readonly CombatMeter Tower = new CombatMeter();
+
+    /// <summary>What the run is, for the window's title ("Floor 1, part 7 - Big Gorp"); null for a dungeon.</summary>
+    public string Title;
+
+    /// <summary>A short line for the window while the run goes on ("MINI BOSS"); null for a dungeon, which says its room.</summary>
+    public string Caption;
+
+    /// <summary>How the run ended ("VICTORY"), for the result line; null: the plain "RESULT".</summary>
+    public string Outcome;
+
+    /// <summary>Players pointed out in the result (who landed the last blow on a floor boss), with <see cref="MarkText"/> by their names.</summary>
+    public readonly HashSet<Guid> Marked = new HashSet<Guid>();
+
+    public string MarkText;
+
+    /// <summary>The part of <see cref="TotalDamage"/> done to the run's main target (a tower boss; the rest went to its helpers).</summary>
+    public long TargetDamage;
+
     public sealed class Entry
     {
         public Guid PlayerId;
@@ -74,6 +97,9 @@ public sealed class CombatMeter
         TotalDamage = 0;
         TotalHealing = 0;
         TotalTaken = 0;
+        TargetDamage = 0;
+        Outcome = null;
+        Marked.Clear();
         startTime = Time.unscaledTime;
         endTime = 0f;
         Running = true;
@@ -119,6 +145,9 @@ public sealed class CombatMeter
         e.Taken += amount;
         TotalTaken += amount;
     }
+
+    /// <summary>A player's entry in this run, or null when they did nothing in it.</summary>
+    public Entry Find(Guid playerId) => byPlayer.TryGetValue(playerId, out var e) ? e : null;
 
     private Entry Get(PlayerController player)
     {

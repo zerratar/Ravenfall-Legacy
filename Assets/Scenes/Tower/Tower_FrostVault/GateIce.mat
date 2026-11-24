@@ -29,16 +29,16 @@ Material:
     - _Depth: 1.2
     - _DstBlend: 0
     - _Glint: 1.2
-    - _Glow: 1.1
+    - _Glow: 1.6
     - _Rim: 0.7
     - _SrcBlend: 1
     - _VeinScale: 0.3
     - _ZWrite: 1
     m_Colors:
-    - _DeepColor: {r: 0.06, g: 0.24, b: 0.46, a: 1}
-    - _GlowColor: {r: 0.15, g: 0.55, b: 1, a: 1}
+    - _DeepColor: {r: 0.22, g: 0.5, b: 0.78, a: 1}
+    - _GlowColor: {r: 0.45, g: 0.8, b: 1, a: 1}
     - _RimColor: {r: 0.7, g: 0.9, b: 1, a: 1}
-    - _SurfaceColor: {r: 0.62, g: 0.86, b: 1, a: 1}
+    - _SurfaceColor: {r: 0.86, g: 0.96, b: 1, a: 1}
     - _VeinColor: {r: 0.9, g: 0.96999997, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

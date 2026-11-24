@@ -43,6 +43,29 @@ try
                 if (z.Entry) Check("room arrival " + z.Title, z.Entry.position, 2f);
                 if (z.Spawns) foreach (UnityEngine.Transform s in z.Spawns) { Check("monster in " + z.Title, s.position, 2f, true); roomSpots++; }
                 if (z.Exit && z.Exit.GetComponent<UnityEngine.AI.NavMeshObstacle>() && z.Exit.GetComponent<UnityEngine.AI.NavMeshObstacle>().enabled) { bad++; log.AppendLine("  BAD gate saved shut: " + z.Exit.name); }
+                // its leaves: shut they lie in the doorway (between their hinge and its middle), open they stand in
+                // the next room (the vault's leaves were the pack's other half on the wrong hinge: open while "shut")
+                if (z.Exit)
+                {
+                    var g = z.Exit;
+                    for (var i = 0; i < g.Leaves.Length; i++)
+                    {
+                        var leaf = g.Leaves[i];
+                        if (!leaf) continue;
+                        total++;
+                        var lr = leaf.GetComponentsInChildren<UnityEngine.Renderer>();
+                        if (lr.Length == 0) { bad++; log.AppendLine("  BAD leaf without a mesh: " + g.name); continue; }
+                        var lb = lr[0].bounds; foreach (var r in lr) lb.Encapsulate(r.bounds);
+                        var hinge = g.transform.InverseTransformPoint(leaf.position);
+                        var centre = g.transform.InverseTransformPoint(lb.center);
+                        var yaw = i < g.OpenYaw.Length ? g.OpenYaw[i] : 90f;
+                        var open = UnityEngine.Quaternion.Euler(0f, yaw, 0f) * (centre - hinge);
+                        var shutOk = UnityEngine.Mathf.Abs(centre.x) < UnityEngine.Mathf.Abs(hinge.x) - 0.2f && UnityEngine.Mathf.Abs(centre.z) < 0.3f;
+                        var openOk = open.z > 0.3f;
+                        if (!shutOk || !openOk) { bad++; log.AppendLine("  BAD leaf of " + g.name + ": shut at x " + centre.x.ToString("F2") + " (hinge " + hinge.x.ToString("F2") + ")" + (shutOk ? "" : " NOT IN THE DOORWAY") + ", open toward z " + open.z.ToString("F2") + (openOk ? "" : " NOT INTO THE NEXT ROOM")); }
+                        else log.AppendLine("  ok  leaf of " + g.name + " shut x " + centre.x.ToString("F2") + " open z " + open.z.ToString("F2"));
+                    }
+                }
             }
             log.AppendLine(" rooms " + floor.Route.Zones.Length + ", their monster spots " + roomSpots);
         }

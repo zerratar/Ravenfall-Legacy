@@ -188,6 +188,8 @@ public class TowerHandler : IAwayHandler
         RestOnArrival = false;
         StopResting(false);
         StopWorking();
+        // off to another place while recovering from a boss fight: up, and no longer out
+        EndWatching();
         enemyTarget = null;
         healTarget = null;
         player.attackTarget = null;
@@ -224,6 +226,8 @@ public class TowerHandler : IAwayHandler
     public void Died()
     {
         if (boss && floor && floor.Definition != null && player) TowerManager.Instance?.PlayerFell(player, floor.Definition.Number);
+        saidOut = false;
+        StandFromWatching();
         boss = null;
         enemyTarget = null;
         healTarget = null;
@@ -255,11 +259,196 @@ public class TowerHandler : IAwayHandler
     {
         boss = null;
         enemyTarget = null;
+        // the attempt ended while they recovered: whole again, like everyone who goes on (not at the sliver of health
+        // the recovery had reached, among the part's monsters)
+        if (SatOut && player && !player.Stats.IsDead)
+        {
+            player.Stats.Health.Reset();
+            if (player.HealthBar) player.HealthBar.UpdateHealth();
+        }
+        EndWatching();
+    }
+
+    /// <summary>
+    ///     Knocked out in a boss attempt and recovering: up again by the arrival, they recover there
+    ///     (<see cref="UpdateWatching"/>) for <see cref="RavenNest.Combat.TowerRecovery.Seconds"/> and
+    ///     then walk back into the fight by themselves, at a share of their health. It has to read at a glance as
+    ///     "knocked out and recovering", not as players who stand about and do not help (the owner, 2026-11-24).
+    /// </summary>
+    public bool SatOut { get; private set; }
+
+    // this recovery's time (one fixed length, whatever the floor and however often they fell)
+    private float recoverFrom, recoverUntil;
+
+    /// <summary>Seconds until a recovering player goes back into the fight (0 when not recovering).</summary>
+    public float RecoverSecondsLeft => SatOut ? Mathf.Max(0f, recoverUntil - Time.time) : 0f;
+
+    private bool saidOut;
+    private float nextCheer;
+    private float nextWatchStep;
+    // how this one waits, picked once when they get up: 0 sits, 1 sits cross-legged, 2 stands, 3 stands and cheers
+    private int watchKind;
+    private Vector3 watchSpot;
+    private bool watchSpotSet;
+    private bool watchSettled;
+    private float nextWatchWord;
+
+    /// <summary>TowerManager.PlayerFell: this player fell in the fight and sits the rest of it out.</summary>
+    public void SitOut()
+    {
+        StandFromWatching();
+        SatOut = true;
+        saidOut = false;
+        watchSpotSet = false;
+        nextWatchStep = 0f;
+        recoverFrom = Time.time;
+        recoverUntil = Time.time + (float)RavenNest.Combat.TowerRecovery.Seconds;
+    }
+
+    /// <summary>TowerManager.Rejoin: recovered, up and back into the fight at a share of their health.</summary>
+    public void Recovered(EnemyController guardian)
+    {
+        EndWatching();
+        SetRecoveryHealth(1f);
+        BossFightStarted(guardian);
+    }
+
+    // the health bar is the recovery's clock: it fills to the share they come back with as the time passes
+    private void SetRecoveryHealth(float share)
+    {
+        var health = player.Stats.Health;
+        var want = Mathf.Max(1, Mathf.RoundToInt(health.MaxValue * (float)RavenNest.Combat.TowerRecovery.ReturnHealth * Mathf.Clamp01(share)));
+        if (want == health.CurrentValue) return;
+        health.Add(want - health.CurrentValue);
+        if (player.HealthBar) player.HealthBar.UpdateHealth();
+    }
+
+    // up from the ground (or just free to walk again): the attempt ended, or they have to move
+    private void StandFromWatching()
+    {
+        if (!watchSettled) return;
+        watchSettled = false;
+        if (!player || player.isDestroyed) return;
+        player.Animations.ClearOnsenAnimations();
+        player.Movement.Unlock();
+    }
+
+    // no longer out: the attempt ended, or they left the part (the town, another part, the world)
+    private void EndWatching()
+    {
+        StandFromWatching();
+        SatOut = false;
+    }
+
+    /// <summary>
+    ///     Out of the fight and back up: off to a place of one's own beside the arrival (to both sides of the way
+    ///     in, so the doorway and the walk to the guardian stay clear), turned to the fight, and down on the ground
+    ///     there. Most sit, some sit cross-legged, some stand, a few cheer the others on now and then; each the same
+    ///     way for the whole attempt. Never within the guardian's slam: when it comes near, up and further back.
+    /// </summary>
+    private void UpdateWatching()
+    {
+        var tower = TowerManager.Instance;
+        var guardian = tower ? tower.FightBoss : null;
+        if (!saidOut)
+        {
+            saidOut = true;
+            CombatPaths.Word(player, Localization.UI_TOWER_RECOVERING, new Color(0.8f, 0.85f, 0.95f));
+            player.InterruptAction();
+            player.attackTarget = null;
+            var pick = (player.Id.GetHashCode() & 0x7fffffff) % 10;
+            watchKind = pick < 5 ? 0 : pick < 7 ? 1 : pick < 9 ? 2 : 3;
+            nextCheer = Time.time + Random.Range(3f, 7f);
+        }
+        if (!guardian || guardian.Stats.IsDead) return;
+        // recovered: back into the fight
+        if (Time.time >= recoverUntil)
+        {
+            tower.Rejoin(player);
+            return;
+        }
+        SetRecoveryHealth(Mathf.InverseLerp(recoverFrom, recoverUntil, Time.time));
+        var bossAt = guardian.transform.position;
+        var safe = TowerManager.WatchDistance(guardian);
+        var fromBoss = watchSpot - bossAt;
+        fromBoss.y = 0f;
+        if (!watchSpotSet || fromBoss.magnitude < safe)
+        {
+            if (watchSpotSet && Time.time < nextWatchStep) return;
+            nextWatchStep = Time.time + 1.5f;
+            watchSpot = WatchSpot(bossAt, safe);
+            watchSpotSet = true;
+            StandFromWatching();
+        }
+
+        var to = watchSpot - player.Position;
+        to.y = 0f;
+        if (to.sqrMagnitude > 1.2f * 1.2f)
+        {
+            StandFromWatching();
+            if (!player.Movement.IsMoving || Time.time >= nextStroll)
+            {
+                nextStroll = Time.time + 2f;
+                if (!player.SetDestination(watchSpot)) player.Movement.DisableLocalAvoidance();
+            }
+            return;
+        }
+
+        var look = bossAt - player.Position;
+        look.y = 0f;
+        if (!watchSettled)
+        {
+            // there: turned to the fight, and down
+            watchSettled = true;
+            player.Movement.Lock();
+            player.InCombat = false;
+            if (look.sqrMagnitude > 0.01f) player.transform.rotation = Quaternion.LookRotation(look.normalized);
+            if (watchKind == 0) player.Animations.Sit();
+            else if (watchKind == 1) player.Animations.Meditate();
+            nextWatchWord = Time.time + Random.Range(6f, 10f);
+            return;
+        }
+        // said again now and then: someone who looks in mid fight sees why these players do not help
+        if (Time.time >= nextWatchWord)
+        {
+            nextWatchWord = Time.time + Random.Range(8f, 12f);
+            CombatPaths.Word(player, string.Format(Localization.UI_TOWER_RECOVERING_LEFT, Mathf.CeilToInt(RecoverSecondsLeft)), new Color(0.8f, 0.85f, 0.95f));
+        }
+        if (watchKind < 2) return;
+        // standing: an eye on the guardian, and a few cheer the others on
+        if (look.sqrMagnitude > 0.01f)
+            player.transform.rotation = Quaternion.Slerp(player.transform.rotation, Quaternion.LookRotation(look.normalized), Mathf.Clamp01(Time.deltaTime * 4f));
+        if (watchKind == 3 && Time.time >= nextCheer)
+        {
+            nextCheer = Time.time + Random.Range(5f, 9f);
+            player.Cheer();
+        }
+    }
+
+    // This player's own place to recover: beside the arrival, 2.5 to 7.5 m to one side of the line from the arrival
+    // to the guardian and up to 4 m along it, by their id (the same place all attempt); clear of the guardian's slam.
+    private Vector3 WatchSpot(Vector3 bossAt, float safe)
+    {
+        var home = floor.Spawn;
+        var ahead = bossAt - home;
+        ahead.y = 0f;
+        ahead = ahead.sqrMagnitude > 1f ? ahead.normalized : floor.transform.forward;
+        var side = Vector3.Cross(Vector3.up, ahead);
+        var h = player.Id.GetHashCode() & 0x7fffffff;
+        var lateral = (2.5f + ((h >> 4) & 15) / 15f * 5f) * (((h >> 3) & 1) == 0 ? -1f : 1f);
+        var along = -0.5f + ((h >> 9) & 15) / 15f * 4.5f;
+        var spot = home + side * lateral + ahead * along;
+        var away = spot - bossAt;
+        away.y = 0f;
+        if (away.magnitude < safe + 2f) spot = bossAt + (away.sqrMagnitude > 0.01f ? away.normalized : -ahead) * (safe + 2f);
+        if (UnityEngine.AI.NavMesh.SamplePosition(spot, out var hit, 6f, UnityEngine.AI.NavMesh.AllAreas)) spot = hit.position;
+        return spot;
     }
 
     /// <summary>The floor was filled for the next floor (the boss fell): new monsters to fight.</summary>
     public void FloorChanged(TowerFloor target)
     {
+        EndWatching();
         floor = target;
         enemyTarget = null;
         player.attackTarget = null;
@@ -282,6 +471,7 @@ public class TowerHandler : IAwayHandler
         enemyTarget = null;
         healTarget = null;
         boss = null;
+        EndWatching();
         floor = null;
         town = null;
         InTower = false;
@@ -292,6 +482,10 @@ public class TowerHandler : IAwayHandler
     public void Update()
     {
         if (!InTower) return;
+        // knocked out: the body lies where it fell until it is back up (PlayerController.Respawn). Without this a
+        // body was still given orders: on a part of rooms the walk to its place in the guardian's room, elsewhere
+        // the way to the next monster, and it slid there lying down (the owner, 2026-11-24)
+        if (player.Stats.IsDead) return;
         if (town)
         {
             UpdateTown();
@@ -301,6 +495,13 @@ public class TowerHandler : IAwayHandler
         {
             // the floor (or town) went away under the player (unloaded): back to the world
             Exit();
+            return;
+        }
+
+        // out of the boss attempt: watching it from the arrival
+        if (SatOut)
+        {
+            UpdateWatching();
             return;
         }
 

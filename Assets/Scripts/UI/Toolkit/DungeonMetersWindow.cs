@@ -7,12 +7,22 @@ namespace Shinobytes.UI
 {
     /// <summary>
     /// Damage done, healing done and damage taken for the current or last dungeon run, ranked per
-    /// player, in the style of MMO combat meters.
+    /// player, in the style of MMO combat meters. The same window serves the tower: a boss fight
+    /// there (mini boss or floor boss), and a part being trained on when the tower panel asks.
     /// </summary>
     /// <remarks>
     /// Reads <see cref="CombatMeter.Dungeon"/>, which the combat code feeds. The window opens on its
     /// own when a run starts, stays up for <see cref="lingerSeconds"/> after it ends so the result can
     /// be read, then closes. Closing it by hand hides it until the next run.
+    ///
+    /// <para>
+    /// One window, one run at a time (<see cref="Choose"/>): what the camera is watching. With the
+    /// camera at a place of the tower it is the tower's: a boss fight (<see cref="CombatMeter.Tower"/>)
+    /// while the camera is on its part, its result for the linger wherever in the tower the camera
+    /// went, or the part's own meter while the tower panel's Meters button has it open. With the
+    /// camera anywhere else it is the dungeon's, as before. Never over a tower cutscene, and never
+    /// over the tower panel's floor map.
+    /// </para>
     ///
     /// <para>
     /// Sorting happens on the refresh interval, not per hit, and the list is virtualised, so a run
@@ -73,8 +83,16 @@ namespace Shinobytes.UI
         private DraggableWindow drag;
         private bool bound;
 
+        private static DungeonMetersWindow instance;
+
         private Metric metric;
-        private int dismissedRun = -1;
+        // the run on show, and the runs closed by hand (by meter: its run id)
+        private CombatMeter source;
+        private readonly Dictionary<CombatMeter, int> dismissed = new Dictionary<CombatMeter, int>();
+        // the tower panel's Meters button: the part the camera is on, while no boss fight has the window
+        private bool stretchOpen;
+        private Button reset;
+        private Button close;
         private bool shown;
         private float nextRefresh;
         private long top;
@@ -86,6 +104,23 @@ namespace Shinobytes.UI
             metric = (Metric)Mathf.Clamp(PlayerPrefs.GetInt(TabKey, 0), 0, 2);
         }
 
+        /// <summary>The tower panel's Meters button has the part's own meter open.</summary>
+        public static bool StretchOpen => instance && instance.stretchOpen;
+
+        /// <summary>The run on show now is a tower one (a boss fight or a part's own), for the tests.</summary>
+        public static CombatMeter Showing => instance && instance.shown ? instance.source : null;
+
+        /// <summary>
+        /// The tower panel's Meters button: the meter of the part the camera is on, opened or closed. A boss
+        /// fight and its result come first; the part's own shows again after them.
+        /// </summary>
+        public static void ToggleStretch()
+        {
+            if (!instance) return;
+            instance.stretchOpen = !instance.stretchOpen;
+            instance.nextRefresh = 0f;
+        }
+
         // Above the player, island and enemy details (12) and below the top status bar (15). The meters only
         // show during a run and a minute after; dragged under the player details they could not be reached
         // again until they closed.
@@ -95,11 +130,14 @@ namespace Shinobytes.UI
         {
             var doc = GetComponent<UIDocument>();
             if (doc != null && doc.sortingOrder < SortingOrder) doc.sortingOrder = SortingOrder;
+            instance = this;
             TryBind();
         }
 
         private void OnDisable()
         {
+            if (instance == this) instance = null;
+            source = null;
             bound = false;
             if (drag != null)
             {
@@ -174,12 +212,32 @@ namespace Shinobytes.UI
             var collapse = root.Q<Button>("meters-collapse");
             if (collapse != null) collapse.clicked += () => drag?.ToggleCollapsed();
 
-            var close = root.Q<Button>("meters-close");
+            close = root.Q<Button>("meters-close");
             if (close != null) close.clicked += () =>
             {
-                dismissedRun = CombatMeter.Dungeon.RunId;
+                // a part's own meter is closed as it was opened; a run is hidden until the next one
+                if (IsStretch(source)) stretchOpen = false;
+                else if (source != null) dismissed[source] = source.RunId;
+                source = null;
                 SetShown(false);
             };
+
+            // a part's own meter runs for as long as the part is trained on: this counts it from now
+            if (collapse != null && collapse.parent != null)
+            {
+                reset = new Button(() =>
+                {
+                    var tower = TowerManager.Instance;
+                    if (!tower || !IsStretch(source)) return;
+                    foreach (var area in tower.Areas) if (area.Meter == source) { tower.ResetStretch(area); break; }
+                    nextRefresh = 0f;
+                }) { text = "\uf2ea", tooltip = Localization.UI_METER_RESET };
+                reset.AddToClassList("rf-window__button");
+                reset.AddToClassList("rf-icon");
+                reset.AddToClassList("rf-meters__close");
+                reset.style.display = DisplayStyle.None;
+                collapse.parent.Insert(0, reset);
+            }
 
             ApplyTab();
             bound = true;
@@ -198,6 +256,9 @@ namespace Shinobytes.UI
                 }
             }
 
+            // never over a tower cutscene, not for the half second until the next refresh either
+            if (shown && TowerCutscene.Playing) nextRefresh = 0f;
+
             if (Time.unscaledTime < nextRefresh)
             {
                 return;
@@ -205,18 +266,98 @@ namespace Shinobytes.UI
 
             nextRefresh = Time.unscaledTime + refreshInterval;
 
-            var meter = CombatMeter.Dungeon;
-            var want = meter.RunId > 0
-                && meter.RunId != dismissedRun
-                && (meter.Running || Time.unscaledTime - meter.EndedAt < lingerSeconds);
+            var meter = Choose();
+            if (meter != source)
+            {
+                source = meter;
+                if (meter != null) ApplySource(meter);
+            }
 
-            SetShown(want);
-            if (!want || (drag != null && drag.IsCollapsed))
+            var wasShown = shown;
+            SetShown(meter != null);
+            if (meter == null)
+            {
+                return;
+            }
+
+            if (!wasShown)
+            {
+                // filled now, looked at again in a moment when it has its place, shown then
+                Refresh(meter);
+                nextRefresh = Time.unscaledTime + 0.1f;
+                return;
+            }
+
+            // no stacked windows: while the tower panel's floor map lies where this window is, it waits
+            // (hidden, not closed: its place is still known when the map goes)
+            var covered = TowerHudView.MapShown && window.panel == TowerHudView.PanelOwner && window.worldBound.Overlaps(TowerHudView.PanelBounds);
+            window.style.visibility = covered ? Visibility.Hidden : Visibility.Visible;
+            if (covered || (drag != null && drag.IsCollapsed))
             {
                 return;
             }
 
             Refresh(meter);
+        }
+
+        private static bool IsStretch(CombatMeter meter) => meter != null && meter != CombatMeter.Dungeon && meter != CombatMeter.Tower;
+
+        /// <summary>A run that is on, or over for less than the linger, and not closed by hand.</summary>
+        private bool Live(CombatMeter meter) =>
+            meter.RunId > 0
+            && (meter.Running || Time.unscaledTime - meter.EndedAt < lingerSeconds)
+            && !(dismissed.TryGetValue(meter, out var run) && run == meter.RunId);
+
+        /// <summary>
+        /// The run to show now, or null: the one the camera is watching. A dungeon and a tower fight can go
+        /// on at the same time (raids and dungeons run beside the tower), and the window is one.
+        /// </summary>
+        private CombatMeter Choose()
+        {
+            var tower = TowerManager.Instance;
+            if (tower && tower.CameraInTower)
+            {
+                // never over a cutscene (a guardian's intro, its fall)
+                if (TowerCutscene.Playing) return null;
+                var area = tower.CameraArea;
+                var fight = CombatMeter.Tower;
+                // a fight where the camera is; its result wherever in the tower the camera went after it (the town)
+                if (Live(fight) && (!fight.Running || (area != null && area == tower.MeterArea))) return fight;
+                if (stretchOpen && area != null && area.Meter.RunId > 0) return area.Meter;
+                return null;
+            }
+
+            return Live(CombatMeter.Dungeon) ? CombatMeter.Dungeon : null;
+        }
+
+        /// <summary>The window's title and buttons for the run it now shows.</summary>
+        private void ApplySource(CombatMeter meter)
+        {
+            var stretch = IsStretch(meter);
+            if (reset != null) reset.style.display = stretch ? DisplayStyle.Flex : DisplayStyle.None;
+            if (close != null) close.tooltip = meter == CombatMeter.Tower ? Localization.UI_METER_HIDE_TOWER : null;
+            SetTitle(meter);
+        }
+
+        private void SetTitle(CombatMeter meter)
+        {
+            if (title == null) return;
+            var text = string.IsNullOrEmpty(meter.Title) ? Localization.UI_DUNGEON_TITLE : meter.Title;
+            if (title.text == text) return;
+            title.text = text;
+            // a fight's name is longer than "DUNGEON": the window is at least as wide as its title and buttons
+            if (string.IsNullOrEmpty(meter.Title))
+            {
+                window.style.minWidth = StyleKeyword.Null;
+                return;
+            }
+            title.schedule.Execute(() =>
+            {
+                if (title.text != text) return;
+                var wide = title.MeasureTextSize(text, 0f, VisualElement.MeasureMode.Undefined, 0f, VisualElement.MeasureMode.Undefined).x;
+                var actions = close != null && close.parent != null ? close.parent.resolvedStyle.width : 80f;
+                if (!float.IsNaN(wide) && wide > 0f) window.style.minWidth = Mathf.Max(minimumSize.x, wide + actions + 56f);
+            }).StartingIn(50);
         }
 
         private void SetShown(bool value)
@@ -230,6 +371,8 @@ namespace Shinobytes.UI
             window.style.display = value ? DisplayStyle.Flex : DisplayStyle.None;
             if (value)
             {
+                // unseen until this refresh has looked at what lies under it (the floor map)
+                window.style.visibility = Visibility.Hidden;
                 nextRefresh = 0f;
             }
         }
@@ -240,9 +383,9 @@ namespace Shinobytes.UI
             PlayerPrefs.SetInt(TabKey, (int)value);
             PlayerPrefs.Save();
             ApplyTab();
-            if (shown)
+            if (shown && source != null)
             {
-                Refresh(CombatMeter.Dungeon);
+                Refresh(source);
             }
         }
 
@@ -261,6 +404,9 @@ namespace Shinobytes.UI
 
         private void Refresh(CombatMeter meter)
         {
+            // a part's own meter is given its title again when the part becomes another
+            SetTitle(meter);
+
             // Summary line: where the run is, or that it is over.
             if (room != null)
             {
@@ -268,9 +414,26 @@ namespace Shinobytes.UI
                 if (!meter.Running)
                 {
                     var left = Mathf.Max(0, Mathf.CeilToInt(lingerSeconds - (Time.unscaledTime - meter.EndedAt)));
-                    text = Localization.UI_METER_RESULT + "  <size=15><color=#A79E8A>"
+                    // whoever the run points out (the last blow on a floor boss) is named here, where there is room for
+                    // it: by the names in the rows it was cut short
+                    var marked = string.Empty;
+                    if (!string.IsNullOrEmpty(meter.MarkText) && meter.Marked.Count > 0)
+                    {
+                        foreach (var id in meter.Marked)
+                        {
+                            var e = meter.Find(id);
+                            if (e != null) marked += (marked.Length > 0 ? ", " : string.Empty) + e.Name;
+                        }
+                        if (marked.Length > 0) marked = "<color=#F2C14E>" + meter.MarkText + ": " + marked + "</color>   ";
+                    }
+                    text = (string.IsNullOrEmpty(meter.Outcome) ? Localization.UI_METER_RESULT : meter.Outcome) + "  <size=15>" + marked + "<color=#A79E8A>"
                         + string.Format(CultureInfo.InvariantCulture, Localization.UI_METER_CLOSING, left)
                         + "</color></size>";
+                }
+                else if (meter != CombatMeter.Dungeon)
+                {
+                    // a tower run says what it is itself: "MINI BOSS", "FLOOR BOSS", "TRAINING"
+                    text = meter.Caption ?? string.Empty;
                 }
                 else
                 {
@@ -431,7 +594,9 @@ namespace Shinobytes.UI
                 row.Name.text = e.Name;
             }
 
-            row.Name.style.color = HudFormat.ReadableNameColor(e.ColorHex);
+            // whoever the run points out (the last blow on a floor boss) stands in gold; the summary line names them
+            var pointedOut = source != null && !string.IsNullOrEmpty(source.MarkText) && source.Marked.Contains(e.PlayerId);
+            row.Name.style.color = pointedOut ? new Color(0.95f, 0.76f, 0.31f) : HudFormat.ReadableNameColor(e.ColorHex);
 
             var fraction = top > 0 ? value / (float)top : 0f;
             row.Fill.style.width = new Length(fraction * 100f, LengthUnit.Percent);

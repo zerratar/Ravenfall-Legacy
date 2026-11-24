@@ -44,7 +44,15 @@ namespace Shinobytes.UI
         private VisualElement hud, column;
         private Label title, floorLabel, timer, clock, barText, people, phase, join;
         private VisualElement liveDot, bar, fill, quests, joinPill;
-        private Button mapButton;
+        private Button mapButton, metersButton, actionButton;
+        private Label actionText, mapText, metersText;
+        // squeezed between the windows at the screen's sides (the players list, the player details): the header's
+        // buttons are their icons, and the chat hint gives way to the streamer's button
+        private bool compact;
+        private bool joinWanted;
+        private const float CompactWidth = 1000f;
+        // what the action button does now: 0 nothing, 1 challenge the guardian, 2 start the fight now
+        private int action;
         private TowerMapView map;
         // the map: open (the button), or shown until a time (chat); the floor it shows, 0 for the one being watched
         private bool mapOpen;
@@ -79,6 +87,11 @@ namespace Shinobytes.UI
             return true;
         }
 
+        /// <summary>Where the panel lies on its UI panel (with the map when that is open), and that panel: the meters window keeps off it.</summary>
+        public static Rect PanelBounds => instance && instance.hud != null ? instance.hud.worldBound : default;
+
+        public static IPanel PanelOwner => instance && instance.hud != null ? instance.hud.panel : null;
+
         /// <summary>The map is open (the tests).</summary>
         public static bool MapShown => instance && instance.map != null && instance.map.Root.style.display == DisplayStyle.Flex;
 
@@ -92,6 +105,45 @@ namespace Shinobytes.UI
             instance.nextRefresh = 0f;
         }
 
+        private void OnAction()
+        {
+            var tower = TowerManager.Instance;
+            if (!tower) return;
+            // as the streamer's !tower boss and !tower boss now
+            if (action == 1) tower.CallBoss(null, true, out _);
+            else if (action == 2) tower.StartBossNow();
+            nextRefresh = 0f;
+        }
+
+        private void SetAction(int what)
+        {
+            if (what == action) return;
+            action = what;
+            Show(actionButton, what != 0);
+            if (what != 0) Set(actionText, what == 1 ? Localization.UI_TOWER_CHALLENGE : Localization.UI_TOWER_START_NOW);
+            ShowJoin(joinWanted);
+        }
+
+        // the chat hint ("!tower boss"): not beside the streamer's button when there is no room for both and the line
+        private void ShowJoin(bool show)
+        {
+            joinWanted = show;
+            Show(joinPill, show && !(compact && action != 0));
+        }
+
+        private void SetCompact(bool value, bool clock)
+        {
+            // the panel's name gives its room to the clock when both do not fit
+            Show(title, !(value && clock));
+            if (value == compact) return;
+            compact = value;
+            Show(mapText, !value);
+            Show(metersText, !value);
+            mapButton.EnableInClassList("rf-tower__mapbtn--icon", value);
+            metersButton.EnableInClassList("rf-tower__mapbtn--icon", value);
+            ShowJoin(joinWanted);
+        }
+
         private void OnEnable() => instance = this;
 
         private void OnDisable()
@@ -99,8 +151,68 @@ namespace Shinobytes.UI
             if (instance == this) instance = null;
         }
 
+        // The title of a lost attempt ("Defeated", why, what the guardian had left): shown as a clear's title is, but
+        // short and over the game as it goes on; it waits while a cutscene plays.
+        private VisualElement notice;
+        private Label noticeTitle, noticeLine, noticeLeft;
+        private float noticeUntil = -1f;
+        private bool noticePending;
+        private const float NoticeSeconds = 7f;
+
+        /// <summary>A lost boss attempt, said on screen: the title, the reason under it, and what the guardian had left.</summary>
+        public static void ShowDefeat(string title, string reason, string left)
+        {
+            if (!instance || instance.hud == null || instance.hud.panel == null) return;
+            var view = instance;
+            if (view.notice == null)
+            {
+                view.notice = new VisualElement { pickingMode = PickingMode.Ignore };
+                view.notice.AddToClassList("rf-tower-notice");
+                view.noticeTitle = new Label { pickingMode = PickingMode.Ignore };
+                view.noticeTitle.AddToClassList("rf-tower-notice__title");
+                view.noticeLine = new Label { pickingMode = PickingMode.Ignore };
+                view.noticeLine.AddToClassList("rf-tower-notice__line");
+                view.noticeLeft = new Label { pickingMode = PickingMode.Ignore };
+                view.noticeLeft.AddToClassList("rf-tower-notice__line");
+                view.noticeLeft.AddToClassList("rf-tower-notice__line--dim");
+                view.notice.Add(view.noticeTitle);
+                view.notice.Add(view.noticeLine);
+                view.notice.Add(view.noticeLeft);
+                view.notice.style.display = DisplayStyle.None;
+                view.GetComponent<UIDocument>().rootVisualElement.Add(view.notice);
+            }
+            view.noticeTitle.text = title;
+            view.noticeLine.text = reason;
+            view.noticeLeft.text = left;
+            view.noticePending = true;
+        }
+
+        private void UpdateNotice()
+        {
+            if (notice == null) return;
+            // never over a cutscene or the Ravebridge reveal: it waits for them
+            var busy = TowerCutscene.Playing || RavebridgeReveal.Playing;
+            if (noticePending && !busy)
+            {
+                noticePending = false;
+                noticeUntil = Time.unscaledTime + NoticeSeconds;
+                notice.style.display = DisplayStyle.Flex;
+                notice.RemoveFromClassList("rf-tower-notice--shown");
+                notice.schedule.Execute(() => notice.AddToClassList("rf-tower-notice--shown")).StartingIn(30);
+            }
+            if (noticeUntil < 0f) return;
+            if (busy || Time.unscaledTime >= noticeUntil)
+            {
+                noticeUntil = -1f;
+                notice.RemoveFromClassList("rf-tower-notice--shown");
+                notice.style.display = DisplayStyle.None;
+            }
+            else if (noticeUntil - Time.unscaledTime < 0.8f) notice.RemoveFromClassList("rf-tower-notice--shown");
+        }
+
         private void Update()
         {
+            UpdateNotice();
             if (Time.unscaledTime < nextRefresh) return;
             nextRefresh = Time.unscaledTime + RefreshSeconds;
             if (hud == null || hud.panel == null)
@@ -141,11 +253,23 @@ namespace Shinobytes.UI
             mapButton.AddToClassList("rf-tower__mapbtn");
             var mapIcon = Text("rf-icon", "rf-tower__mapbtn-icon");
             mapIcon.text = "\uf279";
-            var mapText = Text("rf-tower__mapbtn-text");
+            mapText = Text("rf-tower__mapbtn-text");
             mapText.text = Localization.UI_TOWER_MAP;
+            mapButton.tooltip = Localization.UI_TOWER_MAP;
             mapButton.Add(mapIcon);
             mapButton.Add(mapText);
             top.Add(mapButton);
+            // and the meters of the part being watched (the dungeon's meters window): shown on a part, not in the town
+            metersButton = new Button(DungeonMetersWindow.ToggleStretch) { text = "" };
+            metersButton.AddToClassList("rf-tower__mapbtn");
+            var metersIcon = Text("rf-icon", "rf-tower__mapbtn-icon");
+            metersIcon.text = "\uf080";
+            metersText = Text("rf-tower__mapbtn-text");
+            metersText.text = Localization.UI_TOWER_METERS;
+            metersButton.tooltip = Localization.UI_TOWER_METERS;
+            metersButton.Add(metersIcon);
+            metersButton.Add(metersText);
+            top.Add(metersButton);
             hud.Add(top);
 
             bar = Box("rf-raid__bar");
@@ -187,6 +311,14 @@ namespace Shinobytes.UI
             join = Text("rf-raid__join");
             joinPill.Add(chat);
             joinPill.Add(join);
+            // the streamer's own way to what chat does with !tower boss: challenge the guardian, and cut the
+            // countdown short
+            actionButton = new Button(OnAction) { text = "" };
+            actionButton.AddToClassList("rf-tower__actbtn");
+            actionText = Text("rf-tower__actbtn-text");
+            actionButton.Add(actionText);
+            Show(actionButton, false);
+            right.Add(actionButton);
             right.Add(joinPill);
             bottom.Add(left);
             bottom.Add(phase);
@@ -298,6 +430,14 @@ namespace Shinobytes.UI
             // the part the watched player is on: a cleared part they train on by themselves is shown in place of the climb
             var watched = tower.AreaOf(tower.Watched);
             var trip = watched != null && !tower.IsClimb(watched);
+            // the streamer's buttons: challenge the guardian when it is open, start the fight during its countdown
+            // (not while its intro plays); on the climb's view only
+            SetAction(trip ? 0
+                : countdown ? (tower.PhaseSecondsLeft > 0.5f && !TowerCutscene.Playing ? 2 : 0)
+                : !fighting && tower.State.BossOpen && !tower.AllCleared && tower.RetrySecondsLeft <= 0f && tower.PushArea != null && tower.CountOn(tower.PushArea) > 0 ? 1 : 0);
+            // the part's meters: on a part, and not during a boss fight (the fight opens them itself)
+            Show(metersButton, watched != null && !fighting);
+            metersButton.EnableInClassList("rf-tower__mapbtn--on", DungeonMetersWindow.StretchOpen);
             var onClimb = tower.Players().Count;
             // everyone between parts: the town, and the part that waits
             var resting = !trip && onClimb == 0 && inTown > 0 && !fighting && !countdown;
@@ -317,6 +457,7 @@ namespace Shinobytes.UI
                 hud.style.maxWidth = StyleKeyword.Null;
                 hud.style.minWidth = StyleKeyword.Null;
             }
+            SetCompact(free < CompactWidth, fighting || countdown);
 
             // a vote that is open: what it is for and when it passes, and the command that adds a voice
             string voteText = null, voteCommand = null;
@@ -333,7 +474,9 @@ namespace Shinobytes.UI
             }
 
             Set(title, Localization.UI_TOWER_TITLE);
-            hud.EnableInClassList("rf-raid--tower-fight", fighting && !trip);
+            // lost and regrouping: the guardian still stands, and the panel says so in the fight's red
+            var loss = !trip && !fighting && !countdown && tower.LastLoss != null && tower.LastLoss.Step == tower.StreamFloor && tower.RetrySecondsLeft > 0f ? tower.LastLoss : null;
+            hud.EnableInClassList("rf-raid--tower-fight", (fighting && !trip) || loss != null);
 
             if (trip)
             {
@@ -347,7 +490,7 @@ namespace Shinobytes.UI
                 Show(liveDot, countdown);
                 Show(clock, countdown);
                 Set(timer, countdown ? Clock(tower.PhaseSecondsLeft) : "");
-                Show(joinPill, true);
+                ShowJoin(true);
                 var route = watched.Floor ? watched.Floor.Route : null;
                 var rooms = route && route.Valid ? route.FightingRooms : 0;
                 if (countdown)
@@ -386,18 +529,18 @@ namespace Shinobytes.UI
                 if (voteText != null)
                 {
                     Set(phase, voteText);
-                    Show(joinPill, true);
+                    ShowJoin(true);
                     Set(join, voteCommand);
                 }
                 else if (tower.AllCleared || stream == null)
                 {
                     Set(phase, Localization.UI_TOWER_ALL_CLEARED);
-                    Show(joinPill, false);
+                    ShowJoin(false);
                 }
                 else
                 {
                     Set(phase, string.Format(Localization.UI_TOWER_NEXT_FLOOR, stream.Floor, stream.Part, stream.Name));
-                    Show(joinPill, true);
+                    ShowJoin(true);
                     Set(join, "!tower climb");
                 }
                 return;
@@ -419,7 +562,10 @@ namespace Shinobytes.UI
                 SetFill(max > 0 ? hp / (float)max : 0f);
                 Set(barText, HudFormat.Grouped(hp) + " / " + HudFormat.Grouped(max));
                 Set(phase, here != null && here.Boss != null ? here.Boss.Name : "");
-                Show(joinPill, false);
+                ShowJoin(false);
+                // who still stands: the knocked out sit the rest of the fight out
+                if (tower.FightCount(out var standing, out var went))
+                    Set(people, standing >= went ? string.Format(Localization.UI_TOWER_STANDING, standing) : string.Format(Localization.UI_TOWER_STANDING_RECOVERING, standing, went - standing));
                 return;
             }
 
@@ -459,33 +605,43 @@ namespace Shinobytes.UI
             // the rows while there is something left to do; all done, the bar and the boss line say it
             Show(quests, rows > 0 && done < total);
             Show(bar, total > 0);
-            SetFill(total > 0 ? share / total : 0f);
-            Set(barText, string.Format(Localization.UI_TOWER_QUESTS, done, total));
+            if (loss != null)
+            {
+                // what the guardian had left, and why the attempt ended ("Objectives 2 / 2" beside a regroup timer read as a win)
+                SetFill(loss.PercentLeft / 100f);
+                Set(barText, string.Format(Localization.UI_TOWER_LOST_BAR, loss.Reason, loss.Boss, loss.PercentLeft));
+            }
+            else
+            {
+                SetFill(total > 0 ? share / total : 0f);
+                Set(barText, total > 0 && done >= total ? Localization.UI_TOWER_QUESTS_DONE : string.Format(Localization.UI_TOWER_QUESTS, done, total));
+            }
 
             var bossName = here != null && here.Boss != null ? here.Boss.Name : "";
             if (countdown)
             {
                 Set(phase, string.Format(Localization.UI_TOWER_BOSS_STARTS, bossName));
-                Show(joinPill, true);
+                ShowJoin(true);
                 Set(join, "!tower");
             }
             else if (voteText != null)
             {
                 Set(phase, voteText);
-                Show(joinPill, true);
+                ShowJoin(true);
                 Set(join, voteCommand);
             }
             else if (tower.AllCleared)
             {
                 Set(phase, Localization.UI_TOWER_ALL_CLEARED);
-                Show(joinPill, false);
+                ShowJoin(false);
             }
             else if (tower.State.BossOpen)
             {
                 var wait = tower.RetrySecondsLeft;
-                Set(phase, wait > 0f ? string.Format(Localization.UI_TOWER_REGROUP, Mathf.CeilToInt(wait))
+                Set(phase, wait > 0f ? (loss != null ? string.Format(Localization.UI_TOWER_STILL_STANDS, loss.Boss, Clock(wait)) : string.Format(Localization.UI_TOWER_REGROUP, Mathf.CeilToInt(wait)))
                     : string.Format(here != null && here.IsFloorBoss ? Localization.UI_TOWER_FLOOR_BOSS_READY : Localization.UI_TOWER_BOSS_READY, bossName));
-                Show(joinPill, true);
+                // no "!tower boss" while the group regroups: it cannot be called yet
+                ShowJoin(wait <= 0f);
                 Set(join, "!tower boss");
             }
             else
@@ -494,7 +650,7 @@ namespace Shinobytes.UI
                 var route = tower.PushFloor ? tower.PushFloor.Route : null;
                 var rooms = route && route.Valid ? route.FightingRooms : 0;
                 Set(phase, rooms > 1 ? string.Format(Localization.UI_TOWER_ROOM, Mathf.Min(route.Active + 1, rooms), rooms) : "");
-                Show(joinPill, true);
+                ShowJoin(true);
                 Set(join, "!tower");
             }
         }

@@ -1,7 +1,9 @@
 // Gives the crypt and the frost vault their route of rooms (docs/tower-design.md section 22, docs/tower-worlds-proposal.md
 // section 13): both layouts are the same five rooms, already rooms without doors. This adds, to the saved scene, a gated
-// doorway between the rooms (a stone frame, two leaves, the wall closed to its sides, a seal that suits the place and a
-// carving obstacle), the rooms as TowerZones with their arrival and monster spots, and the TowerRoute on the floor:
+// doorway between the rooms (a stone frame, two leaves, the wall closed to its sides, a seal and a carving obstacle),
+// the rooms as TowerZones with their arrival and monster spots, and the TowerRoute on the floor. The seal is a curtain
+// of light across the whole doorway (TowerWard: what says "shut" from the game's camera, the same at every sealed
+// door) with the place's own barrier standing in it: a hedge of thorns in the crypt, a wall of ice in the vault:
 //   0 the Entry (the arrival, 3 monsters)  ->  1 the Hall (8)  ->  2 the West crypt (5)  ->  3 the East crypt (8, the
 //   hold: it refills)  ->  4 the Throne hall (the guardian's room, opened when an attempt is called).
 // The scene named in %TEMP%/tower-route-scene.txt ("Tower_Crypt" or "Tower_FrostVault") is opened beside the open scene,
@@ -91,21 +93,23 @@ UnityEngine.Material Mat(string name, System.Action<UnityEngine.Material> set, s
     UnityEditor.AssetDatabase.SaveAssetIfDirty(m);
     return m;
 }
-// the frost vault's seal: clear blue ice with a glow from within (the vault's own ice shader)
+// the frost vault's seal: pale ice with a glow from within (the vault's own ice shader), lighter than the vault's
+// blue ice so the door does not look like one more ice prop
 var sealIce = frost ? Mat("GateIce", m =>
 {
-    m.SetColor("_SurfaceColor", new UnityEngine.Color(0.62f, 0.86f, 1f));
-    m.SetColor("_DeepColor", new UnityEngine.Color(0.06f, 0.24f, 0.46f));
-    m.SetColor("_GlowColor", new UnityEngine.Color(0.15f, 0.55f, 1f));
-    m.SetFloat("_Glow", 1.1f);
+    m.SetColor("_SurfaceColor", new UnityEngine.Color(0.86f, 0.96f, 1f));
+    m.SetColor("_DeepColor", new UnityEngine.Color(0.22f, 0.5f, 0.78f));
+    m.SetColor("_GlowColor", new UnityEngine.Color(0.45f, 0.8f, 1f));
+    m.SetFloat("_Glow", 1.6f);
 }, "Ravenfall/Ice") : null;
-// the crypt's seal: a pale grave light between the thorns
-var sealGlow = !frost ? Mat("GateWard", m =>
+// an earlier version's wisp material is not used any more
 {
-    var c = new UnityEngine.Color(0.55f, 1f, 0.72f);
-    if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", c); else m.color = c;
-}, "Universal Render Pipeline/Unlit") : null;
-var sealColor = frost ? new UnityEngine.Color(0.55f, 0.8f, 1f) : new UnityEngine.Color(0.5f, 1f, 0.7f);
+    var oldWard = dataFolder + "/GateWard.mat";
+    if (UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(oldWard)) UnityEditor.AssetDatabase.DeleteAsset(oldWard);
+}
+var sealColor = frost ? new UnityEngine.Color(0.6f, 0.86f, 1f) : new UnityEngine.Color(0.45f, 1f, 0.62f);
+// the curtain of light: a cold white-blue in the vault, the crypt's grave green
+var wardTint = frost ? new UnityEngine.Color(0.62f, 0.9f, 1f, 0.75f) : new UnityEngine.Color(0.4f, 1f, 0.58f, 0.62f);
 
 // ---- gates ----
 // a doorway: its middle, the way through it (toward the next room on the route), how wide the opening in the wall is
@@ -164,57 +168,93 @@ TowerGate Gate(string name, UnityEngine.Vector3 at, UnityEngine.Vector3 through,
         var pc = post.AddComponent<UnityEngine.BoxCollider>(); pc.size = new UnityEngine.Vector3(FrameHalf - LeafWidth, 3f, 1.1f);
     }
 
-    // two leaves hinged at the opening's sides, swinging into the next room
+    // two leaves hinged at the opening's sides, swinging into the next room. The pack's stone door is a pair: leaf 01
+    // has its pivot at its right edge and runs to -x (the right leaf), leaf 02 its pivot at its left edge and runs to
+    // +x (the left leaf). (Until 2026-11-24 the vault had leaf 02 on both hinges, placed as if it were leaf 01: its
+    // doors stood open behind the ice, over the walls to both sides.)
     var leaves = new System.Collections.Generic.List<UnityEngine.Transform>();
     var yaws = new System.Collections.Generic.List<float>();
     foreach (var side in new[] { -1f, 1f })
     {
         var hinge = Group(side < 0 ? "Left Leaf" : "Right Leaf", gateGo.transform);
         hinge.localPosition = new UnityEngine.Vector3(side * LeafWidth, 0f, 0f);
-        // the leaf's own pivot is its right edge, the door running to -x: the right leaf as it is, the left turned
-        Put(e + "Walls/SM_Env_Door_Large_Stone_0" + (frost ? "2" : "1") + ".prefab", hinge, UnityEngine.Vector3.zero, UnityEngine.Quaternion.Euler(0f, side > 0 ? 0f : 180f, 0f), UnityEngine.Vector3.one * GateScale);
+        Put(e + "Walls/SM_Env_Door_Large_Stone_0" + (side > 0 ? "1" : "2") + ".prefab", hinge, UnityEngine.Vector3.zero, UnityEngine.Quaternion.identity, UnityEngine.Vector3.one * GateScale);
         leaves.Add(hinge);
+        // away from the group, into the next room
         yaws.Add(side > 0 ? 100f : -100f);
     }
     gate.Leaves = leaves.ToArray();
     gate.OpenYaw = yaws.ToArray();
 
-    // the seal, on the side the group comes from: it shrinks away as the door opens
+    // the seal, on the side the group comes from: it shrinks away as the door opens. First the curtain of light over
+    // the whole doorway, as high as the leaves, close before them
     var seal = Group("Seal", gateGo.transform);
     seal.localPosition = new UnityEngine.Vector3(0f, 0f, -0.75f);
+    var leafTop = 3.4f;
+    {
+        var lr = leaves[0].GetComponentsInChildren<UnityEngine.Renderer>();
+        if (lr.Length > 0) { var lb = lr[0].bounds; foreach (var r in lr) lb.Encapsulate(r.bounds); leafTop = lb.max.y - origin.y; }
+    }
+    var wardGo = Group("Ward", seal);
+    wardGo.localPosition = new UnityEngine.Vector3(0f, 0f, 0.38f);
+    var ward = wardGo.gameObject.AddComponent<TowerWard>();
+    ward.Width = LeafWidth * 2f + 0.5f;
+    // no higher than the leaves: over them it showed from the next room
+    ward.Height = leafTop;
+    ward.Apron = 2.2f;
+    ward.Tint = wardTint;
+    // a prop scaled so that it stands this high, its foot on the floor
+    void Stand(UnityEngine.GameObject go, float high)
+    {
+        if (!go) return;
+        var rs = go.GetComponentsInChildren<UnityEngine.Renderer>();
+        if (rs.Length == 0) return;
+        var b = rs[0].bounds; foreach (var r in rs) b.Encapsulate(r.bounds);
+        if (b.size.y > 0.01f) go.transform.localScale *= high / b.size.y;
+        b = rs[0].bounds; foreach (var r in rs) b.Encapsulate(r.bounds);
+        go.transform.position += UnityEngine.Vector3.up * (origin.y - 0.05f - b.min.y);
+    }
     if (frost)
     {
-        // a wall of ice grown across the door: crystals standing shoulder to shoulder (the pack's icicles, point up)
-        for (var k = 0; k < 7; k++)
+        // the door frozen shut: a wall of pale ice across it, tall crystals shoulder to shoulder with shorter ones
+        // before them (the pack's icicles, point up)
+        for (var row = 0; row < 2; row++)
         {
-            var x = -1.5f + k * 0.5f + (R() - 0.5f) * 0.15f;
-            var tall = k % 2 == 0 ? 1.9f + R() * 0.5f : 1.3f + R() * 0.4f;
-            var crystal = Put(ve + "SM_Env_Icicle_0" + (1 + rng.Next(4)) + ".prefab", seal, new UnityEngine.Vector3(x, 0f, (R() - 0.5f) * 0.35f),
-                UnityEngine.Quaternion.Euler(180f + (R() - 0.5f) * 14f, R() * 360f, (R() - 0.5f) * 14f), UnityEngine.Vector3.one * tall);
-            if (crystal) foreach (var r in crystal.GetComponentsInChildren<UnityEngine.MeshRenderer>()) { r.sharedMaterials = r.sharedMaterials.Select(_ => sealIce).ToArray(); r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; }
+            var count = row == 0 ? 7 : 6;
+            for (var k = 0; k < count; k++)
+            {
+                var x = (row == 0 ? -1.5f : -1.25f) + k * 0.5f + (R() - 0.5f) * 0.12f;
+                var high = row == 0 ? (k % 2 == 0 ? leafTop * 0.95f : leafTop * 0.74f) + R() * 0.3f : 1.1f + R() * 0.7f;
+                var crystal = Put(ve + "SM_Env_Icicle_0" + (1 + rng.Next(4)) + ".prefab", seal, new UnityEngine.Vector3(x, 0f, row == 0 ? 0.1f + (R() - 0.5f) * 0.15f : -0.4f + (R() - 0.5f) * 0.2f),
+                    UnityEngine.Quaternion.Euler(180f + (R() - 0.5f) * 10f, R() * 360f, (R() - 0.5f) * 10f), UnityEngine.Vector3.one);
+                if (!crystal) continue;
+                foreach (var r in crystal.GetComponentsInChildren<UnityEngine.MeshRenderer>()) { r.sharedMaterials = r.sharedMaterials.Select(_ => sealIce).ToArray(); r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; }
+                Stand(crystal, high);
+            }
         }
     }
     else
     {
-        // thorns grown across the door, a pale grave light caught in them
-        for (var k = 0; k < 4; k++)
+        // a hedge of thorns grown across the door, as high as a player and higher at its middle, dark against the
+        // grave light behind it
+        for (var row = 0; row < 2; row++)
         {
-            var x = -1.35f + k * 0.9f + (R() - 0.5f) * 0.2f;
-            Put("Assets/PolygonDungeonRealms/Prefabs/Environments/SM_Env_Bramble_0" + (1 + rng.Next(3)) + ".prefab", seal, new UnityEngine.Vector3(x, 0.35f, (R() - 0.5f) * 0.3f),
-                UnityEngine.Quaternion.Euler(0f, R() * 360f, 0f), UnityEngine.Vector3.one * (1.05f + R() * 0.35f));
-        }
-        for (var k = 0; k < 5; k++)
-        {
-            var wisp = UnityEngine.GameObject.CreatePrimitive(UnityEngine.PrimitiveType.Sphere);
-            wisp.name = "Wisp"; UnityEngine.Object.DestroyImmediate(wisp.GetComponent<UnityEngine.Collider>());
-            wisp.transform.SetParent(seal, false);
-            wisp.transform.localPosition = new UnityEngine.Vector3(-1.2f + k * 0.6f + (R() - 0.5f) * 0.2f, 0.7f + R() * 1.6f, (R() - 0.5f) * 0.5f);
-            wisp.transform.localScale = UnityEngine.Vector3.one * (0.14f + R() * 0.1f);
-            var wr = wisp.GetComponent<UnityEngine.MeshRenderer>(); wr.sharedMaterial = sealGlow; wr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            var count = row == 0 ? 5 : 4;
+            for (var k = 0; k < count; k++)
+            {
+                var x = (row == 0 ? -1.45f : -1.1f) + k * 0.72f + (R() - 0.5f) * 0.15f;
+                var high = row == 0 ? 2.3f + (k == 2 ? 0.6f : 0f) + R() * 0.5f : 1.3f + R() * 0.5f;
+                var bush = Put("Assets/PolygonDungeonRealms/Prefabs/Environments/SM_Env_Bramble_0" + (1 + rng.Next(3)) + ".prefab", seal, new UnityEngine.Vector3(x, 0f, row == 0 ? 0.05f + (R() - 0.5f) * 0.15f : -0.45f + (R() - 0.5f) * 0.2f),
+                    UnityEngine.Quaternion.Euler(0f, R() * 360f, 0f), UnityEngine.Vector3.one);
+                if (!bush) continue;
+                foreach (var r in bush.GetComponentsInChildren<UnityEngine.MeshRenderer>()) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                Stand(bush, high);
+            }
         }
     }
-    var sl = new UnityEngine.GameObject("Seal Light"); sl.transform.SetParent(gateGo.transform, false); sl.transform.localPosition = new UnityEngine.Vector3(0f, 1.9f, -1.4f);
-    var light = sl.AddComponent<UnityEngine.Light>(); light.type = UnityEngine.LightType.Point; light.color = sealColor; light.range = 9f; light.intensity = frost ? 3.2f : 2.6f; light.shadows = UnityEngine.LightShadows.None;
+    // the seal's light, well before the door (close to it, it shone through into the next room)
+    var sl = new UnityEngine.GameObject("Seal Light"); sl.transform.SetParent(gateGo.transform, false); sl.transform.localPosition = new UnityEngine.Vector3(0f, 1.6f, -2.6f);
+    var light = sl.AddComponent<UnityEngine.Light>(); light.type = UnityEngine.LightType.Point; light.color = sealColor; light.range = 6.5f; light.intensity = frost ? 3.4f : 3f; light.shadows = UnityEngine.LightShadows.None;
     gate.Seal = seal.gameObject;
     gate.SealLight = light;
 

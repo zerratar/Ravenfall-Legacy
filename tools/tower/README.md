@@ -22,6 +22,9 @@ Each writes its log to `%TEMP%/<name>.txt` (the eval call itself times out after
 | tower-greathall-build.cs | Tower_GreatHall: the first floor of rooms (docs/tower-design.md section 22), not in the climb yet; its wall stubs and rune circle from blender/tower_great_hall.py | 4 (v0.9.8) |
 | tower-rooms-route.cs | The route of rooms for Tower_Crypt and Tower_FrostVault (the scene's name in `%TEMP%/tower-route-scene.txt`): a gate in every doorway, the rooms as zones, the route on the floor. Changes the saved scene, so run it after that layout's own builder; it can be run again | 1, 2 |
 
+A gate's seal is a curtain of light across the doorway (`TowerWard`) with the place's own barrier in it (thorns,
+ice); its two leaves are the pack's pair (leaf 01 on the right hinge, leaf 02 on the left) and swing into the next
+room. The audit checks every leaf: shut in the doorway, open in the next room.
 A floor of rooms (`TowerRoute`) has its gates' NavMeshObstacles saved disabled, so the audit walks the whole route;
 the game shuts them when it fills the floor. The audit also checks every room's arrival and every room's monster
 spots, and that no gate was saved shut.

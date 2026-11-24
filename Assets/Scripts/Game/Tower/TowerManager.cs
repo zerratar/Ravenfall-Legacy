@@ -168,6 +168,7 @@ public sealed class TowerManager : MonoBehaviour
         var go = new GameObject("Tower Manager");
         DontDestroyOnLoad(go);
         Instance = go.AddComponent<TowerManager>();
+        go.AddComponent<TowerLook>();
         // level sync on the floors (docs/tower-design.md section 12)
         CombatRules.SyncFloor = f => f is PlayerController p && p.towerHandler != null ? p.towerHandler.SyncFloor : 0;
         // the tower stands far out at sea, but its floors and towns have no sea: a camera anywhere near one (a wide
@@ -321,6 +322,13 @@ public sealed class TowerManager : MonoBehaviour
 
         /// <summary>This player asked to go there and waits for it to load.</summary>
         public bool Waits(PlayerController player) => Pending.Contains(player);
+
+        /// <summary>
+        ///     Damage, healing and damage taken on this part since its players arrived (or since it was counted anew):
+        ///     the meters window shows it when the tower panel's Meters button asks. A boss fight has its own
+        ///     (<see cref="CombatMeter.Tower"/>).
+        /// </summary>
+        public readonly CombatMeter Meter = new CombatMeter();
         internal float EmptySince = -1f;
         internal float NextPressure;
 
@@ -459,6 +467,94 @@ public sealed class TowerManager : MonoBehaviour
         return list;
     }
 
+    // ---- Meters (the dungeon's meters window, for the tower) ---------------------------------------------------
+
+    /// <summary>The area the last boss fight was fought on: its meter (<see cref="CombatMeter.Tower"/>) shows while the camera is there.</summary>
+    public Area MeterArea { get; private set; }
+
+    /// <summary>The loaded part the game's camera is at, or null (in the town, in the world).</summary>
+    public Area CameraArea
+    {
+        get
+        {
+            var camera = Camera.main;
+            return camera ? AreaOf(PlaceNear(camera.transform.position, LookMargin) as TowerFloor) : null;
+        }
+    }
+
+    /// <summary>The game's camera is at a place of the tower (a part or the town).</summary>
+    public bool CameraInTower
+    {
+        get
+        {
+            var camera = Camera.main;
+            return camera && PlaceNear(camera.transform.position, LookMargin);
+        }
+    }
+
+    /// <summary>
+    ///     The meter a player's blows count on now: the boss fight's for everyone on its part while it is fought
+    ///     (also one who fell and got up again, whose blows still land on the boss), else their part's own; null
+    ///     outside the tower's parts. On the hit path of every player: a few comparisons.
+    /// </summary>
+    public static CombatMeter MeterOf(PlayerController player)
+    {
+        var tower = Instance;
+        if (!tower || !player || player.towerHandler == null || !player.towerHandler.InTower) return null;
+        var area = tower.AreaOf(player.towerHandler.Floor);
+        if (area == null) return null;
+        if (tower.attempt == TowerPhase.Fight && area == tower.fightArea) return CombatMeter.Tower;
+        return area.Meter.Running ? area.Meter : null;
+    }
+
+    /// <summary>A player's blow took <paramref name="took"/> health off a monster (EnemyController.TakeDamage): onto their meter.</summary>
+    public static void MeterHit(PlayerController player, EnemyController enemy, int took)
+    {
+        if (took <= 0) return;
+        var meter = MeterOf(player);
+        if (meter == null) return;
+        meter.AddDamage(player, took);
+        var tower = Instance;
+        if (meter == CombatMeter.Tower && tower.fightArea != null && tower.fightArea.Floor && tower.fightArea.Floor.Boss == enemy) meter.TargetDamage += took;
+    }
+
+    // a part's own meter starts anew: its first players arrived, or it became another part
+    private static void BeginStretch(Area area)
+    {
+        var def = area.Definition;
+        area.Meter.Begin();
+        area.Meter.Title = def != null ? string.Format(Localization.UI_TOWER_METER_TITLE, TowerWords.Floor(area.Step), TowerWords.Part(area.Step), def.Name) : null;
+        area.Meter.Caption = Localization.UI_METER_TRAINING;
+    }
+
+    /// <summary>The part's own meter counts from now (the meters window's button).</summary>
+    public void ResetStretch(Area area)
+    {
+        if (area != null && areas.Contains(area)) BeginStretch(area);
+    }
+
+    // those who went to a cleared part by themselves (!tower part 3)
+    private readonly HashSet<PlayerController> ownWay = new HashSet<PlayerController>();
+
+    /// <summary>
+    ///     Whether a player went to a cleared part by themselves (!tower part 3) and has not joined the climb again:
+    ///     !tower all leaves them where they are, as it leaves the players in the town. Not in potato mode, where the
+    ///     one open part is everyone's.
+    /// </summary>
+    public bool OnOwnWay(PlayerController player) =>
+        AreaLimit > 1 && player && ownWay.Contains(player) && player.towerHandler != null && player.towerHandler.InTower;
+
+    /// <summary>
+    ///     The climbing group: everyone on a part of the tower but those who went to one by themselves. !tower all
+    ///     moves them, and only they vote for it.
+    /// </summary>
+    public List<PlayerController> GroupPlayers()
+    {
+        var list = FightingPlayers();
+        for (var i = list.Count - 1; i >= 0; i--) if (OnOwnWay(list[i])) list.RemoveAt(i);
+        return list;
+    }
+
     // nobody on it, nobody on the way, nothing going on: it may give its place to another part
     private bool Idle(Area a) =>
         !a.Loading && !a.Unloading && a != fightArea && a != clearing && a.Pending.Count == 0 && CountOn(a) == 0;
@@ -522,6 +618,7 @@ public sealed class TowerManager : MonoBehaviour
         area.EmptySince = -1f;
         if (!area.Floor) return;
         area.Floor.Apply(Tower.Get(step));
+        BeginStretch(area);
         // anyone on it finds themselves on the new part (on a part of rooms: back at its first room)
         foreach (var p in PlayersOn(area)) p.towerHandler.FloorChanged(area.Floor);
         RefreshPressure(area, true);
@@ -565,6 +662,8 @@ public sealed class TowerManager : MonoBehaviour
     private GoResult Send(PlayerController player, Area area)
     {
         var handler = player.towerHandler;
+        // with the group again, whoever sends them (Visit marks its own right after)
+        ownWay.Remove(player);
         foreach (var a in areas) if (a != area) a.Pending.Remove(player);
         pendingTownJoins.Remove(player);
         // off to another part during a countdown: out of the attempt
@@ -574,7 +673,9 @@ public sealed class TowerManager : MonoBehaviour
             if (!area.Pending.Contains(player)) area.Pending.Add(player);
             return GoResult.Loading;
         }
+        var first = CountOn(area) == 0;
         if (!handler.Enter(area.Floor)) return GoResult.Busy;
+        if (first || !area.Meter.Running) BeginStretch(area);
         area.EmptySince = -1f;
         if (area == fightArea && attempt == TowerPhase.Countdown) participants.Add(player);
         return GoResult.Joined;
@@ -625,9 +726,17 @@ public sealed class TowerManager : MonoBehaviour
             case GoResult.Loading: return JoinResult.Loading;
             case GoResult.Here: return JoinResult.AlreadyIn;
             case GoResult.Full:
-                // no place for the climb's part: to the part that is open, where the others are
+                // no place for the climb's part: to the part the group is on (else where most players are)
                 Area open = null;
-                foreach (var a in areas) if (!a.Unloading && !a.Closing && (open == null || CountOn(a) > CountOn(open))) open = a;
+                var most = -1;
+                var group = GroupPlayers();
+                foreach (var a in areas)
+                {
+                    if (a.Unloading || a.Closing) continue;
+                    var weight = CountOn(a);
+                    foreach (var p in group) if (a.Floor && p.towerHandler.Floor == a.Floor) weight += 1000;
+                    if (weight > most) { most = weight; open = a; }
+                }
                 if (open == null) return JoinResult.Busy;
                 var there = Send(player, open);
                 return there == GoResult.Joined || there == GoResult.Loading ? JoinResult.Elsewhere : JoinResult.Busy;
@@ -657,7 +766,10 @@ public sealed class TowerManager : MonoBehaviour
         var target = AreaAt(step);
         // the part whose guardian just fell is being wrapped up
         if (target != null && target == clearing) return VisitResult.Busy;
-        switch (GoTo(player, step, out area))
+        var went = GoTo(player, step, out area);
+        // by themselves on a cleared part: the group's moves pass them by until they join the climb again (!tower)
+        if ((went == GoResult.Joined || went == GoResult.Loading) && step != StreamFloor) ownWay.Add(player);
+        switch (went)
         {
             case GoResult.Joined: return VisitResult.Joined;
             case GoResult.Loading: return VisitResult.Loading;
@@ -692,6 +804,7 @@ public sealed class TowerManager : MonoBehaviour
         foreach (var a in areas) a.Pending.Remove(player);
         waitingForOpening.RemoveAll(w => w.Player == player);
         pendingTownJoins.Remove(player);
+        ownWay.Remove(player);
         if (player && player.towerHandler != null) player.towerHandler.Exit();
     }
 
@@ -768,6 +881,7 @@ public sealed class TowerManager : MonoBehaviour
             if (!player.towerHandler.Enter(town)) return TownJoinResult.Busy;
             foreach (var a in areas) a.Pending.Remove(player);
             participants.Remove(player);
+            ownWay.Remove(player);
             townEmptySince = -1f;
             return TownJoinResult.Joined;
         }
@@ -1041,6 +1155,7 @@ public sealed class TowerManager : MonoBehaviour
             if (p && !p.isDestroyed && p.towerHandler != null && p.towerHandler.Enter(floor)) joined++;
         area.Pending.Clear();
         area.EmptySince = -1f;
+        BeginStretch(area);
         var def = area.Definition;
         // the climb's part opening is told to everyone; a cleared part someone went to train on is their own business
         if (joined > 0 && def != null && State != null && area.Step == StreamFloor)
@@ -1093,6 +1208,7 @@ public sealed class TowerManager : MonoBehaviour
     // for (potato mode switched on, a part opened beside the full ones); never the one a boss attempt runs on.
     private void UpdateAreas()
     {
+        if (ownWay.Count > 0) ownWay.RemoveWhere(Forgotten);
         if (areas.Count == 0) return;
         var limit = AreaLimit;
         var live = 0;
@@ -1111,6 +1227,15 @@ public sealed class TowerManager : MonoBehaviour
             StartCoroutine(UnloadRoutine(a));
             live--;
         }
+    }
+
+    // gone, or out of the tower and not waiting for a part to open: no longer on a way of their own
+    private bool Forgotten(PlayerController player)
+    {
+        if (!player || player.isDestroyed || player.towerHandler == null) return true;
+        if (player.towerHandler.InTower) return false;
+        foreach (var a in areas) if (a.Pending.Contains(player)) return false;
+        return true;
     }
 
     // ---- Quests ----------------------------------------------------------------------------------------------
@@ -1440,6 +1565,9 @@ public sealed class TowerManager : MonoBehaviour
         if (player && attempt == TowerPhase.Fight)
         {
             fallen.Add(player);
+            // said over them, so it reads as what it is: knocked out, and out of this fight once back up
+            player.towerHandler.SitOut();
+            CombatPaths.Word(player, Localization.UI_TOWER_KNOCKED_OUT, new Color(1f, 0.45f, 0.4f));
             // the boss forgets them: once back up they sit the attempt out, and it does not come after them
             var boss = fightArea != null && fightArea.Floor ? fightArea.Floor.Boss : null;
             if (boss) boss.RemoveAttacker(player);
@@ -1511,6 +1639,9 @@ public sealed class TowerManager : MonoBehaviour
 
         /// <summary>Only a majority passes it, never the time alone (closing the tower sends everyone out).</summary>
         public bool MajorityOnly;
+
+        /// <summary>A vote of the climbing group (where it goes): those on a part of their own are not counted.</summary>
+        public bool GroupOnly;
     }
 
     /// <summary>
@@ -1526,17 +1657,17 @@ public sealed class TowerManager : MonoBehaviour
     public static int Majority(int active) => Mathf.Max(1, active / 2 + 1);
 
     /// <summary>The players in the tower who are here: those who typed a command in the last <see cref="VoteAwayMinutes"/>.</summary>
-    public int ActivePlayers()
+    public int ActivePlayers(bool groupOnly = false)
     {
         var now = System.DateTime.UtcNow;
         var count = 0;
         foreach (var p in AllPlayers())
-            if ((now - p.LastChatCommandUtc).TotalMinutes <= VoteAwayMinutes) count++;
+            if ((now - p.LastChatCommandUtc).TotalMinutes <= VoteAwayMinutes && !(groupOnly && OnOwnWay(p))) count++;
         return count;
     }
 
     /// <summary>The voices a vote still needs to pass at once: a majority of those who are here (its voters are).</summary>
-    private int Missing(Vote vote) => Mathf.Max(0, Majority(Mathf.Max(ActivePlayers(), vote.Voters.Count)) - vote.Voters.Count);
+    private int Missing(Vote vote) => Mathf.Max(0, Majority(Mathf.Max(ActivePlayers(vote.GroupOnly), vote.Voters.Count)) - vote.Voters.Count);
 
     /// <summary>Whether the last vote cast opened a new vote (announced to everyone) and did not join one.</summary>
     public bool VoteJustOpened { get; private set; }
@@ -1575,12 +1706,12 @@ public sealed class TowerManager : MonoBehaviour
     ///     vote for <see cref="VoteSeconds"/>; when they are up it passes with the voices it has (<see cref="UpdateVotes"/>),
     ///     unless it is <paramref name="majorityOnly"/>.
     /// </summary>
-    private int AddVote(string key, PlayerController player, bool majorityOnly = false)
+    private int AddVote(string key, PlayerController player, bool majorityOnly = false, bool groupOnly = false)
     {
         VoteJustOpened = false;
         if (!votes.TryGetValue(key, out var vote) || Time.time >= vote.Ends)
         {
-            votes[key] = vote = new Vote { Ends = Time.time + VoteSeconds, MajorityOnly = majorityOnly };
+            votes[key] = vote = new Vote { Ends = Time.time + VoteSeconds, MajorityOnly = majorityOnly, GroupOnly = groupOnly };
             VoteJustOpened = true;
         }
         vote.Voters.Add(player.Id.ToString());
@@ -1746,6 +1877,7 @@ public sealed class TowerManager : MonoBehaviour
 
     private void StartCountdown(Area area)
     {
+        LastLoss = null;
         votes.Remove("boss");
         participants.Clear();
         fallen.Clear();
@@ -1816,6 +1948,12 @@ public sealed class TowerManager : MonoBehaviour
         attempt = TowerPhase.Fight;
         phaseEnds = Time.time + Tower.BossTimeLimitSeconds;
         fightStarted = Time.time;
+        // the meters window: the fight from here (after the intro) to its end
+        var meter = CombatMeter.Tower;
+        meter.Begin();
+        meter.Title = string.Format(Localization.UI_TOWER_METER_TITLE, TowerWords.Floor(area.Step), TowerWords.Part(area.Step), def.Boss.Name);
+        meter.Caption = TowerWords.BossKind(area.Step).ToUpperInvariant();
+        MeterArea = area;
         nextSlam = Time.time + SlamInterval(boss);
         slamAt = -1f;
         nextSpit = Time.time + SpitInterval(boss) * 0.5f;
@@ -1893,6 +2031,83 @@ public sealed class TowerManager : MonoBehaviour
     }
 
     private static float SlamRadius(EnemyController boss) => 4f + 1.5f * boss.transform.localScale.x;
+
+    /// <summary>How far from the guardian a player who sits the fight out stands at least: clear of its slam.</summary>
+    public static float WatchDistance(EnemyController boss) => SlamRadius(boss) + 5f;
+
+    /// <summary>The guardian being fought, or null.</summary>
+    public EnemyController FightBoss => attempt == TowerPhase.Fight && fightArea != null && fightArea.Floor ? fightArea.Floor.Boss : null;
+
+    /// <summary>
+    ///     A knocked out player has recovered (TowerHandler, after TowerRecovery's seconds): back into the fight, at
+    ///     a share of their health. The guardian may come after them again, and its slams reach them again.
+    /// </summary>
+    public void Rejoin(PlayerController player)
+    {
+        if (!player || player.towerHandler == null) return;
+        var boss = FightBoss;
+        if (!boss || boss.Stats.IsDead || !fallen.Remove(player))
+        {
+            player.towerHandler.BossFightEnded();
+            return;
+        }
+        player.towerHandler.Recovered(boss);
+        CombatPaths.Word(player, Localization.UI_TOWER_BACK_IN, new Color(0.6f, 1f, 0.6f));
+    }
+
+    /// <summary>How the last attempt on the climb's part was lost, until the next one is called or the part is cleared: the panel says it while the group regroups.</summary>
+    public sealed class LossInfo
+    {
+        public int Step;
+        /// <summary>The guardian's short name ("Viridia").</summary>
+        public string Boss;
+        /// <summary>"Everyone was knocked out" or "Time ran out".</summary>
+        public string Reason;
+        /// <summary>The share of its health the guardian had left, in percent (1 to 100).</summary>
+        public int PercentLeft;
+    }
+
+    public LossInfo LastLoss { get; private set; }
+
+    /// <summary>A guardian's name without its byname: "Viridia, the Verdant Wyrm" is "Viridia".</summary>
+    public static string ShortName(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return "";
+        var comma = name.IndexOf(',');
+        return comma > 0 ? name.Substring(0, comma) : name;
+    }
+
+    /// <summary>The area a boss attempt (its countdown or its fight) is on, or null.</summary>
+    public Area FightArea => fightArea;
+
+    /// <summary>In a fight: how many of its players still stand, and how many went in.</summary>
+    public bool FightCount(out int standing, out int total)
+    {
+        standing = 0; total = 0;
+        if (attempt != TowerPhase.Fight) return false;
+        foreach (var p in participants)
+        {
+            if (!p || p.isDestroyed || !p.towerHandler.InTower) continue;
+            total++;
+            if (!p.Stats.IsDead && !fallen.Contains(p)) standing++;
+        }
+        return true;
+    }
+
+    /// <summary>
+    ///     !tower boss now (the streamer or a moderator; the panel's Start now button): the countdown is cut short and
+    ///     the fight begins with everyone who has joined. The guardian's first-time intro still plays, and a !tower
+    ///     during it still counts. False when no countdown is running.
+    /// </summary>
+    public bool StartBossNow()
+    {
+        if (attempt != TowerPhase.Countdown || introBoss || PhaseSecondsLeft <= 0f) return false;
+        var def = fightArea?.Definition;
+        TrimParticipants();
+        phaseEnds = Time.time;
+        Announce(Localization.MSG_TOWER_BOSS_NOW, def != null ? def.Boss.Name : "", participants.Count);
+        return true;
+    }
 
     private float SpitInterval(EnemyController boss)
     {
@@ -1983,6 +2198,14 @@ public sealed class TowerManager : MonoBehaviour
         var report = new TowerClearReport { Characters = ids, LastHits = LastBlows(), Strength = fightStrength };
         // the part is wrapped up: nobody new comes onto it, and it stays loaded until everyone is in the town
         clearing = area;
+        LastLoss = null;
+        // the meters' result: won, and on a floor boss whose blows felled it (the server's word replaces it below)
+        CombatMeter.Tower.Outcome = Localization.UI_METER_VICTORY;
+        if (floorBoss)
+        {
+            CombatMeter.Tower.MarkText = Localization.UI_METER_LAST_BLOW;
+            foreach (var id in report.LastHits) CombatMeter.Tower.Marked.Add(id);
+        }
         // the body stays for its fall (slow motion when the cutscene plays), then goes
         EndAttempt((floorBoss ? FloorBossFallSeconds : BossFallSeconds) + 1.5f);
         if (floorBoss) Announce(Localization.MSG_TOWER_FLOOR_BOSS_DOWN, def.Boss.Name, TowerWords.Floor(floorNumber), TowerWords.FloorName(floorNumber));
@@ -2017,6 +2240,12 @@ public sealed class TowerManager : MonoBehaviour
         if (result.LastHitBy != null && result.LastHitBy.Length > 0)
         {
             var hitters = result.LastHitBy.Select(id => names.TryGetValue(id, out var n) ? n : null).Where(n => !string.IsNullOrEmpty(n)).ToList();
+            // the meters' result names who the server gave the last blow (unless another fight has begun since)
+            if (!CombatMeter.Tower.Running && MeterArea == area)
+            {
+                CombatMeter.Tower.Marked.Clear();
+                foreach (var id in result.LastHitBy) CombatMeter.Tower.Marked.Add(id);
+            }
             if (hitters.Count > 0) Announce(Localization.MSG_TOWER_LAST_HIT, string.Join(", ", hitters), def.Boss.Name, Localization.UI_TITLE_FINISHER_1);
         }
         if (result.Rewards != null && result.Rewards.Length > 0) AnnounceDrops(g, g.AddItems(result.Rewards));
@@ -2112,13 +2341,14 @@ public sealed class TowerManager : MonoBehaviour
         if (moved > 0) Announce(Localization.MSG_TOWER_IN_TOWN, TowerTown.Loaded && TowerTown.Loaded.Town != null ? TowerTown.Loaded.Town.Name : town.Name, TowerWords.Floor(next.Number), TowerWords.Part(next.Number), next.Name);
     }
 
-    public enum MoveResult { Moved, Same, Locked, Busy, Voted, NotInTower, Nobody }
+    public enum MoveResult { Moved, Same, Locked, Busy, Voted, NotInTower, Nobody, OwnWay }
 
     /// <summary>
     ///     !tower all part 3 from chat (<paramref name="step"/> is the part's step; the climb's own step for !tower all
-    ///     alone): everyone on a part of the tower goes to that part together, as !tower part 3 did before each player
-    ///     could go by themselves. The streamer or a moderator at once; anyone else in the tower votes for it.
-    ///     Players in the town stay there.
+    ///     alone): the climbing group goes to that part together, as !tower part 3 did before each player could go by
+    ///     themselves. The streamer or a moderator at once; anyone else of the group votes for it. Players in the town
+    ///     stay there, and so do those who went to a cleared part by themselves (<see cref="OnOwnWay"/>): they hear of
+    ///     a boss countdown like everyone and come back with !tower. In potato mode the one open part is everyone's.
     /// </summary>
     public MoveResult RequestMove(PlayerController player, int step, bool canForce, out int votesNeeded)
     {
@@ -2126,19 +2356,23 @@ public sealed class TowerManager : MonoBehaviour
         var def = Tower.Get(step);
         if (def == null || step < 1 || State == null || step > StreamFloor) return MoveResult.Locked;
         if (attempt != TowerPhase.Closed || clearing != null) return MoveResult.Busy;
-        var fighters = FightingPlayers();
-        if (fighters.Count == 0) return MoveResult.Nobody;
+        // the streamer or a moderator who is on a part of their own takes the group along and goes with it
+        if (canForce && player && OnOwnWay(player)) ownWay.Remove(player);
+        var group = GroupPlayers();
+        if (group.Count == 0) return MoveResult.Nobody;
         var target = AreaAt(step);
         if (target != null && target.Floor)
         {
             var all = true;
-            foreach (var p in fighters) if (p.towerHandler.Floor != target.Floor) { all = false; break; }
+            foreach (var p in group) if (p.towerHandler.Floor != target.Floor) { all = false; break; }
             if (all) return MoveResult.Same;
         }
         if (!canForce)
         {
             if (!CanVote(player)) return MoveResult.NotInTower;
-            votesNeeded = AddVote(PartVote(step), player);
+            // on a part of their own: where the group goes is the group's to say
+            if (OnOwnWay(player) && player.towerHandler.Floor) return MoveResult.OwnWay;
+            votesNeeded = AddVote(PartVote(step), player, false, true);
             if (votesNeeded > 0)
             {
                 if (VoteJustOpened) Announce(Localization.MSG_TOWER_FLOOR_VOTE_OPENED, player.PlayerName, TowerWords.Floor(step), TowerWords.Part(step), def.Name, (int)VoteSeconds, votesNeeded);
@@ -2146,14 +2380,14 @@ public sealed class TowerManager : MonoBehaviour
             }
         }
         votes.Remove(PartVote(step));
-        MoveEveryone(step, fighters);
-        return MoveResult.Moved;
+        return MoveGroup(step, group) ? MoveResult.Moved : MoveResult.Busy;
     }
 
-    // Everyone on the tower's parts goes to one part. When no place is free for it, one of the loaded areas of the
-    // same layout becomes it where it stands (nothing to load); else it opens beside the others, everyone goes over
-    // when it has loaded, and the areas left empty go at once (UpdateAreas). Nobody steps out of the tower meanwhile.
-    private void MoveEveryone(int step, List<PlayerController> fighters)
+    // The climbing group goes to one part. When no place is free for it, a loaded area of the same layout that only
+    // the group is on becomes it where it stands (nothing to load); else it opens beside the others (one more than
+    // the limit for a moment), the group goes over when it has loaded, and the area it left goes at once
+    // (UpdateAreas). Nobody steps out of the tower meanwhile. False: every place is taken, by a move still under way.
+    private bool MoveGroup(int step, List<PlayerController> group)
     {
         var target = AreaAt(step);
         if (target == null)
@@ -2165,7 +2399,8 @@ public sealed class TowerManager : MonoBehaviour
                 Area same = null;
                 foreach (var a in areas)
                 {
-                    if (a.Unloading || a.Closing || a.Loading || !a.Floor || a.ScenePath != scene) continue;
+                    if (a.Unloading || a.Closing || a.Loading || !a.Floor || a.ScenePath != scene || a == fightArea || a == clearing) continue;
+                    if (!OnlyOn(a, group)) continue;
                     // rather a cleared part than the climb's
                     if (same == null || (State != null && same.Step == StreamFloor)) same = a;
                 }
@@ -2174,19 +2409,43 @@ public sealed class TowerManager : MonoBehaviour
                     Retarget(same, step);
                     target = same;
                 }
+                else if (FreeSlot() < 0) return false;
                 else target = Open(step);
             }
         }
-        foreach (var p in fighters)
+        foreach (var p in group)
         {
             if (!p || p.isDestroyed || p.towerHandler == null || p.towerHandler.Floor == target.Floor) continue;
             if (p.towerHandler.InBossFight || p.Stats.IsDead) continue;
             Send(p, target);
         }
+        return true;
+    }
+
+    // nobody but these players is on the area or on the way to it
+    private bool OnlyOn(Area area, List<PlayerController> players)
+    {
+        foreach (var p in PlayersOn(area)) if (!players.Contains(p)) return false;
+        foreach (var p in area.Pending) if (!players.Contains(p)) return false;
+        return true;
     }
 
     private void Lost(TowerFloorDefinition def, string message)
     {
+        CombatMeter.Tower.Outcome = Localization.UI_METER_DEFEAT;
+        // said on screen as a clear is, short and without the camera, and kept for the panel while the group
+        // regroups: someone who only looks at the game has to see that the attempt was lost, why, and what comes next
+        var guardian = fightArea != null && fightArea.Floor ? fightArea.Floor.Boss : null;
+        var left = guardian && guardian.Stats.Health.MaxValue > 0
+            ? Mathf.Clamp(Mathf.CeilToInt(100f * guardian.Stats.Health.CurrentValue / guardian.Stats.Health.MaxValue), 1, 100) : 100;
+        LastLoss = new LossInfo
+        {
+            Step = fightArea != null ? fightArea.Step : StreamFloor,
+            Boss = ShortName(def.Boss.Name),
+            Reason = message == Localization.MSG_TOWER_BOSS_LOST_TIME ? Localization.UI_TOWER_LOST_TIME : Localization.UI_TOWER_LOST_FALLEN,
+            PercentLeft = left
+        };
+        Shinobytes.UI.TowerHudView.ShowDefeat(Localization.UI_TOWER_DEFEATED, LastLoss.Reason, string.Format(Localization.UI_TOWER_LOST_LEFT, LastLoss.Boss, left));
         EndAttempt();
         retryAt = Time.time + Tower.BossRetrySeconds;
         Announce(message, def.Boss.Name, Tower.BossRetrySeconds);
@@ -2204,10 +2463,12 @@ public sealed class TowerManager : MonoBehaviour
         if (floor) floor.DespawnBoss(bossDelay);
         if (floor && floor.Route) floor.Route.EndRally();
         foreach (var p in participants) if (p && p.towerHandler != null) p.towerHandler.BossFightEnded();
+        foreach (var p in fallen) if (p && p.towerHandler != null) p.towerHandler.BossFightEnded();
         participants.Clear();
         fallen.Clear();
         attempt = TowerPhase.Closed;
         fightArea = null;
+        CombatMeter.Tower.End();
     }
 
     private static void ShowRing(ref GameObject ring, string name, Vector3 centre, float radius, Color color, float width)
@@ -2738,7 +2999,14 @@ public sealed class TowerManager : MonoBehaviour
         UpdateAreas();
     }
 
-    private void LateUpdate()
+    /// <summary>
+    ///     The look of the place the camera is at (light, fog, haze, no sea, sky clouds or weather), set every frame by
+    ///     <see cref="TowerLook"/> after every camera has moved (a late LateUpdate) and before anything is drawn. As
+    ///     this object's own LateUpdate it ran before the game's camera moved: on the frame the camera cut from an
+    ///     island to a tower place the place was drawn in the island's light, and the island in the place's on the
+    ///     cut back.
+    /// </summary>
+    public void ApplyLook()
     {
         var camera = Camera.main;
         // the place the camera is at, or near enough to look at from outside (a wide shot): the nearest loaded one

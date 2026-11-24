@@ -93,6 +93,16 @@ namespace Shinobytes.UI
         /// </summary>
         private readonly List<RowState> rows = new List<RowState>();
 
+        // The tower: while the camera is on a part of it, the list is that part's players (a boss fight's first),
+        // unless the header's switch asks for everyone. Outside the tower it is everyone, as always.
+        private readonly List<PlayerController> towerPlayers = new List<PlayerController>();
+        private bool towerScope;
+        private bool showEveryone;
+        private int towerSignature;
+        private Label titleLabel;
+        private Button scopeButton;
+        private bool scopeButtonShown;
+
         private VisualElement window;
         private VisualElement header;
         private Label countLabel;
@@ -156,9 +166,12 @@ namespace Shinobytes.UI
             public float LastHealth = -1f;
             public bool LastHealthLow;
             public int LastRestedMinutes = -1;
+            /// <summary>-1 unknown; 0 nothing, 1 knocked out, 2 out of the boss fight (the tower's list).</summary>
+            public int LastTowerMark = -1;
 
             public void Reset()
             {
+                LastTowerMark = -1;
                 LastName = null;
                 LastColorHex = null;
                 LastHighlight = -1;
@@ -217,7 +230,7 @@ namespace Shinobytes.UI
             window = root.Q<VisualElement>("playerlist-window");
             header = root.Q<VisualElement>("playerlist-header");
             countLabel = root.Q<Label>("playerlist-count");
-            var titleLabel = root.Q<Label>("playerlist-title");
+            titleLabel = root.Q<Label>("playerlist-title");
             if (titleLabel != null) titleLabel.text = Localization.UI_PLAYERLIST_TITLE;
             listView = root.Q<ListView>("playerlist-view");
             collapseButton = root.Q<Button>("playerlist-collapse");
@@ -261,6 +274,23 @@ namespace Shinobytes.UI
             }
 
             BindSearch(root);
+
+            // the switch between the tower's players and everyone: there only while the camera is in the tower
+            if (searchToggle != null && searchToggle.parent != null)
+            {
+                scopeButton = new Button(() =>
+                {
+                    showEveryone = !showEveryone;
+                    nextRefresh = 0f;
+                }) { text = Localization.UI_PLAYERLIST_SHOW_ALL };
+                scopeButton.AddToClassList("rf-window__button");
+                scopeButton.AddToClassList("rf-playerlist__scope");
+                scopeButton.style.display = DisplayStyle.None;
+                scopeButtonShown = false;
+                searchToggle.parent.Insert(searchToggle.parent.IndexOf(searchToggle), scopeButton);
+            }
+            towerScope = false;
+            towerSignature = 0;
 
             var closeButton = root.Q<Button>("playerlist-close");
             if (closeButton != null)
@@ -476,12 +506,73 @@ namespace Shinobytes.UI
             var gm = GameManager.Instance;
             observed = gm != null && gm.Camera != null && gm.Camera.Observer != null ? gm.Camera.Observer.ObservedPlayer : null;
 
+            UpdateScope();
+
             for (var i = 0; i < rows.Count; ++i)
             {
                 Refresh(rows[i]);
             }
 
             RefreshFooter();
+        }
+
+        /// <summary>
+        /// Whose list it is now: the players on the tower part the camera is at, or everyone. One pass over the
+        /// players per refresh and no garbage, so a hundred players cost what ten do; the rows are only rebuilt
+        /// when who is listed, or their order, changed.
+        /// </summary>
+        private void UpdateScope()
+        {
+            var tower = TowerManager.Instance;
+            var area = tower ? tower.CameraArea : null;
+            var inTower = area != null && area.Floor;
+            // the switch lasts while the camera stays in the tower: outside it is everyone again, as always
+            if (!inTower) showEveryone = false;
+            var want = inTower && !showEveryone;
+
+            if (scopeButton != null)
+            {
+                if (inTower != scopeButtonShown)
+                {
+                    scopeButtonShown = inTower;
+                    scopeButton.style.display = inTower ? DisplayStyle.Flex : DisplayStyle.None;
+                }
+                if (inTower)
+                {
+                    var label = showEveryone ? Localization.UI_PLAYERLIST_SHOW_TOWER : Localization.UI_PLAYERLIST_SHOW_ALL;
+                    if (scopeButton.text != label)
+                    {
+                        scopeButton.text = label;
+                        scopeButton.tooltip = showEveryone ? Localization.UI_PLAYERLIST_SHOW_TOWER_HINT : Localization.UI_PLAYERLIST_SHOW_ALL_HINT;
+                    }
+                }
+            }
+
+            var signature = 0;
+            if (want)
+            {
+                // a boss fight's players first (those still standing, then those knocked out of it), then the rest
+                towerPlayers.Clear();
+                for (var group = 0; group < 3; ++group)
+                {
+                    for (var i = 0; i < allPlayers.Count; ++i)
+                    {
+                        var p = allPlayers[i];
+                        if (!p || p.towerHandler == null || !p.towerHandler.InTower || p.towerHandler.Floor != area.Floor) continue;
+                        var mine = p.towerHandler.InBossFight ? 0 : p.towerHandler.SatOut ? 1 : 2;
+                        if (mine != group) continue;
+                        towerPlayers.Add(p);
+                        unchecked { signature = signature * 31 + p.GetHashCode() + group; }
+                    }
+                }
+                unchecked { signature = signature * 31 + towerPlayers.Count + 1; }
+            }
+
+            if (want == towerScope && signature == towerSignature) return;
+            towerScope = want;
+            towerSignature = signature;
+            if (titleLabel != null) titleLabel.text = want ? Localization.UI_PLAYERLIST_TOWER : Localization.UI_PLAYERLIST_TITLE;
+            ApplyFilter();
         }
 
         private void ObserveRow(RowState state)
@@ -581,7 +672,8 @@ namespace Shinobytes.UI
 
             RefreshIdentity(state, player, observed != null && observed == player);
             RefreshHealth(state, player);
-            RefreshRested(state, player);
+            RefreshTowerMark(state, player);
+            if (state.LastTowerMark <= 0) RefreshRested(state, player);
             RefreshSkill(state, player);
         }
 
@@ -618,6 +710,26 @@ namespace Shinobytes.UI
             }
         }
 
+        /// <summary>
+        /// In the tower's list a player knocked out, or out of the boss fight, says so by their name (where the
+        /// rested tag is) and their row dims: the list is how the streamer follows who still stands.
+        /// </summary>
+        private void RefreshTowerMark(RowState state, PlayerController player)
+        {
+            var mark = 0;
+            if (towerScope && player.towerHandler != null && player.towerHandler.InTower)
+                mark = player.Stats != null && player.Stats.IsDead ? 1 : player.towerHandler.SatOut ? 2 : 0;
+            if (mark == state.LastTowerMark) return;
+            state.LastTowerMark = mark;
+            state.Root.EnableInClassList("rf-player-row--out", mark != 0);
+            state.Rested.EnableInClassList("rf-player-row__rested--out", mark != 0);
+            // the rested tag is written again by whoever has it next
+            state.LastRestedMinutes = -2;
+            if (mark == 0) return;
+            state.Rested.text = mark == 1 ? Localization.UI_TOWER_KNOCKED_OUT : Localization.UI_TOWER_RECOVERING;
+            state.Rested.style.display = DisplayStyle.Flex;
+        }
+
         private static void RefreshHealth(RowState state, PlayerController player)
         {
             var health = player.Stats != null ? player.Stats.Health : null;
@@ -625,7 +737,9 @@ namespace Shinobytes.UI
             if (health != null)
             {
                 int current = health.CurrentValue;
-                int max = health.Level;
+                // the health a player has at most (the skill's level is far less: the bar stood full until a player
+                // was nearly down, so the list could not be used to follow anyone's health)
+                int max = health.MaxValue;
                 fraction = max > 0 ? Mathf.Clamp01((float)current / max) : 0f;
             }
 
@@ -815,7 +929,8 @@ namespace Shinobytes.UI
             }
 
             allPlayers.Add(player);
-            if (Matches(player))
+            // the tower's list finds its own on the next refresh
+            if (!towerScope && Matches(player))
             {
                 players.Add(player);
             }
@@ -831,6 +946,7 @@ namespace Shinobytes.UI
             }
 
             players.Remove(player);
+            towerPlayers.Remove(player);
             OnPlayersChanged();
         }
 
@@ -985,11 +1101,12 @@ namespace Shinobytes.UI
         private void ApplyFilter()
         {
             players.Clear();
-            for (var i = 0; i < allPlayers.Count; ++i)
+            var source = towerScope ? towerPlayers : allPlayers;
+            for (var i = 0; i < source.Count; ++i)
             {
-                if (allPlayers[i] && Matches(allPlayers[i]))
+                if (source[i] && Matches(source[i]))
                 {
-                    players.Add(allPlayers[i]);
+                    players.Add(source[i]);
                 }
             }
 
@@ -1011,7 +1128,7 @@ namespace Shinobytes.UI
 
             if (countLabel != null)
             {
-                countLabel.text = allPlayers.Count.ToString(CultureInfo.InvariantCulture);
+                countLabel.text = (towerScope ? towerPlayers.Count : allPlayers.Count).ToString(CultureInfo.InvariantCulture);
             }
 
             // RefreshItems rebinds what is on screen and re-measures the scroll range without

@@ -426,7 +426,8 @@ Zerratar (2026-11-10): the tower does not stop at ten floors for v0.9.7; keep ad
   floor's latest part), `!tower floor 2 part 7` or short `!tower 2-7`; `!tower part` or `!tower floor` alone goes back
   to the climb. `!tower train 7` still works as `!tower part 7`.
 - *Since 2026-11-24 (step 2):* those commands take **only the player who types them** (the streamer too) to a cleared
-  part, and everyone goes with `all` in front: `!tower all part 7`, `!tower all 2-7`, and `!tower all` alone back to
+  part, and the climbing group goes with `all` in front (players on a part of their own stay there, as those in the
+  town do): `!tower all part 7`, `!tower all 2-7`, and `!tower all` alone back to
   the climb (the streamer or a moderator at once, anyone in the tower by vote). The table is in
   tower-worlds-proposal.md section 13.
 - **Training on cleared floors** (the open question below, answered): `!tower floor 7` (the streamer and moderators)
@@ -766,6 +767,11 @@ Captures from the game's camera: `docs/mockups/tower/band4/great-hall-*.png`.
   sent back to the world and quietly dropped out of the climb). In a boss attempt they are out of it for good: the boss
   forgets them, its slams and spits pass them by, and the attempt is lost when every participant has fallen. They still
   share the clear's rewards.
+  *Since 2026-11-24 (the owner):* they recover and come back. Up by the arrival, a knocked out player recovers for 40
+  seconds (`RavenNest.Combat.TowerRecovery`: one fixed time on every floor) and walks back into the fight at half
+  health; the attempt is lost when nobody stands at the same moment or the time runs out. A lost attempt says so on
+  screen ("Defeated"), the streamer has Challenge and Start now buttons (`!tower boss now`), the meters window and the
+  players list follow the camera into the tower (tower-worlds-proposal.md section 13, the follow-ups).
 - ~~Can players train on cleared floors?~~ Yes: `!tower floor N` (section 15; `!tower part N` since 2026-11-24) and the
   towns (section 14). Since step 2 (2026-11-24) each player goes to a cleared part alone, with up to three parts
   loaded (tower-worlds-proposal.md, section 13).

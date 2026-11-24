@@ -5,6 +5,9 @@ using System.Linq;
 
 public class Dps : ChatBotCommandHandler
 {
+    /// <summary>Seconds after a tower boss fight that !dps still says what the player did in it.</summary>
+    private const float TowerFightSeconds = 300f;
+
     public Dps(GameManager game, RavenBotConnection server, PlayerManager playerManager)
         : base(game, server, playerManager)
     {
@@ -21,13 +24,30 @@ public class Dps : ChatBotCommandHandler
 
         var sessionStats = plr.SessionStats;
 
-        if (sessionStats.HighestDamage <= 0 && sessionStats.HighestHeal <= 0)
+        // a tower boss fight under way or just over (the meters window's): what they did in it and where they stand
+        var fight = CombatMeter.Tower;
+        var inFight = fight.RunId > 0 && (fight.Running || UnityEngine.Time.unscaledTime - fight.EndedAt < TowerFightSeconds) ? fight.Find(plr.Id) : null;
+        if (inFight != null && inFight.Damage + inFight.Healing <= 0) inFight = null;
+
+        if (sessionStats.HighestDamage <= 0 && sessionStats.HighestHeal <= 0 && inFight == null)
         {
             client.SendReply(gm, Localization.MSG_DPS_NONE);
             return;
         }
 
         var msg = new ReplyMessageBuilder();
+
+        if (inFight != null)
+        {
+            var rank = 1;
+            var fighters = 0;
+            foreach (var e in fight.Entries)
+            {
+                if (e.Damage + e.Healing > 0) fighters++;
+                if (e.Damage > inFight.Damage) rank++;
+            }
+            msg.Add(Localization.MSG_DPS_TOWER, fight.Title ?? "Tower", Utility.FormatAmount(inFight.Damage), Utility.FormatAmount(inFight.Healing), rank, fighters);
+        }
 
         var dps = sessionStats.DPS;
         var hps = sessionStats.HPS;

@@ -247,7 +247,8 @@ v0.9.7 needs anyway.
 The first four pieces of the cut above are built (items 1, 2, 3 and 6): the words, mini bosses and floor bosses,
 objectives as a list of kinds, and scaling by pressure. Not built in this step: each player's own entry to cleared
 parts, the floor map, doors and routes for the crypt and the frost vault (all three: step 2, section 13, the same
-day), the tower in the main world. Nothing is deployed; it runs on the local server.
+day), the tower in the main world (built since: docs/world-tower.md). Nothing is deployed; it runs on the local
+server.
 
 ### Words, and the numbers behind them
 
@@ -537,8 +538,9 @@ goes on elsewhere.
 | `!tower` | anyone | to the part the climb is on (from the world: to the town when everyone waits there between parts; from the town or from a cleared part: straight to the climb) |
 | `!tower part 3`, `!tower 3`, `!tower 1-3`, `!tower floor 2 part 7`, `!tower floor 2`, `!tower train 3` | anyone, the streamer too | **only that player** goes to that cleared part to train. A part alone is one of the floor the player is on (the part or the town they are in), else of the stream's floor |
 | `!tower part`, `!tower floor` alone | anyone | the same as `!tower`: back to the climb |
-| `!tower all part 3`, `!tower all 1-3`, `!tower all floor 2` (also `everyone`, `group`) | the streamer or a moderator at once, anyone in the tower by vote | **everyone on the tower's parts** goes to that part, as `!tower part 3` did in step 1. Players in the town stay there |
-| `!tower all` alone | the same | everyone on the tower's parts goes back to the climb's part |
+| `!tower all part 3`, `!tower all 1-3`, `!tower all floor 2` (also `everyone`, `group`) | the streamer or a moderator at once, anyone of the group by vote | **the climbing group** goes to that part, as `!tower part 3` did in step 1. Players in the town stay there, and so do players who went to a cleared part by themselves (since the follow-ups below; before, they went along) |
+| `!tower all` alone | the same | the climbing group goes back to the climb's part |
+| `!tower boss now` (also `start`, `go`), or `!tower boss` again during the countdown | the streamer or a moderator | the countdown is cut short and the fight begins (the follow-ups below) |
 | `!tower map` | anyone | the floor map on screen for 20 seconds (once a minute at most) |
 
 **The choice for the streamer's own command:** it does what a viewer's does (the streamer's character goes alone).
@@ -794,3 +796,200 @@ cleared part), `worlds2-three-areas.png` (with the reply to a fourth), `worlds2-
    frame late). It was there before this step; it showed in 3 of about 110 snapshots.
 9. **The seals**: thorns and grave light in the crypt, glowing ice in the vault. The crypt's is green again, like the
    great hall's ghostfire, by its light; another color is one line in the route script.
+
+### Follow-ups the same day (2026-11-24): the owner's answers and what he saw in the test fights
+
+The owner answered the open calls above ("go with all your recommendations") and watched the boss fights being
+tested; this is what changed after it. Captures: docs/mockups/tower/worlds2-*.png.
+
+**Decided.** (1) The streamer's `!tower part 3` takes only the streamer; `all` moves the group. (2) `!tower all` moves
+**the climbing group only**, see below. (3) Cleared parts are open to any level, with the warning in the reply for a
+character far below the part: decided, nothing to build. (4) to (7) and (9) stay as built. (8) is fixed, see below.
+
+**`!tower all` moves the climbing group.** Players who went to a cleared part by themselves (`!tower part 3`) stay
+where they are when the group moves, as the players in the town always did. `TowerManager.OnOwnWay` marks them from
+their own trip until they type `!tower` (back to the climb) or leave; `GroupPlayers` is everyone else on the tower's
+parts. They still see a boss countdown on the panel and join it with `!tower`. Only the group votes for where the
+group goes (a majority of its members who are here; someone on a part of their own is told why their vote does not
+count), the streamer or a moderator moves it at once, and one of them who is on a part of their own takes the group
+along and goes with it. When no place is free for the part the group goes to (two parts are open for players on their
+own), it opens as a fourth for the moment the group needs to walk over and the part the group left closes at once; a
+loaded part is only turned into another where it stands when nobody but the group is on it. `!tower` from outside
+while no place is free for the climb's part goes to where the group is. In potato mode the one open part is
+everyone's, so there `all` moves everyone as before. Played: two players on parts of their own while the streamer
+moved a group of three (to a second copy of the crypt, on the fourth place), a newcomer joining the group there, a
+vote of the group (4 members: "2 more votes", refused for both players on their own way), the group back to the
+climb, a player back from their own way and moved with the group, the streamer taking the group along from a part of
+their own. Not played: potato mode after the change (its rule is the old one, by one line), real chat.
+
+**The seals of the crypt and the frost vault were redone.** The door captures of the first round did not show a seal
+that says "shut" from the game's camera: thin thorns and pea-sized wisps in the crypt, and in the vault a few ice
+crystals among a room full of the same ice. Now every sealed door has a **curtain of light** across the whole
+doorway, from the floor to the top of the leaves, with a strip of the same light on the floor before it
+(`TowerWard`: a mesh, a generated texture and an additive material made in code, rising slowly; it stands still in
+potato mode and stays on, because it tells what the game does). The place's own barrier stands in the light: a hedge
+of thorns as high as a player in the crypt (dark against the grave green), a wall of pale ice crystals in the vault
+(a cold white-blue, lighter than the vault's own ice). The seal's light stands further before the door, so it no
+longer shines through into the next room. Judged from the pictures: at the normal camera (25 m, 45 degrees) a sealed
+door is the brightest thing in its room and has the shape of the doorway, an open one is a dark gap; from straight
+above the strip on the floor still marks it. What is left: from the next room a thin line of the light shows through
+the crack between a leaf and the frame.
+Two faults found on the way and fixed: **the vault's doors never shut.** The pack's stone door is a pair (leaf 01
+hinged at its right edge, leaf 02 at its left); the vault had leaf 02 on both hinges placed as if it were leaf 01,
+so both leaves stood over the walls beside the opening, behind the ice, and the doorway was only closed by the seal
+and the navmesh. Both places now use the pair as it is made, and the leaves swing into the next room.
+`tools/tower/tower-audit.cs` checks every leaf (shut: in the doorway; open: in the next room): 38 checks, 0
+problems, both scenes.
+
+**The frame of the wrong light at a camera cut is fixed.** The look of a tower place (light, fog, haze, no sea or
+sky clouds) was set in `TowerManager.LateUpdate` from where the camera stood, and the game's camera moves in its own
+LateUpdate, later in the frame: on the frame of a cut the place was drawn in the island's light, and the island in
+the place's on the cut back. Measured before: 20 of 20 cuts wrong on their first frame, both ways. The look is now
+set by `TowerLook`, a late LateUpdate on the tower manager's object, after every camera has moved: 20 cuts, 500
+frames, 0 wrong.
+
+**The meters window in the tower** (the dungeon's, `DungeonMetersWindow`; one window, one run at a time). A boss
+fight (mini boss or floor boss) opens it when the fight begins, after the intro; it ranks damage done, healing done
+and damage taken, is titled with the fight ("Floor 1, part 10 - Viridia, the Verdant Wyrm"), says "MINI BOSS" or
+"FLOOR BOSS" while it runs and "VICTORY" or "DEFEAT" after, lingers the dungeon's 60 seconds and is hidden by its
+close button until the next fight. On a floor boss the result line names the last blow ("VICTORY  Last blow:
+Bot12876", from the game at once, then as the server gave the title) and the name stands in gold in its row (the
+second picture of worlds2-meters-floorboss.png shows this with made-up numbers; the real result was read from the
+window: Bot25696). **Which run shows: the one the camera is watching.** With the
+camera at a place of the tower it is the tower's (a fight while the camera is on its part; its result wherever in
+the tower the camera went, the town after a win); with the camera anywhere else it is the dungeon's as before, and
+it comes back when the camera returns within the linger. It is never over a tower cutscene and never over the
+tower panel's floor map. The tower panel has a **Meters** button for the part being watched (its damage since its
+players arrived, or since the window's "count from now" button). The tower's damage is counted where a monster
+loses health (`EnemyController.TakeDamage`), so skills, effects and pets count and the damage on a guardian adds up
+to its health exactly: 98,710 of 98,710 (mini boss), 74,970 of 74,970 (floor boss, 9 players), 150,960 of 150,960
+(30 players). `!dps` adds the fight ("Floor 1, part 10 - Viridia, the Verdant Wyrm: 8.8K DMG, 0 healed, rank 2 of
+9") during it and for five minutes after. The window keeps the place and size the dungeon meters have (remembered
+per machine). Its type went up to the stream sizes (names 20 px), with the name column given most of the width.
+Not done: a setting of its own, and healing by skills is counted as the dungeon counts it (the heal action only).
+
+**Boss fights, from what the owner saw** (floor 1, part 10, nine players):
+
+- *Damage numbers add up into one over a guardian*, as over a dungeon or raid boss (`EnemyController.MergeDamage`,
+  set by `TowerFloor.SpawnBoss`). A part's own monsters do the same once five players are on one
+  (`MergeWhenCrowded`); the world's monsters are as they were. Seen with 9 and with 30 attackers: one large number
+  over the guardian, the helpers' and the players' own numbers beside it.
+- *Knocked out players lay down and slid away.* A body was still given orders: on a part of rooms the walk to its
+  place in the guardian's room, elsewhere the way to the next monster. `TowerHandler.Update` now leaves a knocked
+  out player alone. Measured on 20 knockouts (several at the same blow, 5 and 30 players): 0.00 m moved while lying;
+  up by the arrival about 6 seconds later.
+- *Recovering, and back into the fight* (the owner: "so they can keep helping"). A knocked out player is no longer
+  out for the attempt: up by the arrival they recover for **40 seconds** (`RavenNest.Combat.TowerRecovery.Seconds`,
+  one fixed time on every floor and for every knockout) and then walk back into the fight at **half their health**
+  (`ReturnHealth`). While they recover the guardian does not come after them and its slams do not touch them. The
+  attempt is lost when nobody stands at the same moment, or when the time runs out. So that nobody wonders why they
+  do not help: "Knocked out" over them as they fall, "Recovering 23s" now and then while they wait, "Back in the
+  fight" when they go; their health bar fills to the half as the time passes (over their head and in the players
+  list); each goes to a place of their own beside the arrival (2.5 to 7.5 m to one side of the way in, so the
+  doorway and the walk to the guardian stay clear, never within the slam's reach plus 5 m) and waits there their
+  own way for the whole attempt: half of them sit, a fifth sit cross-legged, a fifth stand, one in ten cheers the
+  others on. The falls reported for the hidden achievement and the Last Blow rule are unchanged. Played: recovered
+  players back in the fight; a second knockout of the same player; everyone down at once with others seconds from
+  getting up (lost); the fight won with 12 of 30 recovering (the clear names all 30); `!tower leave` and a trip to
+  another part while sitting (up, not sitting, not marked); the camera on a recovering player; after a loss
+  everyone free and whole. Not done: weapons are not put away while sitting (the game has no cheap way), a healer
+  does not shorten the wait (the heal picks its target by health in another place), no effect on the name tag.
+- *Challenge and Start now.* The tower panel has a filled **Challenge** button when the guardian is open (the
+  streamer's `!tower boss`) and **Start now** during the countdown. In chat `!tower boss now` (also `start`, `go`)
+  from the streamer or a moderator, and their `!tower boss` typed again during the countdown, begin the fight at
+  once with everyone who has joined; the first-time intro still plays and a `!tower` during it counts. Chat is told
+  in one line ("The countdown is cut short: the fight with Viridia, the Verdant Wyrm starts now, with the 5 who
+  joined."). A viewer's `!tower boss now` is refused.
+- *The players list follows the camera into the tower.* While the camera is on a part of the tower the list is that
+  part's players ("TOWER 9"), a boss fight's first (standing, then recovering), with "Knocked out" and "Recovering"
+  by the name and the row dimmed; a switch in the header ("All" / "Tower") shows everyone and back, and outside the
+  tower it is everyone as always. One pass over the players per refresh, rows rebuilt only when who is listed
+  changes; the window's place and size are not touched. Found on the way: the list's health bars measured health
+  against the health skill's level (a tenth of the real maximum), so they stood full until a player was nearly
+  down; they now use the real maximum.
+- *A lost attempt says so on screen.* "Defeated" in the red of the boss names, the reason under it ("Everyone was
+  knocked out" or "Time ran out") and what the guardian had left ("Viridia had 44% left"), for seven seconds over
+  the game as it goes on, never over a cutscene. While the group regroups the panel's bar is the guardian's health
+  left, in red, with "Everyone was knocked out - Viridia had 44% left", and its line reads "Viridia still stands -
+  next attempt in 1:45"; then the Challenge button is back. With the objectives done the bar reads "Objectives
+  done", not "Objectives 2 / 2", and during a fight the panel counts "7 standing, 2 recovering".
+- *The panel squeezed between two windows* (the players list and the player details): its Map and Meters buttons
+  are their icons, the chat hint gives way to the Challenge button, and "TOWER" gives its room to the clock.
+
+**The simulator with recovery** (`tower 200` against `tower 200 norecover`; fresh players at each part's level in
+the best gear for it; won of 200 fights; only the guardians where anything is under 100):
+
+*Fresh players (before -> with recovery):*
+
+| Part | Guardian | 2 players | 5 players | 10 players | 30 players |
+|---|---|---|---|---|---|
+| 1-1 | Nibbles the Vicious | 100% | 99% -> 100% | 100% | 100% |
+| 1-2 | Warchief Grubnose | 97% -> 100% | 74% -> 100% | 100% | 100% |
+| 1-3 | The Brood Mother | 61% -> 100% | 41% -> 100% | 100% | 100% |
+| 1-4 | Mortimer Bonewhistle | 66% -> 95% | 49% -> 100% | 100% | 100% |
+| 1-5 | Old Thornback | 93% -> 100% | 64% -> 100% | 100% | 100% |
+| 1-6 | The Moo-tant | 92% -> 100% | 64% -> 100% | 100% | 100% |
+| 1-7 | Big Gorp, the Keep Colossus | 98% -> 100% | 94% -> 100% | 100% | 100% |
+| 1-8 | Lord Pestilus | 89% -> 98% | 49% -> 100% | 100% | 100% |
+| 1-9 | Old Rotbelly | 100% | 99% -> 100% | 100% | 100% |
+| 2-6 | Sigrid the Unthawed | 100% | 99% -> 100% | 100% | 100% |
+| 2-8 | The Thawed Ronin | 85% -> 100% | 80% -> 100% | 100% | 100% |
+| 2-9 | The Moo-tant, Refrozen | 100% | 99% -> 100% | 100% | 100% |
+| 3-1 | Captain Gale Blackwind | 82% -> 100% | 96% -> 100% | 100% | 100% |
+| 3-2 | Zap, Nibbles' Shocking Cousin | 51% -> 100% | 66% -> 100% | 100% | 100% |
+| 3-3 | Master Kaze | 4% -> 88% | 4% -> 100% | 100% | 100% |
+| 3-4 | Mother Squall | 77% -> 100% | 90% -> 100% | 100% | 100% |
+| 3-5 | Captain Quackbeard | 24% -> 98% | 47% -> 100% | 100% | 100% |
+| 3-6 | Champion Voltus | 19% -> 99% | 37% -> 100% | 100% | 100% |
+| 3-7 | Skyfang | 81% -> 99% | 90% -> 100% | 100% | 100% |
+| 3-8 | High Warden Aerin | 95% -> 100% | 96% -> 100% | 100% | 100% |
+| 3-9 | The Moo-tant, Supercharged | 93% -> 100% | 95% -> 100% | 100% | 100% |
+
+*Veterans:*
+
+| Part | Guardian | 2 players | 5 players | 10 players | 30 players |
+|---|---|---|---|---|---|
+| 1-3 | The Brood Mother | 92% -> 97% | 100% | 100% | 100% |
+| 1-4 | Mortimer Bonewhistle | 81% -> 94% | 99% -> 100% | 100% | 100% |
+| 1-5 | Old Thornback | 98% -> 100% | 100% | 100% | 100% |
+| 1-6 | The Moo-tant | 96% -> 100% | 100% | 100% | 100% |
+| 1-7 | Big Gorp, the Keep Colossus | 97% -> 100% | 100% | 100% | 100% |
+| 1-8 | Lord Pestilus | 94% -> 98% | 100% | 100% | 100% |
+| 2-1 | Jarl Rimebeard | 99% -> 100% | 100% | 100% | 100% |
+| 2-2 | Snowball, Nibbles' Big Sister | 96% -> 100% | 100% | 100% | 100% |
+| 2-3 | The Frozen Warden | 99% -> 100% | 100% | 100% | 100% |
+| 2-6 | Sigrid the Unthawed | 99% -> 100% | 100% | 100% | 100% |
+| 2-8 | The Thawed Ronin | 89% -> 100% | 100% | 100% | 100% |
+| 2-9 | The Moo-tant, Refrozen | 97% -> 99% | 100% | 100% | 100% |
+| 3-1 | Captain Gale Blackwind | 69% -> 100% | 100% | 100% | 100% |
+| 3-2 | Zap, Nibbles' Shocking Cousin | 39% -> 98% | 100% | 100% | 100% |
+| 3-3 | Master Kaze | 2% -> 47% | 65% -> 100% | 100% | 100% |
+| 3-4 | Mother Squall | 61% -> 91% | 100% | 100% | 100% |
+| 3-5 | Captain Quackbeard | 17% -> 80% | 99% -> 100% | 100% | 100% |
+| 3-6 | Champion Voltus | 31% -> 99% | 97% -> 100% | 100% | 100% |
+| 3-7 | Skyfang | 81% -> 97% | 100% | 100% | 100% |
+| 3-8 | High Warden Aerin | 93% -> 100% | 100% | 100% | 100% |
+| 3-9 | The Moo-tant, Supercharged | 90% -> 99% | 100% | 100% | 100% |
+
+Ten and thirty players won every fight before and after. With 60 seconds in place of 40 a group of five wins 99 to
+100 of 100, two players 71 to 100; with 90 seconds five lose the harder mini bosses about one time in ten and two
+players as often as with no recovery. **The guardians' own numbers were not changed**: with recovery a fresh group
+of five in the best gear does not lose a mini boss in the simulator any more (it lost the harder ones one time in
+two to four before), so if that should come back it has to come from the guardians, floor by floor.
+
+**Also played in this round.** The floor map's arrows with pointer events (floor 2 to 1 and back, each greyed at
+its end). A gather objective fed by real gathering: the dev character mining alone, +53 in 336 seconds, which is the
+lone gatherer's 1.55 a round at a round every 10 seconds (two gatherers could not be played: the bots are not
+characters on the server). The hidden things of a floor 2 part (2-8, five players): the first after 5 minutes 12
+seconds (designed 5).
+
+**Open calls for the owner (this round).**
+
+1. **Recovery makes the guardians easy for a group of five** in the simulator (table above). Raising the guardians'
+   numbers per floor is the lever; it was not touched.
+2. **The recovery time is 40 seconds on every floor** (`TowerRecovery.Seconds`), half health on return.
+3. **Which meters show**: the run the camera is watching (tower in the tower, dungeon elsewhere).
+4. **Damage numbers of a part's monsters** add up from five attackers on; the world's monsters do not.
+5. **The seal is a curtain of light at every sealed door**, green in the crypt and white-blue in the vault.
+6. **The players list's health bars** now show real health everywhere (they stood full before).
+7. **The meters window's type is larger**, in dungeons too.

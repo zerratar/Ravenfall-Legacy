@@ -203,6 +203,7 @@ public class PlayerCombat
             // Holy Fire: the heal also strikes an enemy
             CombatPaths.HealStruck(owner, target, heal);
             if (owner.dungeonHandler != null && owner.dungeonHandler.InDungeon) CombatMeter.Dungeon.AddHealing(owner, heal);
+            else TowerManager.MeterOf(owner)?.AddHealing(owner, heal);
 
             // allow for some variation in gains based on how high you heal.
             var state = ExpGainState.FullGain;

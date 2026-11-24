@@ -232,6 +232,7 @@ public sealed class TowerFloor : TowerPlace
         if (!template) return null;
         var point = BossPoint ? BossPoint : transform;
         Boss = Make(template, point.position, point.rotation, b.Scale);
+        Boss.MergeDamage = true;
         Boss.AutomaticRespawn = false;
         BossPressure = pressure;
         Boss.ApplyRuntimeDefinition(Tower.Boss(Definition, pressure), b.Name, 0f);
@@ -372,6 +373,8 @@ public sealed class TowerFloor : TowerPlace
         spawned.Add(go);
         var enemy = go.GetComponent<EnemyController>();
         enemy.Island = null;
+        // under a crowd its damage numbers add up into one (a guardian's always do: SpawnBoss)
+        enemy.MergeWhenCrowded = true;
         return enemy;
     }
 
