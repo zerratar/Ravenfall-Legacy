@@ -130,6 +130,10 @@ public class GameCamera : MonoBehaviour
                 postProcessingLayer.enabled = true;
         }
 
+        // the tower's side of the camera: the climb starting and ending, the camera handed back to it, and the group
+        // camera's target while it is on (WorldTowerCamera)
+        WorldTowerCamera.Tick(this);
+
         try
         {
             if (forcedFreeCamera)
@@ -224,8 +228,15 @@ public class GameCamera : MonoBehaviour
                 observeNextPlayerTimer -= GameTime.deltaTime;
                 if (observeNextPlayerTimer <= 0)
                 {
-                    ObserveNextPlayer();
+                    // (on the tower's side the group camera stands in for the rotation: WorldTowerCamera)
+                    if (!WorldTowerCamera.RotationEnds(this)) ObserveNextPlayer();
                 }
+            }
+            else if (state == GameCameraType.Tower)
+            {
+                // the tower's group camera: WorldTowerCamera moves what the orbit camera looks at; a player who joins
+                // the game does not take it
+                AllowJoinObserve = false;
             }
             else if (state == GameCameraType.Island)
             {
@@ -468,6 +479,7 @@ public class GameCamera : MonoBehaviour
     {
         if (forcedFreeCamera) return;
         if (controlled || state == GameCameraType.Cinematic) return;
+        if (state == GameCameraType.Tower || WorldTowerCamera.TakesBack(this)) return;
         if (state != GameCameraType.Observe)
         {
             if (PlayerSettings.Instance.EnableIslandCameraOnStart == true)
@@ -485,6 +497,7 @@ public class GameCamera : MonoBehaviour
     {
         if (forcedFreeCamera) return;
         if (controlled || state == GameCameraType.Cinematic) return;
+        if (state == GameCameraType.Tower || WorldTowerCamera.TakesBack(this)) return;
         if (PlayerSettings.Instance.EnableIslandCameraOnStart == true)
         {
             ObserveNextIsland();
@@ -526,6 +539,9 @@ public class GameCamera : MonoBehaviour
         // a cheer or a sub does not take the camera off the race (a join does not either: AllowJoinObserve); clicking a
         // player, !observe and the keys do
         if (state == GameCameraType.Race && @event != ObserveEvent.Automatic) return;
+        // from the tower's group camera a player is followed like from anywhere, for their time (then the group
+        // camera again: WorldTowerCamera.RotationEnds)
+        if (state == GameCameraType.Tower) state = GameCameraType.Observe;
         var settings = PlayerSettings.Instance;
         var times = settings.PlayerObserveSeconds;
         var observeTime = times.Default;
@@ -581,6 +597,30 @@ public class GameCamera : MonoBehaviour
         orbitCamera.TargetTransform = player.transform;
         orbitCamera.enabled = true;
         islandObserveCamera.enabled = false;
+    }
+
+    /// <summary>
+    /// The tower's group camera (WorldTowerCamera): the orbit camera on a point that is moved with the group, no
+    /// player watched, as the dungeon's camera stands on its camera point. False while something has the camera for
+    /// a reason: a cutscene (unless it is this cutscene ending), the race camera, a character played by hand, the
+    /// forced free camera.
+    /// </summary>
+    public bool EnableTowerCamera(Transform target, bool endCutscene = false)
+    {
+        if (!target || forcedFreeCamera || controlled || state == GameCameraType.Race) return false;
+        if (state == GameCameraType.Cinematic && !endCutscene) return false;
+        LeaveRace();
+        state = GameCameraType.Tower;
+        observeCamera.ObservePlayer(null);
+        playerObserver.Observe(null, 0);
+        islandObserver.Observe(null, 0);
+        freeCamera.enabled = false;
+        islandObserveCamera.enabled = false;
+        focusTargetCamera.enabled = false;
+        orbitCamera.TargetTransform = target;
+        orbitCamera.enabled = true;
+        AllowJoinObserve = false;
+        return true;
     }
 
     /// <summary>
@@ -679,6 +719,8 @@ public class GameCamera : MonoBehaviour
     public void StopCinematic(PlayerController player)
     {
         if (state != GameCameraType.Cinematic) return;
+        // on the tower's side the camera goes back to the group camera (WorldTowerCamera)
+        if (WorldTowerCamera.TakesBack(this)) return;
         if (!player || forcedFreeCamera || controlled || !CanObservePlayer(player))
         {
             StopCinematic((IslandController)null);
@@ -693,6 +735,7 @@ public class GameCamera : MonoBehaviour
     public void StopCinematic(IslandController island = null)
     {
         if (state != GameCameraType.Cinematic) return;
+        if (WorldTowerCamera.TakesBack(this)) return;
         state = GameCameraType.Free;
         if (island)
         {
@@ -725,6 +768,7 @@ public class GameCamera : MonoBehaviour
         }
         LeaveRace();
         if (!showing || forcedFreeCamera) return;
+        if (WorldTowerCamera.TakesBack(this)) return;
         // nobody to watch: the islands then
         if (PlayerSettings.Instance.EnableIslandCameraOnStart == true || ObserveNextPlayer()) ObserveNextIsland();
     }
@@ -779,5 +823,7 @@ public enum GameCameraType
     Island,
     Controlled,
     Race,
-    Cinematic
+    Cinematic,
+    /// <summary>The tower's group camera: no single player is watched (WorldTowerCamera).</summary>
+    Tower
 }

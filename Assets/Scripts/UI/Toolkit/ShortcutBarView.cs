@@ -212,6 +212,7 @@ namespace Shinobytes.UI
             Add(Group.Camera, Keybinds.Action.PlayerDetails, "\uf2c2", () => SettingsApplier.TogglePlayerDetails(GameManager.Instance));
             Add(Group.Camera, Keybinds.Action.NextPlayer, "\uf061", () => GameManager.Instance.Camera.ObserveNextPlayer());
             Add(Group.Camera, Keybinds.Action.FreeCamera, "\uf03d", ToggleFreeCamera);
+            Add(Group.Camera, Keybinds.Action.TowerCamera, "\uf447", () => WorldTowerCamera.Toggle());
 
             Add(Group.Players, Keybinds.Action.Search, "\uf002", () => GameManager.Instance.ShowPlayerSearch());
             Add(Group.Players, Keybinds.Action.ExpRate, "\uf201", () => SettingsApplier.CycleExpDisplay(GameManager.Instance));

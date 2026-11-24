@@ -219,28 +219,21 @@ The interval is long on purpose: four looks an hour at most, nine seconds each, 
 
 ## The tower camera key
 
-One key takes the camera to the players in the tower and back (`WorldTowerCamera.cs`; the owner's ask of 2026-11-24:
-"can you easily switch between the tower camera and game camera?"). **T** unless rebound (Settings > Keys > Camera,
-"Tower camera: to the tower and back"; `Keybinds.Action.TowerCamera`), and a button for it on the tower panel, which
-is on screen whenever anyone is in the tower, wherever the camera is: it reads "Tower (T)" while the camera is in the
-world and "World (T)" while it is in the tower.
+While anyone is in the tower the camera has two sides, the tower and the world, and one key goes between them
+(`WorldTowerCamera.cs`; all of it, with the order of the rules, is in docs/tower-design.md section 23). **T** unless
+rebound (Settings > Keys > Camera, "Tower camera: to the tower and back"; `Keybinds.Action.TowerCamera`), a button on
+the tower panel, which is on screen whenever anyone is in the tower ("World (T)", lit, while the tower's group camera
+is on, "Tower (T)" otherwise), and one in the shortcut bar.
 
-- **From the world**: to the player the camera last watched in the tower if they are still there, else someone on
-  the climb's part, else someone in the town, else anyone in the tower. With nobody in the tower the key does
-  nothing but say "Nobody is in the tower" in the status column for three seconds (the panel is not up then).
-- **From the tower**: back to the player it was watching outside if they are still outside, or to that island's
-  view, else the first player outside the tower, else the islands.
-- Both ends are remembered while the game runs, so looking out and coming back lands on the same player.
-- **It stays there.** After the key, the camera's own rotation (the ten second timer, Next player) goes round the
-  players on that side only, in the tower or outside it: without that the rotation carried the camera out of the
-  tower again ten seconds after the key took it in. That ends when the streamer picks someone on the other side (a
-  click in the players list, the search, Next island), when the key is pressed again (the other side then), or when
-  nobody is left on that side. Until the key is first used the rotation is as it always was, tower and world mixed.
-- It leaves alone what has the camera for a reason: a cutscene (the Cinematic state takes no camera key), the race
-  camera, build mode, a character played by hand, the hero's view.
-
-The look (sky, light, weather, music) follows the camera as it does for Next player: `TowerLook` sets it after the
-camera has moved.
+- **The tower side** is a group camera: no single player is watched, the camera stands over the middle of the group
+  on the place the climb is on (a boss fight with the guardian in the picture, the climb's part, else the town or
+  the busiest open part). It is where the camera goes by itself when the climb starts, after the entering look.
+- **The world side** is the camera as it always was, among the players outside the tower, and it stays outside
+  until the key is pressed again.
+- A player the streamer picks is followed as always (in the tower or outside); T goes back to the group camera.
+- With nobody in the tower the key does nothing but say "Nobody is in the tower" for three seconds.
+- Whatever takes the camera for a while (a raid, a dungeon, a cutscene, the looks at this tower) gives it back to
+  the side the streamer was on; when the last player leaves the tower it goes back outside.
 
 ## Potato mode and cost
 

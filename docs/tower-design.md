@@ -754,35 +754,98 @@ Captures from the game's camera: `docs/mockups/tower/band4/great-hall-*.png`.
   chasm below as the void. Both reuse this builder's helpers (wall pieces, stubs, gates, ghostfire) and the same
   stubs; each wants its own Blender pieces (bridge undersides, the chasm's cliffs, the portcullis).
 
-## 23. The tower camera key (2026-11-24)
+## 23. The tower camera (2026-11-24)
 
-The owner: "can you easily switch between the tower camera and game camera? in case you want to see outside tower and
-then be able to go back to normal tower camera?" Before this there was no one-press way: the camera follows a player,
-so the streamer pressed Next player (Tab) until someone in the tower came up, Next island (Ctrl+I) to get out, or
-clicked a player in the list.
+The owner, first: "can you easily switch between the tower camera and game camera? in case you want to see outside
+tower and then be able to go back to normal tower camera?" And then, on how it should behave: "yes, once tower is
+started its tower camera. it doesnt even have to observe individual players in tower, we should have the dedicated
+tower UI. but we should be able with T toggle to outside camera and it will stay at the side work as normal until
+toggled again."
 
-- **One key there and back**: `Keybinds.Action.TowerCamera`, **T** by default, rebindable under Settings > Keys >
-  Camera ("Tower camera: to the tower and back"). Modeled on the regatta's race camera key (`RaceCamera`), and read in
-  the same place (`GameCamera.Update`); the logic is `WorldTowerCamera` (`Assets/Scripts/Game/Tower/WorldTowerCamera.cs`).
-- **A button on the tower panel** (`TowerHudView`), beside Map and Meters: "Tower (T)" while the camera is in the
-  world, "World (T)" (lit) while it is in the tower. The panel is up whenever anyone is in the tower, wherever the
-  camera is, so the way back is always on screen; nothing new is stacked on another panel.
-- **To the tower**: the player the camera last watched there if still there, else someone on the climb's part, else
-  someone in the town, else anyone in the tower. With nobody in the tower the key only says "Nobody is in the tower"
-  in the status column for three seconds.
-- **Back**: the player the camera watched outside if still outside, or that island's view, else the first player
-  outside the tower, else the islands.
-- Both ends are remembered for as long as the game runs: `GameCamera` tells `WorldTowerCamera` every frame who or
-  what is watched, so players picked with Tab or a click in between are the ends too.
-- **It stays on that side**: after the key the camera's own rotation (the timer, Next player) goes round the players
-  on that side only (`WorldTowerCamera.Follows`, asked in `GameCamera.ObserveNextPlayer`), until the streamer picks
-  someone on the other side (a click, the search, Next island), presses the key again, or nobody is left there.
-  Without it the rotation took the camera out of the tower again ten seconds after the key took it in. Before the
-  key is first used the rotation is as it was, tower and world mixed.
-- **What it leaves alone**: a cutscene (the Cinematic state takes no camera key), the race camera, build mode, a
-  character played by hand and the hero's view (the camera's update never reaches the key then). The world tower's
-  own camera looks (docs/world-tower.md) keep off for 30 seconds after the key or the button was used.
-- The look (sky, light, weather, music) switches with the camera as it does for Next player (`TowerLook`).
+So while anyone is in the tower the stream has two sides, the tower and the world, and the camera keeps to the one the
+streamer is on (`WorldTowerCamera`, `Assets/Scripts/Game/Tower/WorldTowerCamera.cs`; the game camera calls it every
+frame and has a state of its own for it, `GameCameraType.Tower`).
+
+**The tower side is a group camera.** It watches no single player. The orbit camera stands on a point that is moved
+with the group (as the dungeon's camera stands on its camera point), with the same slow turn, zoom keys and arrow
+keys as always:
+
+- where: a boss fight (the guardian and the group together: the point leans toward the guardian and the camera
+  pulls back until both are in the picture); else the climb's part while anyone is on it; else the town or the
+  busiest open part, whichever holds more players (the town on a tie);
+- the point is the middle of the biggest clump of that group (the player with the most others within 22 m, and the
+  mean of those), found five times a second and eased toward, so on a part of rooms it is the room most of the party
+  is in and never the wall between two rooms; `TowerCutaway` goes on working because it follows what the orbit camera
+  looks at; a change of place (the next room far off, the town after a part) is a cut;
+- the camera stands off 16 to 46 m by how far the clump spreads (further than the 30 m it goes for one player); a zoom by hand is the streamer's for 25 seconds; the
+  zoom the streamer had outside comes back with the outside camera;
+- the tower's own interface tells the story there, and none of it needs a watched player: the tower panel, the
+  players list's tower mode, the meters and the look (sky, light, music) all go by where the camera stands
+  (`TowerManager.CameraArea`, `CameraInTower`, `ApplyLook`); the panel's "part being watched" falls back to that
+  place when nobody is watched. The player details window opens only for a player the streamer picks.
+
+**The world side** is the game's camera as it always was: the rotation among the players outside the tower (those in
+the tower are left out of it while it is the world's side), the islands, the free camera, clicks.
+
+**Which side, in this order:**
+
+1. **The key or the button flips it.** `Keybinds.Action.TowerCamera`, **T** by default, rebindable under Settings >
+   Keys > Camera ("Tower camera: to the tower and back"); a button on the tower panel beside Map and Meters ("World
+   (T)", lit, while the group camera is on, "Tower (T)" otherwise) and one in the shortcut bar's camera group. From
+   the group camera it goes out to the world: to the player the camera watched there if still outside, or that
+   island's view, else the first player outside, else the islands. From anywhere else it goes to the group camera,
+   also from a player followed in the tower. With nobody in the tower the key only says "Nobody is in the tower" in
+   the status column for three seconds.
+2. **A player the streamer picks is followed, and the side is theirs**: a click in the players list, the search,
+   Next player (which goes round the players of the side the streamer is on). Picking an island is the world side. A
+   pick is told from the camera being sent somewhere by the game (a cheer, a join) by a click or a key in the last
+   half second. On the tower side a followed player's time ends at the group camera, where the rotation would have
+   gone on to the next player; T goes back to it at once.
+3. **The climb starting puts the camera on the tower side**: when the tower was empty and someone goes in, and when
+   the game starts with players restored into it. The entering look (docs/world-tower.md) plays first if it plays;
+   a free camera the streamer is flying (input in the last 30 seconds) and a character played by hand are not taken.
+4. **The last player leaving puts it back on the world side**, on who or what it watched there.
+
+**What takes the camera for a while gives it back to the side the streamer was on**: a raid, a dungeon, the arena,
+the regatta's race camera, a cutscene (the tower's own, Ravebridge's), the looks at the world tower, a cheer's or a
+subscription's moment on a player. On the tower side the hand-back goes straight to the group camera
+(`WorldTowerCamera.TakesBack`, asked where those cameras let go: `StopCinematic`, `DisableDungeonCamera`,
+`DisableFocusCamera`, `StopRace`), with no frame of anything else between; a look at the world tower that waits to
+play (a floor has just fallen) goes first. On the world side the rotation picks up among the players outside.
+
+**What the key leaves alone**: a cutscene (the Cinematic state takes no camera key), the race camera, build mode, a
+character played by hand and the hero's view. The world tower's own looks keep off for 30 seconds after the key or
+the button was used. Potato mode changes nothing here: the group camera is the same orbit camera on a moved point.
+
+**Seen in play** (2026-11-25, the editor on the local server, bots as players; captures
+`docs/mockups/tower/world/built3-towercam-*.jpg`):
+
+- the climb starting: five bots go in, the entering look plays, and the camera goes from it straight to the group
+  camera on the climb's part (`plain-part`), with the tower panel, the players list in its tower mode and the Meters
+  button all up and nobody watched;
+- a part of rooms (the Hall of Bones, part 4, with the party sent there): the camera in the room the party is in,
+  the walls in front cut away, "Room 2 of 4" on the panel (`routed-part`, `routed-part-2`); the bots stood in one
+  heap, so a party split over two rooms was not seen;
+- the town when the parts emptied (`town`), and the place changing by a cut each time;
+- a real floor boss (Viridia, ten bots, 220 seconds): the guardian and the group in the picture, the panel's
+  standing and recovering count and the meters (`boss-fight`); when it fell, its own cutscene, then the look at
+  the world tower with the floor lighting (`floor-look-after-boss`), then the group camera again and on to the next
+  floor's town. That look did not play at first: the world tower only followed the stream's progress while it was
+  drawn, and from inside the tower's floors it is not. It follows it always now (`WorldTower.Look`), and the look
+  aims a little over the lit section so it stands under the tower panel, not behind it;
+- the key's toggle out to the world and back (`world-side`: the camera on the streamer's own character, the button
+  reading "Tower (T)"), the rotation staying outside meanwhile; a pick of a player in the tower followed for their
+  ten seconds and then the group camera again; a pick of a player outside making it the world side;
+- a dungeon starting meanwhile: the dungeon's camera took over and gave the camera back to the group camera when
+  the dungeon ended (`dungeon-meanwhile`);
+- the last player leaving: the camera back on the player it had watched outside, the panel gone
+  (`last-player-left`).
+
+**Not seen**: the key pressed on a keyboard (the toggle was called, as the key and both buttons call it); a game
+started with players restored into the tower (it is the same step as the climb starting: the count of players in
+the tower going from none to some); the regatta, the arena, a raid and Ravebridge ending on the tower side (they
+let go through the same calls as the dungeon and the cutscenes); a cheer's moment on a player; a party split over
+rooms; the free camera flown while the climb starts; potato mode (nothing in the group camera asks about it).
 
 ## Open questions
 

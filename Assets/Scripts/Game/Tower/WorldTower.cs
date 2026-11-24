@@ -237,6 +237,10 @@ public sealed partial class WorldTower : MonoBehaviour
         // the sky's clouds keep a bank round the top while the tower shows and they are drawn at all
         var clouds = show && SkyClouds.Active;
         SkyClouds.Tower = clouds ? new Vector4(transform.position.x, transform.position.z, CloudRadius, transform.position.y + CloudFrom) : Vector4.zero;
+        // the stream's progress is followed wherever the camera is (in the tower's own floors too, kilometres from
+        // here, where this tower is not drawn): a floor that falls has to be noticed there, for the look at this tower
+        // to follow the boss's own cutscene (seen in play 2026-11-25: it was only noticed once the camera came back)
+        Progress();
         if (!show) return;
         if (Lid && lid != !clouds)
         {
@@ -281,7 +285,6 @@ public sealed partial class WorldTower : MonoBehaviour
         var lit = sun && sun.isActiveAndEnabled ? sun.color.linear * (Mathf.Clamp(sun.intensity, 0f, 2f) * 0.5f) : Color.black;
         Shader.SetGlobalVector(CloudColorId, Color.Lerp(sky, equator, 0.3f) * 0.8f + lit);
 
-        Progress();
         Climbers();
     }
 

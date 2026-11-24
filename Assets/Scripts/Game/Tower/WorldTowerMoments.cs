@@ -17,6 +17,9 @@ public sealed partial class WorldTower
 {
     public enum Moment { None, FloorLit, Entering, Idle }
 
+    /// <summary>A look is playing or waits for the camera: the tower's group camera does not step in before it (WorldTowerCamera).</summary>
+    public static bool LookPending => Instance && (Instance.moment != Moment.None || Instance.waitingFloor > 0 || Instance.enteringUntil > 0f);
+
     /// <summary>The look that is playing, if any.</summary>
     public static Moment Playing => Instance ? Instance.moment : Moment.None;
 
@@ -169,7 +172,9 @@ public sealed partial class WorldTower
             {
                 // from out over the sea in front, a little to one side, rising toward the floor that fell
                 var height = SectionHeight(floor);
-                var aim = foot + Vector3.up * height;
+                // (aimed a little over the section, so it stands in the lower half of the picture: the tower panel is at
+                // the top of the screen whenever anyone is in the tower, and the look hides no window)
+                var aim = foot + Vector3.up * (height + BuiltHeight * 0.25f);
                 momentPositions[0] = foot + front * (BuiltHeight * 1.9f) + side * (BuiltHeight * 0.5f) + Vector3.up * (height * 0.35f + 30f);
                 momentPositions[1] = foot + front * (BuiltHeight * 1.55f) + side * (BuiltHeight * 0.3f) + Vector3.up * (height * 0.6f + 30f);
                 momentForwards[0] = (aim - momentPositions[0]).normalized;

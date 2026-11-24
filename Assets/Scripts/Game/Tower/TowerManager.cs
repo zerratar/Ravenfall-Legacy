@@ -429,7 +429,7 @@ public sealed class TowerManager : MonoBehaviour
     }
 
     /// <summary>The part the stream is looking at: the one the watched player is on, else the climb's.</summary>
-    public Area WatchedArea => AreaOf(Watched) ?? PushArea ?? clearing;
+    public Area WatchedArea => AreaOf(Watched) ?? CameraArea ?? PushArea ?? clearing;
 
     /// <summary>The players on an area.</summary>
     public List<PlayerController> PlayersOn(Area area)

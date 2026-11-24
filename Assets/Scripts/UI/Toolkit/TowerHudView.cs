@@ -478,7 +478,8 @@ namespace Shinobytes.UI
             var stream = Tower.Get(tower.StreamFloor);
             var here = tower.Definition ?? stream;
             // the part the watched player is on: a cleared part they train on by themselves is shown in place of the climb
-            var watched = tower.AreaOf(tower.Watched);
+            // (with the tower's group camera nobody is watched: the part the camera stands at)
+            var watched = tower.AreaOf(tower.Watched) ?? tower.CameraArea;
             var trip = watched != null && !tower.IsClimb(watched);
             // the streamer's buttons: challenge the guardian when it is open, start the fight during its countdown
             // (not while its intro plays); on the climb's view only
@@ -488,10 +489,11 @@ namespace Shinobytes.UI
             // the part's meters: on a part, and not during a boss fight (the fight opens them itself)
             Show(metersButton, watched != null && !fighting);
             metersButton.EnableInClassList("rf-tower__mapbtn--on", DungeonMetersWindow.StretchOpen);
-            // the camera button says where its press goes: to the tower, or back out to the world (lit while there)
-            var atTower = WorldTowerCamera.AtTower;
-            Set(cameraText, string.Format(atTower ? Localization.UI_TOWER_CAMERA_OUT : Localization.UI_TOWER_CAMERA_IN, Keybinds.Label(Keybinds.Action.TowerCamera)));
-            cameraButton.EnableInClassList("rf-tower__mapbtn--on", atTower);
+            // the camera button says where its press goes: out to the world from the tower's group camera (lit while
+            // that is on), else to the group camera (from the world, or from a player followed in the tower)
+            var groupCamera = WorldTowerCamera.Group;
+            Set(cameraText, string.Format(groupCamera ? Localization.UI_TOWER_CAMERA_OUT : Localization.UI_TOWER_CAMERA_IN, Keybinds.Label(Keybinds.Action.TowerCamera)));
+            cameraButton.EnableInClassList("rf-tower__mapbtn--on", groupCamera);
             var onClimb = tower.Players().Count;
             // everyone between parts: the town, and the part that waits
             var resting = !trip && onClimb == 0 && inTown > 0 && !fighting && !countdown;
