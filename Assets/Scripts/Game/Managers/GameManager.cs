@@ -2342,11 +2342,11 @@ public class GameManager : MonoBehaviour, IGameManager
             tower.ReplayArrival();
         }
         // the loaded floor's boss: its intro, and its fall
-        if (tower && TowerFloor.Loaded && GUI.Button(GetButtonRect(buttonIndex++), "Boss Intro"))
+        if (tower && tower.WatchedArea != null && GUI.Button(GetButtonRect(buttonIndex++), "Boss Intro"))
         {
             tower.ReplayBossIntro();
         }
-        if (tower && TowerFloor.Loaded && GUI.Button(GetButtonRect(buttonIndex++), "Boss Falls"))
+        if (tower && tower.WatchedArea != null && GUI.Button(GetButtonRect(buttonIndex++), "Boss Falls"))
         {
             tower.ReplayBossFall();
         }

@@ -32,7 +32,20 @@ try
     {
         if (floor.Spawns) { var i = 0; foreach (UnityEngine.Transform s in floor.Spawns) Check("monster " + (i++), s.position, 2f, true); log.AppendLine(" monster spots " + floor.Spawns.childCount); }
         if (floor.BossPoint) Check("boss", floor.BossPoint.position, 2f);
-        if (floor.Route) foreach (var z in floor.Route.Zones) if (z && z.Entry) Check("room arrival " + z.Title, z.Entry.position, 2f);
+        if (floor.Route)
+        {
+            // a floor of rooms: every room's arrival and its own monster spots (the gates are saved open, so the whole
+            // route is walked from the first room's arrival)
+            var roomSpots = 0;
+            foreach (var z in floor.Route.Zones)
+            {
+                if (!z) continue;
+                if (z.Entry) Check("room arrival " + z.Title, z.Entry.position, 2f);
+                if (z.Spawns) foreach (UnityEngine.Transform s in z.Spawns) { Check("monster in " + z.Title, s.position, 2f, true); roomSpots++; }
+                if (z.Exit && z.Exit.GetComponent<UnityEngine.AI.NavMeshObstacle>() && z.Exit.GetComponent<UnityEngine.AI.NavMeshObstacle>().enabled) { bad++; log.AppendLine("  BAD gate saved shut: " + z.Exit.name); }
+            }
+            log.AppendLine(" rooms " + floor.Route.Zones.Length + ", their monster spots " + roomSpots);
+        }
     }
     if (place is TowerTown town)
     {

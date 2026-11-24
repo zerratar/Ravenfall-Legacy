@@ -834,8 +834,9 @@
     position: absolute;
     top: 14px;
     align-items: center;
-    transition-property: top;
-    transition-duration: 0.25s;
+    /* translate: TopColumnFit moves the column sideways, out from under a window at the side of the screen */
+    transition-property: top, translate;
+    transition-duration: 0.25s, 0.25s;
 }
 
 /* ---- XP boost pill -------------------------------------------------------------- */
@@ -1221,6 +1222,8 @@
 
 .rf-raid--tower .rf-live-dot {
     background-color: #7FB069;
+    /* the panel is as wide as its text: the dot must not touch a long part name */
+    margin-left: var(--rf-space-4);
 }
 
 .rf-raid--tower .rf-raid__percent {
@@ -1296,6 +1299,447 @@
 /* The part's guardian (a mini boss or the floor boss): the last row, in the panel's accent, waiting behind the others. */
 .rf-tower__quest--guardian .rf-tower__quest-text {
     color: var(--rf-accent);
+}
+
+/* The Map button on the tower panel: the one thing on it that takes a click. */
+.rf-top-layer .rf-tower__mapbtn {
+    flex-direction: row;
+    align-items: center;
+    height: 36px;
+    margin-left: var(--rf-space-4);
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: var(--rf-space-3);
+    padding-right: var(--rf-space-3);
+    padding-top: 0;
+    padding-bottom: 0;
+    background-color: var(--rf-surface-raised);
+    border-left-color: var(--rf-border-strong);
+    border-right-color: var(--rf-border-strong);
+    border-top-color: var(--rf-border-strong);
+    border-bottom-color: var(--rf-border-strong);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+}
+
+.rf-top-layer .rf-tower__mapbtn:hover,
+.rf-top-layer .rf-tower__mapbtn--on {
+    border-left-color: #7FB069;
+    border-right-color: #7FB069;
+    border-top-color: #7FB069;
+    border-bottom-color: #7FB069;
+}
+
+.rf-top-layer .rf-tower__mapbtn-icon {
+    font-size: 18px;
+    color: #B9E08F;
+    margin-right: var(--rf-space-2);
+}
+
+.rf-top-layer .rf-tower__mapbtn-text {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+    -unity-font-style: normal;
+    font-size: 20px;
+    color: var(--rf-text);
+}
+
+/* ---- The floor map (TowerMapView) ---------------------------------------------------
+   A section of the tower panel, open on demand: the town of the floor in the middle, its areas to both sides,
+   the parts of each area as numbered tiles. Solid surfaces (the world must not show through a map), bold type,
+   nothing under 20px: viewers read it through the stream. */
+
+.rf-raid--tower-map {
+    min-width: 1180px;
+    /* solid: at 0.97 the world (a name tag, a fire) still shows through a panel this big */
+    background-color: var(--rf-bg);
+}
+
+.rf-tmap {
+    margin-top: var(--rf-space-3);
+    padding-top: var(--rf-space-3);
+    border-top-width: 2px;
+    border-top-color: var(--rf-border-strong);
+}
+
+.rf-tmap__top {
+    flex-direction: row;
+    align-items: center;
+    min-height: 44px;
+}
+
+.rf-top-layer .rf-tmap__title {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+    -unity-font-style: normal;
+    font-size: 26px;
+    color: #B9E08F;
+    margin-left: var(--rf-space-2);
+    margin-right: var(--rf-space-2);
+    text-shadow: 1px 2px 2px var(--rf-text-shadow-strong);
+}
+
+.rf-top-layer .rf-tmap__arrow {
+    width: 36px;
+    height: 36px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--rf-surface-raised);
+    border-left-color: var(--rf-border-strong);
+    border-right-color: var(--rf-border-strong);
+    border-top-color: var(--rf-border-strong);
+    border-bottom-color: var(--rf-border-strong);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+}
+
+.rf-top-layer .rf-tmap__arrow:hover {
+    border-left-color: #7FB069;
+    border-right-color: #7FB069;
+    border-top-color: #7FB069;
+    border-bottom-color: #7FB069;
+}
+
+.rf-top-layer .rf-tmap__arrow:disabled {
+    opacity: 0.35;
+}
+
+.rf-top-layer .rf-tmap__arrow-icon {
+    font-size: 18px;
+    color: var(--rf-text);
+}
+
+.rf-tmap__legends {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: var(--rf-space-2);
+    padding-top: var(--rf-space-3);
+    border-top-width: 2px;
+    border-top-color: var(--rf-border);
+}
+
+.rf-tmap__legend {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    margin-left: var(--rf-space-4);
+    margin-right: var(--rf-space-4);
+}
+
+.rf-top-layer .rf-tmap__legend-crown {
+    font-size: 20px;
+    color: var(--rf-accent-bright);
+}
+
+.rf-top-layer .rf-tmap__legend-text {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+    -unity-font-style: normal;
+    font-size: 20px;
+    color: var(--rf-text-dim);
+    margin-left: var(--rf-space-2);
+}
+
+.rf-top-layer .rf-tmap__legend-icon {
+    font-size: 15px;
+    color: var(--rf-text);
+}
+
+.rf-tmap__body {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 250px;
+    margin-top: var(--rf-space-3);
+    padding-top: var(--rf-space-3);
+    padding-bottom: var(--rf-space-3);
+}
+
+.rf-tmap__lines {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+/* The columns give way when the panel has little room (between the player list and the player details): the tiles
+   wrap and the line under them breaks, nothing reaches past the panel. */
+.rf-tmap__column {
+    flex-direction: column;
+    justify-content: center;
+    flex-shrink: 1;
+    flex-basis: auto;
+    min-width: 250px;
+    max-width: 470px;
+}
+
+.rf-tmap__middle {
+    flex-grow: 1;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    min-width: 200px;
+}
+
+/* The town: a round badge in the middle, the home of the floor. */
+.rf-tmap__town {
+    width: 172px;
+    height: 172px;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--rf-gold-bg);
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+    border-left-width: 4px;
+    border-right-width: 4px;
+    border-top-width: 4px;
+    border-bottom-width: 4px;
+    border-top-left-radius: 86px;
+    border-top-right-radius: 86px;
+    border-bottom-left-radius: 86px;
+    border-bottom-right-radius: 86px;
+}
+
+.rf-top-layer .rf-tmap__town-icon {
+    font-size: 44px;
+    color: var(--rf-accent-bright);
+}
+
+.rf-top-layer .rf-tmap__town-name {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+    -unity-font-style: normal;
+    font-size: 22px;
+    color: var(--rf-text);
+    margin-top: var(--rf-space-1);
+}
+
+/* An area of the floor: its name and its parts. */
+.rf-tmap__area {
+    margin-top: var(--rf-space-2);
+    margin-bottom: var(--rf-space-2);
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-4);
+    padding-top: var(--rf-space-3);
+    padding-bottom: var(--rf-space-3);
+    background-color: var(--rf-surface);
+    border-left-color: #7FB069;
+    border-right-color: var(--rf-border-strong);
+    border-top-color: var(--rf-border-strong);
+    border-bottom-color: var(--rf-border-strong);
+    border-left-width: 5px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-top-left-radius: var(--rf-radius-lg);
+    border-top-right-radius: var(--rf-radius-lg);
+    border-bottom-left-radius: var(--rf-radius-lg);
+    border-bottom-right-radius: var(--rf-radius-lg);
+}
+
+.rf-tmap__area--hidden {
+    border-left-color: var(--rf-border-strong);
+}
+
+.rf-top-layer .rf-tmap__area-name {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+    -unity-font-style: normal;
+    font-size: 24px;
+    color: var(--rf-text);
+    margin-bottom: var(--rf-space-2);
+}
+
+.rf-top-layer .rf-tmap__area--hidden .rf-tmap__area-name {
+    color: var(--rf-text-faint);
+}
+
+.rf-top-layer .rf-tmap__area-climb {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+    -unity-font-style: normal;
+    font-size: 20px;
+    color: var(--rf-accent-bright);
+    margin-top: var(--rf-space-1);
+    white-space: normal;
+    /* the project's default text generator spaces wrapped lines unevenly */
+    -unity-text-generator: standard;
+}
+
+.rf-tmap__tiles {
+    flex-direction: row;
+    flex-wrap: wrap;
+    max-width: 396px;
+    padding-top: var(--rf-space-2);
+}
+
+/* A part: a numbered tile. Lit green once cleared, gold where the climb is, dark with a question mark beyond. */
+.rf-tmap__tile {
+    width: 62px;
+    height: 62px;
+    margin-right: 16px;
+    margin-top: var(--rf-space-2);
+    margin-bottom: var(--rf-space-2);
+    align-items: center;
+    justify-content: center;
+    background-color: var(--rf-bg);
+    border-left-color: var(--rf-border-strong);
+    border-right-color: var(--rf-border-strong);
+    border-top-color: var(--rf-border-strong);
+    border-bottom-color: var(--rf-border-strong);
+    border-left-width: 3px;
+    border-right-width: 3px;
+    border-top-width: 3px;
+    border-bottom-width: 3px;
+    border-top-left-radius: var(--rf-radius-lg);
+    border-top-right-radius: var(--rf-radius-lg);
+    border-bottom-left-radius: var(--rf-radius-lg);
+    border-bottom-right-radius: var(--rf-radius-lg);
+}
+
+.rf-tmap__tile--cleared {
+    background-color: rgb(38, 66, 30);
+    border-left-color: #7FB069;
+    border-right-color: #7FB069;
+    border-top-color: #7FB069;
+    border-bottom-color: #7FB069;
+}
+
+.rf-tmap__tile--climb {
+    background-color: var(--rf-gold-bg);
+    border-left-color: var(--rf-accent-bright);
+    border-right-color: var(--rf-accent-bright);
+    border-top-color: var(--rf-accent-bright);
+    border-bottom-color: var(--rf-accent-bright);
+    border-left-width: 4px;
+    border-right-width: 4px;
+    border-top-width: 4px;
+    border-bottom-width: 4px;
+}
+
+.rf-tmap__tile--legend {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+}
+
+.rf-top-layer .rf-tmap__tile-number {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+    -unity-font-style: normal;
+    font-size: 28px;
+    color: var(--rf-text);
+    -unity-text-align: middle-center;
+}
+
+.rf-top-layer .rf-tmap__tile--climb .rf-tmap__tile-number {
+    color: var(--rf-accent-bright);
+}
+
+.rf-top-layer .rf-tmap__tile--hidden .rf-tmap__tile-number {
+    color: var(--rf-text-faint);
+}
+
+.rf-top-layer .rf-tmap__tile--legend .rf-tmap__tile-number {
+    font-size: 18px;
+}
+
+/* The part of the floor boss: a small crown on its top left corner. */
+.rf-top-layer .rf-tmap__tile-crown {
+    position: absolute;
+    top: -15px;
+    left: -12px;
+    font-size: 20px;
+    color: var(--rf-accent-bright);
+    text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
+}
+
+/* How many players are on a part (or in the town) right now: a blue badge on its corner. */
+.rf-tmap__count {
+    position: absolute;
+    right: -16px;
+    top: -14px;
+    flex-direction: row;
+    align-items: center;
+    height: 28px;
+    padding-left: 6px;
+    padding-right: 7px;
+    background-color: rgb(20, 46, 58);
+    border-left-color: var(--rf-live);
+    border-right-color: var(--rf-live);
+    border-top-color: var(--rf-live);
+    border-bottom-color: var(--rf-live);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+    border-bottom-left-radius: 14px;
+    border-bottom-right-radius: 14px;
+}
+
+.rf-tmap__town .rf-tmap__count {
+    right: 2px;
+    top: 2px;
+}
+
+.rf-tmap__count--legend {
+    position: relative;
+    right: 0;
+    top: 0;
+    flex-shrink: 0;
+}
+
+.rf-top-layer .rf-tmap__count-icon {
+    font-size: 14px;
+    color: var(--rf-live);
+}
+
+.rf-top-layer .rf-tmap__count-number {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+    -unity-font-style: normal;
+    font-size: 20px;
+    color: var(--rf-text);
+    margin-left: 5px;
+}
+
+.rf-top-layer .rf-tmap__hint {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+    -unity-font-style: normal;
+    font-size: 20px;
+    color: var(--rf-text-dim);
+    -unity-text-align: middle-right;
 }
 
 .rf-dungeon__enemies {

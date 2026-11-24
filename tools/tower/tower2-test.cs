@@ -17,7 +17,7 @@ string State()
     var s = new System.Text.StringBuilder();
     s.AppendLine("stream floor " + tower.StreamFloor + " current " + tower.CurrentFloor + " phase " + tower.Phase + " scene " + tower.LoadedScene + " town " + tower.TownScene + " open town " + tower.CurrentTown?.Name);
     s.AppendLine("bots " + bots.Count + ": in tower " + bots.Count(b => b.towerHandler != null && b.towerHandler.InTower && !b.towerHandler.InTown) + ", in town " + bots.Count(b => b.towerHandler != null && b.towerHandler.InTown));
-    var floor = TowerFloor.Loaded;
+    var floor = tower.PushFloor;
     if (floor) s.AppendLine("floor " + floor.Definition?.Number + " " + floor.Definition?.Name + " enemies " + string.Join(", ", floor.Enemies.Where(e => e).GroupBy(e => e.Name).Select(g => g.Key + " x" + g.Count() + " lvl " + g.First().Stats.CombatLevel + " scale " + g.First().transform.localScale.x.ToString("0.00") + " el " + g.First().CombatDefinition?.Element)));
     var town = TowerTown.Loaded;
     if (town) s.AppendLine("town " + town.Key + " people " + string.Join(", ", town.People.Select(p => p.Key + (p.gameObject.activeInHierarchy ? "" : "(hidden)"))) + " rest spots " + (town.RestSpots ? town.RestSpots.childCount : 0));
@@ -51,7 +51,7 @@ if (parts[0] == "load2")
     tower.LoadFloor(int.Parse(parts[1]));
     sb.AppendLine("loading " + parts[1]);
 }
-if (parts[0] == "enter") { foreach (var b in bots) sb.Append(tower.Enter(b) + " "); sb.AppendLine(); }
+if (parts[0] == "enter") { foreach (var b in bots) sb.Append(tower.Join(b) + " "); sb.AppendLine(); }
 if (parts[0] == "cam")
 {
     var who = bots.FirstOrDefault(b => b.towerHandler != null && b.towerHandler.InTower) ?? bots.First();
@@ -63,7 +63,7 @@ if (parts[0] == "cam")
     var main = UnityEngine.Camera.main;
     if (main) { cam.cullingMask = main.cullingMask; cam.clearFlags = main.clearFlags; cam.backgroundColor = main.backgroundColor; }
     var place = (TowerPlace)TowerTown.Loaded;
-    if (who.towerHandler != null && !who.towerHandler.InTown && TowerFloor.Loaded) place = TowerFloor.Loaded;
+    if (who.towerHandler != null && !who.towerHandler.InTown && who.towerHandler.Floor) place = who.towerHandler.Floor;
     var centre = place ? place.Centre : who.Position;
     var dir = (centre - who.Position); dir.y = 0; if (dir.sqrMagnitude < 1) dir = UnityEngine.Vector3.forward; dir.Normalize();
     go.transform.position = who.Position - dir * dist + UnityEngine.Vector3.up * h;

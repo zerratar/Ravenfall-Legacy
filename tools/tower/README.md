@@ -20,9 +20,17 @@ Each writes its log to `%TEMP%/<name>.txt` (the eval call itself times out after
 | make-vault.py -> tower-frostvault-build.cs | Tower_FrostVault (13, 14, 17, 18, 20), generated from the crypt's builder | 2 |
 | tower-rimeholt-build.cs | Tower_Rimeholt (town, its resting place and work places) | 2 |
 | tower-greathall-build.cs | Tower_GreatHall: the first floor of rooms (docs/tower-design.md section 22), not in the climb yet; its wall stubs and rune circle from blender/tower_great_hall.py | 4 (v0.9.8) |
+| tower-rooms-route.cs | The route of rooms for Tower_Crypt and Tower_FrostVault (the scene's name in `%TEMP%/tower-route-scene.txt`): a gate in every doorway, the rooms as zones, the route on the floor. Changes the saved scene, so run it after that layout's own builder; it can be run again | 1, 2 |
 
 A floor of rooms (`TowerRoute`) has its gates' NavMeshObstacles saved disabled, so the audit walks the whole route;
-the game shuts them when it fills the floor. The audit also checks every room's arrival.
+the game shuts them when it fills the floor. The audit also checks every room's arrival and every room's monster
+spots, and that no gate was saved shut.
+
+The crypt and the frost vault are floors of rooms since v0.9.7 (docs/tower-worlds-proposal.md section 13). Their
+builders make the rooms; `tower-rooms-route.cs` adds the gates and the route to the saved scene and must be run after
+either builder. It leaves the baked navmesh alone: the wall pieces it adds beside each gate carve it at run time. Its
+seals have their own materials (`GateWard.mat`, `GateIce.mat`). `make-vault.py` is from before the two builders went
+their own ways (2026-11-20) and no longer applies to the crypt's builder as it is.
 
 `tower-audit.cs` checks a scene (path in `%TEMP%/tower-audit-scene.txt`): every monster spot, the boss, the people, rest
 spots, strolls, work stands and road points can be walked to from the arrival, and where each road ends; it writes

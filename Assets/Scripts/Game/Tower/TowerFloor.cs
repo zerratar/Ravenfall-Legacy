@@ -12,8 +12,11 @@ using UnityEngine;
 /// </summary>
 public sealed class TowerFloor : TowerPlace
 {
-    /// <summary>The floor that is loaded now, or null.</summary>
-    public static TowerFloor Loaded { get; private set; }
+    /// <summary>
+    ///     The floors that are loaded now: the part the climb is on and the cleared parts players train on, each in its
+    ///     own place (TowerManager's areas, docs/tower-worlds-proposal.md section 13). TowerManager knows which is which.
+    /// </summary>
+    public static readonly List<TowerFloor> All = new List<TowerFloor>();
 
     /// <summary>Hidden monsters to copy, one per look (their EnemyController.Definition id).</summary>
     public Transform Templates;
@@ -53,7 +56,7 @@ public sealed class TowerFloor : TowerPlace
 
     private void OnEnable()
     {
-        Loaded = this;
+        if (!All.Contains(this)) All.Add(this);
         enemies.Clear();
         foreach (var e in GetComponentsInChildren<EnemyController>(true))
             if (!Templates || !e.transform.IsChildOf(Templates)) enemies.Add(e);
@@ -61,7 +64,7 @@ public sealed class TowerFloor : TowerPlace
 
     private void OnDisable()
     {
-        if (Loaded == this) Loaded = null;
+        All.Remove(this);
     }
 
     /// <summary>

@@ -244,9 +244,9 @@ v0.9.7 needs anyway.
 ## 12. Built in v0.9.7: floors and parts, mini bosses, objectives, scaling (2026-11-24)
 
 The first four pieces of the cut above are built (items 1, 2, 3 and 6): the words, mini bosses and floor bosses,
-objectives as a list of kinds, and scaling by pressure. Not built yet: each player's own entry to cleared parts, the
-floor map, doors and routes for the crypt and the frost vault, the tower in the main world. Nothing is deployed; it
-runs on the local server.
+objectives as a list of kinds, and scaling by pressure. Not built in this step: each player's own entry to cleared
+parts, the floor map, doors and routes for the crypt and the frost vault (all three: step 2, section 13, the same
+day), the tower in the main world. Nothing is deployed; it runs on the local server.
 
 ### Words, and the numbers behind them
 
@@ -518,3 +518,278 @@ Captures in docs/mockups/tower: `worlds-panel-objectives.png` (three kinds of ro
    stream nobody gathers in would stop at part 3 of every floor. Say if gathering should be the only way.
 9. **Hidden things** are found by the group being on the part (a quarter speed) or near the thing (full speed); in
    play a group of five never walked near one and each took 16 minutes. They could lie where the group fights instead.
+   *Done in step 2 (section 13): a thing is searched in full wherever the group fights among the part's monsters.*
+
+## 13. Built in v0.9.7, step 2: free entry to cleared parts, the floor map, rooms, and what a kill is worth (2026-11-24)
+
+Cut items 4, 5 and 7 are built, the three things from step 1's play test are fixed, and one piece was added on the
+owner's word the same day: kills count for more in a small stream and for less in a big one. Still not built: the
+tower in the main world is its own work (docs/world-tower.md). Nothing is deployed; it runs on the local server.
+
+### Each player's own way to a cleared part
+
+A part the stream has cleared is a place any player can go to and train on, like sailing to an island, while the climb
+goes on elsewhere.
+
+| Typed | Who | What happens |
+|---|---|---|
+| `!tower` | anyone | to the part the climb is on (from the world: to the town when everyone waits there between parts; from the town or from a cleared part: straight to the climb) |
+| `!tower part 3`, `!tower 3`, `!tower 1-3`, `!tower floor 2 part 7`, `!tower floor 2`, `!tower train 3` | anyone, the streamer too | **only that player** goes to that cleared part to train. A part alone is one of the floor the player is on (the part or the town they are in), else of the stream's floor |
+| `!tower part`, `!tower floor` alone | anyone | the same as `!tower`: back to the climb |
+| `!tower all part 3`, `!tower all 1-3`, `!tower all floor 2` (also `everyone`, `group`) | the streamer or a moderator at once, anyone in the tower by vote | **everyone on the tower's parts** goes to that part, as `!tower part 3` did in step 1. Players in the town stay there |
+| `!tower all` alone | the same | everyone on the tower's parts goes back to the climb's part |
+| `!tower map` | anyone | the floor map on screen for 20 seconds (once a minute at most) |
+
+**The choice for the streamer's own command:** it does what a viewer's does (the streamer's character goes alone).
+Moving everyone is the explicit word `all`. Every command of step 1 still answers; two changed what they do:
+`!tower part 3` and its spellings take one player and no longer everyone, and `!tower part` alone takes one player back
+to the climb instead of everyone. The tower was never released, so nobody has the old ones in their fingers.
+
+**Up to three parts are open at once** beside the town (`TowerManager.MaxAreas`): the climb's part always has its
+place, and two more are opened by whoever asks first. A fourth is refused and the player stays where they are:
+"3 parts of the tower can be open at once, and they are: floor 2, part 4 (the climb, !tower), floor 2, part 3 (!tower
+2-3), floor 2, part 1 (!tower 2-1). Go to one of those, or try again when one has emptied." A part nobody has been on
+for 90 seconds closes, and one that stands empty gives its place at once to a part someone asks for (the same layout
+is filled again where it stands, with nothing to load). The climb's part is never closed during a boss attempt or
+while it is wrapped up after a clear.
+
+**Potato mode keeps one part open.** A player's own trip is then only possible to the part that is open (or, with
+nothing open, it opens that part): "In potato mode one part of the tower is open at a time, and it is floor 1, part 6
+(the climb, !tower). The streamer or a vote can take everyone to another: !tower all 1-3." When the one open part is
+a cleared one, `!tower` takes a player there to the others (the reply says where the climb waits and that `!tower all`
+brings everyone back): the step 1 behaviour, kept for potato mode. Switching potato mode on while more parts are open
+closes none that has players; they go as they empty.
+
+**Where the parts stand, and two parts of one layout.** Every layout scene is built on the same spot ((0, 0, -6000)).
+A loaded area is a scene moved to a place of its own: the first stays there, the others stand 1.5 km apart to the
+west (`SlotOffsets`), past the camera's reach, so no part is ever seen from another. The scene's root is switched off
+for the move and on again, so what registered itself by its place (the navmesh, the grass, roads, light shafts, the
+frozen pond) registers where it stands. Many parts share a layout (the courtyard is parts 1, 2, 5 and 6): **a second
+part of the same layout is the scene loaded a second time** and moved; meshes, textures and materials are shared, the
+second copy cost 13 to 20 MB and 0.25 to 0.6 s in the editor. There is a fourth place so that a part can open beside
+three full ones (when everyone is moved) before the ones left empty have gone: nobody steps out of the tower while a
+part loads, they stay where they are until it is ready.
+One thing only the editor does: a second surface with the same baked navmesh drops it on load (the editor's guard
+against copied surfaces), so the second copy had no navmesh and nobody on it could walk. `TowerManager.AddNavMesh`
+adds it for a copy whose surface has none. A build has no such guard; **two parts of one layout in a build is not
+tested** (on the checklist).
+
+**What follows the player to a part.**
+- Level sync is the part's (it was already by the floor a player stands on), and each part's monsters follow the
+  pressure of the players on that part alone.
+- **Objectives count only on the part the climb is on**, as step 1 had it: kills on a cleared part give experience,
+  count for the player's own quests (the towns' chains) and for nothing of the stream's.
+- A knocked out player gets back up on the part they are on. `!tower leave` takes them out from anywhere.
+- **A boss attempt** is announced to everyone, and the panel of a player who trains elsewhere says "Boss attempt on
+  floor 1, part 7" with its clock and `!tower`: that takes them to the climb and into the attempt. Leaving for the
+  town or for another part during the countdown takes a player out of the attempt (step 1 kept them in it, and
+  rewarded them). No attempts on cleared parts.
+- After a clear the players on the cleared part go down to the town; those training on other parts stay where they
+  are.
+- **The tower panel shows the part the watched player is on.** On a cleared part: its name, how many train there,
+  "Training here - the climb is on floor 1, part 6" and `!tower` (or the room they are in while they fight through a
+  part of rooms). Watching anyone else, the panel shows the climb as before. One panel, never two.
+
+In code: `TowerManager.Area` (a loaded part: its step, its place, its scene, its floor, who waits for it),
+`Join` (the climb), `Visit` (one player's trip), `RequestMove` (everyone), `Room` (may a part open, and which empty one
+gives way). `TowerFloor.Loaded` is gone: `TowerFloor.All`, and `TowerManager.PushArea` for the climb's.
+
+### The floor map
+
+Opened from the tower panel's **Map** button (the one thing on the panel that takes a click) or with `!tower map`; a
+section of the panel, so it stacks with nothing, and it closes during a boss fight. The floor's town in the middle,
+its areas to both sides (in turn left and right, in the order the climb reaches them), each area's parts as numbered
+tiles: green once cleared, gold where the climb is, a question mark where the stream has not been, a crown on the
+floor boss's part once it is reached, and a blue badge with how many players are on a part (or in the town) right
+now. An area the stream has not reached is "Not reached yet" with a dashed path. Arrows page through the floors
+reached; the map opens on the floor of the watched player. Under it: what the tiles mean, and how to go to a lit part.
+UI Toolkit, built in code (`TowerMapView`), bold Rodin, nothing under 20 px, a solid background, no pictures made for
+it (icons from the game's icon font).
+
+The areas come from one list both sides use, `RavenNest.Combat.Tower.AreasOf(floor)`: a layout and the parts fought
+there, named `AreaName` ("The Courtyard", "The Drowned Marsh", "The Crypt"; "The Glacier", "The Ice Vault"; "The Sky
+Docks", "The Spire's Crown"). Any number of floors, areas and parts works: areas stack in two columns, tiles wrap.
+
+**On the website** /tower has the same map at the top of every floor some stream has reached (`TowerFloorMap.razor`):
+lit as far as any stream has climbed, the furthest part marked, everything beyond a question mark (unreached areas
+unnamed, as the rest of the page keeps them a mystery). The streamer's /town page shows the map of the stream's own
+floor with its own progress. On a phone the town goes on top and the areas under it.
+
+### Rooms: the crypt and the frost vault
+
+The two layouts that were rooms without doors are floors of rooms now (section 22 of the tower design): parts 4, 7, 9
+and 10 of floor 1 and parts 3, 4, 7, 8 and 10 of floor 2. Both are the same five rooms:
+
+1. **The Entry** (the arrival, 3 monsters), a gate to
+2. **the Hall** (8), from which a gate opens to
+3. **the West Crypt** (5; the West Vault in the frost vault), then a gate from the Hall to
+4. **the East Crypt** (8; the hold: it refills for training and the objectives), and when an attempt is called the
+   gate from the Hall to
+5. **the Throne Hall**, the guardian's room.
+
+24 monster spots as before. The hold has eight so that a group has about as much to fight as on a one-room part (the
+spots of a kind come back two or three at a time: about six of one kind a minute for a small group, ten for a crowd).
+
+A gate is a stone frame with two leaves (the dungeon pack's large door, scaled to 4.3 by 4 m), the wall closed to both
+sides of it with low pieces like the rooms' own, and a seal that suits the place: **in the crypt thorns grown across
+the door with a pale grave light in them, in the frost vault a wall of blue ice crystals** that glow from within. The
+seal shrinks away as the leaves swing into the next room. The walls of both layouts are low and the gates stand no
+higher than a tall wall piece, so nothing needed cutting away for the camera (no `TowerCutaway` here; the great hall
+keeps it).
+
+`tools/tower/tower-rooms-route.cs` adds the gates, the rooms and the route to the saved scenes (run after either
+layout's builder; it can be run again). It does not touch the baked navmesh: the new wall pieces carve it at run
+time. The audit now walks every room's monster spots too: 30 checks, no problems, in both scenes. A player's own trip
+to a cleared part of rooms starts at its first room behind shut gates and is fought through like the climb's; the
+panel says "Room 2 of 4" until the hold is reached.
+
+### What a kill is worth (the owner, 2026-11-24)
+
+Step 1 measured that a part's fixed amounts take two players twice the time of five, and thirty a quarter to a half.
+Now each counted kill, and each counted gathering round, is worth more when few produce it and less when many do. The
+amounts shown stay as they are ("Defeat 300 Moss Goblins"); the server keeps the part of a kill that is not a whole
+one yet with the stream's progress and shows whole numbers.
+
+One rule, `RavenNest.Combat.TowerPace`, next to `TowerPressure`; the server applies it, the simulator shows what it
+gives.
+
+- **The aim** (`TimeShare`): a part's objectives take (heads / 5) to the power of -0.367 of five players' time under
+  five heads and to the power of -0.26 over five: two players 1.4 times, ten 0.84, thirty 0.63.
+- **What a kill is worth** (`KillWeight`) is that aim against how fast a group really kills (`KillRate`): its heads
+  over what a kill takes them, where the walk to the next monster stays (56% of a kill for five players) and the
+  fight follows the monsters' health, which follows the group by the floor's bite and mercy. So the weight knows the
+  floor: a kill by two players counts 1.39 on floor 1 and 1.47 on floor 3, by ten 0.70 and 0.81, by thirty 0.50 and
+  0.73 (a crowd's monsters are already tougher higher up). Five heads are 1.00 everywhere, one player alone 2.2.
+- **Heads** are counted as for pressure: a player is one, a player far below the part is a share of one (a quarter
+  at least), a lone player at least one. What a group has beyond fresh players (trees, gems) does not count:
+  veterans are faster, and may be.
+- **Where the heads come from.** The game reports its kills every 8 seconds, and with them the heads that were on
+  the climb's part as those kills fell ("defeat-hall-cow:3;kills:5;heads:447"). The heads of a kill are the most
+  there were on the part in the 20 seconds before it. The server works out the weight (a report without heads, from
+  an older game, counts as before).
+- **Gathering** (`GatherWeight`): a round counts 1 with two of the stream's players gathering for the part's
+  objective, 1.55 for a lone gatherer, 0.60 with four, 0.27 with twelve; "gathering" is having made a round for it in
+  the last two minutes, counted by the server as each round is made. The kills that count for a gather objective are
+  weighted like every kill.
+- **Hidden things** are time, not kills: unchanged (but see the fix below).
+
+**Nothing to gain by leaving or joining.** What a part gets a minute is the kills a group makes times what each is
+worth, which is 1 / `TimeShare`: it only grows with the heads, on every floor (a test walks it from 1 to 200 heads on
+floors 1 to 8). So sending players off the part makes the objectives slower, never faster, and a player joining
+never slows them. Stepping off for the moment a monster falls does nothing either: the heads are the most of the last
+20 seconds, so whoever leaves counts until they have been gone that long, and whoever comes counts at once. A weak
+character counts as the share of a head it is, as for pressure: it adds little and costs little. Players on cleared
+parts are not on the climb's part, so they are not heads there and their kills count for nothing of the stream's.
+
+**The simulator** (`dotnet run -c Release -- tower 200`): minutes of fighting for a part's kill objectives, and in
+brackets against five players' minutes. Fresh synced players.
+
+| Part | Guardian | 2 players | 5 players | 10 players | 30 players |
+|---|---|---|---|---|---|
+| 1-1 | Nibbles the Vicious | 50 min (1.56) | 32 min (1.00) | 25 min (0.78) | 16 min (0.51) |
+| 1-3 | The Brood Mother | 84 min (1.46) | 58 min (1.00) | 47 min (0.82) | 34 min (0.59) |
+| 1-6 | The Moo-tant | 130 min (1.44) | 90 min (1.00) | 74 min (0.82) | 54 min (0.60) |
+| 1-9 | Old Rotbelly | 126 min (1.44) | 88 min (1.00) | 73 min (0.83) | 54 min (0.62) |
+| 1-10 | Viridia, the Verdant Wyrm | 170 min (1.41) | 121 min (1.00) | 100 min (0.83) | 75 min (0.62) |
+| 2-1 | Jarl Rimebeard | 173 min (1.45) | 119 min (1.00) | 94 min (0.79) | 64 min (0.54) |
+| 2-5 | Emperor Quackers | 178 min (1.43) | 125 min (1.00) | 101 min (0.81) | 73 min (0.59) |
+| 2-8 | The Thawed Ronin | 251 min (1.39) | 181 min (1.00) | 152 min (0.84) | 111 min (0.61) |
+| 2-10 | Glacius, the Winter Wyrm | 248 min (1.42) | 174 min (1.00) | 142 min (0.82) | 102 min (0.59) |
+| 3-1 | Captain Gale Blackwind | 276 min (1.44) | 191 min (1.00) | 155 min (0.81) | 109 min (0.57) |
+| 3-5 | Captain Quackbeard | 246 min (1.42) | 173 min (1.00) | 146 min (0.84) | 107 min (0.62) |
+| 3-8 | High Warden Aerin | 336 min (1.45) | 231 min (1.00) | 191 min (0.82) | 141 min (0.61) |
+| 3-10 | Fulmina, the Thunder Wyrm | 349 min (1.42) | 246 min (1.00) | 202 min (0.82) | 149 min (0.61) |
+
+| A floor, all its parts | 2 players | 5 players | 10 players | 30 players |
+|---|---|---|---|---|
+| Floor 1 | 18.4 h, 1.45 (it was 2.02) | 12.7 h | 10.4 h, 0.82 (0.58) | 7.6 h, 0.60 (0.30) |
+| Floor 2 | 33.6 h, 1.43 (2.05) | 23.4 h | 19.1 h, 0.81 (0.62) | 13.8 h, 0.59 (0.36) |
+| Floor 3 | 48.1 h, 1.42 (2.09) | 33.8 h | 27.8 h, 0.82 (0.67) | 20.5 h, 0.61 (0.44) |
+
+Five players are exactly as before (about 70 hours for the three floors in the simulator; the amounts were not
+touched). Part 1-1 is the odd one: its monsters fall in a blow or two, so nearly all of a kill is the walk there and
+the rule's share of fighting is too high for it (two players 1.56, thirty 0.51).
+
+### Fixed from step 1's play test
+
+- **Hidden things.** A thing lay at one monster spot, and only standing within 9 m of that spot counted in full. A
+  group roams all over a part: in play five players were 30 to 60 m from the spot at any look, and moving the thing
+  to where they fought every 20 seconds still gave only 0.36 of the full rate (11 minutes for a thing meant to take
+  4). Now the things lie among the part's monsters: a second counts in full while someone stands within 9 m of **any
+  of the part's monster spots** (on a part of rooms: of the rooms the group has reached), and a quarter while the
+  players on the part are away from all of them (at the arrival, waiting for a boss, getting back up). Played: five
+  players on floor 1, part 6 found the first Lost Carrot **4 minutes 18 seconds** after arriving (240 seconds are
+  meant; the search ran at 0.93 to 0.97 of the full rate). Floors 2 and 3 use the same rule with 5 and 6 minutes;
+  their finds were not played.
+- **The tower panel under the player details window.** The top column is centred on the screen, and the panel grows
+  with its text. `TopColumnFit` now stands the column between the windows that reach into its height (the player
+  list, the player details, wherever they were dragged) and tells the panel how wide it may be; the floor map's
+  columns give way when there is little room. The panel's layout scales with the screen (its reference is 1920 by
+  1080), so 720p and 1440p lay out the same; captured at 1080p with the player list and the player details open.
+- **The boss's body in its fall.** Watched in real fights (a script looked at the body ten times during each fall):
+  Big Gorp (a mini boss), Viridia (the floor boss) and the Frozen Warden were on screen, drawn, in the middle of the
+  picture for the whole fall, and gone 0.8 s after the cutscene, as meant. Step 1's two captures showed an empty room
+  because they were not taken in a real fight. Both retaken from real clears.
+
+### Played (2026-11-24, editor, local server, dev character and bots, chat muted and the bot stopped)
+
+- **Trips and areas** (the dev stream on floor 1, part 6): three bots to the climb, the dev character to part 3 (the
+  marsh, a second place), a bot to part 2 (the courtyard a second time, a third place), a fourth part refused with
+  the names of the open ones; `!tower` back to the climb from a cleared part; `!tower info` naming the open parts;
+  a vote and the streamer's `!tower all 1-3`, `!tower all` back; a cleared part emptied and replaced by another;
+  `!tower leave`, `!tower town`, `!tower part` alone, `!tower climb`.
+- **Potato mode**: a third part refused while two were open, both closed as they emptied; one part open, `!tower`
+  joining it with the potato reply, `!tower boss` from there ("the climb is on floor 1, part 6, and nobody is there
+  now"), `!tower all` back to the climb, `!tower all 1-5` filling the same layout again where it stood.
+- **The crypt** (floor 1, part 7, the dev character and five bots): Entry, Hall, West Crypt and East Crypt in about
+  two minutes, each gate opening as its room was cleared, the hold refilling; the objectives finished there; the
+  boss called, the way to the throne hall opening, everyone gathering; Big Gorp beaten in 146 s, the clear saved,
+  everyone down to Mossgate, the crypt unloaded (the next part is the marsh). Meanwhile one bot alone on part 4 (the
+  crypt a second time) fought through its own rooms, saw the boss attempt on its panel, joined it with `!tower` and
+  left it again for part 4.
+- **The floor boss** (floor 1, part 10, the crypt, 23 players): rooms, the boss called with one bot training on part
+  7, Viridia beaten in 118 s, "Floor 1 cleared", everyone on to Rimeholt, the bot on part 7 left where it was. The
+  map then showed floor 1 all green with the crown and floor 2 with its first part.
+- **The frost vault** (floor 2, part 3, the dev character and four bots): the four rooms in about a minute, the ice
+  seals going one by one; the Frozen Warden beaten in 206 s; the same scene filled again for part 4 where it stood,
+  gates shut, and `!tower climb` took everyone into it. A bot alone on part 3 (a second copy) and two on part 1 (the
+  glacier) beside it: three parts of floor 2 open, a fourth refused.
+- **What a kill is worth**, on the local server through the game's own reports: ten kills with two heads counted 14,
+  with five 10, with thirty 6, without heads 10; the same ten for a gather objective. In play five players (4.47
+  heads, one bot far below the part) made about 12 counted kills a minute on floor 1, part 6.
+- **The Map button** with pointer events (the panel picks the button; a press and release opens and closes the map),
+  `!tower map`'s reply and its minute of rest, the debug menu's "Tower: Great Hall" and back (by its call).
+- **Not played**: a build (two copies of one layout scene, the scene list); the finds of floors 2 and 3; a gather
+  objective with real gatherers (the server's count of who gathers); floor 3's parts; the crypt's parts 4 and 9 and
+  the vault's 7, 8 and 10 as the climb's part (they are the same rooms); a mini boss on a part of rooms with a crowd
+  of thirty; votes with several real viewers; the wording through the real bot in real chat; the website's /town
+  map (it needs the streamer's sign in; /tower was captured); the map's arrows with a mouse; the map as `!tower map`
+  shows it for 20 seconds (it is the button's map); UI scales other than the one in use.
+
+Captures in docs/mockups/tower: `worlds2-trip-panel.png`, `worlds2-trip-countdown.png` (a boss attempt seen from a
+cleared part), `worlds2-three-areas.png` (with the reply to a fourth), `worlds2-floor-map-game.png`,
+`worlds2-floor-map-website.png`, `worlds2-crypt-door-sealed.png`, `worlds2-crypt-door-open.png`,
+`worlds2-frostvault-door-sealed.png`, `worlds2-frostvault-door-open.png`, `worlds2-panel-beside-details.png`,
+`worlds2-map-beside-details.png`, `worlds2-part-cleared.png`, `worlds2-floor-cleared.png`.
+
+### Open calls for the owner
+
+1. **The streamer's `!tower part 3` takes only the streamer**, and `!tower all part 3` everyone. If streamers will
+   expect the short one to move the stream, the two can swap for them.
+2. **`!tower all` takes everyone on any part**, also players who went to a cleared part by themselves (not those in
+   the town). It could leave them alone and move only the climb's group.
+3. **Anyone may go to any cleared part**, whatever their level (level sync only brings levels down; a reply warns a
+   character far below a part). Section 10 asks whether a floor should want levels, like an island.
+4. **The hold of the crypt and the frost vault is a side room** (the East Crypt), and the way to the guardian goes
+   back through the Hall. It keeps the rooms as they were built; a route that ends in front of the throne hall would
+   need the rooms laid out anew.
+5. **Three parts at once** is a constant (`MaxAreas`); a big stream may want more, a weak PC fewer than three without
+   going all the way to potato mode. A setting is easy to add.
+6. **The pace curve** (2 players 1.4 times five's time, 10 players 0.82, 30 players 0.6) is two exponents in
+   `TowerPace`. A lone player's kill counts 2.2, which makes a part about 1.8 times five players' time for them.
+7. **Gathering's measure**: two gatherers count as they are. A stream with nobody gathering loses nothing (kills count
+   for gather objectives), one with many gatherers gets less per round.
+8. **A frame of the wrong light** when the camera cuts from an island to a tower place (the look follows the camera a
+   frame late). It was there before this step; it showed in 3 of about 110 snapshots.
+9. **The seals**: thorns and grave light in the crypt, glowing ice in the vault. The crypt's is green again, like the
+   great hall's ghostfire, by its light; another color is one line in the route script.

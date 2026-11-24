@@ -66,7 +66,7 @@ if (parts[0] == "vote" || parts[0] == "force")
         if (kind == "climb") r = tower.Climb(b, force, out needed).ToString();
         else if (kind == "close") r = tower.Close(b, force, out needed).ToString();
         else if (kind == "boss") r = tower.CallBoss(b, force, out needed).ToString();
-        else r = tower.RequestFloor(b, int.Parse(kind.Split(':')[1]), force, out needed).ToString();
+        else r = tower.RequestMove(b, int.Parse(kind.Split(':')[1]), force, out needed).ToString();
         sb.Append(r + "(" + needed + ") ");
         if (r != "Voted") break;
     }

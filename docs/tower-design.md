@@ -14,7 +14,9 @@ out a few at a time: the first ones with the update that brings the new combat, 
 > number, now called its *step*. The sections below keep the words they were written with, as the record of how the
 > tower was built; where a command, a number or a text changed, a line marked *Since 2026-11-24* says so. The shape
 > as built (words, commands, mini bosses and floor bosses, the kinds of objectives, scaling by pressure) is
-> [tower-worlds-proposal.md](tower-worlds-proposal.md), section 12.
+> [tower-worlds-proposal.md](tower-worlds-proposal.md), section 12; each player's own way to a cleared part, the parts
+> that are loaded at once, the floor map, the rooms of the crypt and the frost vault and what a kill is worth by the
+> size of the group are its section 13.
 
 Decided with Zerratar (2026-11-06):
 - Every floor: a couple of stream quests, then a floor boss.
@@ -153,6 +155,10 @@ except that a floor is only in memory while it is used.
   in a moment. If the camera is following a player who walks in early, only the camera shows a short "the tower
   opens" card; the game itself never waits. At most one fighting floor and one town are loaded at once, and a floor
   is unloaded when the last player leaves.
+  *Since 2026-11-24 (step 2):* up to three fighting parts are loaded at once beside the town, one in potato mode: the
+  part the climb is on and cleared parts players went to by themselves. Each loaded scene is moved to a place of its
+  own, 1.5 km from the next, and a second part of the same layout is the scene loaded a second time
+  (tower-worlds-proposal.md section 13).
 - **The look follows the camera.** Sky, fog, sun, ambient light (`SceneAmbient`), weather, music, and the world-wide
   systems (ocean, clouds, rain) switch to the floor's profile when the camera watches someone in the tower, and back
   when it watches someone in the world. The game has no baked lighting, so there are no lightmaps to merge.
@@ -419,6 +425,10 @@ Zerratar (2026-11-10): the tower does not stop at ten floors for v0.9.7; keep ad
 - *Since 2026-11-24:* the command is `!tower part 7` (a part of the floor the group is on), `!tower floor 2` (that
   floor's latest part), `!tower floor 2 part 7` or short `!tower 2-7`; `!tower part` or `!tower floor` alone goes back
   to the climb. `!tower train 7` still works as `!tower part 7`.
+- *Since 2026-11-24 (step 2):* those commands take **only the player who types them** (the streamer too) to a cleared
+  part, and everyone goes with `all` in front: `!tower all part 7`, `!tower all 2-7`, and `!tower all` alone back to
+  the climb (the streamer or a moderator at once, anyone in the tower by vote). The table is in
+  tower-worlds-proposal.md section 13.
 - **Training on cleared floors** (the open question below, answered): `!tower floor 7` (the streamer and moderators)
   takes everyone in the tower down to a floor the stream has reached; its monsters give experience and count for the
   town chains, but the climb's quests and boss stay on the stream's floor. The same layout refills at once, another is
@@ -699,6 +709,11 @@ off in potato mode; the moonbeams already do; the braziers' and the seal's light
 Monster templates: band 1's looks and the Dark Fortress dead, so any floor of 1 to 10 can be tried in it. The audit
 (`tower-audit.cs`, now also checking every room's arrival) passes: 30 checks, no problems.
 
+*Since 2026-11-24 (step 2):* the route is live in v0.9.7 on two layouts: the crypt (floor 1, parts 4, 7, 9 and 10) and
+the frost vault (floor 2, parts 3, 4, 7, 8 and 10) have gates between their five rooms (thorns and a grave light seal
+the crypt's, glowing ice the vault's), added to their scenes by `tools/tower/tower-rooms-route.cs`; both were played
+from the first room to their guardian (tower-worlds-proposal.md section 13). The great hall stays as below.
+
 **Live and dormant.** The system code ships with v0.9.7 but nothing uses it: no floor in RavenNest.Combat names the
 great hall, `TowerFloor.Route` is null in every v0.9.7 layout, and the server is unchanged. The great hall is reachable
 only in the editor, from the admin debug menu's "Tower: Great Hall" (every floor then loads it, the loaded floor climbs
@@ -724,6 +739,8 @@ Captures from the game's camera: `docs/mockups/tower/band4/great-hall-*.png`.
 - Outside the rooms is a flat dark void; from a low angle it reads as nothing rather than more fortress.
 
 **Adding rooms to other floors**
+- *The crypt and the frost vault have theirs* (2026-11-24, `tools/tower/tower-rooms-route.cs`): the script to copy for
+  another walled layout of bands 1 to 3. Their walls are low, so they have no cutaway.
 - *A band 1 to 3 layout:* give its builder rooms in order with their spots and an arrival each (TowerZone), a TowerGate
   in each doorway (leaves, seal, a carving NavMeshObstacle saved disabled), a TowerRoute on the root and `floor.Route`
   set. Open layouts (the courtyard, the glacier) need only gates or barriers between areas (a fallen tree, an ice wall,
@@ -750,5 +767,5 @@ Captures from the game's camera: `docs/mockups/tower/band4/great-hall-*.png`.
   forgets them, its slams and spits pass them by, and the attempt is lost when every participant has fallen. They still
   share the clear's rewards.
 - ~~Can players train on cleared floors?~~ Yes: `!tower floor N` (section 15; `!tower part N` since 2026-11-24) and the
-  towns (section 14). Each player going to a cleared part alone, with several parts loaded, is the next step
-  (tower-worlds-proposal.md, section 11).
+  towns (section 14). Since step 2 (2026-11-24) each player goes to a cleared part alone, with up to three parts
+  loaded (tower-worlds-proposal.md, section 13).
