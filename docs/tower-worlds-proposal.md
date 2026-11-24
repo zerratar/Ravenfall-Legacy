@@ -1059,7 +1059,7 @@ floors 1, 2 and 3, and the floor bosses 91, 86 and 90, in about 5 minutes agains
 73 of 100 mini bosses and every floor boss, in 6 to 8 minutes (the limit is 10). Ten and thirty still win
 everything; their fights take 1.2 to 2.9 minutes for a mini boss and 2.4 to 4.4 for a floor boss.
 
-**What is not right yet.**
+**What was not right yet** (both fixed in the second tuning round, below).
 
 - *The spread within a floor is wide.* The hardest mini bosses for five are The Brood Mother (72), The Moo-tant,
   Refrozen (49), The Thawed Ronin (58), Captain Quackbeard (48), Mother Squall (62) and Master Kaze (22; he was
@@ -1107,3 +1107,108 @@ there); no floor 1 mini boss was played in this round.
   than the two leaves, which did not remove it: it is the lit side of the doorway seen through the gap the pack's
   leaf leaves at the frame. Not quick; left.
 - *Not done:* a loss by time, and the first-time intro after Start now.
+
+### The second tuning round: veterans, and each guardian's own numbers (2026-11-24)
+
+Two weak points of the round above were faults, and are fixed in `RavenNest.Combat`; recovery (40 seconds, half
+health), the floors' fury, the floor bosses' health and the unmeasured rule for floors beyond 3 are as they were.
+
+**Veterans never do worse than fresh players.** A group's strength counted as heads: two veterans were "2.8 fresh
+players" to the rule, so the small-group mercy (softer blows the fewer heads there are) was taken away again, and
+with the harder blows they lost fights two fresh players won. Five veterans met a harder floor boss than five fresh
+players for the same reason (a floor boss is measured against eight). Now `TowerPressure.Of` counts strength by
+the group's heads (`StrengthShare`): **nothing under 0.6 of the group a fight is made for, all of it from a full
+group on**, where it mostly buys the guardian's health (its blows hardly follow the pressure). So below a full group
+a player's trees, gems and enchantments are all their own, and from a full group on a strong group gets the longer
+fight. In the simulator a veteran group now wins at least as often as a fresh one against every guardian, with 2, 5,
+10 and 30 players (the smallest gap is 0). What this does not do: under a full group strength buys no longer fight
+either (two veterans meet the fight two fresh players meet, and win it faster). For strength to buy only health
+there, the game has to hand the group's strength to the rule beside its heads; the game was not touched in this
+round.
+
+**The guardians that stood out, and why** (`tower why 3,18,19,23,24,25 300`: what five fresh players win with one
+thing taken away at a time). The slam is what loses a fight for five against every guardian (without it they win
+86 to 99 of 100 everywhere); what set these six apart was something on top of it:
+
+| Guardian | Five won | What made it hard | Changed |
+|---|---|---|---|
+| The Brood Mother (1-3) | 68 | four helpers at once, the most on its floor (91 without them), and a spit on top (86 without) | three helpers, the spit 1.0 of a blow |
+| The Thawed Ronin (2-8) | 60 | the hardest blows of its floor, power 1.25 (87 with a plain power) | power 1.1 |
+| The Moo-tant, Refrozen (2-9) | 44 | 60% of every blow is ice and its spit is 1.2 blows (72 without either) | 40% ice, the spit 1.0 |
+| Master Kaze (3-3) | 23 | a blow every 2 seconds at power 1.15: the slam comes every 10 seconds instead of 12.5 (83 striking every 2.5 s), and for two players his three helpers (23 to 69 without) | still every 2 seconds, at power 0.95, the slam every sixth swing (12 s), two helpers |
+| Mother Squall (3-4) | 68 | her spit (88 without) on top of two calls for helpers and lightning | the spit 1.0 |
+| Captain Quackbeard (3-5) | 58 | his spit (79 without; for two players 41 to 64) and a tenth more health than the others | the spit 0.9, a plain pool |
+
+**Each guardian's own edge** (`TowerBoss.Edge`, beside its other numbers in `Tower.cs`): what its floor's fury is
+multiplied by for it, found with `tower tune 300` (by halving, to the part's aim: the floor's 90, 80 or 70, five more
+on a floor's first part and five fewer on its ninth). Floor 1: Nibbles 1.05, Grubnose 1.05, The Brood Mother 0.95,
+Mortimer 1.05, Old Thornback 1.2, The Moo-tant 0.95, Big Gorp 1.25, Lord Pestilus 0.95, Old Rotbelly 1.2. Floor 2:
+Jarl Rimebeard 1.2, Snowball 1.2, The Frozen Warden 1.05, The Wailing Matron 1.4, Emperor Quackers 0.95, Sigrid 1.05,
+Hoarfang 1.1, The Thawed Ronin 1, The Moo-tant Refrozen 0.95. Floor 3: Gale Blackwind 1.2, Zap 1.05, Master Kaze
+1.05, Mother Squall 1, Quackbeard 1, Voltus 1.05, Skyfang 1.1, Aerin 1.1, The Moo-tant Supercharged 1.1. The floor
+bosses keep 1.
+
+**Every guardian, before and now** (`tower 300`; won of 100; before is the round above):
+
+| Part | Guardian | Two fresh | Five fresh | Two veterans | Five veterans |
+|---|---|---|---|---|---|
+| 1-1 | Nibbles the Vicious | 100 | 98 -> 96 | 100 | 100 |
+| 1-2 | Warchief Grubnose | 99 | 96 -> 94 | 100 | 100 |
+| 1-3 | The Brood Mother | 90 -> 99 | 72 -> 92 | 82 -> 100 | 99 -> 100 |
+| 1-4 | Mortimer Bonewhistle | 81 | 94 -> 90 | 78 -> 100 | 100 |
+| 1-5 | Old Thornback | 100 -> 99 | 99 -> 90 | 99 -> 100 | 100 |
+| 1-6 | The Moo-tant | 92 -> 97 | 81 -> 90 | 88 -> 100 | 100 |
+| 1-7 | Big Gorp, the Keep Colossus | 100 | 100 -> 85 | 100 | 100 |
+| 1-8 | Lord Pestilus | 84 | 81 -> 86 | 80 -> 100 | 97 -> 100 |
+| 1-9 | Old Rotbelly | 100 | 100 -> 94 | 100 | 100 |
+| 1-10 | Viridia, the Verdant Wyrm (floor boss) | 100 | 91 -> 90 | 100 | 92 -> 100 |
+| 2-1 | Jarl Rimebeard | 100 | 100 -> 89 | 83 -> 100 | 100 -> 99 |
+| 2-2 | Snowball, Nibbles' Big Sister | 100 | 98 -> 79 | 57 -> 100 | 99 -> 96 |
+| 2-3 | The Frozen Warden | 100 | 88 -> 83 | 33 -> 100 | 99 |
+| 2-4 | The Wailing Matron | 100 | 100 -> 74 | 100 | 100 -> 99 |
+| 2-5 | Emperor Quackers | 100 -> 99 | 83 -> 85 | 79 -> 100 | 97 -> 99 |
+| 2-6 | Sigrid the Unthawed | 99 -> 95 | 82 -> 75 | 90 -> 100 | 100 -> 98 |
+| 2-7 | Hoarfang | 98 -> 91 | 83 -> 76 | 86 -> 100 | 99 -> 94 |
+| 2-8 | The Thawed Ronin | 84 -> 94 | 58 -> 73 | 53 -> 100 | 94 -> 96 |
+| 2-9 | The Moo-tant, Refrozen | 89 -> 100 | 49 -> 84 | 23 -> 100 | 81 -> 98 |
+| 2-10 | Glacius, the Winter Wyrm (floor boss) | 100 | 86 -> 85 | 94 -> 100 | 64 -> 100 |
+| 3-1 | Captain Gale Blackwind | 97 -> 82 | 97 -> 68 | 55 -> 100 | 100 -> 92 |
+| 3-2 | Zap, Nibbles' Shocking Cousin | 77 -> 75 | 80 -> 75 | 21 -> 100 | 97 -> 96 |
+| 3-3 | Master Kaze | 14 -> 37 | 22 -> 66 | 1 -> 100 | 57 -> 92 |
+| 3-4 | Mother Squall | 81 -> 84 | 62 -> 72 | 24 -> 100 | 98 |
+| 3-5 | Captain Quackbeard | 52 -> 79 | 48 -> 65 | 5 -> 100 | 79 -> 94 |
+| 3-6 | Champion Voltus | 69 | 76 -> 73 | 23 -> 100 | 99 -> 93 |
+| 3-7 | Skyfang | 78 -> 64 | 84 -> 71 | 35 -> 100 | 98 -> 89 |
+| 3-8 | High Warden Aerin | 96 -> 86 | 84 -> 69 | 64 -> 100 | 100 -> 98 |
+| 3-9 | The Moo-tant, Supercharged | 91 -> 78 | 77 -> 61 | 56 -> 100 | 95 -> 89 |
+| 3-10 | Fulmina, the Thunder Wyrm (floor boss) | 100 -> 98 | 90 -> 88 | 97 -> 100 | 76 -> 100 |
+
+*Veterans by floor, before and now (mini bosses lowest / mean / highest and minutes, floor boss and minutes):*
+
+| Floor | Players | Mini bosses before | Mini bosses now | Floor boss before | Floor boss now |
+|---|---|---|---|---|---|
+| 1 | 2 | 78 / 92 / 100, 2.3 min | 100 / 100 / 100, 2.2 min | 100, 4.8 min | 100, 4.5 min |
+| 1 | 5 | 97 / 100 / 100, 2.1 min | 100 / 100 / 100, 2.1 min | 92, 4.1 min | 100, 3.2 min |
+| 1 | 10 | 100 / 100 / 100, 1.4 min | 100 / 100 / 100, 1.4 min | 100, 3.0 min | 100, 3.0 min |
+| 1 | 30 | 100 / 100 / 100, 1.0 min | 100 / 100 / 100, 1.0 min | 100, 1.9 min | 100, 1.9 min |
+| 2 | 2 | 23 / 67 / 100, 2.8 min | 100 / 100 / 100, 2.5 min | 94, 4.7 min | 100, 4.1 min |
+| 2 | 5 | 81 / 97 / 100, 2.6 min | 94 / 98 / 99, 2.6 min | 64, 4.5 min | 100, 2.7 min |
+| 2 | 10 | 100 / 100 / 100, 1.9 min | 100 / 100 / 100, 1.9 min | 100, 3.0 min | 100, 3.0 min |
+| 2 | 30 | 100 / 100 / 100, 1.6 min | 100 / 100 / 100, 1.6 min | 100, 2.2 min | 100, 2.3 min |
+| 3 | 2 | 1 / 32 / 64, 3.3 min | 100 / 100 / 100, 3.1 min | 97, 5.7 min | 100, 5.1 min |
+| 3 | 5 | 57 / 91 / 100, 3.1 min | 89 / 93 / 98, 3.1 min | 76, 4.6 min | 100, 3.1 min |
+| 3 | 10 | 100 / 100 / 100, 2.5 min | 100 / 100 / 100, 2.4 min | 100, 3.6 min | 100, 3.6 min |
+| 3 | 30 | 100 / 100 / 100, 2.2 min | 100 / 100 / 100, 2.2 min | 100, 3.1 min | 100, 3.1 min |
+
+Read against the aims: five fresh players win the mini bosses of floor 1 85 to 96 times in 100, of floor 2 73 to
+89, of floor 3 61 to 75, every one within ten of its floor's 90, 80 and 70; the floor bosses 90, 85 and 88. Two
+fresh players win at least 81 on floors 1 and 2 and at least 64 on floor 3 but for Master Kaze (37, who was 14).
+Ten and thirty win everything as before. A run of 300 fights moves a guardian by three to five wins from one run to
+the next, so the order inside a floor (later parts a little harder) holds on the whole and not for every
+neighbour: the edges are aimed at it, the table's single numbers wobble around it.
+
+**Played after it** (editor, local server): Master Kaze's part (3-3, The Wind Bridges) once, with five bots above
+the part's level: won after 3.9 minutes (the simulator: 66 wins of 100, about 4 minutes), 8 knockouts, three down at
+once at the worst moment with two left standing, the meter's damage on him his health to the point (164,090). A sane
+fight that could have been lost; it is the first fight played on floor 3. One fight, so it says the kind and not the
+odds. Not played: veterans (the bots have no trees or gems), two players, the other five changed guardians.
