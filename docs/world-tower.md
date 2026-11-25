@@ -214,7 +214,7 @@ renderers hidden, the sea floor strip hidden, the haze off, the terrain, the cha
   the terrain's ends east and west, so its end lies past the view from anywhere a camera goes (the builder's sea
   floor step; the mesh asset was made again in place). What remains from the overview is a faint line where the far
   plane cuts the sea floor, as everywhere in the world at that height.
-- **The straight-sided shallows at eye level: the ocean shader's grazing look. Not changed.** Each water pixel reads
+- **The straight-sided shallows at eye level: the ocean shader's grazing look. Changed after the round (below).** Each water pixel reads
   the depth behind it along the line of sight and takes the water's depth from the point that line meets
   (`Ocean.shader`, `vd`). From a camera at the waterline the line runs on under the surface for hundreds of metres,
   and every pixel of a column on screen looks the same way across the sea, so the whole column meets the same thing:
@@ -227,24 +227,24 @@ renderers hidden, the sea floor strip hidden, the haze off, the terrain, the cha
   looks down at 45 degrees, the line meets the bed just under the water, and nothing of this shows
   (`built4-sea-gamecam.jpg`).
 
-**Proposed, waiting for the owner** (it changes the sea everywhere): trust the bed only near the water it lies under,
-and count a bed met far off as the open sea's, as when no bed is met at all. In `Ocean.shader`, after the `open` case:
+**Changed after round 4 (the owner said yes, 2026-11-25): the bed is trusted only near the water it lies under.**
+In `Ocean.shader`, after the `open` case, a bed met far off counts as the open sea's, as when no bed is met at all:
 
 ```hlsl
-// at a grazing angle the line of sight runs on under the surface for hundreds of metres, and what it meets there
-// (an island's shelf far off) tells nothing of the water under P
 float across = length(bedWS.xz - P.xz);
-float trust = 1.0 - smoothstep(60.0, 200.0, across);
-vd = lerp(1000.0, vd, trust);
+vd = lerp(1000.0, vd, 1.0 - smoothstep(25.0, 90.0, across));
 ```
 
-Tried on the live sea in play mode (a test copy of the shader on the sea's material, not committed): at eye level from
-Home, Heim, Away and toward Eldara the straight-sided patches are gone and the shallows follow the shores
-(`built4-sea-from-home-eye-level.jpg`, `built4-sea-heim-away.jpg`); from the usual camera and from above nothing
-changes. It costs a length and a smoothstep per pixel. What it costs in looks: from the waterline an island more
-than a couple of hundred metres off loses its turquoise rim (Eldara at 520 m is deep blue to its beach), and the
-islet's near shallows are thinner. A wider trust (150 to 300 m) keeps more of the rim but leaves Away's shelf with a
-straight side at eye level.
+The range first tried (60 to 200 m, from round 4's test) cleared Home, Away and Eldara, but at Heim it left two pale
+wedges with straight sides under the near rocks, plainer than before against the now blue water. 25 to 90 m clears
+those too. At eye level the shallows are a thin rim along each beach; from the usual camera (45 degrees, where the
+line of sight meets the bed a few metres off) and at sailing height the shallows are as they were. It costs a length
+and a smoothstep per pixel. What it costs in looks: from the waterline, turquoise shelves further than about 90 m off
+are deep blue.
+
+Pictures (left to right: before, 60 to 200 m, 25 to 90 m as kept): `built5-sea-home.jpg`, `built5-sea-heim.jpg`,
+`built5-sea-away.jpg`, `built5-sea-gamecam.jpg`; Eldara from Home (before, 60 to 200 m): `built5-sea-eldara.jpg`;
+two sailing-height views as kept: `built5-sea-sailing.jpg`.
 
 ## Lit by the stream's progress
 

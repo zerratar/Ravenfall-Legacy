@@ -241,6 +241,12 @@ Shader "Ravenfall/Ocean"
                 #endif
                 open = open || LinearEyeDepth(raw, _ZBufferParams) < surfEye - 0.05;
                 if (open) { vd = 1000.0; path = 1000.0; bedWS = P - float3(0, 1000, 0); }
+                // at a grazing angle (a camera near the waterline) the line of sight runs on under the surface for
+                // hundreds of metres, and what it meets there (an island's shelf far off) tells nothing of the water
+                // under P; every pixel of a screen column meets the same thing, so the shallows got straight sides.
+                // The bed is trusted only near the water it lies under, and one met far off counts as the open sea's.
+                float across = length(bedWS.xz - P.xz);
+                vd = lerp(1000.0, vd, 1.0 - smoothstep(25.0, 90.0, across));
                 float2 ruv = uv;
                 #if !defined(_OCEAN_SIMPLE)
                     // the offset grows with depth and shrinks with distance, so the far sea does not swim
