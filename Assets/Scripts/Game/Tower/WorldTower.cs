@@ -17,10 +17,11 @@ using UnityEngine.SceneManagement;
 ///     draws it squeezed in front of the far plane and this gives its renderers bounds that are never culled. Past
 ///     <see cref="FarDistance"/> the low detail models show.</para>
 ///     <para>No top: over the last floor's section the tower goes on as a plain shaft, which the shader fades out
-///     smoothly from <see cref="FadeFrom"/> to <see cref="FadeTo"/>: toward the cloud's color inside the bank of cloud
-///     this asks the sky's clouds to keep round it (<see cref="SkyClouds.Tower"/>), then from <see cref="SkyFrom"/>
-///     up toward the live sky behind it, so it rises into a real cloud and on into the sky with no end to see. Where
-///     the game draws no sky clouds (potato mode, or the setting off) it fades into the sky all the way.</para>
+///     smoothly from <see cref="FadeFrom"/> to <see cref="FadeTo"/>: toward the cloud's color inside the column of
+///     cloud this asks the sky's clouds to keep round it (<see cref="SkyClouds.Tower"/>) and the wide deck of cloud in
+///     layers drawn out behind it (<see cref="SkyClouds.TowerDeck"/>), then from <see cref="SkyFrom"/> up toward the
+///     live sky behind it, so it rises into a cloudscape with no end to see. Where the game draws no sky clouds
+///     (potato mode, or the setting off) it fades into the sky all the way.</para>
 ///     <para>Potato mode: the low detail models at every distance, no breathing light, no drifting cloud, bobbing
 ///     rocks, lightning or gulls, no lamps, no camera looks; steady light stays.</para>
 ///     <para>The other parts of this class: the islet as a place players sail to (WorldTowerVisit.cs), the camera's
@@ -75,6 +76,13 @@ public sealed partial class WorldTower : MonoBehaviour
     [Tooltip("The bank of sky cloud kept round the tower's top: from this height (m above the sea) and this wide (m).")]
     public float CloudFrom = 395f;
     public float CloudRadius = 260f;
+    [Tooltip("The deck of sky cloud the tower rises into, in every weather: thin layers one over another over a wide oval drawn out behind the tower. How far it reaches behind, in front and to each side (m), the lowest layer (m above the sea), the metres between layers and how many there are; 0 behind for none.")]
+    public float DeckBehind = 2600f;
+    public float DeckFront = 400f;
+    public float DeckSide = 2200f;
+    public float DeckFrom = 375f;
+    public float DeckSpacing = 30f;
+    public int DeckLayers = 4;
 
     [Tooltip("Turned slowly round the tower: the storm's cloud ring. Degrees a second each.")]
     public Transform[] Turning = new Transform[0];
@@ -168,6 +176,7 @@ public sealed partial class WorldTower : MonoBehaviour
         ClearStatue();
         OnDestroyStone();
         SkyClouds.Tower = Vector4.zero;
+        SkyClouds.TowerDeck = Vector4.zero;
         Shader.SetGlobalVector(FadeId, Vector4.zero);
         if (Instance == this) Instance = null;
         foreach (var section in Sections) if (section.Material) Destroy(section.Material);
@@ -225,6 +234,10 @@ public sealed partial class WorldTower : MonoBehaviour
         // the sky's clouds keep a bank round the top while the tower shows and they are drawn at all
         var clouds = show && SkyClouds.Active;
         SkyClouds.Tower = clouds ? new Vector4(transform.position.x, transform.position.z, CloudRadius, transform.position.y + CloudFrom) : Vector4.zero;
+        // and the deck it rises into, drawn out behind it (away from the gate, which faces Home)
+        var behind = new Vector2(transform.forward.x, transform.forward.z).normalized;
+        SkyClouds.TowerDeck = clouds && DeckBehind > 0f && DeckLayers > 0 ? new Vector4(DeckBehind, DeckSide, DeckSpacing, transform.position.y + DeckFrom) : Vector4.zero;
+        SkyClouds.TowerDeckWay = new Vector4(behind.x, behind.y, Mathf.Max(DeckFront, 1f), DeckLayers);
         // the stream's progress is followed wherever the camera is (in the tower's own floors too, kilometres from
         // here, where this tower is not drawn): a floor that falls has to be noticed there, for the look at this tower
         // to follow the boss's own cutscene (seen in play 2026-11-25: it was only noticed once the camera came back)
@@ -264,10 +277,15 @@ public sealed partial class WorldTower : MonoBehaviour
         var sky = tri ? RenderSettings.ambientSkyColor.linear : RenderSettings.ambientLight.linear;
         var equator = tri ? RenderSettings.ambientEquatorColor.linear : RenderSettings.ambientLight.linear;
         Shader.SetGlobalVector(HazeColorId, Color.Lerp(sky, equator, 0.55f) * 0.95f);
-        // what the top fades toward: a cloud's own color in this light
-        var sun = RenderSettings.sun;
-        var lit = sun && sun.isActiveAndEnabled ? sun.color.linear * (Mathf.Clamp(sun.intensity, 0f, 2f) * 0.5f) : Color.black;
-        Shader.SetGlobalVector(CloudColorId, Color.Lerp(sky, equator, 0.3f) * 0.8f + lit);
+        // what the top fades toward: a cloud's own color in this light and weather, as the sky's clouds are lit (a
+        // brighter one stood as a pale blob above the crown at night and under a storm)
+        if (clouds) Shader.SetGlobalVector(CloudColorId, SkyClouds.LitColor);
+        else
+        {
+            var sun = RenderSettings.sun;
+            var lit = sun && sun.isActiveAndEnabled ? sun.color.linear * (Mathf.Clamp(sun.intensity, 0f, 2f) * 0.5f) : Color.black;
+            Shader.SetGlobalVector(CloudColorId, Color.Lerp(sky, equator, 0.3f) * 0.8f + lit);
+        }
 
         Climbers();
     }

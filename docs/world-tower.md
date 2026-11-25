@@ -13,9 +13,13 @@ it a look pass, the camera's looks at it, the islet as a place players sail to, 
 stone and as the statue, and a key that takes the camera to the tower and back. Round 3 finished the statue (the
 climber's gear in a heroic pose for every kind of weapon, a name plaque), rebuilt the stone as the tower stele the
 owner picked (design C), took the top's dithered fade out for a smooth one into the cloud and the sky, and carried
-the sea floor on south of the world's terrain so the sea round the islet has no straight edge behind it.
+the sea floor on south of the world's terrain so the sea round the islet has no straight edge behind it. Round 4
+(2026-11-25, the owner's two approved fixes) gave the tower a lasting deck of cloud in layers to rise into, so its top
+no longer reads as a cloud sitting on it, and laid the sea floor strip level and far out, which took away a pale band
+with a straight end that the haze drew across the sea behind the islet (see "No top" and "The sea round the islet").
 
-Captures of it in the game, taken in play mode on the local server: `docs/mockups/tower/world/built3-*.jpg` (round 3),
+Captures of it in the game, taken in play mode on the local server: `docs/mockups/tower/world/built4-*.jpg` (round 4),
+`built3-*.jpg` (round 3),
 `built2-*.jpg` (round 2; the lists are at the end) and `built-*.jpg` (round 1, the old place).
 
 ## Where it stands and how big it is
@@ -25,7 +29,7 @@ Captures of it in the game, taken in play mode on the local server: `docs/mockup
 | Place | (60, -700) in the main world, sea level -3.31: out in the open sea south of Home, beyond Heim and Away |
 | Scale | 1.2 (`scale` in `stack.json`; the models are made at 1 and everything below is as it stands in the world) |
 | Base | 192 m across at the wall (radius 96), the rock round it about 280 m |
-| Height | 367 m of sections (108 + 84 + 74 + 101), then the shaft goes on to 559 m and fades out between 402 and 548 m, inside the sky's bank of cloud and just over it |
+| Height | 367 m of sections (108 + 84 + 74 + 101), then the shaft goes on to 559 m and fades out between 402 and 488 m, inside the sky's deck of cloud |
 | For scale | the islands are 200 to 300 m across; the highest ground in the world is Ironhill's peak, 56 m over the sea |
 | Gate | 16 m wide and 26 m high, under a 41 m front; a character is 1.8 m |
 | Faces | north, to (0, -100): the gate, the plaza and the pier look at Home's south shore |
@@ -101,7 +105,7 @@ the stop at the pier is a short turn off the ring, taken only when someone is bo
 | 2 | The Frozen Vault | 108 to 192 | blue stone under snow, sheets of ice grown over the wall, ice crystals up to 48 m in 17 clusters, snow on every buttress head, icicles, snowed-in pines, frozen falls, the snowflake in blue |
 | 3 | The Storm Spire | 192 to 266 | weathered dark stone, lightning rods, a turning ring of thundercloud low round it with lightning, rocks adrift, the gale sigil |
 | 4 | the Dark Fortress | 266 to 367 | slate-blue stone flaring out over the storm: 16 fins that end in points, a lip with long and short spikes, tiers of window slits, two crowns of battlements, eight turrets at two heights with collars, teeth and spires, iron fire bowls, a keep with horns (dark until v0.9.8 gives the floor: see "Lit by the stream's progress") |
-| - | the shaft | 367 to 559 | the tower goes on: ledges, rings of dark windows and ribs every 46 m, fading out into the sky's cloud and the sky between 402 and 548 m |
+| - | the shaft | 367 to 559 | the tower goes on: ledges, rings of dark windows and ribs every 46 m, fading out into the sky's cloud between 402 and 488 m |
 
 Every section has three or four rings of windows, a rune band with its sigil at the four winds, and steps in from the
 one below, so the terraces show.
@@ -148,34 +152,99 @@ distance of whatever camera draws it, so it needs no setting and works in potato
 
 Round 1 hid the top under a low-poly cloud of its own, which read as a flat lid next to the sky's volumetric clouds.
 Round 2 let the shaft go on into a bank of the sky's own cloud and thinned it out by a dither, which showed as dotted
-speckle against the sky and from the islands, and the bank sat on the tower like a hat. Round 3 (2026-11-25):
+speckle against the sky and from the islands, and the bank sat on the tower like a hat. Round 3 took the dither out for
+a smooth fade, but from the overview over Home the bank still read as one cloud on the crown
+(`built3-top-above-home.jpg`). Round 4 (2026-11-25, the direction the owner approved: a lasting bank of cloud to the
+south that the tower rises into):
 
-- **The sky keeps a bank of cloud there.** `SkyClouds.Tower` (set by `WorldTower`, read by the cloud shader as
-  `_CloudTower`) raises the cover to full and thickens the body within 340 m of the tower from about 360 m up,
-  whatever the weather. Its rim is torn by a slow noise, and so is its foot: the underside rises toward the rim
-  (70 m higher at the edge than at the shaft) and is pushed up and down by a second noise, so from below it is a
-  mass of cloud the shaft goes into, thick at the shaft and thinning out round it, not a flat-bottomed disc.
-- **The shaft fades out smoothly, with no dither.** From 402 m to 548 m over the sea the shader blends the shaft
-  toward what is behind it, eased so most of it is gone by the top of the cloud layer (480 m): low down, inside
-  the bank, toward the cloud's own color in the light of the moment; from 463 m up toward the sky itself, read
-  from the live sky (`_RavenfallSky`, the probe `SkyReflection` keeps) in the very direction it is seen in, with
-  the game's haze worked in (the haze pass hazes the shaft by its depth but the sky only near the horizon, so the
-  shader asks for the color that comes out as the sky's once the haze is on it). What is wholly faded is not drawn,
-  so it hides no cloud behind it. Under a full overcast (a deck of cloud over everything) it fades into the cloud's
-  color all the way. The model ends at 559 m.
-- **What is seen**: the fortress's crown and turrets stand clear, the shaft rises some 35 m over them and goes into
-  the white (`built3-top-from-home.jpg`, `-from-heim.jpg`, `-night.jpg`). From 330 m over Home it goes into the
-  bank and nothing stands over it (`built3-top-above-home.jpg`).
-- **Potato mode, or Clouds off**: no sky clouds, so the same fade runs straight into the sky from 402 m up
-  (`WorldTower.Fade`): the shaft rises out of the crown and melts into the sky, with no cloud of its own any more
-  (`built3-top-potato.jpg`, `-clouds-off.jpg`). The low-poly cloud of round 2 (`Lid_Far`) is gone.
-- The storm ring stays: it sits at 200 to 260 m, well under the bank, and still reads as the Storm Spire's own
+- **The deck.** The sky's clouds (`SkyClouds`, the same volumetric march as the rest of the sky, nothing modelled)
+  keep a wide deck of cloud in the tower's part of the sky in every weather: four thin layers, 30 m apart from 375 m
+  over the sea (just over the crown at 367 m) to about 470 m, each heaving up and down a little and torn with holes
+  of its own so the sky shows between and through them. Its ground plan is an oval drawn out behind the tower (away
+  from the gate, so away from Home): 2.6 km behind it, 400 m in front, 2.2 km to each side and wider the further
+  back, its rim ragged (`SkyClouds.TowerDeck`, `TowerDeckWay`; `_CloudDeck`, `_CloudDeckWay` and `Deck()` in
+  `SkyClouds.shader`; the numbers are `Deck*` on `WorldTower`, set by the builder from the stack's heights). From
+  the islands it is a lasting bank of cloud on the southern horizon; from Home's shore it fills the sky behind and
+  over the fortress; from 330 m over Home the shaft goes up into a field of layered cloud that spans the view, with
+  sky between the layers, not under a lid (`built4-top-above-home.jpg`, `built4-top-before-after.jpg`).
+- **The column.** Round 3's bank stays, narrower (170 m round the shaft, from about 390 m up, ragged at its foot and
+  rim, `SkyClouds.Tower`): the shaft goes into a column of cloud where it meets the deck, so from every side
+  something stands in front of it.
+- **The shaft fades out by 488 m** (was 548 m), inside the deck's top layer, so nothing of it stands over the cloud.
+  From 402 m it blends toward the cloud's color, from 463 m on toward the sky. The cloud's color is now the one the
+  sky's clouds are lit with in this light and weather (`SkyClouds.LitColor`, from the same sun, ambient and storm
+  darkness as the march): the old fixed color was brighter than the cloud at night and under a storm, and stood as a
+  pale blob over the crown. The sky's color is read from the live sky probe at its sharpest level (mip 0); the
+  blurred level used before carried the horizon's white up the sky, so the faded shaft stood paler than the sky
+  round it with a visible end (round 3's `built3-top-clouds-off-above.jpg`, a pale cap; gone now).
+- **At the default view distance (650 m)** the tower is drawn squeezed in front of the far plane (see "Seen from
+  every island"), which put it in front of all its cloud from the overview. The cloud march now reads such a pixel
+  back to where the tower really stands (only where that lands within 260 m of the tower's axis, so nothing else
+  changes), so the deck goes in front of the shaft at any view distance (`built4-top-view-650.jpg`).
+- **Weather**: the deck is there in every weather. Under a settled overcast, rain or a storm the weather's own cloud
+  (230 to 480 m) covers the fortress too, so the tower goes up into the storm (`built4-top-overcast.jpg`, `-rain.jpg`,
+  `-storm.jpg`); at night the deck and the column are the night's cloud and the fade matches them
+  (`built4-top-night.jpg`).
+- **Potato mode, or Clouds off**: no sky clouds and no deck; the same fade runs straight into the sky from 402 m up
+  (`WorldTower.Fade`) and, with the sharp sky lookup, the shaft melts into the sky with no end to see
+  (`built4-top-potato.jpg`, `-clouds-off.jpg`).
+- The storm ring stays: it sits at 200 to 260 m, well under the deck, and still reads as the Storm Spire's own
   weather.
 
-What was tried and dropped in round 3: a shaft going on to 991 m that turned to the sky's color over several hundred
-metres. From the islands it worked, but from the overview camera over Home it stood over the bank as a long pale
-column with an end to it (the sky probe and the rendered sky do not match closely enough over that length). The
-short shaft hides its end inside the bank and the last 70 m over it.
+What was tried and dropped: in round 3, a shaft going on to 991 m that turned to the sky's color over several hundred
+metres (from the overview it stood over the bank as a long pale column with an end); in round 4, the deck without the
+column round the shaft (the shaft then stood in front of the deck as a pale ghost column from the overview, since the
+deck lies mostly behind it). The deck's sheets are left out of the march toward the sun and out of the cloud shadows
+(they are thin, so they shade little; that saves about a tenth of a millisecond): they are lit as if nothing of the
+deck stood between them and the sun, and they cast no shadow on the sea.
+
+## The sea round the islet
+
+From Home's shore at eye level a lighter patch of sea surrounded the islet with straight vertical sides
+(`built3-top-from-home.jpg`), and from above and from the overview a pale band with a straight end lay across the sea
+behind it (`built3-top-above-home.jpg`). Round 4 (2026-11-25) looked at each candidate on its own (the tower's
+renderers hidden, the sea floor strip hidden, the haze off, the terrain, the chart, the foam) and found two causes:
+
+- **The band from above: the haze reading the sea floor strip. Fixed.** The sea writes no depth, so the game's haze
+  pass (`Haze.shader`) hazes the water by the distance to the bed seen through it. Round 3's strip sloped 150 m down
+  over 600 m and stopped at z -1453; the height haze is thicker low down, so its deep part came out paler and its end
+  was a straight line across the sea. With the strip hidden, or the haze off, the band was gone
+  (`built4-sea-above-before-after.jpg`). The strip is now level: it starts at the terrain's own edge height (-30 to
+  -29.3 m all along), eases to the world's usual 26 m of water within 250 m, and reaches 3.2 km south and 1 km past
+  the terrain's ends east and west, so its end lies past the view from anywhere a camera goes (the builder's sea
+  floor step; the mesh asset was made again in place). What remains from the overview is a faint line where the far
+  plane cuts the sea floor, as everywhere in the world at that height.
+- **The straight-sided shallows at eye level: the ocean shader's grazing look. Not changed.** Each water pixel reads
+  the depth behind it along the line of sight and takes the water's depth from the point that line meets
+  (`Ocean.shader`, `vd`). From a camera at the waterline the line runs on under the surface for hundreds of metres,
+  and every pixel of a column on screen looks the same way across the sea, so the whole column meets the same thing:
+  an island's shelf or the islet's foot far off (shallow, so turquoise), or nothing before the far plane (the open
+  deep). The edge between the two is a compass direction, so it is a vertical line on screen, whatever the shore's
+  shape. It is not the islet: with the tower's whole scene hidden Away and Heim show the same straight-sided pale
+  shallows in the same picture, and Eldara seen from Home's east shore at the same distance shows the same patch
+  under it (`built4-sea-proof-other-islands.jpg`). Not the terrain's tiles (no tile edge there), the sea chart (the
+  sea does not read it) or the shore foam (only where the water is under 1.6 m deep). From the usual camera, which
+  looks down at 45 degrees, the line meets the bed just under the water, and nothing of this shows
+  (`built4-sea-gamecam.jpg`).
+
+**Proposed, waiting for the owner** (it changes the sea everywhere): trust the bed only near the water it lies under,
+and count a bed met far off as the open sea's, as when no bed is met at all. In `Ocean.shader`, after the `open` case:
+
+```hlsl
+// at a grazing angle the line of sight runs on under the surface for hundreds of metres, and what it meets there
+// (an island's shelf far off) tells nothing of the water under P
+float across = length(bedWS.xz - P.xz);
+float trust = 1.0 - smoothstep(60.0, 200.0, across);
+vd = lerp(1000.0, vd, trust);
+```
+
+Tried on the live sea in play mode (a test copy of the shader on the sea's material, not committed): at eye level from
+Home, Heim, Away and toward Eldara the straight-sided patches are gone and the shallows follow the shores
+(`built4-sea-from-home-eye-level.jpg`, `built4-sea-heim-away.jpg`); from the usual camera and from above nothing
+changes. It costs a length and a smoothstep per pixel. What it costs in looks: from the waterline an island more
+than a couple of hundred metres off loses its turquoise rim (Eldara at 520 m is deep blue to its beach), and the
+islet's near shallows are thinner. A wider trust (150 to 300 m) keeps more of the rim but leaves Away's shelf with a
+straight side at eye level.
 
 ## Lit by the stream's progress
 
@@ -248,19 +317,27 @@ is on, "Tower (T)" otherwise), and one in the shortcut bar.
 | Moving | cloud ring turns, rocks bob, clouds heave, fire wavers, lightning, gulls | none of it |
 | Lamps | the gate's and four braziers' point lights | off |
 | Shadows | cast within 320 m | cast within 320 m |
-| The top | fades into the sky's cloud bank and the sky over it | fades into the sky (no sky clouds in potato mode) |
+| The top | fades into the sky's deck and column of cloud | fades into the sky (no sky clouds in potato mode) |
 | Camera looks | on (their settings) | the idle look and the two cutscene looks are off |
 
 Round 1's models were 100,851 and 23,808 triangles: the look pass and the shaft added 19,538 near (the fortress's
 shapes, the courses' joints and proud blocks, growth and ice) and 635 far, plus the 2,480 of the potato cloud. Round 3
 added about 1,600 near for the stone (the stele's body, plinth, rune ring, plaques, laurels and crown 450, its twelve
 carved tier looks 660, the rows' runes 248) and about 1,670 for the taller shaft, and took the potato cloud out. The
-sea floor strip south of the terrain is 2,304 more, drawn with a plain lit material, no shadows. The budget kept: every block's backing and sides
+sea floor strip south of the terrain is 3,916 more (round 4: level and further out; it was 2,304), drawn with a plain lit material, no shadows. The budget kept: every block's backing and sides
 exist only in the near models; the far models keep the silhouette (fins, turrets, crowns, crystals) and drop the
 rest. The low detail models show from 1,150 m (round 1: 950 m), so every island that looks at the tower from within
 a kilometre gets the near one.
 
 The Synty props on the plaza are drawn only within the view distance like any island's.
+
+**The deck of cloud** (round 4) is part of the sky's cloud march, so it follows the Clouds setting and potato mode
+(neither draws it). Measured on the development PC (GPU time of the march at 2560 by 1440, the march at half that,
+fair weather, the profiler's GPU recorder over 120 frames): from 330 m over Home 1.49 ms with round 3's bank, 1.77 ms
+with the deck and column (1.03 ms with no tower cloud at all); from Home's shore 0.74 ms against 0.99 ms; from the
+usual camera that looks down at the islands 0.003 ms either way (a ray that never reaches the cloud layer stops at
+once). So about 0.25 to 0.3 ms more, and only while the tower's sky is in view. The deck is skipped wherever the
+weather's own cloud is already full, and in the march toward the sun and the shadows.
 
 Nothing here has a setting of its own except the idle look: the cost is triangles while it is in view, the moving
 parts are shader maths and a handful of turning transforms, the fade is a blend and one sky lookup per pixel of the shaft over 402 m, and all of it follows
@@ -439,8 +516,8 @@ are more than six or so.
 
 ## Seen in play, and not
 
-Play mode on the local server (chat muted, the bot cut off), 2026-11-24 and (round 3) 2026-11-25, with bots as
-players and the owner's own character in the session.
+Play mode on the local server (chat muted, the bot cut off), 2026-11-24 and (rounds 3 and 4) 2026-11-25, with bots
+as players and the owner's own character in the session.
 
 Seen:
 
@@ -474,6 +551,13 @@ Seen:
   off and on by a click on its row, and the Keys tab's "Tower camera: to the tower and back" row as T, waiting for a
   key, rebound to Y (with its reset) and reset to T (`built3-settings.jpg`, `built3-tower-key.jpg`).
 - The sea floor strip from above (the straight edge behind the tower gone), from Home at eye level and from Heim.
+- Round 4's top from Home's shore, Heim and 330 m over Home in fair weather; in a settled overcast, rain and
+  thunderstorm (the weather brought in over a second and ticked past it, so no front was still drifting in) from
+  Home, Heim and 200 m over Home; at night; at the 650 m view distance; with clouds off and in potato mode. The
+  deck's GPU time from the overview, from Home's shore and from the usual camera.
+- Round 4's sea: the band from above with the strip hidden and with the haze off (both took it away), then gone with
+  the level strip; the eye-level patch with the tower's whole scene hidden, toward Eldara, from Heim and Away, and
+  with the proposed ocean change on a test copy of the shader.
 
 Not seen, or not done:
 
@@ -481,8 +565,9 @@ Not seen, or not done:
   end, up to a minute; that wait was not played).
 - The key pressed on a real keyboard, and a rebind through "Press a key" with a real key: the window's capture
   reads the keyboard itself.
-- The top in a settled overcast, rain or a storm: the weather was still drifting in from the last one in those
-  captures. Under a full overcast the fade goes to the cloud's color (read from the shader, not seen).
+- The deck from other islands far off (Kyo, Ironhill, Eldara: read as a bank on the southern horizon, not
+  captured), and its look as the weather changes over while watched (only settled weathers were seen).
+- The deck's frame cost on a weak machine and in a build (measured in the editor on the development PC only).
 - An own boat sailing to the islet and docking; a player logging off on the islet and coming back; a raid or a
   dungeon joined from the islet; the islet in the island tour camera.
 - A v0.9.6.x game with a character saved on "Tower", and a v0.9.7 game against the live server: both are read from
@@ -497,7 +582,25 @@ Not seen, or not done:
 
 ## Captures
 
-`docs/mockups/tower/world/`, round 3 (`built3-*`), taken 2026-11-25 in play mode (local server, chat muted, the bot cut
+`docs/mockups/tower/world/`, round 4 (`built4-*`), taken 2026-11-25 in play mode (local server, chat muted, the bot cut
+off), view distance 1300 m unless said, weather settled:
+
+| File | What |
+|---|---|
+| `built4-top-above-home.jpg` | From 330 m over Home, fair: the shaft goes into the deck, sky between its layers |
+| `built4-top-before-after.jpg` | The same view, round 3 (one cloud on the crown) beside round 4 |
+| `built4-top-from-home.jpg`, `-from-heim.jpg` | From Home's south shore at eye level and from Heim's east point, fair |
+| `built4-top-view-650.jpg` | From 330 m over Home at the default view distance, 650 m |
+| `built4-top-overcast.jpg`, `-rain.jpg`, `-storm.jpg` | Settled overcast (Home's shore, 200 m over Home), rain and a thunderstorm (Home's shore, Heim) |
+| `built4-top-night.jpg` | Night, Home's shore and Heim |
+| `built4-top-clouds-off.jpg`, `-potato.jpg` | Volumetric clouds off, and potato mode: Home's shore and 330 m over Home |
+| `built4-sea-from-home-eye-level.jpg` | From Home's shore at eye level: round 3, round 4, and the proposed ocean change |
+| `built4-sea-gamecam.jpg` | The usual camera over Home's south shore: before, after, proposed |
+| `built4-sea-above-before-after.jpg` | From 160 m up: the haze band before, gone after, and gone before with the haze off or the strip hidden |
+| `built4-sea-heim-away.jpg` | From Heim and Away at eye level: before, after, proposed |
+| `built4-sea-proof-other-islands.jpg` | Home at eye level with the tower hidden (Away and Heim show the same patches), Eldara at 520 m, and Eldara with the proposed change |
+
+Round 3 (`built3-*`), taken 2026-11-25 in play mode (local server, chat muted, the bot cut
 off), view distance 1300 m:
 
 | File | What |
@@ -551,19 +654,16 @@ server was floor 1, part 6. Round 1's (`built-*`) show the tower at its first pl
 
 Where it still falls short:
 
-- **From the overview camera over Home** (330 m up) in fair weather the bank still reads as one big cloud over the
-  crown, broader and ragged now, but a cloud on top (`built3-top-above-home.jpg`). Making it part of a wider field
-  (a bigger radius) made a bigger hat; what would really answer it is a lasting deck of cloud toward the south, or
-  the bank higher than the overview camera ever goes. The owner's call.
-- **At eye level from Home's shore** a lighter band of sea near the horizon is still darker at its sides than in
-  front of the islet (`built3-sea-from-home-eye-level.jpg`). It is the sea's look at a grazing angle, not the islet:
-  the water reads its depth along the line of sight, a line that skims the surface from a camera at the waterline
-  reaches the bed only where something stands under the water (the islet's foot, an island's shelf) and runs out
-  past the far plane elsewhere, which counts as the open deep; Away's shelf in the same picture shows the same band.
-  The game's camera is never that low. A fix belongs in the ocean shader (count "beyond the far plane" as the
-  world's usual 26 m of sea rather than the open deep), which changes the far sea everywhere: not done without the
-  owner.
-- From further than the view distance the tower is drawn in front of all cloud (the squeezed depth), so there the
-  fade does the work alone; it reads as the shaft melting into the sky rather than into a cloud.
+- **The sea's straight-sided shallows at eye level** round the islet stay until the owner says yes to the ocean
+  change proposed under "The sea round the islet" (they show round every island from the waterline).
+- **The deck's layers are flat sheets**: from the overview they read as a stack of thin, even layers (an
+  altostratus deck) more than billowing cumulus; puffier sheets would cost more noise per sample.
+- **Under a settled overcast, rain or storm** the weather's own cloud (from 230 m) hides the fortress too, so the
+  tower's crown is lost in grey; that is the weather's slab, not the deck, and reads as the tower going up into the
+  storm, but the fortress cannot be seen then.
+- From Heim and Away, close under it, a faint pale dome stands where the shaft meets the cloud over the crown (the
+  half-faded shaft against the shaded underside of the column).
+- Further than about 3.6 km the tower is not drawn; between the view distance and that the cloud march puts its cloud
+  in front of the squeezed tower (round 4), so it no longer only melts into the sky there.
 - The statue cast from a look alone wears what the server's list sends; a climber whose gear the server does not
   know (an older server) wears what the bare model holds.

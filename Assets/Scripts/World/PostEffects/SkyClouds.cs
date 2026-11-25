@@ -22,6 +22,8 @@ public static class SkyClouds
 {
     private static readonly int SlabId = Shader.PropertyToID("_CloudSlab");
     private static readonly int TowerId = Shader.PropertyToID("_CloudTower");
+    private static readonly int DeckId = Shader.PropertyToID("_CloudDeck");
+    private static readonly int DeckWayId = Shader.PropertyToID("_CloudDeckWay");
     private static readonly int ParamsId = Shader.PropertyToID("_CloudParams");
     private static readonly int WindId = Shader.PropertyToID("_CloudWind");
     private static readonly int SunDirId = Shader.PropertyToID("_CloudSunDir");
@@ -122,6 +124,22 @@ public static class SkyClouds
     ///     z), z how wide (m), w the height it stands from (m); z 0 for none.
     /// </summary>
     public static Vector4 Tower;
+
+    /// <summary>
+    ///     The tower's deck: a wide field of cloud in thin layers, there whatever the weather, that the tower rises into
+    ///     (WorldTower sets it, beside <see cref="Tower"/>). x how far it reaches behind the tower (m), y how far to each
+    ///     side (m), z the metres between its layers, w the lowest layer's height (m); x 0 for none.
+    /// </summary>
+    public static Vector4 TowerDeck;
+
+    /// <summary>The deck's way: x and y the way behind the tower (unit, the world's x and z), z how far it reaches in front of it (m), w how many layers.</summary>
+    public static Vector4 TowerDeckWay;
+
+    /// <summary>
+    ///     About the color a cloud of the sky shows in this light and weather (linear), from the same sun, sky and
+    ///     darkness the march uses: what something fading into the cloud should fade toward (the world tower's top).
+    /// </summary>
+    public static Color LitColor { get; private set; } = new Color(0.8f, 0.82f, 0.86f);
 
     /// <summary>The setting: volumetric clouds on or off.</summary>
     public static bool Enabled { get; set; } = true;
@@ -269,6 +287,8 @@ public static class SkyClouds
         }
         else m.SetVector(SlabId, new Vector4(Floor, Ceiling, Coverage, PuffSize));
         m.SetVector(TowerId, place.HasValue ? Vector4.zero : Tower);
+        m.SetVector(DeckId, place.HasValue || Tower.z <= 0f ? Vector4.zero : TowerDeck);
+        m.SetVector(DeckWayId, TowerDeckWay);
         // a place keeps its own light day and night: no stars in its clouds
         m.SetFloat(NightId, place.HasValue ? 0f : Night());
         // a storm cloud is thicker and darker all through (Weather.Dark)
@@ -309,6 +329,17 @@ public static class SkyClouds
         var equator = tri ? RenderSettings.ambientEquatorColor.linear : RenderSettings.ambientLight.linear;
         m.SetVector(SkyColorId, Color.Lerp(sky, equator, 0.3f) * (0.85f * (1f - 0.55f * dark)));
         m.SetVector(ShadeColorId, Color.Lerp(sky, equator, 0.5f) * (0.4f * (1f - 0.7f * dark)));
+        if (!place.HasValue)
+        {
+            // a cloud's body as the march lights it, about: half the sun's (greyed) light and the ambient between the
+            // shade's and the tops'
+            var sunLit = (Color)(Vector4)m.GetVector(SunColorId);
+            var grey = sunLit.r * 0.3f + sunLit.g * 0.59f + sunLit.b * 0.11f;
+            var sunMix = Color.Lerp(sunLit, new Color(grey, grey, grey), 0.5f);
+            var ambient = Color.Lerp(Color.Lerp(sky, equator, 0.5f) * (0.4f * (1f - 0.7f * dark)), Color.Lerp(sky, equator, 0.3f) * (0.85f * (1f - 0.55f * dark)), 0.5f);
+            var lit = sunMix * 0.45f + ambient;
+            LitColor = new Color(lit.r, lit.g, lit.b, 1f);
+        }
         m.SetVector(HazeColorId, place.HasValue ? (Vector4)place.Value.HazeColor.linear : (Vector4)(Color.Lerp(sky, equator, 0.7f) * (0.95f * (1f - 0.3f * dark))));
     }
 

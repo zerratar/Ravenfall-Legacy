@@ -84,7 +84,9 @@ Shader "Ravenfall/WorldTower"
             [branch] if (_RavenfallHasSky > 0.5)
             {
                 float3 dir = normalize(positionWS - GetCameraPositionWS());
-                half3 sky = SAMPLE_TEXTURECUBE_LOD(_RavenfallSky, sampler_RavenfallSky, dir, 2.0).rgb;
+                // the sharpest level: a blurred one carries the horizon's white up the sky, and the faded shaft stood
+                // paler than the sky round it with an end to see (round 4)
+                half3 sky = SAMPLE_TEXTURECUBE_LOD(_RavenfallSky, sampler_RavenfallSky, dir, 0.0).rgb;
                 skyward = smoothstep(0.0, 1.0, saturate((positionWS.y - _WorldTowerFade.z) * _WorldTowerFade.w)) * (1.0 - smoothstep(0.7, 1.0, _RavenfallOvercast));
                 target = lerp(target, sky, skyward);
             }

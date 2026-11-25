@@ -538,17 +538,22 @@ tower.Bobbing = bobbing.ToArray(); tower.Flocks = flocks.ToArray();
 // ---- how the top goes into cloud (WorldTower.cs): the heights follow the stack ----
 var capTop = F(built["height"]) * S;
 tower.BuiltHeight = builtTop;
-// the shaft stands clear for a little over the last section and goes into the sky's bank of cloud round it, fading
-// toward the cloud's color; over the cloud layer (SkyClouds.Ceiling) it fades on toward the live sky behind it and is
-// gone a little under its own end (the shader, WorldTower.cs)
+// the shaft stands clear for a little over the last section and goes into the sky's cloud round it, fading toward the
+// cloud's color; near the top of the cloud layer (SkyClouds.Ceiling) it fades on toward the live sky behind it and is
+// gone just over it, inside the deck's top layer (the shader, WorldTower.cs). The cloud: a narrow column of the sky's
+// cloud round the shaft (the bank) and a wide deck of thin layers drawn out behind the tower, the lowest just over the
+// last section, the top one under the cloud layer's ceiling
 tower.CloudFrom = builtTop + 25f;
-tower.CloudRadius = 340f;
+tower.CloudRadius = 170f;
+tower.DeckFrom = builtTop + 8f;
+tower.DeckSpacing = 30f;
+tower.DeckLayers = UnityEngine.Mathf.Max(1, UnityEngine.Mathf.FloorToInt((SkyClouds.Ceiling - sea - 12f - tower.DeckFrom) / tower.DeckSpacing) + 1);
+tower.DeckBehind = 2600f; tower.DeckFront = 400f; tower.DeckSide = 2200f;
 tower.FadeFrom = builtTop + 35f;
-// gone a little over the cloud layer: what the bank does not hide is a short stub already in the sky's color
-tower.FadeTo = UnityEngine.Mathf.Min(capTop - 8f, SkyClouds.Ceiling - sea + 65f);
+tower.FadeTo = UnityEngine.Mathf.Min(capTop - 8f, SkyClouds.Ceiling - sea + 5f);
 tower.SkyFrom = SkyClouds.Ceiling - sea - 20f;
 tower.SkyBlend = 70f;
-log.AppendLine("built to " + builtTop.ToString("0") + " m, shaft to " + capTop.ToString("0") + " m, fades " + tower.FadeFrom.ToString("0") + " to " + tower.FadeTo.ToString("0") + " m (toward the sky from " + tower.SkyFrom.ToString("0") + " m), cloud bank from " + tower.CloudFrom.ToString("0") + " m");
+log.AppendLine("built to " + builtTop.ToString("0") + " m, shaft to " + capTop.ToString("0") + " m, fades " + tower.FadeFrom.ToString("0") + " to " + tower.FadeTo.ToString("0") + " m (toward the sky from " + tower.SkyFrom.ToString("0") + " m), cloud bank from " + tower.CloudFrom.ToString("0") + " m, deck of " + tower.DeckLayers + " layers from " + tower.DeckFrom.ToString("0") + " m");
 
 // ---- ramps over the steps (the quay's and the stair's), unseen: the navmesh goes up them whatever the steps' height ----
 void Ramp(string name, UnityEngine.Vector3 low, UnityEngine.Vector3 high, float width)
@@ -568,9 +573,12 @@ UnityEngine.Physics.SyncTransforms();
 // ---- the sea floor south of the world's terrain. The terrain ends in a straight line 150 m behind the tower (its
 // southern edge, z -853 today), and there the sea turned from the terrain's 26 m of water to the open deep at once:
 // from the islands it read as a lighter patch of sea round the islet with straight sides and sharp corners. This strip
-// carries the floor on from that edge, at the terrain's own height along it, and slopes it away into the deep over
-// 600 m, so the shallows fade out as they do round the other islands. In world terms, beside the tower's root; no
-// collider (nothing stands on it), no shadows ----
+// carries the floor on from that edge, at the terrain's own height along it, eases it to the world's usual 26 m of
+// water within 250 m and keeps it there, 3.2 km south and 1 km past the terrain's ends east and west, so its own end
+// lies past the view from anywhere a camera goes. It does not slope into the deep (round 3 did, 150 m down over
+// 600 m): the game's haze reads the sea's depth through the water, and the deep slope and its straight end 600 m out
+// showed as a pale band with straight edges across the sea from the overview and from above. In world terms, beside
+// the tower's root; no collider (nothing stands on it), no shadows ----
 {
     var terrains = new System.Collections.Generic.List<UnityEngine.Terrain>();
     foreach (var t in UnityEngine.Object.FindObjectsByType<UnityEngine.Terrain>(UnityEngine.FindObjectsInactive.Exclude))
@@ -589,27 +597,30 @@ UnityEngine.Physics.SyncTransforms();
     if (edge.Count == 0) log.AppendLine("sea floor: no terrain found, none made");
     else
     {
+        var usual = sea - 26f;
         float Height(float x)
         {
             foreach (var t in edge)
                 if (x >= t.transform.position.x - 0.01f && x <= t.transform.position.x + t.terrainData.size.x + 0.01f)
                     return t.SampleHeight(new UnityEngine.Vector3(x, 0f, edgeZ + 0.05f)) + t.transform.position.y;
-            return sea - 26f;
+            return usual;
         }
-        const float Step = 40f, Reach = 600f, Drop = 150f;
-        var outs = new[] { 0f, 25f, 60f, 110f, 170f, 240f, 320f, 410f, 500f, 600f };
-        var columns = UnityEngine.Mathf.CeilToInt((x1 - x0) / Step) + 1;
+        const float Step = 40f, Wing = 1000f, Settle = 250f;
+        var outs = new[] { 0f, 25f, 60f, 110f, 170f, 250f, 400f, 650f, 1000f, 1500f, 2200f, 3200f };
+        var from = x0 - Wing; var to = x1 + Wing;
+        var columns = UnityEngine.Mathf.CeilToInt((to - from) / Step) + 1;
         var verts = new System.Collections.Generic.List<UnityEngine.Vector3>();
         var tris = new System.Collections.Generic.List<int>();
         for (var c = 0; c < columns; c++)
         {
-            var x = UnityEngine.Mathf.Min(x0 + c * Step, x1);
+            var x = UnityEngine.Mathf.Min(from + c * Step, to);
             var y0 = Height(x);
             foreach (var d in outs)
             {
-                // eased in: level with the terrain at the seam, steepest half way out
-                var drop = Drop * 0.5f * (1f - UnityEngine.Mathf.Cos(UnityEngine.Mathf.PI * d / Reach));
-                verts.Add(new UnityEngine.Vector3(x, y0 - drop, edgeZ - d));
+                // eased from the terrain's edge to the usual depth
+                var k = UnityEngine.Mathf.Clamp01(d / Settle);
+                k = k * k * (3f - 2f * k);
+                verts.Add(new UnityEngine.Vector3(x, UnityEngine.Mathf.Lerp(y0, usual, k), edgeZ - d));
             }
         }
         var n = outs.Length;
@@ -642,7 +653,7 @@ UnityEngine.Physics.SyncTransforms();
         fr.receiveShadows = false;
         fr.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
         fr.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
-        log.AppendLine("sea floor: from the terrain's edge at z " + edgeZ.ToString("0") + ", x " + x0.ToString("0") + " to " + x1.ToString("0") + ", " + (tris.Count / 3) + " triangles, seam heights " + Height(0f).ToString("0.0") + " at x 0");
+        log.AppendLine("sea floor: from the terrain's edge at z " + edgeZ.ToString("0") + " to " + (edgeZ - outs[n - 1]).ToString("0") + ", x " + from.ToString("0") + " to " + to.ToString("0") + ", " + (tris.Count / 3) + " triangles, seam height " + Height(0f).ToString("0.0") + " at x 0");
     }
 }
 

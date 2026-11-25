@@ -28,6 +28,13 @@ Shader "Hidden/Ravenfall/SkyClouds"
             // a bank that stays put whatever the weather (round the top of the tower in the main world): xy where
             // (world x and z), z how wide (m, 0 for none), w the height it stands from (m)
             float4 _CloudTower;
+            // the tower's deck, a wide field of cloud in layers that the tower rises into, whatever the weather: x how
+            // far it reaches behind the tower (m), y how far to each side (m), z the metres between its layers, w the
+            // lowest layer's height (m); x 0 for none
+            float4 _CloudDeck;
+            // xy the way behind the tower (unit, world x and z), z how far the deck reaches in front of it (m), w how
+            // many layers
+            float4 _CloudDeckWay;
             // x density, y steps, z absorption, w how much the fine noise tears the edges
             float4 _CloudParams;
             // xy wind offset (m, already times time), z haze per metre, w haze start (m)
@@ -89,6 +96,35 @@ Shader "Hidden/Ravenfall/SkyClouds"
                 return saturate(dot(p.xz - _CloudFront.xy, _CloudFront.zw) / _CloudFrontLook.y + 0.5);
             }
 
+            // The tower's deck at p, 0..1: thin sheets of cloud one over another, with sky between them and holes torn
+            // in each, over a wide oval drawn out behind the tower (and a little in front of it), its rim ragged. So the
+            // tower goes up into a field of cloud in layers and on through them, rather than under one cloud. q is p in
+            // the slab's noise space, body the slab's own noise there (the sheets' holes follow it in part).
+            float Deck(float3 p, float3 q, float body)
+            {
+                float2 rel = p.xz - _CloudTower.xy;
+                float along = dot(rel, _CloudDeckWay.xy);
+                float side = dot(rel, float2(-_CloudDeckWay.y, _CloudDeckWay.x));
+                // wider the further back it goes
+                float2 plan = float2(along / (along > 0.0 ? _CloudDeck.x : _CloudDeckWay.z),
+                    side / (_CloudDeck.y * (0.7 + 0.3 * saturate(along / _CloudDeck.x))));
+                float r = length(plan);
+                if (r > 1.5) return 0.0;
+                r *= 0.65 + 0.7 * Noise3(q * 0.6 + 2.9);
+                float inside = 1.0 - smoothstep(0.5, 1.0, r);
+                if (inside <= 0.0) return 0.0;
+                // which layer: one every _CloudDeck.z metres from the lowest up, each heaving up and down a little
+                float lay = (p.y - _CloudDeck.w) / _CloudDeck.z + (Noise3(q * 0.8 + 6.1) - 0.5) * 0.5;
+                float idx = floor(lay + 0.5);
+                if (idx < 0.0 || idx >= _CloudDeckWay.w) return 0.0;
+                float sheet = 1.0 - smoothstep(0.1, 0.3, abs(lay - idx));
+                if (sheet <= 0.0) return 0.0;
+                // holes in each sheet, its own for each so the gaps do not line up; the top sheets thinner
+                float holes = body * 0.5 + Noise3(q * 2.3 + idx * 17.3) * 0.5;
+                float open = 0.45 + 0.03 * idx;
+                return inside * sheet * saturate((holes - open) / 0.08);
+            }
+
             // how much cloud there is at p, 0..1; hf out the height in the slab, 0..1
             float Shape(float3 p, out float hf, bool fine)
             {
@@ -122,6 +158,10 @@ Shader "Hidden/Ravenfall/SkyClouds"
                 float thresh = 0.68 - 0.28 * cov + 0.12 * bare * bare * bare + hf * hf * 0.22;
                 float d = saturate((body - thresh) / 0.06);
                 d *= smoothstep(0.0, 0.1, hf);
+                // the deck only where the eye looks (fine): its sheets are thin, so the march toward the sun and the
+                // shadows on the ground leave it out, which keeps it cheap
+                [branch] if (fine && _CloudDeck.x > 0.0 && d < 0.99)
+                    d = max(d, Deck(p, q, body));
                 if (fine && d > 0.0 && d < 0.98)
                 {
                     // torn edges: fine noise eats at the thin parts
@@ -202,6 +242,21 @@ Shader "Hidden/Ravenfall/SkyClouds"
                 bool sky = rawDepth >= 1.0 - 1e-6;
             #endif
                 if (sky) sceneDist = 1e7;
+                // the world tower beyond nine tenths of the view is drawn squeezed in front of the far plane along its
+                // line of sight (WorldTower.shader); its clouds belong in front of where it really stands, so the march
+                // goes on to there (only for what lies at the tower once put back, so nothing else changes)
+                else if (_CloudTower.z > 0.0)
+                {
+                    float far = _ProjectionParams.z;
+                    float z0 = far * 0.9, range = far * 0.09;
+                    float z = LinearEyeDepth(rawDepth, _ZBufferParams);
+                    if (z > z0)
+                    {
+                        float v = min((z - z0) / range, 0.995);
+                        float k = (z0 + range * v / (1.0 - v)) / z;
+                        if (distance(cam.xz + ray.xz * k, _CloudTower.xy) < 260.0) sceneDist *= k;
+                    }
+                }
 
                 float t0, t1;
                 if (_CloudParams.x <= 0.0 || !SlabSpan(cam, dir, sceneDist, _CloudSlab.w * 16.0, t0, t1)) return half4(0, 0, 0, 1);
