@@ -105,9 +105,13 @@ Shader "Hidden/Ravenfall/SkyClouds"
                 float stay = 0.0;
                 if (_CloudTower.z > 0.0)
                 {
-                    // ragged at its rim (the distance is pushed about by a slow noise), so it is a heap of cloud and no disc
-                    float away = distance(p.xz, _CloudTower.xy) * (0.7 + 0.7 * Noise3(q * 0.9 + 1.3));
-                    stay = (1.0 - smoothstep(_CloudTower.z * 0.35, _CloudTower.z, away)) * smoothstep(_CloudTower.w - 30.0, _CloudTower.w + 25.0, p.y);
+                    // ragged at its rim (the distance is pushed about by a slow noise), so it is a heap of cloud and no disc;
+                    // and ragged underneath, its foot pushed up and down by another noise and thinning out further from
+                    // the tower, so seen from below it is a broad mass of cloud the shaft goes into, not a cap on it
+                    float away = distance(p.xz, _CloudTower.xy) * (0.55 + 0.9 * Noise3(q * 0.9 + 1.3));
+                    float reach = saturate(away / _CloudTower.z);
+                    float foot = _CloudTower.w - 30.0 + 70.0 * reach * reach + 40.0 * (Noise3(q * 1.6 + 7.1) - 0.5);
+                    stay = (1.0 - smoothstep(_CloudTower.z * 0.3, _CloudTower.z, away)) * smoothstep(foot, foot + 45.0, p.y);
                     cov = max(cov, stay);
                 }
                 // the body (about 0.5 on average), cut at a threshold the coverage sets, thinned toward the ceiling so the tops are domes, and

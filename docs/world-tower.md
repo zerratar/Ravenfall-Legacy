@@ -6,14 +6,17 @@ at its foot. The owner picked concept A (`docs/mockups/tower/world/a-islet.jpg`)
 (`c-entrance-plaza.jpg`) on 2026-11-24, and asked above all for the feeling that it is massive: "it should after all
 be the sense that it is massive given the big worlds inside".
 
-Built 2026-11-24 for v0.9.7, in two rounds the same day. Round 1 stood it at (405, -60) between the four eastern
+Built 2026-11-24 for v0.9.7, in two rounds the same day, and a third on 2026-11-25. Round 1 stood it at (405, -60) between the four eastern
 islands; the owner then asked for it further off ("want it to feel like its a huge thing in the distance, well not too
 far away") and took every open call. Round 2 moved it, made it bigger, took its top into the sky's own clouds, gave
 it a look pass, the camera's looks at it, the islet as a place players sail to, the stream's best climbers on the
-stone and as the statue, and a key that takes the camera to the tower and back.
+stone and as the statue, and a key that takes the camera to the tower and back. Round 3 finished the statue (the
+climber's gear in a heroic pose for every kind of weapon, a name plaque), rebuilt the stone as the tower stele the
+owner picked (design C), took the top's dithered fade out for a smooth one into the cloud and the sky, and carried
+the sea floor on south of the world's terrain so the sea round the islet has no straight edge behind it.
 
-Captures of it in the game, taken in play mode on the local server: `docs/mockups/tower/world/built2-*.jpg` (round 2;
-the list is at the end) and `built-*.jpg` (round 1, the old place).
+Captures of it in the game, taken in play mode on the local server: `docs/mockups/tower/world/built3-*.jpg` (round 3),
+`built2-*.jpg` (round 2; the lists are at the end) and `built-*.jpg` (round 1, the old place).
 
 ## Where it stands and how big it is
 
@@ -22,7 +25,7 @@ the list is at the end) and `built-*.jpg` (round 1, the old place).
 | Place | (60, -700) in the main world, sea level -3.31: out in the open sea south of Home, beyond Heim and Away |
 | Scale | 1.2 (`scale` in `stack.json`; the models are made at 1 and everything below is as it stands in the world) |
 | Base | 192 m across at the wall (radius 96), the rock round it about 280 m |
-| Height | 367 m of sections (108 + 84 + 74 + 101), then the shaft goes on to 511 m and is gone into cloud between 415 and 500 m |
+| Height | 367 m of sections (108 + 84 + 74 + 101), then the shaft goes on to 559 m and fades out between 402 and 548 m, inside the sky's bank of cloud and just over it |
 | For scale | the islands are 200 to 300 m across; the highest ground in the world is Ironhill's peak, 56 m over the sea |
 | Gate | 16 m wide and 26 m high, under a 41 m front; a character is 1.8 m |
 | Faces | north, to (0, -100): the gate, the plaza and the pier look at Home's south shore |
@@ -80,7 +83,8 @@ the stop at the pier is a short turn off the ring, taken only when someone is bo
   dock and the ferry's way to it live in this scene too and are made known to the game when it loads.
 - **Code**, all `partial class WorldTower` in `Assets/Scripts/Game/Tower/`: `WorldTower.cs` (light, distance, the top,
   potato mode), `WorldTowerVisit.cs` (the islet as a place), `WorldTowerMoments.cs` (the camera's looks),
-  `WorldTowerClimbers.cs` (the stone's names and the statue), and `WorldTowerCamera.cs` (the tower camera key).
+  `WorldTowerClimbers.cs` (the stone's names and the statue), `WorldTowerStone.cs` (the stone's carved tower) and
+  `WorldTowerCamera.cs` (the tower camera key).
 - **Synty props** dress the plaza (the builder places them): the hero's statue (Fantasy Kingdom, given a pale stone
   material of its own), the banners and the bowls on the wall's posts (Dungeon), the big braziers and the ivy
   (Ancient Empire), palms, bushes, ferns and flowers (Nature Biomes, Tropical Jungle), the pier (Vikings), barrels
@@ -97,7 +101,7 @@ the stop at the pier is a short turn off the ring, taken only when someone is bo
 | 2 | The Frozen Vault | 108 to 192 | blue stone under snow, sheets of ice grown over the wall, ice crystals up to 48 m in 17 clusters, snow on every buttress head, icicles, snowed-in pines, frozen falls, the snowflake in blue |
 | 3 | The Storm Spire | 192 to 266 | weathered dark stone, lightning rods, a turning ring of thundercloud low round it with lightning, rocks adrift, the gale sigil |
 | 4 | the Dark Fortress | 266 to 367 | slate-blue stone flaring out over the storm: 16 fins that end in points, a lip with long and short spikes, tiers of window slits, two crowns of battlements, eight turrets at two heights with collars, teeth and spires, iron fire bowls, a keep with horns (dark until v0.9.8 gives the floor: see "Lit by the stream's progress") |
-| - | the shaft | from 367 | the tower goes on: ledges, rings of dark windows and ribs every 46 m, thinning out into the sky's cloud between 415 and 500 m |
+| - | the shaft | 367 to 559 | the tower goes on: ledges, rings of dark windows and ribs every 46 m, fading out into the sky's cloud and the sky between 402 and 548 m |
 
 Every section has three or four rings of windows, a rune band with its sigil at the four winds, and steps in from the
 one below, so the terraces show.
@@ -143,35 +147,35 @@ distance of whatever camera draws it, so it needs no setting and works in potato
 ## No top: into the sky's own clouds
 
 Round 1 hid the top under a low-poly cloud of its own, which read as a flat lid next to the sky's volumetric clouds.
-Now the tower simply goes on (the shaft) and is lost in a real cloud:
+Round 2 let the shaft go on into a bank of the sky's own cloud and thinned it out by a dither, which showed as dotted
+speckle against the sky and from the islands, and the bank sat on the tower like a hat. Round 3 (2026-11-25):
 
 - **The sky keeps a bank of cloud there.** `SkyClouds.Tower` (set by `WorldTower`, read by the cloud shader as
-  `_CloudTower`) raises the cover to full and thickens the body within 260 m of the tower from about 380 m up,
-  whatever the weather, with a ragged rim (the distance is pushed about by a slow noise) so it is a heap of cumulus
-  and no disc. It is the game's own volumetric cloud, lit, moved and drawn like every other: on a clear day the
-  tower wears its own cloud, on an overcast day it goes into the deck like everything else.
-- **The shaft thins out inside it.** From 415 m to 500 m over the sea the shader drops more and more of the shaft's
-  pixels (a dither that is even from pixel to pixel, so it reads as mist and needs no transparency) and turns what
-  is left toward the cloud's own color in the light of the moment. At 500 m nothing is left; the model ends at
-  511 m, inside the cloud layer's ceiling at 480 m and just over it.
-- **What is seen**: the fortress's crown and turrets stand clear, the shaft rises some 40 m over them and goes into
-  the white. From close by the cloud is really in front of the shaft and round it. From further than the view
-  distance the tower is drawn in front of all cloud (the sky's clouds stop at the squeezed depth, as in round 1),
-  and there the fade does the work alone: the shaft pales into the color of the bank behind it.
-- **From above an island** (the free camera high up, an island's camera pulled back; `built2-above-home.jpg` is
-  from 330 m over Home): the bank sits on the tower like a cap of cumulus among the other clouds at that height, and
-  the shaft is gone inside it. No end shows.
+  `_CloudTower`) raises the cover to full and thickens the body within 340 m of the tower from about 360 m up,
+  whatever the weather. Its rim is torn by a slow noise, and so is its foot: the underside rises toward the rim
+  (70 m higher at the edge than at the shaft) and is pushed up and down by a second noise, so from below it is a
+  mass of cloud the shaft goes into, thick at the shaft and thinning out round it, not a flat-bottomed disc.
+- **The shaft fades out smoothly, with no dither.** From 402 m to 548 m over the sea the shader blends the shaft
+  toward what is behind it, eased so most of it is gone by the top of the cloud layer (480 m): low down, inside
+  the bank, toward the cloud's own color in the light of the moment; from 463 m up toward the sky itself, read
+  from the live sky (`_RavenfallSky`, the probe `SkyReflection` keeps) in the very direction it is seen in, with
+  the game's haze worked in (the haze pass hazes the shaft by its depth but the sky only near the horizon, so the
+  shader asks for the color that comes out as the sky's once the haze is on it). What is wholly faded is not drawn,
+  so it hides no cloud behind it. Under a full overcast (a deck of cloud over everything) it fades into the cloud's
+  color all the way. The model ends at 559 m.
+- **What is seen**: the fortress's crown and turrets stand clear, the shaft rises some 35 m over them and goes into
+  the white (`built3-top-from-home.jpg`, `-from-heim.jpg`, `-night.jpg`). From 330 m over Home it goes into the
+  bank and nothing stands over it (`built3-top-above-home.jpg`).
+- **Potato mode, or Clouds off**: no sky clouds, so the same fade runs straight into the sky from 402 m up
+  (`WorldTower.Fade`): the shaft rises out of the crown and melts into the sky, with no cloud of its own any more
+  (`built3-top-potato.jpg`, `-clouds-off.jpg`). The low-poly cloud of round 2 (`Lid_Far`) is gone.
 - The storm ring stays: it sits at 200 to 260 m, well under the bank, and still reads as the Storm Spire's own
   weather.
 
-**Potato mode, or Clouds off in the settings**: the game draws no sky clouds then, so there is nothing to fade into.
-The shaft still thins out by the same dither (it costs nothing: a compare per pixel), and a low-poly cloud of 2,480
-triangles (`Lid_Far`, part of the shaft's model) is shown round the fade so the end is hidden
-(`built2-potato-mode.jpg`). It is drawn only then.
-
-What was tried first and dropped: drawing the shaft after the opaque things and outside the depth the clouds read,
-so the clouds lay over it wherever they were along the view. Every wisp behind the shaft then whitened it too, and
-it read as smoke rising from the fortress.
+What was tried and dropped in round 3: a shaft going on to 991 m that turned to the sky's color over several hundred
+metres. From the islands it worked, but from the overview camera over Home it stood over the bank as a long pale
+column with an end to it (the sky probe and the rendered sky do not match closely enough over that length). The
+short shaft hides its end inside the bank and the last 70 m over it.
 
 ## Lit by the stream's progress
 
@@ -239,16 +243,19 @@ is on, "Tower (T)" otherwise), and one in the shortcut bar.
 
 | | Normal | Potato mode, or further than 1,150 m |
 |---|---|---|
-| Tower triangles | 120,389 | 24,443 (and the 2,480 of the cloud over the top while no sky clouds are drawn) |
+| Tower triangles | 123,176 | 24,779 |
 | Light | steady, and breathing on the stream's floor | steady only |
 | Moving | cloud ring turns, rocks bob, clouds heave, fire wavers, lightning, gulls | none of it |
 | Lamps | the gate's and four braziers' point lights | off |
 | Shadows | cast within 320 m | cast within 320 m |
-| The top | fades into the sky's cloud bank | fades under the low-poly cloud |
+| The top | fades into the sky's cloud bank and the sky over it | fades into the sky (no sky clouds in potato mode) |
 | Camera looks | on (their settings) | the idle look and the two cutscene looks are off |
 
 Round 1's models were 100,851 and 23,808 triangles: the look pass and the shaft added 19,538 near (the fortress's
-shapes, the courses' joints and proud blocks, growth and ice) and 635 far, plus the 2,480 of the potato cloud. The budget kept: every block's backing and sides
+shapes, the courses' joints and proud blocks, growth and ice) and 635 far, plus the 2,480 of the potato cloud. Round 3
+added about 1,600 near for the stone (the stele's body, plinth, rune ring, plaques, laurels and crown 450, its twelve
+carved tier looks 660, the rows' runes 248) and about 1,670 for the taller shaft, and took the potato cloud out. The
+sea floor strip south of the terrain is 2,304 more, drawn with a plain lit material, no shadows. The budget kept: every block's backing and sides
 exist only in the near models; the far models keep the silhouette (fins, turrets, crowns, crystals) and drop the
 rest. The low detail models show from 1,150 m (round 1: 950 m), so every island that looks at the tower from within
 a kilometre gets the near one.
@@ -256,14 +263,14 @@ a kilometre gets the near one.
 The Synty props on the plaza are drawn only within the view distance like any island's.
 
 Nothing here has a setting of its own except the idle look: the cost is triangles while it is in view, the moving
-parts are shader maths and a handful of turning transforms, the fade is a compare per pixel, and all of it follows
+parts are shader maths and a handful of turning transforms, the fade is a blend and one sky lookup per pixel of the shaft over 402 m, and all of it follows
 potato mode (`GameManager.PotatoMode`), as `TowerFx` does for the floors.
 
 ## The plaza
 
 At the foot on the side facing Home: the gate with its tunnel of light and the tower's sun over it, a stair, the round
 paved plaza with a compass (50 m across) on a round bastion, a low wall with fire bowls on its posts, stone steps down
-to a landing and a wooden pier, the statue on a pedestal to the left of the stair and the leaderboard stone to
+to a landing and a wooden pier, the statue on a pedestal to the left of the stair and the best climbers' stone to
 the right.
 
 ### The stream's best climbers: the stone and the statue
@@ -279,18 +286,57 @@ the right.
   `GET api/tower/climbers`: for each a name, the three numbers, and the character's look (`TowerClimberInfo`).
   Nothing else of a player leaves the server: names and looks are what the game shows of every player already.
   The table is made by the server's own schema step at its start, like every other.
-- **The stone**: under the stream's place ("FLOOR 2" over "PART 4") and the floor's name, a line "BEST CLIMBERS"
-  and five rows, "1. Name  12" (the place, the name, the clears), in bold Rodin a metre high, the first in gold. The
-  game asks for the list when the tower's scene loads, three seconds after every change of the stream's step, and
-  every ten minutes. Until a stream has climbers the rows are carved runes, as before.
-- **The statue** on the pedestal is the first of them, in stone, 13 m tall (16 m at the tower's scale, as the
-  nameless hero was): if they are in the game it is cast from their character as it stands that moment (the pose,
-  what they wear and carry, not a pet), frozen, in the plaza's pale stone. If they are not in the game it is cast
-  from the look the server sent, on a copy of the player model that never wakes up, posed from the first frame of
-  its own idle animation, with what the bare model holds and not the player's gear (the look says nothing of what
-  they wear); when they join later the statue is cast again from them. A cast that still stands with its arms out
-  is thrown away. If nothing can be had, and for a
-  stream nobody has climbed with, the nameless Synty hero stands there.
+- **The stone** is the tower stele the owner picked on 2026-11-25 (design C,
+  `docs/mockups/tower/world/stone-c-tower-stele.jpg`; made by `stele()` in `world_tower.py`, its words by the builder,
+  its light by `WorldTowerStone.cs`): a tall dark obelisk, 9 m wide and 13.6 m high (11 by 16 m at the tower's
+  scale), its front edges chamfered, on a round two-step plinth with 26 gold runes glowing round it, a small gold
+  crown on a step at its tip. The left third of its face is a carved relief of the tower, six tiers from the foot
+  up with battlements and an arched window each; the right two thirds hold the words in the game's bold Rodin:
+  "FLOOR 1 - PART 6" in gold (the stream's real place), the floor's name, a gold divider with a diamond, "BEST
+  CLIMBERS", and five rows on proud dark plaques, "1  Name" on the left and the clears at the right end, the first
+  on a larger plaque in gold with a gold laurel each side. The game asks for the list when the tower's scene loads,
+  three seconds after every change of the stream's step, and every ten minutes. A row with no name shows carved
+  runes on its plaque (each row's runes are their own object), so an empty stone is five rows of runes and a stone
+  with one climber is one name over four rows of runes. The rows under the first share one size, so the list is
+  even: the smallest any of them needs, but never under seven tenths of the largest, so one very long name is made
+  smaller on its own row rather than shrinking every row (`built3-stone-close.jpg`); the first stands a quarter
+  over them. The letters are 0.6 to 0.7 m high at the tower's scale: read from the plaza and from the usual camera
+  on a visitor (`built3-stone-plaza.jpg`).
+- **The carved tower** lights as the world tower does, from the same progress (`TowerManager.State`): the floors
+  the stream has reached are gold (each tier has a lit look, gold and glowing with the plaza's light, and a dark
+  one of grey stone; the game shows one), the floor it is on breathes (its own material with the floors' pulse,
+  which stops in potato mode with the tower's other moving light), the ones above stay dark; it follows every
+  change of the stream's step, so a floor that falls lights its tier. The tower can have any number of floors:
+  while it has no more than the six tiers, tier n is floor n and the tiers over its last floor stay dark (the tower
+  goes on); with more, the tiers show a window of six round the stream's floor (two below it, three above; at the
+  top, the last six; with all cleared, the last six), and then each tier's window carries its floor's number in
+  gold, so "37, 38, 39..." reads as part of a taller tower. Six was chosen because seven tiers of 1.6 m are the most
+  the face holds at a size that still reads as a tower of floors from the plaza; squeezing a hundred floors in would
+  make them lines. (`WorldTower.StoneTierFloors` does the mapping; checked for 3 and for 100 floors.)
+- **The statue** on the pedestal is the first of them, in stone, about 13 m tall (16 m at the tower's scale, as
+  the nameless hero was), with a plaque on the pedestal's front that says who it is (gold Rodin on a dark plate,
+  hidden while the nameless hero stands there; `built3-statue-plaque.jpg`). It is made the same way whether the
+  climber is in the game or not: their look and what they wear (from their character when it is here, else from
+  the gear the server sends with the list) are put on a copy of the player model that never wakes up, through the
+  game's own appearance and equipment code, so every slot shows (helmet, armor, cape, shield, the weapon); of
+  several weapons the strongest is held. The copy is stood in a pose for its kind of weapon, a frame of one of the
+  game's own clips, then every mesh on it is frozen, given the one stone material and stood on the pedestal; the
+  work is spread over frames (the longest step about 50 ms in the editor) and the old statue stands until the new
+  one is whole. The poses (`WorldTower.Poses`, picked by looking at them in stone on the pedestal,
+  `built3-statue-pose-candidates.jpg` has the spear's and the bare fist's candidates):
+
+  | Weapon | Pose |
+  |---|---|
+  | two-handed sword or axe, one-handed weapon | the blade raised over the shoulder, the top of a great swing (`2Hand-Sword-Attack5` at 0.2) |
+  | sword (or axe) and shield | on guard behind the shield, the blade out at the side (`Shield-Idle`) |
+  | staff | raised to the sky in one fist (`Armed-Boost1` at 0.5) |
+  | bow | drawn (`2Hand-Bow-Attack1` at 0.3) |
+  | spear | lifted over the head in both hands (`2Hand-Spear-Unsheath-Back-Relax` at 0.6) |
+  | none | a fist raised to the sky (`Unarmed-Boost1` at 0.55) |
+
+  It is made again when the best climber changes, when what they wear changes, and when they walk into the game
+  with gear the server did not know of; for a stream nobody has climbed with, or if it cannot be made, the nameless
+  Synty hero stands there (`built3-statue-gear-sets.jpg`: both bodies, capes, every kind of weapon).
 
 ### Easter eggs
 
@@ -393,14 +439,16 @@ are more than six or so.
 
 ## Seen in play, and not
 
-Play mode on the local server (chat muted, the bot cut off), 2026-11-24, with bots as players and the owner's own
-character in the session.
+Play mode on the local server (chat muted, the bot cut off), 2026-11-24 and (round 3) 2026-11-25, with bots as
+players and the owner's own character in the session.
 
 Seen:
 
 - The tower from Home's, Heim's, Away's and Atria's shores at eye level, and from Kyo, Ironhill and Eldara at the
   game's default view distance (650 m, further than which the tower is squeezed in); the top going into the cloud
   from each, from 330 m over Home, and in potato mode.
+- Round 3's top from Home's shore (eye level and 40 m up), from Heim and from 330 m over Home in fair weather, at
+  night, with clouds off and in potato mode: no dither, no lid, no end of the shaft to see.
 - Each camera look by hand, and each by its own trigger: the stream's step going from a floor's last part to the
   next (through the editor's preview step, not a real boss) started the floor look 0.6 s later, it ran 4.7 s and
   the camera went back to the player it was on; two visitors walking in from the plaza started the entering look
@@ -414,19 +462,27 @@ Seen:
   there.
 - The sea chart: every island has a route to the Tower dock and back, and no route between two other docks comes
   nearer than 416 m to the tower's middle (asked of the chart; no own boat was sailed).
-- The stone with a real row from the server ("1. zerratar  3": clears the other session's tests made on the dev
-  server after the list existed) and with five rows; the statue cast from a player in the game and from a look
-  alone.
-- The tower camera key through its toggle (not the keyboard): to the tower onto the player last watched there, the
-  rotation staying in the tower for two turns, back out onto the player watched before; "Nobody is in the tower";
-  the button's two states on the tower panel.
+- The stone (round 3): with the server's one real row ("1  zerratar  5") over four rows of runes, with five rows put
+  in by hand (one a 22 letter name), empty, and on floor 2 part 4 through the preview step (two tiers lit, the
+  second breathing). The tier mapping for 3 and for 100 floors.
+- The statue (round 3): cast from the server's answer for every kind of weapon (two-handed sword and axe,
+  one-handed sword, sword and shield, staff, bow, spear, none), male and female, with and without capes, and from a
+  bot in the game; the plaque with each name; the nameless hero back when the list is empty.
+- The tower camera key: T through the camera's own key check (`Keybinds.Simulate`, which the editor's evals use
+  because a key cannot be pressed while the editor is not the focused window) from the tower's group camera to the
+  world side and back, with two bots in the tower; the settings window's Game tab with "Looks at the tower" turned
+  off and on by a click on its row, and the Keys tab's "Tower camera: to the tower and back" row as T, waiting for a
+  key, rebound to Y (with its reset) and reset to T (`built3-settings.jpg`, `built3-tower-key.jpg`).
+- The sea floor strip from above (the straight edge behind the tower gone), from Home at eye level and from Heim.
 
 Not seen, or not done:
 
 - A real floor boss falling with its own cutscene before the look (the look waits for `TowerCutscene.Playing` to
   end, up to a minute; that wait was not played).
-- The key pressed on a keyboard, rebinding it, and the settings rows (Looks at the tower, the key's row): they
-  compile and use the same helpers as their neighbours, but the settings window was not opened.
+- The key pressed on a real keyboard, and a rebind through "Press a key" with a real key: the window's capture
+  reads the keyboard itself.
+- The top in a settled overcast, rain or a storm: the weather was still drifting in from the last one in those
+  captures. Under a full overcast the fade goes to the cloud's color (read from the shader, not seen).
 - An own boat sailing to the islet and docking; a player logging off on the islet and coming back; a raid or a
   dungeon joined from the islet; the islet in the island tour camera.
 - A v0.9.6.x game with a character saved on "Tower", and a v0.9.7 game against the live server: both are read from
@@ -435,10 +491,34 @@ Not seen, or not done:
 - The chat lines (the word on arriving at the islet, "You walk up the stair and in through the tower's gate"): chat
   was muted for the tests, so they were sent to nobody. The bot's help for `!sail tower` is changed in its source
   but the bot was not run.
+- The statue's sword and shield: the shield hangs as the game's own shields do, and some of those sit wrong on the
+  forearm (the owner's close-up of 2026-11-25); the main session is fixing the shields' mounts with an editor tool,
+  which fixes the statue with them (it uses the game's own equipment path).
 
 ## Captures
 
-`docs/mockups/tower/world/`, round 2 (`built2-*`), taken 2026-11-24 in play mode (local server, chat muted, the bot
+`docs/mockups/tower/world/`, round 3 (`built3-*`), taken 2026-11-25 in play mode (local server, chat muted, the bot cut
+off), view distance 1300 m:
+
+| File | What |
+|---|---|
+| `built3-statue-gear-sets.jpg` | The statue for six gear sets: two-handed sword (male, cape), one-handed sword (female, cape), staff (female, cape), bow (male, no cape), spear (female, cape), no weapon (male, cape) |
+| `built3-statue-pose-candidates.jpg` | The candidates for the spear and for no weapon |
+| `built3-statue-from-plaza.jpg` | The plaza from its far side at a normal distance: the statue on the left, the stone on the right |
+| `built3-statue-plaque.jpg` | The plaque on the pedestal |
+| `built3-statue-from-the-game.jpg` | Cast from a bot in the game |
+| `built3-stone-close.jpg` | The stone with five rows (one a long name), floor 1 lit and breathing |
+| `built3-stone-one-climber.jpg` | The stone with the server's one real row and runes on the other four |
+| `built3-stone-plaza.jpg` | The same as `built3-statue-from-plaza.jpg` |
+| `built3-top-from-home.jpg`, `-from-heim.jpg`, `-above-home.jpg`, `-night.jpg` | The top in fair weather and at night |
+| `built3-top-clouds-off.jpg`, `-clouds-off-above.jpg`, `-potato.jpg` | The top with no sky clouds, and in potato mode |
+| `built3-sea-before-after.jpg` | From above: the terrain's straight southern edge behind the tower, and the sea floor strip carrying on |
+| `built3-sea-from-home-eye-level.jpg` | From Home's shore at eye level after the fix: the lighter band near the horizon that is left |
+| `built3-settings.jpg` | The settings window: "Looks at the tower" in the Game tab, the tower camera key in the Keys tab |
+| `built3-tower-key.jpg` | T from the tower side to the world side and back |
+| `built3-towercam-*.jpg` | The tower camera mode (docs/tower-design.md section 23) |
+
+Round 2 (`built2-*`), taken 2026-11-24 in play mode (local server, chat muted, the bot
 cut off), view distance 1300 m (the development machine's setting) unless said. The stream's real state on the dev
 server was floor 1, part 6. Round 1's (`built-*`) show the tower at its first place, (405, -60).
 
@@ -469,8 +549,21 @@ server was floor 1, part 6. Round 1's (`built-*`) show the tower at its first pl
 | `built2-camera-button.jpg` | The tower panel's camera button in both states, and the word with nobody in the tower |
 | `built2-details-on-islet.jpg` | The player details of a visitor on the islet |
 
-Where it still falls short: from further than the view distance the shaft's fade is a visible speckle against the
-cloud when zoomed in; the low-poly cloud in potato mode sits behind the fortress's crown rather than round it; the
-statue cast from a look alone wears what the bare model holds, not the player's gear; the sea round the islet
-shows the game's usual hard edge where the sea floor ends at the view distance; the stone's rows are 0.9 m high,
-which reads from the plaza and from the usual camera on a visitor, not from the pier.
+Where it still falls short:
+
+- **From the overview camera over Home** (330 m up) in fair weather the bank still reads as one big cloud over the
+  crown, broader and ragged now, but a cloud on top (`built3-top-above-home.jpg`). Making it part of a wider field
+  (a bigger radius) made a bigger hat; what would really answer it is a lasting deck of cloud toward the south, or
+  the bank higher than the overview camera ever goes. The owner's call.
+- **At eye level from Home's shore** a lighter band of sea near the horizon is still darker at its sides than in
+  front of the islet (`built3-sea-from-home-eye-level.jpg`). It is the sea's look at a grazing angle, not the islet:
+  the water reads its depth along the line of sight, a line that skims the surface from a camera at the waterline
+  reaches the bed only where something stands under the water (the islet's foot, an island's shelf) and runs out
+  past the far plane elsewhere, which counts as the open deep; Away's shelf in the same picture shows the same band.
+  The game's camera is never that low. A fix belongs in the ocean shader (count "beyond the far plane" as the
+  world's usual 26 m of sea rather than the open deep), which changes the far sea everywhere: not done without the
+  owner.
+- From further than the view distance the tower is drawn in front of all cloud (the squeezed depth), so there the
+  fade does the work alone; it reads as the shaft melting into the sky rather than into a cloud.
+- The statue cast from a look alone wears what the server's list sends; a climber whose gear the server does not
+  know (an older server) wears what the bare model holds.

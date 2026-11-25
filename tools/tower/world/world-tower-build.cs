@@ -121,12 +121,9 @@ UnityEngine.GameObject Model(string name, UnityEngine.Transform parent, WorldTow
         r.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
         var mesh = r.GetComponent<UnityEngine.MeshFilter>().sharedMesh;
         var t = mesh ? mesh.triangles.Length / 3 : 0;
-        if (r.name.StartsWith("Lid"))
-        {
-            // the low-poly cloud over the top, for when the game draws no sky clouds: the game shows and hides it
-            tower.Lid = r.gameObject; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; r.receiveShadows = false;
-            log.AppendLine("lid " + t + " triangles");
-        }
+        // the stone's carved tiers: the game shows the lit or the dark look of each (WorldTowerStone.cs), in potato
+        // mode too, so they are in no detail list
+        if (r.name.StartsWith("StoneTier")) { tris0 += t; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; }
         else if (r.name.EndsWith("_Far")) { far.Add(r); r.enabled = false; tris1 += t; }
         else if (r.name.StartsWith("Flock") || r.name.StartsWith("Flame")) { }
         else { near.Add(r); tris0 += t; }
@@ -375,8 +372,9 @@ Put("Assets/PolygonPirates/Prefabs/Props/SM_Prop_Barrel_01.prefab", new UnityEng
 Put("Assets/PolygonPirates/Prefabs/Props/SM_Prop_Crate_01.prefab", new UnityEngine.Vector3(3.8f, quay.y, quay.z + 3.4f), 12f, 1.4f);
 Put("Assets/PolygonPirates/Prefabs/Props/SM_Prop_Crate_01.prefab", new UnityEngine.Vector3(3.6f, quay.y, quay.z + 1.7f), 40f, 1.2f);
 
-// ---- the leaderboard stone's words: where the stream is and the floor's name (the game has those at hand); the
-// climbers' rows under them stay carved runes until the game is given a list ----
+// ---- the best climbers' stone (the tower stele, design C): its words where the model's marks say (the stream's
+// place and the floor's name, the game has those at hand; the climbers' rows stay carved runes until the game is given
+// a list), the carved tower's tiers in their lit and dark looks, and each tier's floor number ----
 var font = UnityEditor.AssetDatabase.LoadAssetAtPath<TMPro.TMP_FontAsset>("Assets/Fonts/FOT-NewRodin Pro B SDF.asset");
 if (!font) log.AppendLine("MISSING FONT FOT-NewRodin Pro B SDF");
 TMPro.TextMeshPro Words(string name, UnityEngine.Transform parent, UnityEngine.Vector3 local, UnityEngine.Quaternion turn, float w, float h, UnityEngine.Color color, string sample, float max)
@@ -397,29 +395,83 @@ TMPro.TextMeshPro Words(string name, UnityEngine.Transform parent, UnityEngine.V
     return tmp;
 }
 {
-    var slab = V("slab"); var size = built["marks"]["slabSize"]; float sw = F(size[0]), sh = F(size[1]), st = F(size[2]);
+    var slab = V("slab");
+    var stele = built["marks"]["stele"];
+    var boxes = stele["boxes"];
     var facing = F(built["marks"]["slabFacing"]) * UnityEngine.Mathf.Deg2Rad;
     var fwd = new UnityEngine.Vector3(UnityEngine.Mathf.Cos(facing), 0f, UnityEngine.Mathf.Sin(facing));
+    // a viewer's right as they face the stone, as the model's face terms have it
+    var right = UnityEngine.Vector3.Cross(UnityEngine.Vector3.up, -fwd).normalized;
     var turn = UnityEngine.Quaternion.LookRotation(-fwd, UnityEngine.Vector3.up);   // words are read looking along +z
     var gold = new UnityEngine.Color(1f, 0.86f, 0.45f);
     var pale = new UnityEngine.Color(0.92f, 0.9f, 0.84f);
-    var holder = new UnityEngine.GameObject("Leaderboard words").transform; holder.SetParent(vis, false);
-    // the smooth face runs from a tenth of the stone's height to seven tenths: the stream's place at the top, the
-    // floor's name, then the best climbers, a row each (the carved runes stand in their place until there are names)
-    UnityEngine.Vector3 At(float up) => slab + fwd * (st / 2 + 0.33f) + UnityEngine.Vector3.up * (sh * up);
-    tower.SlabPlace = Words("Place", holder, At(0.635f), turn, sw * 0.66f, sh * 0.125f, gold, "FLOOR 1\nPART 1", 80f);
-    tower.SlabName = Words("Floor name", holder, At(0.535f), turn, sw * 0.68f, sh * 0.06f, pale, "The Overgrown Halls", 40f);
-    tower.ClimbersTitle = Words("Climbers title", holder, At(0.478f), turn, sw * 0.68f, sh * 0.04f, gold, "", 30f);
+    var holder = new UnityEngine.GameObject("Stone words").transform; holder.SetParent(vis, false);
+    // a box is [x, y, width, height, out] in the face's terms
+    UnityEngine.Vector3 At(Newtonsoft.Json.Linq.JToken box) => slab + right * F(box[0]) + UnityEngine.Vector3.up * F(box[1]) + fwd * F(box[4]);
+    TMPro.TextMeshPro Box(string name, string key, UnityEngine.Color color, string sample, float max)
+    {
+        var box = boxes[key];
+        var tmp = Words(name, holder, At(box), turn, F(box[2]), F(box[3]), color, sample, max);
+        tmp.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
+        return tmp;
+    }
+    tower.SlabPlace = Box("Place", "place", gold, "FLOOR 1 - PART 1", 80f);
+    tower.SlabName = Box("Floor name", "name", pale, "The Overgrown Halls", 40f);
+    tower.ClimbersTitle = Box("Climbers title", "title", pale, "", 50f);
     var rows = new TMPro.TextMeshPro[5];
     for (var i = 0; i < rows.Length; i++)
     {
-        rows[i] = Words("Climber " + (i + 1), holder, At(0.42f - 0.068f * i), turn, sw * 0.68f, sh * 0.06f, i == 0 ? gold : pale, "", 40f);
-        rows[i].textWrappingMode = TMPro.TextWrappingModes.NoWrap;
+        rows[i] = Box("Climber " + (i + 1), "row" + (i + 1), i == 0 ? gold : pale, "", 60f);
         rows[i].overflowMode = TMPro.TextOverflowModes.Overflow;
     }
     tower.ClimberRows = rows;
-    var runes = Part("Runes_Near");
-    tower.SlabRunes = runes ? runes.gameObject : null;
+    // each row's carved runes, shown while that row has no name
+    var rowRunes = new UnityEngine.GameObject[rows.Length];
+    for (var i = 0; i < rows.Length; i++) { var r = Part("Runes" + i + "_Near"); rowRunes[i] = r ? r.gameObject : null; }
+    tower.RowRunes = rowRunes;
+    // the carved tower: each tier's lit and dark look (both made in Blender), and its number in its window
+    var tiers = (Newtonsoft.Json.Linq.JArray)stele["tiers"];
+    var lit = new System.Collections.Generic.List<UnityEngine.Renderer>();
+    var dark = new System.Collections.Generic.List<UnityEngine.GameObject>();
+    var numbers = new System.Collections.Generic.List<TMPro.TextMeshPro>();
+    for (var i = 0; i < tiers.Count; i++)
+    {
+        var l = Part("StoneTier" + i + "Lit_Near"); var d = Part("StoneTier" + i + "Dark_Near");
+        if (!l || !d) break;
+        lit.Add(l.GetComponent<UnityEngine.Renderer>()); dark.Add(d.gameObject);
+        l.gameObject.SetActive(false);
+        var num = Words("Tier " + (i + 1) + " number", holder, At(tiers[i]), turn, F(tiers[i][2]), F(tiers[i][3]), gold, "", 20f);
+        num.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
+        numbers.Add(num);
+    }
+    tower.StoneTierLit = lit.ToArray(); tower.StoneTierDark = dark.ToArray(); tower.StoneTierNumbers = numbers.ToArray();
+    log.AppendLine("stone: " + lit.Count + " carved tiers");
+}
+
+// ---- the plaque on the statue's pedestal: who stands there (WorldTowerClimbers.cs writes the name and hides the
+// plaque while the nameless hero does). A dark plate at the head of the pedestal's front, over its sigil, where the
+// plaza's wall does not hide it; the name in the stone's gold ----
+{
+    var platePath = Folder + "/Plaque.mat";
+    var plateMat = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(platePath);
+    if (!plateMat) { plateMat = new UnityEngine.Material(UnityEngine.Shader.Find("Universal Render Pipeline/Lit")); UnityEditor.AssetDatabase.CreateAsset(plateMat, platePath); }
+    plateMat.SetColor("_BaseColor", new UnityEngine.Color(0.2f, 0.2f, 0.23f)); plateMat.SetFloat("_Smoothness", 0.25f);
+    UnityEditor.EditorUtility.SetDirty(plateMat);
+    var holder = new UnityEngine.GameObject("Statue plaque").transform; holder.SetParent(vis, false);
+    // the pedestal's shaft is 5.6 m across and its cap 6.4 m, their front faces 2.8 and 3.2 m out toward the sea
+    holder.localPosition = new UnityEngine.Vector3(ped.x, ped.y - 0.62f, ped.z - 3.2f);
+    var plate = UnityEngine.GameObject.CreatePrimitive(UnityEngine.PrimitiveType.Cube);
+    plate.name = "Plate";
+    UnityEngine.Object.DestroyImmediate(plate.GetComponent<UnityEngine.Collider>());
+    plate.transform.SetParent(holder, false);
+    plate.transform.localPosition = new UnityEngine.Vector3(0f, 0f, -0.06f);
+    plate.transform.localScale = new UnityEngine.Vector3(5.7f, 1.08f, 0.18f);
+    plate.GetComponent<UnityEngine.MeshRenderer>().sharedMaterial = plateMat;
+    // read from the sea's side, looking along +z
+    tower.StatueName = Words("Name", holder, new UnityEngine.Vector3(0f, 0f, -0.17f), UnityEngine.Quaternion.identity, 5.3f, 0.86f, new UnityEngine.Color(1f, 0.86f, 0.45f), "", 60f);
+    tower.StatueName.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
+    tower.StatuePlaque = holder.gameObject;
+    holder.gameObject.SetActive(false);
 }
 
 // ---- the easter eggs (docs/easter-eggs.md): the elevator that is out of order with its sign, and the ferry's
@@ -486,12 +538,17 @@ tower.Bobbing = bobbing.ToArray(); tower.Flocks = flocks.ToArray();
 // ---- how the top goes into cloud (WorldTower.cs): the heights follow the stack ----
 var capTop = F(built["height"]) * S;
 tower.BuiltHeight = builtTop;
-// the shaft stands clear for a little over the last section, then the sky's bank takes it and it thins out inside
-tower.CloudFrom = builtTop + (capTop - builtTop) * 0.3f;
-tower.CloudRadius = 260f;
-tower.FadeFrom = builtTop + (capTop - builtTop) * 0.33f;
-tower.FadeTo = capTop - 11f;
-log.AppendLine("built to " + builtTop.ToString("0") + " m, shaft to " + capTop.ToString("0") + " m, fades " + tower.FadeFrom.ToString("0") + " to " + tower.FadeTo.ToString("0") + " m, cloud from " + tower.CloudFrom.ToString("0") + " m");
+// the shaft stands clear for a little over the last section and goes into the sky's bank of cloud round it, fading
+// toward the cloud's color; over the cloud layer (SkyClouds.Ceiling) it fades on toward the live sky behind it and is
+// gone a little under its own end (the shader, WorldTower.cs)
+tower.CloudFrom = builtTop + 25f;
+tower.CloudRadius = 340f;
+tower.FadeFrom = builtTop + 35f;
+// gone a little over the cloud layer: what the bank does not hide is a short stub already in the sky's color
+tower.FadeTo = UnityEngine.Mathf.Min(capTop - 8f, SkyClouds.Ceiling - sea + 65f);
+tower.SkyFrom = SkyClouds.Ceiling - sea - 20f;
+tower.SkyBlend = 70f;
+log.AppendLine("built to " + builtTop.ToString("0") + " m, shaft to " + capTop.ToString("0") + " m, fades " + tower.FadeFrom.ToString("0") + " to " + tower.FadeTo.ToString("0") + " m (toward the sky from " + tower.SkyFrom.ToString("0") + " m), cloud bank from " + tower.CloudFrom.ToString("0") + " m");
 
 // ---- ramps over the steps (the quay's and the stair's), unseen: the navmesh goes up them whatever the steps' height ----
 void Ramp(string name, UnityEngine.Vector3 low, UnityEngine.Vector3 high, float width)
@@ -507,6 +564,87 @@ void Ramp(string name, UnityEngine.Vector3 low, UnityEngine.Vector3 high, float 
 Ramp("Ramp (quay steps)", new UnityEngine.Vector3(0f, quay.y, quay.z + 5f), new UnityEngine.Vector3(0f, level + 0.12f, quay.z + 5f + 1.3f * 7f), 8.6f);
 Ramp("Ramp (stair)", V("stairFoot"), V("gate"), 11f);
 UnityEngine.Physics.SyncTransforms();
+
+// ---- the sea floor south of the world's terrain. The terrain ends in a straight line 150 m behind the tower (its
+// southern edge, z -853 today), and there the sea turned from the terrain's 26 m of water to the open deep at once:
+// from the islands it read as a lighter patch of sea round the islet with straight sides and sharp corners. This strip
+// carries the floor on from that edge, at the terrain's own height along it, and slopes it away into the deep over
+// 600 m, so the shallows fade out as they do round the other islands. In world terms, beside the tower's root; no
+// collider (nothing stands on it), no shadows ----
+{
+    var terrains = new System.Collections.Generic.List<UnityEngine.Terrain>();
+    foreach (var t in UnityEngine.Object.FindObjectsByType<UnityEngine.Terrain>(UnityEngine.FindObjectsInactive.Exclude))
+        if (t.terrainData && t.gameObject.scene.name == "MainWorld") terrains.Add(t);
+    var edgeZ = float.MaxValue;
+    foreach (var t in terrains) edgeZ = UnityEngine.Mathf.Min(edgeZ, t.transform.position.z);
+    float x0 = float.MaxValue, x1 = float.MinValue;
+    var edge = new System.Collections.Generic.List<UnityEngine.Terrain>();
+    foreach (var t in terrains)
+        if (UnityEngine.Mathf.Abs(t.transform.position.z - edgeZ) < 1f)
+        {
+            edge.Add(t);
+            x0 = UnityEngine.Mathf.Min(x0, t.transform.position.x);
+            x1 = UnityEngine.Mathf.Max(x1, t.transform.position.x + t.terrainData.size.x);
+        }
+    if (edge.Count == 0) log.AppendLine("sea floor: no terrain found, none made");
+    else
+    {
+        float Height(float x)
+        {
+            foreach (var t in edge)
+                if (x >= t.transform.position.x - 0.01f && x <= t.transform.position.x + t.terrainData.size.x + 0.01f)
+                    return t.SampleHeight(new UnityEngine.Vector3(x, 0f, edgeZ + 0.05f)) + t.transform.position.y;
+            return sea - 26f;
+        }
+        const float Step = 40f, Reach = 600f, Drop = 150f;
+        var outs = new[] { 0f, 25f, 60f, 110f, 170f, 240f, 320f, 410f, 500f, 600f };
+        var columns = UnityEngine.Mathf.CeilToInt((x1 - x0) / Step) + 1;
+        var verts = new System.Collections.Generic.List<UnityEngine.Vector3>();
+        var tris = new System.Collections.Generic.List<int>();
+        for (var c = 0; c < columns; c++)
+        {
+            var x = UnityEngine.Mathf.Min(x0 + c * Step, x1);
+            var y0 = Height(x);
+            foreach (var d in outs)
+            {
+                // eased in: level with the terrain at the seam, steepest half way out
+                var drop = Drop * 0.5f * (1f - UnityEngine.Mathf.Cos(UnityEngine.Mathf.PI * d / Reach));
+                verts.Add(new UnityEngine.Vector3(x, y0 - drop, edgeZ - d));
+            }
+        }
+        var n = outs.Length;
+        for (var c = 0; c < columns - 1; c++)
+            for (var r = 0; r < n - 1; r++)
+            {
+                int a = c * n + r, b = a + 1, cc = a + n, dd = cc + 1;
+                tris.AddRange(new[] { a, b, cc, b, dd, cc });
+            }
+        var meshPath = DataFolder + "/SeaFloor.asset";
+        UnityEditor.AssetDatabase.DeleteAsset(meshPath);
+        var mesh = new UnityEngine.Mesh { name = "World tower sea floor" };
+        mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+        mesh.SetVertices(verts); mesh.SetTriangles(tris, 0);
+        mesh.RecalculateNormals(); mesh.RecalculateBounds();
+        // facing up (the winding above faces up for a strip running south)
+        if (mesh.normals.Length > 0 && mesh.normals[0].y < 0f) { tris.Reverse(); mesh.SetTriangles(tris, 0); mesh.RecalculateNormals(); }
+        UnityEditor.AssetDatabase.CreateAsset(mesh, meshPath);
+        var floorPath = Folder + "/SeaFloor.mat";
+        var floorMat = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(floorPath);
+        if (!floorMat) { floorMat = new UnityEngine.Material(UnityEngine.Shader.Find("Universal Render Pipeline/Lit")); UnityEditor.AssetDatabase.CreateAsset(floorMat, floorPath); }
+        floorMat.SetColor("_BaseColor", new UnityEngine.Color(0.34f, 0.32f, 0.26f)); floorMat.SetFloat("_Smoothness", 0.05f);
+        UnityEditor.EditorUtility.SetDirty(floorMat);
+        var floorGo = new UnityEngine.GameObject("World Tower sea floor");
+        UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(floorGo, scene);
+        floorGo.AddComponent<UnityEngine.MeshFilter>().sharedMesh = mesh;
+        var fr = floorGo.AddComponent<UnityEngine.MeshRenderer>();
+        fr.sharedMaterial = floorMat;
+        fr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        fr.receiveShadows = false;
+        fr.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
+        fr.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+        log.AppendLine("sea floor: from the terrain's edge at z " + edgeZ.ToString("0") + ", x " + x0.ToString("0") + " to " + x1.ToString("0") + ", " + (tris.Count / 3) + " triangles, seam heights " + Height(0f).ToString("0.0") + " at x 0");
+    }
+}
 
 // ---- a navmesh for the plaza, the stair into the gate's tunnel, the quay and the pier ----
 var surface = root.AddComponent<Unity.AI.Navigation.NavMeshSurface>();

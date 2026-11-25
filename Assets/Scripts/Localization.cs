@@ -3881,8 +3881,9 @@ public static class Localization
     // the islet at the foot of the tower in the main world (WorldTower): a calm place players sail to
     public static string MSG_TOWER_ISLET = Meta("tower", "info") + "You are at the foot of the tower. There is nothing to train here, but you keep learning as on your island. !tower to go in, !sail and an island's name to leave.";
     public static string MSG_TOWER_WALK_IN = Meta("tower", "info") + "You walk up the stair and in through the tower's gate.";
-    // a row of the leaderboard stone at the tower's foot: the place, the climber's name, how many of the stream's clears they fought in
-    public static string UI_TOWER_STONE_ROW = "{0}. {1}  {2}";
+    // a row of the best climbers' stone at the tower's foot: the place and the climber's name, on the left (how many of
+    // the stream's clears they fought in stands on its own at the row's right end)
+    public static string UI_TOWER_STONE_ROW = "{0}  {1}";
     public static string UI_TOWER_STONE_TITLE = "BEST CLIMBERS";
     // the sign on the quay at the tower's foot (docs/easter-eggs.md): the ferry only turns in there for someone
     public static string UI_GAG_SIGN_FERRY_TIMES = "FERRY TIMETABLE: WHEN SOMEONE ASKS FOR IT. ASK NICELY";

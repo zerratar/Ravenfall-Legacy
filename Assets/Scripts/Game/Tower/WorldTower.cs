@@ -16,11 +16,11 @@ using UnityEngine.SceneManagement;
 ///     <para>Seen from far: the game's view distance ends long before the tower, so its shader (Ravenfall/WorldTower)
 ///     draws it squeezed in front of the far plane and this gives its renderers bounds that are never culled. Past
 ///     <see cref="FarDistance"/> the low detail models show.</para>
-///     <para>No top: over the last floor's section the tower goes on as a plain shaft, which the shader thins out
-///     from <see cref="FadeFrom"/> up and turns toward the cloud's color, and this asks the sky's clouds
-///     (<see cref="SkyClouds.Tower"/>) to keep a bank round it up there, so it rises into a real cloud and is gone
-///     inside it. Where the game draws no sky clouds (potato mode, or the setting off) a low-poly cloud lies over
-///     the fade instead (<see cref="Lid"/>).</para>
+///     <para>No top: over the last floor's section the tower goes on as a plain shaft, which the shader fades out
+///     smoothly from <see cref="FadeFrom"/> to <see cref="FadeTo"/>: toward the cloud's color inside the bank of cloud
+///     this asks the sky's clouds to keep round it (<see cref="SkyClouds.Tower"/>), then from <see cref="SkyFrom"/>
+///     up toward the live sky behind it, so it rises into a real cloud and on into the sky with no end to see. Where
+///     the game draws no sky clouds (potato mode, or the setting off) it fades into the sky all the way.</para>
 ///     <para>Potato mode: the low detail models at every distance, no breathing light, no drifting cloud, bobbing
 ///     rocks, lightning or gulls, no lamps, no camera looks; steady light stays.</para>
 ///     <para>The other parts of this class: the islet as a place players sail to (WorldTowerVisit.cs), the camera's
@@ -66,14 +66,15 @@ public sealed partial class WorldTower : MonoBehaviour
     [Tooltip("Past this the tower is not drawn at all: the tower's own floors and towns lie far out at sea.")]
     public float HideDistance = 3600f;
 
-    [Tooltip("Metres above the sea where the tower begins to thin out into cloud, and where it is gone.")]
+    [Tooltip("Metres above the sea where the tower begins to fade out, and where it is gone.")]
     public float FadeFrom = 410f;
-    public float FadeTo = 505f;
+    public float FadeTo = 750f;
+    [Tooltip("Metres above the sea from where it fades toward the sky rather than the cloud (the top of the cloud layer), and over how many metres that changes.")]
+    public float SkyFrom = 460f;
+    public float SkyBlend = 60f;
     [Tooltip("The bank of sky cloud kept round the tower's top: from this height (m above the sea) and this wide (m).")]
     public float CloudFrom = 395f;
     public float CloudRadius = 260f;
-    [Tooltip("A low-poly cloud over the top, shown only while the game draws no sky clouds.")]
-    public GameObject Lid;
 
     [Tooltip("Turned slowly round the tower: the storm's cloud ring. Degrees a second each.")]
     public Transform[] Turning = new Transform[0];
@@ -111,13 +112,11 @@ public sealed partial class WorldTower : MonoBehaviour
     private bool? shown;
     private bool? extras;
     private bool? egg;
-    private bool? lid;
     private bool animate = true;
     private int step = -1;
     private int cleared = -1;
     private float nextLook;
     private Vector3[] bobFrom;
-    private Material lidMaterial;
 
     private void Awake()
     {
@@ -140,27 +139,17 @@ public sealed partial class WorldTower : MonoBehaviour
         for (var i = 0; i < Bobbing.Length; ++i) if (Bobbing[i]) bobFrom[i] = Bobbing[i].localPosition;
         Shader.SetGlobalFloat(SeaId, SeaChart.Sea);
         Shader.SetGlobalFloat(AnimateId, 1f);
-        var sea = transform.position.y;
-        Shader.SetGlobalVector(FadeId, new Vector4(sea + FadeFrom, 1f / Mathf.Max(1f, FadeTo - FadeFrom), 0f, 0f));
-        if (Lid)
-        {
-            // the low-poly cloud over the top: drawn like the rest (squeezed in from far, never culled), with no light of its own
-            if (Shared)
-            {
-                lidMaterial = new Material(Shared) { name = Shared.name + " (lid)", hideFlags = HideFlags.DontSave };
-                lidMaterial.SetFloat(GlowId, 0f);
-                lidMaterial.SetFloat(PulseId, 0f);
-            }
-            foreach (var r in Lid.GetComponentsInChildren<Renderer>(true))
-            {
-                Prepare(r, lidMaterial, always);
-                r.shadowCastingMode = ShadowCastingMode.Off;
-            }
-            Lid.SetActive(false);
-        }
+        Fade(true);
         Words();
         Detail(true);
         nextIdleLook = Time.time + UnityEngine.Random.Range(IdleLookMinutesMin, IdleLookMinutesMax) * 60f;
+    }
+
+    /// <summary>The top's fade for the shader: into the cloud and then the sky, or straight into the sky where no sky clouds are drawn.</summary>
+    private void Fade(bool clouds)
+    {
+        var sea = transform.position.y;
+        Shader.SetGlobalVector(FadeId, new Vector4(sea + FadeFrom, 1f / Mathf.Max(1f, FadeTo - FadeFrom), sea + (clouds ? SkyFrom : FadeFrom - SkyBlend), 1f / Mathf.Max(1f, SkyBlend)));
     }
 
     private static void Prepare(Renderer r, Material material, Bounds always)
@@ -177,11 +166,11 @@ public sealed partial class WorldTower : MonoBehaviour
         EndMoment(false);
         LeavePlace();
         ClearStatue();
+        OnDestroyStone();
         SkyClouds.Tower = Vector4.zero;
         Shader.SetGlobalVector(FadeId, Vector4.zero);
         if (Instance == this) Instance = null;
         foreach (var section in Sections) if (section.Material) Destroy(section.Material);
-        if (lidMaterial) Destroy(lidMaterial);
     }
 
     private void LateUpdate()
@@ -232,7 +221,6 @@ public sealed partial class WorldTower : MonoBehaviour
             far = null;
             extras = null;
             egg = null;
-            lid = null;
         }
         // the sky's clouds keep a bank round the top while the tower shows and they are drawn at all
         var clouds = show && SkyClouds.Active;
@@ -242,11 +230,7 @@ public sealed partial class WorldTower : MonoBehaviour
         // to follow the boss's own cutscene (seen in play 2026-11-25: it was only noticed once the camera came back)
         Progress();
         if (!show) return;
-        if (Lid && lid != !clouds)
-        {
-            lid = !clouds;
-            Lid.SetActive(!clouds);
-        }
+        Fade(clouds);
 
         // the low detail models from far away (a band of 60 m so it does not flip back and forth) and in potato mode
         var wantFar = potato || distance > FarDistance + (far == true ? -30f : 30f);
@@ -350,9 +334,10 @@ public sealed partial class WorldTower : MonoBehaviour
 
     private void Words()
     {
-        // "FLOOR 2" over "PART 4": two short lines can be twice as tall as one long one
-        if (SlabPlace) SlabPlace.text = step > 0 ? TowerWords.Place(step).ToUpperInvariant().Replace(", ", "\n") : "";
+        // the stele's heading, "FLOOR 2 - PART 4" on one line, over the floor's name
+        if (SlabPlace) SlabPlace.text = step > 0 ? TowerWords.Place(step).ToUpperInvariant().Replace(", ", " - ") : "";
         if (SlabName) SlabName.text = step > 0 ? TowerWords.FloorName(step) : "";
+        StoneTiers();
     }
 }
 

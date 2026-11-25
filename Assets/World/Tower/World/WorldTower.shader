@@ -16,10 +16,12 @@
 // (_WorldTowerHaze, set by WorldTower.cs from the Haze setting). What is under the sea is cut away when squeezed (the
 // far sea writes no depth to hide it).
 //
-// No top: above _WorldTowerFade.x (a height in the world) the tower thins out, dithered, and takes the cloud's color,
-// and is gone at the height where the sky's cloud layer ends. The part up there is drawn after the opaque things
-// (WorldTower.cs gives its material a later queue), so it is not in the depth the sky's clouds read and they lie over
-// it wherever they are along the view: the tower goes up into the cloud.
+// No top: over the last floor's section the tower goes on as a shaft, and above _WorldTowerFade.x (a height in the
+// world) it fades out smoothly, with no dither: low down, inside the sky's bank of cloud round it, toward the cloud's
+// color; from the top of the cloud layer up (_WorldTowerFade.z) toward the sky itself, read from the live sky
+// (_RavenfallSky, SkyReflection.cs) in the direction it is seen in, so where it ends it is the very color of the sky
+// behind it and no end shows. Under a full overcast (a deck of cloud over everything) it fades into the cloud's color all the way. What is wholly faded
+// is not drawn (it would hide clouds behind it).
 //
 // Per floor (one material instance each, WorldTower.cs): _Glow 0 for a floor not reached, 1 for a cleared one, and
 // _Pulse for the floor the stream is on. _WorldTowerAnimate 0 (potato mode) stops the pulse, the bobbing cloud, the
@@ -53,8 +55,12 @@ Shader "Ravenfall/WorldTower"
         float _WorldTowerSea;           // the sea's height
         float4 _WorldTowerHaze;         // x density per metre (0: no haze), y 1 / height scale, z base height, w start distance
         float4 _WorldTowerHazeColor;    // linear
-        float4 _WorldTowerFade;         // x the height (world y) the tower begins to fade into cloud at, y 1 / the metres it takes; y 0: no fade
-        float4 _WorldTowerCloudColor;   // linear: what it fades toward
+        float4 _WorldTowerFade;         // x the height (world y) the tower begins to fade at, y 1 / the metres it takes (0: no fade), z the height from which it fades toward the sky rather than the cloud, w 1 / the metres that change takes
+        float4 _WorldTowerCloudColor;   // linear: the cloud's color in this light, what it fades toward low down
+        // the live sky (SkyReflection.cs), and how overcast the sky is (Weather)
+        TEXTURECUBE(_RavenfallSky); SAMPLER(sampler_RavenfallSky);
+        float _RavenfallHasSky;
+        float _RavenfallOvercast;
 
         #define KIND_WATER(k) ((k) > 0.5 && (k) < 1.5)
         #define KIND_CLOUD(k) ((k) > 1.5 && (k) < 2.5)
@@ -69,10 +75,20 @@ Shader "Ravenfall/WorldTower"
             return saturate((positionWS.y - _WorldTowerFade.x) * _WorldTowerFade.y);
         }
 
-        float TowerDither(float2 pixel)
+        // what the tower fades toward at P: the cloud's color low down, the sky as it is seen behind P higher up
+        // skyward: 0 where it fades toward the cloud, 1 where toward the sky
+        half3 TowerFadeColor(float3 positionWS, out half skyward)
         {
-            // interleaved gradient noise: even from pixel to pixel, so a dithered fade reads as thinning mist
-            return frac(52.9829189 * frac(dot(pixel, float2(0.06711056, 0.00583715))));
+            half3 target = _WorldTowerCloudColor.rgb;
+            skyward = 0.0;
+            [branch] if (_RavenfallHasSky > 0.5)
+            {
+                float3 dir = normalize(positionWS - GetCameraPositionWS());
+                half3 sky = SAMPLE_TEXTURECUBE_LOD(_RavenfallSky, sampler_RavenfallSky, dir, 2.0).rgb;
+                skyward = smoothstep(0.0, 1.0, saturate((positionWS.y - _WorldTowerFade.z) * _WorldTowerFade.w)) * (1.0 - smoothstep(0.7, 1.0, _RavenfallOvercast));
+                target = lerp(target, sky, skyward);
+            }
+            return target;
         }
 
         // The world position after the kind's own movement: clouds bob, flames waver.
@@ -123,8 +139,8 @@ Shader "Ravenfall/WorldTower"
         {
             float t = _Time.y;
             // cloud is what the tower fades into: it stays whole (the low-poly cloud over the top, where no sky clouds are drawn)
-            float fade = KIND_CLOUD(data.x) ? 0.0 : TowerFade(positionWS);
-            if (fade > 0.0) clip(TowerDither(pixel) - fade * 1.02);
+            // what is wholly faded out is not drawn, so it hides no cloud behind it
+            if (!KIND_CLOUD(data.x) && _WorldTowerFade.y > 0.0) clip(0.995 - TowerFade(positionWS));
             if (KIND_BOLT(data.x))
             {
                 float cycle = frac(t * 0.19 + data.y);
@@ -295,9 +311,32 @@ Shader "Ravenfall/WorldTower"
                     float extra = HazeDepth(dist, camWS, dirY) - HazeDepth(dist * input.ratio, camWS, dirY);
                     color = lerp(color, _WorldTowerHazeColor.rgb, saturate(1.0 - exp(-max(extra, 0.0))));
                 }
-                // into the cloud: what is left of it takes the cloud's color as it thins
+                // no top: it fades smoothly into the cloud and then the sky (TowerFadeColor)
                 float fade = KIND_CLOUD(input.kind) ? 0.0 : TowerFade(P);
-                if (fade > 0.0) color = lerp(color, _WorldTowerCloudColor.rgb, saturate(fade * 1.6));
+                if (fade > 0.0)
+                {
+                    half skyward;
+                    half3 target = TowerFadeColor(P, skyward);
+                    // the game's haze pass lays its haze over this pixel by its depth (the squeezed one), while the sky
+                    // behind is hazed only near the horizon (Haze.shader): toward the sky, ask for the color that comes
+                    // out as the sky's once that haze is on it, or the faded shaft stands paler than the sky round it
+                    if (_WorldTowerHaze.x > 0.0 && skyward > 0.0)
+                    {
+                        float3 camWS = GetCameraPositionWS();
+                        float3 ray = P - camWS;
+                        float dist = length(ray);
+                        float dirY = ray.y / max(dist, 1e-3);
+                        half here = saturate(1.0 - exp(-HazeDepth(dist * input.ratio, camWS, dirY)));
+                        half up = saturate(dirY / 0.12);
+                        half rim = saturate(1.0 - up * 8.0);
+                        half onSky = lerp(0.45 * (1.0 - up) * (1.0 - up), 1.0, rim * rim);
+                        half3 seen = lerp(target, _WorldTowerHazeColor.rgb, onSky);
+                        half3 asked = max(0.0, (seen - _WorldTowerHazeColor.rgb * here) / max(1.0 - here, 0.05));
+                        target = lerp(target, asked, skyward);
+                    }
+                    // eased out: mostly gone by the top of the bank, the last of it in the sky's color just over it
+                    color = lerp(color, target, 1.0 - (1.0 - fade) * (1.0 - fade));
+                }
                 return half4(color, 1);
             }
             ENDHLSL

@@ -187,10 +187,33 @@ public static class Keybinds
         Store();
     }
 
+#if UNITY_EDITOR
+    private static Action? simulated;
+    private static int simulatedFrame;
+
+    /// <summary>
+    /// Editor tests only: <paramref name="action"/> counts as pressed once, on the next frame, through the same checks
+    /// as its key (an eval cannot press a key while the editor is not the focused window, and the game reads keys
+    /// through the old input manager).
+    /// </summary>
+    public static void Simulate(Action action)
+    {
+        simulated = action;
+        simulatedFrame = Time.frameCount + 1;
+    }
+#endif
+
     /// <summary>The action fired this frame, by its trigger: down, up, or (for held actions) down.</summary>
     public static bool Pressed(Action action)
     {
         if (!Ready()) return false;
+#if UNITY_EDITOR
+        if (simulated == action && Time.frameCount >= simulatedFrame)
+        {
+            simulated = null;
+            return true;
+        }
+#endif
         var d = Find(action);
         var b = Get(action);
         if (b.IsNone || !ModsMatch(b.Mods)) return false;

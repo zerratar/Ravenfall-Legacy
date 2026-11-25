@@ -922,50 +922,36 @@ def unbuilt(r_seat, h, lod, seed):
 
 
 def cap(r_seat, h, lod, seed):
-    """Above the last built section the tower goes on: more floors, dark, ledge over ledge, narrowing a little. The
-    game fades it out with height into the sky's own cloud layer (the shader, WorldTower.cs), so it has no top from
-    anywhere. "Lid" is a low-poly cloud for when the game draws no sky clouds (potato mode, or the setting off)."""
+    """Above the last built section the tower goes on: more floors, dark, ledge over ledge, narrowing a little, up
+    through the sky's bank of cloud and a little over it. The game fades it smoothly into the cloud's color inside the
+    bank and into the live sky behind it just over it (the shader, WorldTower.cs), so it has no top to see from
+    anywhere: it is lost in the cloud. No cloud of its own: with no sky clouds drawn it fades into the sky all the
+    way."""
     rnd = random.Random(seed)
     g = Geo()
     rb = max(24.0, r_seat - 5.0)
-    R = lambda z: rb - 9.0 * clamp01(z / h)
+    R = lambda z: rb - 13.0 * clamp01(z / h)
     W = Wall(g, R)
     segs = 32 if lod == 0 else 16
     stone, stone2, edge = (0.33, 0.34, 0.4), (0.26, 0.27, 0.33), (0.42, 0.43, 0.5)
     col = lambda a, z, rnd: jit(mixc(stone, stone2, 0.5 + 0.5 * n3(math.cos(a) * 3, math.sin(a) * 3, z * 0.06)), 0.07, rnd)
-    courses(g, R, -2.0, h, max(4, int(h / 7)) if lod == 0 else max(3, int(h / 16)), segs, col, rnd)
-    # the floors to come: a ledge, a ring of dark windows and a few ribs every 38 m
+    # the detail is where it can be seen: the first 150 m; above that the air has most of it already
+    near = min(h, 150.0)
+    courses(g, R, -2.0, near, max(4, int(near / 7)) if lod == 0 else max(3, int(near / 16)), segs, col, rnd)
+    if h > near:
+        courses(g, R, near, h, max(2, int((h - near) / 22)) if lod == 0 else max(2, int((h - near) / 45)), segs, col, rnd)
+    # the floors to come: a ledge, a ring of dark windows and a few ribs every 38 m, plainer further up
     z = 20.0
     while z < h - 10.0:
-        ledge(g, R, z, 2.6, 1.8, segs, edge, stone)
-        windows_ring(W, z + 8.0, 22 if lod == 0 else 11, 2.2, 5.5, WINDOW, stone2, rnd, lod, dark=5.0)
-        if lod == 0:
-            for i in range(10):
-                W.block(FRONT + (i + 0.5) * TAU / 10, -1.2, 1.2, z + 1.8, z + 30.0, -0.3, 1.8, 0.8, col=jit(stone2, 0.05, rnd))
-        z += 38.0
-    lid = Geo()
-    white, under, grey, grey_under = (1.0, 1.0, 1.0), (0.74, 0.81, 0.94), (0.86, 0.87, 0.93), (0.56, 0.59, 0.72)
-    def reach(a): return 1.0 + 0.22 * n3(math.cos(a) * 1.2, math.sin(a) * 1.2, 5.5) + 0.12 * n3(math.cos(a) * 2.7, math.sin(a) * 2.7, 1.5)
-    z0 = 34.0
-    def puff(r, a, z, rr, t, squash=0.5):
-        blob(lid, P(r, a, z), rr * rnd.uniform(1.0, 1.3), rr * rnd.uniform(1.0, 1.3), rr * squash, 1, 0.3, mixc(grey, white, t), mixc(grey_under, under, t), rnd.uniform(0, 80), kind=CLOUD, phase=rnd.uniform(0, 1), freq=1.3, flat_bottom=z0 + rnd.uniform(-5, 6))
-    if lod == 1:
-        for i in range(9):
-            a = i * TAU / 9 + rnd.uniform(-0.12, 0.12)
-            puff(rnd.uniform(140, 185) * reach(a), a, z0 + rnd.uniform(4, 10), rnd.uniform(36, 50), rnd.uniform(0.45, 0.8), 0.46)
-        for i in range(7):
-            a = i * TAU / 7 + rnd.uniform(-0.15, 0.15)
-            puff(rnd.uniform(74, 112) * reach(a), a, z0 + rnd.uniform(4, 12), rnd.uniform(40, 54), rnd.uniform(0.5, 0.85), 0.5)
-        for i in range(5):
-            a = i * TAU / 5 + rnd.uniform(-0.2, 0.2)
-            puff(rb + 14, a, z0 + rnd.uniform(8, 16), rnd.uniform(30, 38), rnd.uniform(0.5, 0.85), 0.45)
-        for i in range(6):
-            a = i * TAU / 6 + rnd.uniform(-0.2, 0.2)
-            puff(rnd.uniform(40, 120) * reach(a), a, z0 + rnd.uniform(26, 40), rnd.uniform(38, 52), rnd.uniform(0.9, 1.0), 0.62)
-        for i in range(4):
-            a = i * TAU / 4 + rnd.uniform(-0.3, 0.3)
-            puff(rnd.uniform(10, 50), a, z0 + rnd.uniform(52, 66), rnd.uniform(40, 50), 1.0, 0.62)
-        return {"Body": g, "Lid": lid}, 0.0
+        high = z > near
+        if not (high and lod == 1):
+            ledge(g, R, z, 2.6, 1.8, segs, edge, stone)
+        if not high:
+            windows_ring(W, z + 8.0, 22 if lod == 0 else 11, 2.2, 5.5, WINDOW, stone2, rnd, lod, dark=5.0)
+            if lod == 0:
+                for i in range(10):
+                    W.block(FRONT + (i + 0.5) * TAU / 10, -1.2, 1.2, z + 1.8, z + 30.0, -0.3, 1.8, 0.8, col=jit(stone2, 0.05, rnd))
+        z += 38.0 if not high else 76.0
     return {"Body": g}, 0.0
 
 
@@ -1072,12 +1058,199 @@ def islet(lod, seed):
     return g
 
 
+# ---- the best climbers' stone: the tower stele (design C, docs/mockups/tower/world/stone-c-tower-stele.jpg) ------
+STELE_TIERS = 6          # the carved tower's tiers; the game maps them onto floors (WorldTowerClimbers.cs)
+STELE_TIER_OBJECTS = []  # (name, Geo) for the lit and the dark look of each tier, filled at the near detail
+STELE_ROW_RUNES = []     # the carved runes on each row's plaque, top first (the game hides a row's runes when it has a name)
+
+
+def stele(g, c, facing, lod, rnd):
+    """A tall dark obelisk on a round plinth with a ring of glowing runes and a small gold crown on its tip. On its
+    face the left third is a carved relief of the tower as a stack of tiers (their own objects, each in a lit and a
+    dark look, so the game lights the floors the stream has reached); the right two thirds hold the words: the
+    stream's place, the floor's name, a gold divider, BEST CLIMBERS and five rows on proud plaques, the first larger
+    with a laurel each side. Sizes in metres of the models (the tower stands at stack.json's scale). Returns the marks
+    the builder puts the words by, in the stele's face terms: x to the right, y up from the plinth's foot, out from the
+    stone's middle."""
+    fwd = Vector((math.cos(facing), math.sin(facing), 0))
+    right = Vector((-math.sin(facing), math.cos(facing), 0))
+    def S(x, y, out): return c + right * x + Vector((0, 0, y)) + fwd * out
+    mid = S(0, 7.0, 0)
+    gold = (1.0, 0.78, 0.3)
+    body, body2, edge, panel, plaque, plaque_edge = (0.2, 0.2, 0.24), (0.16, 0.16, 0.2), (0.27, 0.27, 0.31), (0.13, 0.13, 0.16), (0.1, 0.1, 0.13), (0.24, 0.24, 0.28)
+    plinth, plinth2 = (0.3, 0.3, 0.34), (0.24, 0.24, 0.28)
+    # the plinth: two round steps, the runes round the upper one
+    segs = 24 if lod == 0 else 12
+    steps = [(0.0, 0.6, 6.4), (0.6, 1.2, 5.8)]
+    for z0, z1, r in steps:
+        ring_lo = [c + Vector((r * math.cos(k * TAU / segs), r * math.sin(k * TAU / segs), z0)) for k in range(segs)]
+        ring_hi = [c + Vector((r * math.cos(k * TAU / segs), r * math.sin(k * TAU / segs), z1)) for k in range(segs)]
+        for k in range(segs):
+            kn = (k + 1) % segs
+            g.add([ring_lo[k], ring_lo[kn], ring_hi[kn], ring_hi[k]], jit(plinth2, 0.06, rnd), away=c + Vector((0, 0, z0)))
+        g.add(ring_hi, jit(plinth, 0.03, rnd), up=1)
+    if lod == 0:
+        # the ring of runes, gold and always lit, on the upper step all round (the plaza walks round it)
+        n = 26
+        r = steps[1][2] + 0.03
+        for k in range(n):
+            a = facing + (k + 0.5) * TAU / n
+            cen = c + Vector((r * math.cos(a), r * math.sin(a), 0.9))
+            tang = Vector((-math.sin(a), math.cos(a), 0))
+            outv = Vector((math.cos(a), math.sin(a), 0))
+            gw, gh = 0.42, 0.42
+            strokes = GLYPHS[rnd.randrange(len(GLYPHS))] if k % 2 == 0 else [(0.42, 0.5, 0.58, 0.5), (0.5, 0.42, 0.5, 0.58)]
+            for x0, y0, x1, y1 in strokes:
+                p0 = cen + tang * ((x0 - 0.5) * gw) + Vector((0, 0, (y0 - 0.5) * gh))
+                p1 = cen + tang * ((x1 - 0.5) * gw) + Vector((0, 0, (y1 - 0.5) * gh))
+                if (p1 - p0).length < 1e-6: continue
+                nrm = (p1 - p0).normalized().cross(outv) * 0.045
+                g.add([p0 - nrm, p1 - nrm, p1 + nrm, p0 + nrm], gold, glow=1.0, kind=PANE, away=c)
+    # the obelisk: a slab a little narrower at the top, its shoulders rounded into a low arch, its front edges
+    # chamfered so the dark stone catches the light along them
+    base_y = 1.2
+    T = 2.4
+    outline = [(-4.5, base_y), (4.5, base_y), (4.2, 12.4), (3.7, 13.0), (2.2, 13.4), (0.0, 13.6), (-2.2, 13.4), (-3.7, 13.0), (-4.2, 12.4)]
+    inset = 0.32
+    def shrink(pts, d):
+        # each point moved in toward the face's middle by about d; the foot stays on the plinth
+        cx, cy = 0.0, 7.2
+        res = []
+        for x, y in pts:
+            vx, vy = x - cx, y - cy
+            L = math.hypot(vx, vy) or 1.0
+            res.append((x - vx / L * d * 1.6, y if y <= base_y + 1e-6 else y - vy / L * d * 0.9))
+        return res
+    inner = shrink(outline, inset)
+    front_out = [S(x, y, T / 2 - 0.3) for x, y in outline]
+    front_in = [S(x, y, T / 2) for x, y in inner]
+    back = [S(x * 0.97, y, -T / 2) for x, y in outline]
+    g.add(front_in, body, away=mid)
+    for k in range(len(outline)):
+        kn = (k + 1) % len(outline)
+        g.add([front_out[k], front_out[kn], front_in[kn], front_in[k]], jit(edge, 0.04, rnd), away=mid)
+        if k == 0: continue    # the foot stands on the plinth
+        g.add([front_out[k], front_out[kn], back[kn], back[k]], jit(body2, 0.05, rnd), away=mid)
+    g.add(back, mul(body2, 0.85), away=mid)
+    face = T / 2
+    marks = {"out": face, "tiers": [], "boxes": {}}
+    if lod == 0:
+        def quad(x0, y0, x1, y1, out, col, kind=SOLID, glow=0.0):
+            g.add([S(x0, y0, out), S(x1, y0, out), S(x1, y1, out), S(x0, y1, out)], col, glow=glow, kind=kind, away=S((x0 + x1) / 2, (y0 + y1) / 2, out - 1.0))
+        def slab(x0, y0, x1, y1, o0, o1, col, top=None, kind=SOLID, glow=0.0, target=None):
+            target = target or g
+            k = lambda m: mul(col, m)
+            cen = S((x0 + x1) / 2, (y0 + y1) / 2, (o0 + o1) / 2)
+            target.add([S(x0, y0, o1), S(x1, y0, o1), S(x1, y1, o1), S(x0, y1, o1)], col, glow=glow, kind=kind, away=cen)
+            target.add([S(x0, y1, o0), S(x1, y1, o0), S(x1, y1, o1), S(x0, y1, o1)], top or k(1.15), away=cen)
+            target.add([S(x0, y0, o0), S(x1, y0, o0), S(x1, y0, o1), S(x0, y0, o1)], k(0.7), away=cen)
+            target.add([S(x0, y0, o0), S(x0, y1, o0), S(x0, y1, o1), S(x0, y0, o1)], k(0.88), away=cen)
+            target.add([S(x1, y0, o0), S(x1, y1, o0), S(x1, y1, o1), S(x1, y0, o1)], k(0.92), away=cen)
+        # the relief's recess on the left third, the words' panel on the right, framed
+        quad(-3.95, 1.75, -1.85, 12.55, face + 0.01, panel)
+        px0, px1, py0, py1 = -1.6, 3.95, 1.75, 12.55
+        quad(px0, py0, px1, py1, face + 0.01, (0.15, 0.15, 0.18))
+        for x0, y0, x1, y1 in ((px0 - 0.12, py0 - 0.12, px1 + 0.12, py0), (px0 - 0.12, py1, px1 + 0.12, py1 + 0.12), (px0 - 0.12, py0, px0, py1), (px1, py0, px1 + 0.12, py1)):
+            slab(x0, y0, x1, y1, face, face + 0.1, edge)
+        # the place and the floor's name, the divider, the title: boxes are [x, y, width, height, out]
+        marks["boxes"]["place"] = [1.175, 11.8, 5.2, 1.0, face + 0.06]
+        marks["boxes"]["name"] = [1.175, 10.95, 5.0, 0.55, face + 0.06]
+        dy = 10.4
+        for x0, x1 in ((-1.1, 0.95), (1.4, 3.45)):
+            quad(x0, dy - 0.05, x1, dy + 0.05, face + 0.05, gold, kind=PANE, glow=1.0)
+        dc = S(1.175, dy, face + 0.06)
+        g.add([dc + right * 0.2, dc + Vector((0, 0, 0.2)), dc - right * 0.2, dc - Vector((0, 0, 0.2))], gold, glow=1.0, kind=PANE, away=dc - fwd)
+        marks["boxes"]["title"] = [1.175, 9.75, 5.0, 0.72, face + 0.06]
+        # five plaques for the rows: the first larger, a gold laurel each side of it
+        rows = [(8.5, 1.2, -0.95, 3.3), (7.05, 1.0, -1.35, 3.7), (5.75, 1.0, -1.35, 3.7), (4.45, 1.0, -1.35, 3.7), (3.15, 1.0, -1.35, 3.7)]
+        for i, (yc, h, x0, x1) in enumerate(rows):
+            slab(x0, yc - h / 2, x1, yc + h / 2, face, face + 0.16, plaque, top=plaque_edge)
+            marks["boxes"]["row%d" % (i + 1)] = [(x0 + x1) / 2, yc, (x1 - x0) - 0.3, h * 0.78, face + 0.2]
+            # carved runes on the plaque while it has no name (the game hides them then)
+            runes = Geo()
+            STELE_ROW_RUNES.append(runes)
+            for k in range(7):
+                gx = (x0 + x1) / 2 + (k - 3) * 0.55
+                gw, gh = 0.34, h * 0.42
+                for a0, b0, a1, b1 in GLYPHS[rnd.randrange(len(GLYPHS))]:
+                    p0 = S(gx + (a0 - 0.5) * gw, yc + (b0 - 0.5) * gh, face + 0.18)
+                    p1 = S(gx + (a1 - 0.5) * gw, yc + (b1 - 0.5) * gh, face + 0.18)
+                    if (p1 - p0).length < 1e-6: continue
+                    nrm = (p1 - p0).normalized().cross(fwd) * 0.035
+                    runes.add([p0 - nrm, p1 - nrm, p1 + nrm, p0 + nrm], (0.4, 0.4, 0.46), away=p0 - fwd)
+        for side in (-1, 1):
+            # a sprig of five leaves rising round the first row's end, on a thin stem
+            xs = -1.22 if side < 0 else 3.57
+            for k in range(5):
+                t = k / 4.0
+                lx = xs + side * 0.1 * math.sin(t * math.pi)
+                ly = 8.0 + t * 1.0
+                lc = S(lx, ly, face + 0.2)
+                dirv = (right * (side * 0.45) + Vector((0, 0, 1))).normalized()
+                ortho = right * (side * 0.1)
+                g.add([lc - dirv * 0.18, lc + ortho, lc + dirv * 0.18, lc - ortho * 0.5], gold, glow=0.9, kind=PANE, away=lc - fwd)
+            g.add([S(xs - 0.025, 7.9, face + 0.19), S(xs + 0.025, 7.9, face + 0.19), S(xs + 0.025, 9.0, face + 0.19), S(xs - 0.025, 9.0, face + 0.19)], gold, glow=0.9, kind=PANE, away=S(xs, 8.5, face))
+        # the carved tower: tiers from the foot up, each a little narrower, with battlements and an arched window;
+        # each made twice, lit (gold, glowing with the plaza's light) and dark (stone), and the game shows one of them
+        rx = -2.9
+        y = 2.0
+        tier_h = 1.6
+        for i in range(STELE_TIERS):
+            w = 1.85 - 0.08 * i
+            lit, dark = Geo(), Geo()
+            for geo, front, side, win in ((lit, gold, (0.62, 0.46, 0.16), (0.16, 0.1, 0.03)), (dark, (0.33, 0.33, 0.37), (0.26, 0.26, 0.3), (0.06, 0.06, 0.08))):
+                kind = PANE if geo is lit else SOLID
+                glow = 0.85 if geo is lit else 0.0
+                o0, o1 = face, face + 0.32
+                body_top = y + tier_h - 0.42
+                slab(rx - w / 2, y, rx + w / 2, body_top, o0, o1, front, top=side, kind=kind, glow=glow, target=geo)
+                # the ledge, a little wider, and three merlons on it
+                slab(rx - w / 2 - 0.1, body_top, rx + w / 2 + 0.1, body_top + 0.14, o0, o1 + 0.06, side, target=geo)
+                mw = w / 5.0
+                for m in (-1, 0, 1):
+                    mx = rx + m * (w / 2 - mw / 2 - 0.02)
+                    slab(mx - mw / 2, body_top + 0.14, mx + mw / 2, body_top + 0.42, o0, o1, front, top=side, kind=kind, glow=glow, target=geo)
+                # the arched window, dark in both looks
+                wy0, wy1, ww = y + 0.32, y + 0.95, 0.46
+                o = o1 + 0.01
+                ctr = S(rx, (wy0 + wy1) / 2, o)
+                pts = [S(rx - ww / 2, wy0, o), S(rx + ww / 2, wy0, o), S(rx + ww / 2, wy1 - 0.15, o), S(rx + ww * 0.32, wy1 - 0.03, o), S(rx, wy1 + 0.03, o), S(rx - ww * 0.32, wy1 - 0.03, o), S(rx - ww / 2, wy1 - 0.15, o)]
+                geo.add(pts, win, away=ctr - fwd)
+            STELE_TIER_OBJECTS.append(("StoneTier%dLit" % i, lit))
+            STELE_TIER_OBJECTS.append(("StoneTier%dDark" % i, dark))
+            # where a floor's number goes when the tiers show a window of a taller tower: in the tier's window
+            marks["tiers"].append([rx, y + 0.62, 0.44, 0.42, face + 0.34])
+            y += tier_h
+    # the small gold crown on its tip, on a short round step so it stands clear of the arched top
+    cz = 13.85
+    stepn = 10 if lod == 0 else 6
+    lo = [S(0.8 * math.cos(k * TAU / stepn), 13.3, 0.8 * math.sin(k * TAU / stepn)) for k in range(stepn)]
+    hi = [S(0.8 * math.cos(k * TAU / stepn), cz, 0.8 * math.sin(k * TAU / stepn)) for k in range(stepn)]
+    for k in range(stepn):
+        kn = (k + 1) % stepn
+        g.add([lo[k], lo[kn], hi[kn], hi[k]], jit(edge, 0.04, rnd), away=S(0, 13.6, 0))
+    g.add(hi, edge, up=1)
+    n = 10 if lod == 0 else 6
+    rr = 0.85
+    ring0 = [S(rr * math.cos(k * TAU / n), cz, rr * math.sin(k * TAU / n)) for k in range(n)]
+    ring1 = [S(rr * 1.08 * math.cos(k * TAU / n), cz + 0.55, rr * 1.08 * math.sin(k * TAU / n)) for k in range(n)]
+    ccen = S(0, cz + 0.4, 0)
+    for k in range(n):
+        kn = (k + 1) % n
+        g.add([ring0[k], ring0[kn], ring1[kn], ring1[k]], mul(gold, 0.9), glow=0.25, away=ccen)
+        if k % 2 == 0:
+            tip = S(rr * 1.12 * math.cos((k + 0.5) * TAU / n), cz + 1.35, rr * 1.12 * math.sin((k + 0.5) * TAU / n))
+            g.add([ring1[k], ring1[kn], tip], gold, glow=0.3, away=ccen)
+            g.add([ring1[kn], ring1[k], tip], mul(gold, 0.8), glow=0.3, away=ccen + (ccen - tip))
+    marks["crown"] = cz
+    return marks
+
+
 def plaza(lod, seed):
     """The entrance: the gate and its tunnel of light, the stair, the round paved plaza with its compass, the low wall,
     the quay's stone steps, the leaderboard stone and the statue's pedestal. Its glow is always on."""
     rnd = random.Random(seed)
     g = Geo()
-    runes = Geo()       # the stone's carved rows, their own object: the game hides them when it has names to show
     stone, stone2, dark, pale = (0.62, 0.6, 0.55), (0.52, 0.5, 0.47), (0.36, 0.34, 0.32), (0.78, 0.75, 0.68)
     gold = (1.0, 0.8, 0.36)
     FACE = R0 + 5.0             # how far out the gate's face stands
@@ -1228,53 +1401,10 @@ def plaza(lod, seed):
     for k in range(n_q):
         box(g, (-4.5, -(qo + 1.3 * (k + 1)), -4.0), (4.5, -(qo + 1.3 * k), PLAZA_Z - 0.5 * k), jit(stone, 0.04, rnd), faces=("top", "front", "left", "right"))
     box(g, (-5.2, -(qo + 1.3 * n_q + 5.0), -4.0), (5.2, -(qo + 1.3 * n_q), PLAZA_Z - 0.5 * n_q), stone2, faces=("top", "front", "left", "right"))
-    # the leaderboard stone, to the right of the stair: a standing stone with a smooth dark face for the words
-    def standing_stone(c, facing, w, h, th):
-        fwd = Vector((math.cos(facing), math.sin(facing), 0))
-        right = Vector((-math.sin(facing), math.cos(facing), 0))
-        outline = [(-0.5, 0.0), (0.5, 0.0), (0.52, 0.55), (0.44, 0.8), (0.26, 0.95), (0.0, 1.0), (-0.3, 0.94), (-0.46, 0.78), (-0.52, 0.5)]
-        front = [c + right * (x * w) + Vector((0, 0, y * h)) + fwd * (th / 2) for x, y in outline]
-        back = [c + right * (x * w * 0.96) + Vector((0, 0, y * h * 0.98)) - fwd * (th / 2) for x, y in outline]
-        mid = c + Vector((0, 0, h / 2))
-        g.add(front, stone2, away=mid)
-        g.add(back, mul(stone2, 0.8), away=mid)
-        for k in range(len(outline)):
-            kn = (k + 1) % len(outline)
-            g.add([front[k], front[kn], back[kn], back[k]], jit(stone, 0.05, rnd), away=mid)
-        # the smooth face, a hand's width proud of the rough stone
-        face = [(-0.36, 0.1), (0.36, 0.1), (0.36, 0.7), (0.0, 0.78), (-0.36, 0.7)]
-        fp = [c + right * (x * w) + Vector((0, 0, y * h)) + fwd * (th / 2 + 0.25) for x, y in face]
-        g.add(fp, (0.2, 0.2, 0.23), away=mid)
-        for k in range(len(face)):
-            kn = (k + 1) % len(face)
-            a, b = fp[k], fp[kn]
-            g.add([a, b, b - fwd * 0.25, a - fwd * 0.25], dark, away=mid)
-        # carved rows under the words, where the best climbers' names go: they stand in the names' place until the
-        # game has a list for this stream (their own object, which the game hides then)
-        # (five rows, where world-tower-build.cs puts the five names: the same heights)
-        for row in range(5):
-            for k in range(7):
-                gx, gy = (k - 3) * 0.085 * w, h * (0.42 - 0.068 * row)
-                gw, gh = 0.045 * w, 0.042 * h
-                for x0, y0, x1, y1 in GLYPHS[rnd.randrange(len(GLYPHS))]:
-                    a = c + right * (gx + (x0 - 0.5) * gw) + Vector((0, 0, gy + (y0 - 0.5) * gh)) + fwd * (th / 2 + 0.3)
-                    b = c + right * (gx + (x1 - 0.5) * gw) + Vector((0, 0, gy + (y1 - 0.5) * gh)) + fwd * (th / 2 + 0.3)
-                    if (b - a).length < 1e-6: continue
-                    nrm = (b - a).normalized().cross(fwd) * 0.05
-                    runes.add([a - nrm, b - nrm, b + nrm, a + nrm], (0.46, 0.46, 0.52), away=mid)
-        # the crown over the words
-        for x0, y0, x1, y1 in SIGILS["crown"]:
-            s = w * 0.2
-            a = c + right * ((x0 - 0.5) * s) + Vector((0, 0, h * 0.8 + y0 * s * 0.7)) + fwd * (th / 2 + 0.34)
-            b = c + right * ((x1 - 0.5) * s) + Vector((0, 0, h * 0.8 + y1 * s * 0.7)) + fwd * (th / 2 + 0.34)
-            d = (b - a).normalized()
-            nrm = d.cross(fwd) * 0.14
-            g.add([a - nrm, b - nrm, b + nrm, a + nrm], gold, glow=1.0, kind=PANE, away=mid)
-        return fp
+    # the best climbers' stone, to the right of the stair: the tower stele (stele() above), turned to the plaza
     slab_c = G(20.5, R0 + 15.0, PLAZA_Z - 0.4)
     slab_face = math.atan2(-(PLAZA_OUT - 6.0) - slab_c.y, 2.0 - slab_c.x)
-    standing_stone(slab_c, slab_face, 9.0, 12.5, 2.0)
-    box(g, (slab_c.x - 5.6, slab_c.y - 2.4, PLAZA_Z - 1.0), (slab_c.x + 5.6, slab_c.y + 2.4, PLAZA_Z + 0.5), stone2)
+    stele_marks = stele(g, slab_c, slab_face, lod, rnd)
     # the statue's pedestal, to the left of the stair (Unity stands the hero on it)
     ped = G(-20.0, R0 + 14.5, PLAZA_Z)
     box(g, (ped.x - 3.6, ped.y - 3.6, PLAZA_Z - 1.0), (ped.x + 3.6, ped.y + 3.6, PLAZA_Z + 0.7), stone2)
@@ -1289,10 +1419,10 @@ def plaza(lod, seed):
     marks = {
         "gate": [0, -(FACE), SILL_Z], "tunnelEnd": [0, -depth1, SILL_Z], "stairFoot": [0, -(road0 + 1.0), PLAZA_Z + 0.12],
         "plaza": [C.x, C.y, C.z], "plazaRadius": PLAZA_R, "quayHead": [0, -(qo + 1.3 * n_q + 5.0), PLAZA_Z - 0.5 * n_q],
-        "slab": [slab_c.x, slab_c.y, slab_c.z], "slabFacing": math.degrees(slab_face), "slabSize": [9.0, 12.5, 2.0],
+        "slab": [slab_c.x, slab_c.y, slab_c.z], "slabFacing": math.degrees(slab_face), "slabSize": [9.0, 13.6, 2.4], "stele": stele_marks,
         "pedestal": [ped.x, ped.y, PLAZA_Z + 5.0], "plazaLevel": PLAZA_Z,
     }
-    return g, marks, runes
+    return g, marks
 
 
 def egg(seed):
@@ -1435,11 +1565,18 @@ for lod in (0, 1):
     gi = islet(lod, 7)
     gi.to_object("Islet_%s" % ("Near" if lod == 0 else "Far"))
     info["parts"].setdefault("Islet", {})["lod%d" % lod] = gi.tris()
-    gp, m, gr = plaza(lod, 11)
-    marks.update(m)
+    gp, m = plaza(lod, 11)
+    # the marks of the near detail (the stone's words and tiers exist only there)
+    if lod == 0: marks.update(m)
     if lod == 0:
-        gr.to_object("Runes_Near")
-        info["parts"]["Runes"] = {"lod0": gr.tris()}
+        for i, rg in enumerate(STELE_ROW_RUNES):
+            rg.to_object("Runes%d_Near" % i)
+        info["parts"]["Runes"] = {"lod0": sum(rg.tris() for rg in STELE_ROW_RUNES)}
+        for tname, tgeo in STELE_TIER_OBJECTS:
+            tgeo.to_object(tname + "_Near")
+            info["parts"][tname] = {"lod0": tgeo.tris()}
+            # the preview shows the two lowest tiers lit
+            if tname.endswith("Lit") == (int(tname[9]) < 2): everything.append((tname, tgeo, 0.0))
     gp.to_object("Plaza_%s" % ("Near" if lod == 0 else "Far"))
     info["parts"].setdefault("Plaza", {})["lod%d" % lod] = gp.tris()
     (everything if lod == 0 else everything_far).append(("Islet", gi, 0.0))
@@ -1458,7 +1595,7 @@ everything.append(("Egg", ge, 0.0))
 export("WorldTower_Islet")
 built["islet"] = info
 # the marks are in Unity's terms once the builder has turned the model back: x the same, z = Blender's y, y up
-built["marks"] = {k: ([v[0], v[2], v[1]] if isinstance(v, list) and len(v) == 3 and k not in ("slabSize",) else v) for k, v in marks.items()}
+built["marks"] = {k: ([v[0], v[2], v[1]] if isinstance(v, list) and len(v) == 3 and k not in ("slabSize", "stele") else v) for k, v in marks.items()}
 built["baseRadius"] = R0
 total0 = sum(p.get("lod0", 0) for s in built["sections"] for p in s["parts"].values()) + sum(p.get("lod0", 0) for p in info["parts"].values())
 total1 = sum(p.get("lod1", 0) for s in built["sections"] for p in s["parts"].values()) + sum(p.get("lod1", 0) for p in info["parts"].values())
@@ -1482,6 +1619,10 @@ if PREVIEWS:
     render("fortress", (300, -360, 420), (0, 0, 345), lens=40, size=(1600, 1000))
     render("frost", (260, -300, 170), (0, 0, 150), lens=35, size=(1600, 1000))
     render("islet-top", (0, -40, 700), (0, -40, 0), lens=50, size=(1400, 1400))
+    # the best climbers' stone, square on and from the plaza
+    st, sf = marks["slab"], math.radians(marks["slabFacing"])
+    render("stele", (st[0] + math.cos(sf) * 17, st[1] + math.sin(sf) * 17, st[2] + 7.5), (st[0], st[1], st[2] + 7.2), lens=35, size=(1200, 1400))
+    render("stele-plaza", (st[0] + math.cos(sf + 0.5) * 34, st[1] + math.sin(sf + 0.5) * 34, st[2] + 6), (st[0] - 10, st[1], st[2] + 6), lens=28, size=(1600, 1000))
     # as the game sees it from the nearest shores: eye height, 320 m off, the game's field of view
     render("from-shore", (60, -330, 6), (0, 0, 120), lens=18, size=(1920, 1080))
     render("from-shore-side", (-300, 160, 6), (0, 0, 120), lens=18, size=(1920, 1080))
