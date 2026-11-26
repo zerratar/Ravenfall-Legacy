@@ -7,6 +7,8 @@ public class PlayerJoinDungeonEventHandler : GameEventHandler<PlayerId>
         var player = gameManager.Players.GetPlayerById(data.Id);
         if (!player) return;
         if (player.InRavebridge) return;
+        // a climber (or anyone else held where they are) stays: the dungeon knew nothing of the tower it took them from
+        if (player.HeldForEvents) return;
 
         if (gameManager.StreamRaid.IsWar)
             return;

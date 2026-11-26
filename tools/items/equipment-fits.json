@@ -1,0 +1,1353 @@
+{
+    "fits": [
+        {
+            "prefab": "Assets/Resources/Character/Weapons/DarkFortress/DF Shield 01.prefab",
+            "position": {
+                "x": -0.06199999898672104,
+                "y": 0.01899999938905239,
+                "z": 0.004000000189989805
+            },
+            "rotation": {
+                "x": 290.36083984375,
+                "y": 192.21900939941406,
+                "z": 354.3829650878906
+            },
+            "scale": {
+                "x": 0.7200000286102295,
+                "y": 0.7200000286102295,
+                "z": 0.7200000286102295
+            },
+            "saved": "2026-11-26 07:47"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/DarkFortress/DF Shield 02.prefab",
+            "position": {
+                "x": 0.04259999841451645,
+                "y": 0.018699999898672104,
+                "z": 0.05400000140070915
+            },
+            "rotation": {
+                "x": 298.73187255859375,
+                "y": 186.3408966064453,
+                "z": 347.6600341796875
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:47"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Abraxas Shield.prefab",
+            "position": {
+                "x": 0.11900000274181366,
+                "y": -0.03500000014901161,
+                "z": -0.004000000189989805
+            },
+            "rotation": {
+                "x": 294.9376220703125,
+                "y": 202.34524536132813,
+                "z": 345.2433776855469
+            },
+            "scale": {
+                "x": 0.12700000405311584,
+                "y": 0.12700000405311584,
+                "z": 0.12700000405311584
+            },
+            "saved": "2026-11-26 07:42"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Adamantite Shield.prefab",
+            "position": {
+                "x": 0.028999999165534973,
+                "y": -0.009999999776482582,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 288.5560607910156,
+                "y": 208.5078582763672,
+                "z": 330.384521484375
+            },
+            "scale": {
+                "x": 0.12700000405311584,
+                "y": 0.12700000405311584,
+                "z": 0.12700000405311584
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Ancient Shield.prefab",
+            "position": {
+                "x": -0.11100000143051147,
+                "y": 0.07699999958276749,
+                "z": -0.05400000140070915
+            },
+            "rotation": {
+                "x": 293.66888427734375,
+                "y": 209.64840698242188,
+                "z": 336.16278076171875
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:43"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Atlarus Shield.prefab",
+            "position": {
+                "x": -0.1420000046491623,
+                "y": 0.06700000166893005,
+                "z": -0.07599999755620956
+            },
+            "rotation": {
+                "x": 295.6264953613281,
+                "y": 210.7068328857422,
+                "z": 349.9029235839844
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:43"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Black Shield.prefab",
+            "position": {
+                "x": 0.028999999165534973,
+                "y": -0.009999999776482582,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 288.5560607910156,
+                "y": 208.5078582763672,
+                "z": 330.384521484375
+            },
+            "scale": {
+                "x": 0.12700000405311584,
+                "y": 0.12700000405311584,
+                "z": 0.12700000405311584
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Bronze Shield.prefab",
+            "position": {
+                "x": 0.04259999841451645,
+                "y": 0.018699999898672104,
+                "z": 0.05400000140070915
+            },
+            "rotation": {
+                "x": 298.73187255859375,
+                "y": 186.3408966064453,
+                "z": 347.6600341796875
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:47"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Dragon Shield.prefab",
+            "position": {
+                "x": 0.11900000274181366,
+                "y": -0.03500000014901161,
+                "z": -0.004000000189989805
+            },
+            "rotation": {
+                "x": 294.9376220703125,
+                "y": 202.34524536132813,
+                "z": 345.2433776855469
+            },
+            "scale": {
+                "x": 0.12700000405311584,
+                "y": 0.12700000405311584,
+                "z": 0.12700000405311584
+            },
+            "saved": "2026-11-26 07:42"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Ether Shield.prefab",
+            "position": {
+                "x": -0.11100000143051147,
+                "y": 0.07699999958276749,
+                "z": -0.05400000140070915
+            },
+            "rotation": {
+                "x": 293.66888427734375,
+                "y": 209.64840698242188,
+                "z": 336.16278076171875
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:43"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Iron Shield.prefab",
+            "position": {
+                "x": 0.04259999841451645,
+                "y": 0.018699999898672104,
+                "z": 0.05400000140070915
+            },
+            "rotation": {
+                "x": 298.73187255859375,
+                "y": 186.3408966064453,
+                "z": 347.6600341796875
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:47"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Lionsbane Shield.prefab",
+            "position": {
+                "x": 0.029999999329447746,
+                "y": 0.13099999725818634,
+                "z": -0.16200000047683716
+            },
+            "rotation": {
+                "x": 294.15960693359375,
+                "y": 189.93557739257813,
+                "z": 346.2578125
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Mithril Shield.prefab",
+            "position": {
+                "x": 0.028999999165534973,
+                "y": -0.009999999776482582,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 288.5560607910156,
+                "y": 208.5078582763672,
+                "z": 330.384521484375
+            },
+            "scale": {
+                "x": 0.12700000405311584,
+                "y": 0.12700000405311584,
+                "z": 0.12700000405311584
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Dark Shield.prefab",
+            "position": {
+                "x": 0.11900000274181366,
+                "y": -0.03500000014901161,
+                "z": -0.004000000189989805
+            },
+            "rotation": {
+                "x": 294.9376220703125,
+                "y": 202.34524536132813,
+                "z": 345.2433776855469
+            },
+            "scale": {
+                "x": 0.12700000405311584,
+                "y": 0.12700000405311584,
+                "z": 0.12700000405311584
+            },
+            "saved": "2026-11-26 07:42"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/SM_Wep_Shield_01.prefab",
+            "position": {
+                "x": -0.06199999898672104,
+                "y": 0.01899999938905239,
+                "z": 0.004000000189989805
+            },
+            "rotation": {
+                "x": 290.36083984375,
+                "y": 192.21900939941406,
+                "z": 354.3829650878906
+            },
+            "scale": {
+                "x": 0.7200000286102295,
+                "y": 0.7200000286102295,
+                "z": 0.7200000286102295
+            },
+            "saved": "2026-11-26 07:47"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/SM_Wep_Shield_02.prefab",
+            "position": {
+                "x": 0.04259999841451645,
+                "y": 0.018699999898672104,
+                "z": 0.05400000140070915
+            },
+            "rotation": {
+                "x": 298.73187255859375,
+                "y": 186.3408966064453,
+                "z": 347.6600341796875
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:47"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/SM_Wep_Shield_04.prefab",
+            "position": {
+                "x": 0.061000000685453415,
+                "y": 0.04699999839067459,
+                "z": -0.020999999716877937
+            },
+            "rotation": {
+                "x": 296.6988525390625,
+                "y": 207.09188842773438,
+                "z": 345.7505187988281
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:49"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/SM_Wep_Shield_07.prefab",
+            "position": {
+                "x": -0.008999999612569809,
+                "y": -0.03700000047683716,
+                "z": -0.15700000524520874
+            },
+            "rotation": {
+                "x": 303.7363586425781,
+                "y": 178.48065185546875,
+                "z": 8.394762992858887
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:49"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/SM_Wep_Shield_Ornate_01.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 297.92950439453125,
+                "y": 172.90968322753906,
+                "z": -0.00006835513340774924
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:49"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/SM_Wep_Shield_Skull_01.prefab",
+            "position": {
+                "x": 0.10599999874830246,
+                "y": -0.061000000685453415,
+                "z": 0.004999999888241291
+            },
+            "rotation": {
+                "x": 278.9898376464844,
+                "y": 194.64939880371094,
+                "z": 347.903076171875
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:41"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 01 Blue Gold.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 344.63201904296875,
+                "y": 0.000014859312614134979,
+                "z": 0.000011187030395376496
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 01 Blue Silver.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 344.63201904296875,
+                "y": 0.000014859312614134979,
+                "z": 0.000011187030395376496
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 01 Brown Gold.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 344.63201904296875,
+                "y": 0.000014859312614134979,
+                "z": 0.000011187030395376496
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 01 Brown Silver.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 344.63201904296875,
+                "y": 0.000014859312614134979,
+                "z": 0.000011187030395376496
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 01 Green Gold.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 344.63201904296875,
+                "y": 0.000014859312614134979,
+                "z": 0.000011187030395376496
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 01 Green Silver.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 344.63201904296875,
+                "y": 0.000014859312614134979,
+                "z": 0.000011187030395376496
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 01 Grey Gold.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 344.63201904296875,
+                "y": 0.000014859312614134979,
+                "z": 0.000011187030395376496
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 01 Grey Silver.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 344.63201904296875,
+                "y": 0.000014859312614134979,
+                "z": 0.000011187030395376496
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 01 Purple Gold.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 344.63201904296875,
+                "y": 0.000014859312614134979,
+                "z": 0.000011187030395376496
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 01 Purple Silver.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 344.63201904296875,
+                "y": 0.000014859312614134979,
+                "z": 0.000011187030395376496
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 01 Red Gold.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 344.63201904296875,
+                "y": 0.000014859312614134979,
+                "z": 0.000011187030395376496
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 01 Red Silver.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 344.63201904296875,
+                "y": 0.000014859312614134979,
+                "z": 0.000011187030395376496
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 01 White Gold.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 344.63201904296875,
+                "y": 0.000014859312614134979,
+                "z": 0.000011187030395376496
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 01 White Silver.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 344.63201904296875,
+                "y": 0.000014859312614134979,
+                "z": 0.000011187030395376496
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 02 Blue Gold.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 347.06182861328125,
+                "y": 0.000014175035175867379,
+                "z": 0.000011388773600629065
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 02 Blue Silver.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 347.06182861328125,
+                "y": 0.000014175035175867379,
+                "z": 0.000011388773600629065
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 02 Brown Gold.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 347.06182861328125,
+                "y": 0.000014175035175867379,
+                "z": 0.000011388773600629065
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 02 Brown Silver.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 347.06182861328125,
+                "y": 0.000014175035175867379,
+                "z": 0.000011388773600629065
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 02 Green Gold.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 347.06182861328125,
+                "y": 0.000014175035175867379,
+                "z": 0.000011388773600629065
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 02 Green Silver.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 347.06182861328125,
+                "y": 0.000014175035175867379,
+                "z": 0.000011388773600629065
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 02 Grey Gold.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 347.06182861328125,
+                "y": 0.000014175035175867379,
+                "z": 0.000011388773600629065
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 02 Grey Silver.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 347.06182861328125,
+                "y": 0.000014175035175867379,
+                "z": 0.000011388773600629065
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 02 Purple Gold.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 347.06182861328125,
+                "y": 0.000014175035175867379,
+                "z": 0.000011388773600629065
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 02 Purple Silver.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 347.06182861328125,
+                "y": 0.000014175035175867379,
+                "z": 0.000011388773600629065
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 02 Red Gold.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 347.06182861328125,
+                "y": 0.000014175035175867379,
+                "z": 0.000011388773600629065
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 02 Red Silver.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 347.06182861328125,
+                "y": 0.000014175035175867379,
+                "z": 0.000011388773600629065
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 02 White Gold.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 347.06182861328125,
+                "y": 0.000014175035175867379,
+                "z": 0.000011388773600629065
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 02 White Silver.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 347.06182861328125,
+                "y": 0.000014175035175867379,
+                "z": 0.000011388773600629065
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 03 Blue Gold.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 353.1649475097656,
+                "y": 0.000010790194210130721,
+                "z": 0.000005503058673639316
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:47"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 03 Blue Silver.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 353.1649475097656,
+                "y": 0.000010790194210130721,
+                "z": 0.000005503058673639316
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:47"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 03 Brown Gold.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 353.1649475097656,
+                "y": 0.000010790194210130721,
+                "z": 0.000005503058673639316
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:47"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 03 Brown Silver.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 353.1649475097656,
+                "y": 0.000010790194210130721,
+                "z": 0.000005503058673639316
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:47"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 03 Green Gold.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 353.1649475097656,
+                "y": 0.000010790194210130721,
+                "z": 0.000005503058673639316
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:47"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 03 Green Silver.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 353.1649475097656,
+                "y": 0.000010790194210130721,
+                "z": 0.000005503058673639316
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:47"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 03 Grey Gold.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 353.1649475097656,
+                "y": 0.000010790194210130721,
+                "z": 0.000005503058673639316
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:47"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 03 Grey Silver.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 353.1649475097656,
+                "y": 0.000010790194210130721,
+                "z": 0.000005503058673639316
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:47"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 03 Purple Gold.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 353.1649475097656,
+                "y": 0.000010790194210130721,
+                "z": 0.000005503058673639316
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:47"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 03 Purple Silver.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 353.1649475097656,
+                "y": 0.000010790194210130721,
+                "z": 0.000005503058673639316
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:47"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 03 Red Gold.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 353.1649475097656,
+                "y": 0.000010790194210130721,
+                "z": 0.000005503058673639316
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:47"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 03 Red Silver.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 353.1649475097656,
+                "y": 0.000010790194210130721,
+                "z": 0.000005503058673639316
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:47"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 03 White Gold.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 353.1649475097656,
+                "y": 0.000010790194210130721,
+                "z": 0.000005503058673639316
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:47"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Other/Shield 03 White Silver.prefab",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 353.1649475097656,
+                "y": 0.000010790194210130721,
+                "z": 0.000005503058673639316
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:47"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Phantom Shield.prefab",
+            "position": {
+                "x": 0.11900000274181366,
+                "y": -0.03500000014901161,
+                "z": -0.004000000189989805
+            },
+            "rotation": {
+                "x": 307.7586364746094,
+                "y": 180.30905151367188,
+                "z": 352.2948303222656
+            },
+            "scale": {
+                "x": 0.12700000405311584,
+                "y": 0.12700000405311584,
+                "z": 0.12700000405311584
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Rune Shield.prefab",
+            "position": {
+                "x": 0.028999999165534973,
+                "y": -0.009999999776482582,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 288.5560607910156,
+                "y": 208.5078582763672,
+                "z": 330.384521484375
+            },
+            "scale": {
+                "x": 0.12700000405311584,
+                "y": 0.12700000405311584,
+                "z": 0.12700000405311584
+            },
+            "saved": "2026-11-26 07:46"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/SM_Wep_Shield_01.prefab",
+            "position": {
+                "x": -0.06199999898672104,
+                "y": 0.01899999938905239,
+                "z": 0.004000000189989805
+            },
+            "rotation": {
+                "x": 290.36083984375,
+                "y": 192.21900939941406,
+                "z": 354.3829650878906
+            },
+            "scale": {
+                "x": 0.7200000286102295,
+                "y": 0.7200000286102295,
+                "z": 0.7200000286102295
+            },
+            "saved": "2026-11-26 07:47"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/SM_Wep_Shield_02 1.prefab",
+            "position": {
+                "x": 0.04259999841451645,
+                "y": 0.018699999898672104,
+                "z": 0.05400000140070915
+            },
+            "rotation": {
+                "x": 298.73187255859375,
+                "y": 186.3408966064453,
+                "z": 347.6600341796875
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:47"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/SM_Wep_Shield_02.prefab",
+            "position": {
+                "x": 0.04259999841451645,
+                "y": 0.018699999898672104,
+                "z": 0.05400000140070915
+            },
+            "rotation": {
+                "x": 298.73187255859375,
+                "y": 186.3408966064453,
+                "z": 347.6600341796875
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:48"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/SM_Wep_Shield_03 1.prefab",
+            "position": {
+                "x": 0.07100000232458115,
+                "y": -0.003000000026077032,
+                "z": -0.004000000189989805
+            },
+            "rotation": {
+                "x": 294.0770568847656,
+                "y": 178.6000213623047,
+                "z": 8.369210243225098
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:48"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/SM_Wep_Shield_03.prefab",
+            "position": {
+                "x": 0.07100000232458115,
+                "y": -0.003000000026077032,
+                "z": -0.004000000189989805
+            },
+            "rotation": {
+                "x": 294.0770568847656,
+                "y": 178.6000213623047,
+                "z": 8.369210243225098
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:48"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/SM_Wep_Shield_04.prefab",
+            "position": {
+                "x": 0.061000000685453415,
+                "y": 0.04699999839067459,
+                "z": -0.020999999716877937
+            },
+            "rotation": {
+                "x": 296.6988525390625,
+                "y": 207.09188842773438,
+                "z": 345.7505187988281
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:49"
+        },
+        {
+            "prefab": "Assets/Resources/Character/Weapons/Shields/Steel Shield.prefab",
+            "position": {
+                "x": 0.04259999841451645,
+                "y": 0.018699999898672104,
+                "z": 0.05400000140070915
+            },
+            "rotation": {
+                "x": 298.73187255859375,
+                "y": 186.3408966064453,
+                "z": 347.6600341796875
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "saved": "2026-11-26 07:48"
+        }
+    ]
+}

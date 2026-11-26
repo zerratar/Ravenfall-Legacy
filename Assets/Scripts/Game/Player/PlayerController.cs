@@ -185,6 +185,13 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     /// <summary>Away from the islands (a dungeon, later the tower): no sailing, travel, rest or raids until back.</summary>
     public bool IsAway => AwayHandler != null;
 
+    /// <summary>
+    ///     Held where they are, so a raid or dungeon must not pull them away (or charge them for auto join): in a dungeon or
+    ///     the tower, in Ravebridge, in a war, a duel or a running arena. The same rules as !raid join.
+    /// </summary>
+    public bool HeldForEvents => IsAway || InRavebridge || (streamRaidHandler && streamRaidHandler.InWar)
+        || (duelHandler && duelHandler.InDuel) || (arenaHandler && arenaHandler.InArena && GameManager.Instance && GameManager.Instance.Arena && GameManager.Instance.Arena.Started);
+
     /// <summary>The reply for something that cannot be done away from the islands: the dungeon's own words in a dungeon.</summary>
     public string AwayReply(string dungeonMessage) => Away == AwayPlace.Dungeon ? dungeonMessage : Localization.MSG_BUSY_IN_TOWER;
 

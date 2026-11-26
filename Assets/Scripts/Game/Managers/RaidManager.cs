@@ -246,7 +246,9 @@ public class RaidManager : MonoBehaviour, IEvent
         foreach (var player in gameManager.Players.GetAllPlayers())
         {
             // a regatta racer finishes the race first (the raid would put the boat away and knock them out)
-            if (player.IsBot || Regatta.InRace(player) ||
+            // nor anyone held where they are (the tower, a dungeon, Ravebridge, a war, a duel): they were charged and
+            // pulled out mid-climb
+            if (player.IsBot || Regatta.InRace(player) || player.HeldForEvents ||
                 CanJoin(player) != RaidJoinResult.CanJoin || Initiator == player
                 || player.raidHandler.AutoJoinCounter <= 0)
             {
