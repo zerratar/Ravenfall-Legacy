@@ -1473,9 +1473,10 @@
     -unity-font-style: normal;
     font-size: 34px;
     color: rgb(247, 240, 219);
-    -unity-text-outline-width: 1px;
-    -unity-text-outline-color: rgb(20, 12, 8);
-    text-shadow: 0 3px 10px rgba(0, 0, 0, 0.9);
+    /* a thick dark edge: on the frost vault's snow the cream lines with a 1px edge could not be read */
+    -unity-text-outline-width: 3px;
+    -unity-text-outline-color: rgb(12, 8, 6);
+    text-shadow: 0 3px 8px rgba(0, 0, 0, 1);
     margin: 0;
     margin-top: 6px;
     padding: 0;
