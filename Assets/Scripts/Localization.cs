@@ -2958,6 +2958,10 @@ public static class Localization
     public static string UI_TOWER_STANDING_RECOVERING = "{0} standing, {1} recovering";
     public static string UI_TOWER_STANDING_RECOVERING_NEXT = "{0} standing, {1} recovering, next back in {2}s";
     public static string UI_TOWER_RECOVERING_COUNT = "Recovering {0}";
+    public static string UI_TOWER_COUNT_CLIMBING = "{0} climbing";
+    public static string UI_TOWER_COUNT_TOWN = "{0} in town";
+    public static string UI_TOWER_COUNT_HERE = "{0} here";
+    public static string UI_TOWER_COUNT_ALL = "{0} / {1} in the tower";
     public static string UI_TOWER_KNOCKED_OUT = "Knocked out";
     public static string UI_TOWER_RECOVERING = "Recovering";
     public static string UI_TOWER_RECOVERING_LEFT = "Recovering {0}s";

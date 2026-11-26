@@ -134,6 +134,13 @@ namespace Shinobytes.UI
         }
 
         // the chat hint ("!tower boss"): not beside the streamer's button when there is no room for both and the line
+        // "5 climbing / 30 in the tower"; "6 climbing" when they are all there
+        private static string Count(string format, int count, int all)
+        {
+            var own = string.Format(CultureInfo.InvariantCulture, format, count);
+            return all > count ? string.Format(CultureInfo.InvariantCulture, Localization.UI_TOWER_COUNT_ALL, own, all) : own;
+        }
+
         private void ShowJoin(bool show)
         {
             joinWanted = show;
@@ -552,7 +559,7 @@ namespace Shinobytes.UI
                 // called on the climb's part is said here too, so the players here hear of it
                 var part = watched.Definition;
                 Set(floorLabel, part != null ? string.Format(Localization.UI_TOWER_FLOOR, part.Floor, part.Part, part.Name) : "");
-                Set(people, tower.CountOn(watched).ToString(CultureInfo.InvariantCulture));
+                Set(people, Count(Localization.UI_TOWER_COUNT_HERE, tower.CountOn(watched), onParts + inTown));
                 Show(bar, false);
                 Show(quests, false);
                 Show(liveDot, countdown);
@@ -583,7 +590,10 @@ namespace Shinobytes.UI
                 return;
             }
 
-            Set(people, (onParts + inTown).ToString(CultureInfo.InvariantCulture));
+            // the part's own count (or the town's), as the players list shows it, and the whole tower's after it when
+            // others are elsewhere: it said 30 while the list showed the 5 on the part (playtest 2026-11-26)
+            Set(people, resting ? Count(Localization.UI_TOWER_COUNT_TOWN, inTown, onParts + inTown)
+                : Count(Localization.UI_TOWER_COUNT_CLIMBING, onClimb, onParts + inTown));
 
             if (resting)
             {
