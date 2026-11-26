@@ -658,8 +658,10 @@ namespace Shinobytes.UI
                 }
             }
             for (var i = rows; i < questRows.Count; i++) Show(questRows[i].row, false);
-            // the rows while there is something left to do; all done, the bar and the boss line say it
-            Show(quests, rows > 0 && done < total);
+            // the rows while there is something left to do; all done, the bar and the boss line say it. With the camera
+            // out of the tower (the world side, a raid's or a dungeon's camera) the bar alone: the full list stood under
+            // the raid's or dungeon's panel over the middle of the picture, on the fight it watches
+            Show(quests, rows > 0 && done < total && tower.CameraInTower);
             Show(bar, total > 0);
             if (loss != null)
             {
