@@ -534,20 +534,19 @@ public class TowerHandler : IAwayHandler
         var range = player.GetAttackRange();
         var scale = enemyTarget.transform.lossyScale.x;
         range = Mathf.Max(range, enemyTarget.GetHitRange() * scale, enemyTarget == boss ? range + scale : range);
-        // around a boss everyone takes their own place on a ring at its edge, instead of all on one spot, and fights
-        // from there (or from wherever they stand once that place is reached)
-        var destination = enemyTarget.transform.position;
-        var distance = Vector3.Distance(player.Position, enemyTarget.transform.position);
+        // around whatever they fight everyone takes their own place on a ring at its edge, instead of all on one spot,
+        // and fights from there (or from wherever they stand once that place is reached). A group that arrives
+        // together picks the same nearest monster again and again: without the ring (it was the boss's only) six
+        // players stood on one spot the whole part through, and on stream looked like one
+        var target = enemyTarget.transform.position;
+        var destination = target;
+        var distance = Vector3.Distance(player.Position, target);
         var inReach = distance <= range;
-        if (enemyTarget == boss)
+        var ringed = RingPlace(enemyTarget, target, range, out var place);
+        if (ringed)
         {
-            var angle = (player.Id.GetHashCode() & 1023) / 1024f * Mathf.PI * 2f;
-            var place = destination + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * (range * 0.8f);
-            if (UnityEngine.AI.NavMesh.SamplePosition(place, out var hit, 3f, UnityEngine.AI.NavMesh.AllAreas))
-            {
-                destination = hit.position;
-                inReach = inReach && (Vector3.Distance(player.Position, destination) < 1.5f || distance < range * 0.5f);
-            }
+            destination = place;
+            inReach = inReach && (Vector3.Distance(player.Position, destination) < 1.5f || distance < range * 0.5f);
         }
 
         if (inReach)
@@ -561,7 +560,8 @@ public class TowerHandler : IAwayHandler
             return;
         }
 
-        if (!player.SetDestination(destination))
+        // no way to one's own place (a wall, a ledge): straight at it as before, and only then is it out of reach
+        if (!player.SetDestination(destination) && (!ringed || !player.SetDestination(target)))
         {
             player.Movement.DisableLocalAvoidance();
             if (enemyTarget == boss) return;
@@ -593,6 +593,31 @@ public class TowerHandler : IAwayHandler
             nextStroll = Time.time + 2f;
             if (!player.SetDestination(spot)) player.Movement.DisableLocalAvoidance();
         }
+    }
+
+    // this player's place on the ring round what they fight: found again only when the target changes or moves on
+    private EnemyController ringTarget;
+    private Vector3 ringFrom, ringPlace;
+    private float ringRange;
+    private bool ringFound;
+
+    private bool RingPlace(EnemyController enemy, Vector3 at, float range, out Vector3 place)
+    {
+        if (enemy != ringTarget || (at - ringFrom).sqrMagnitude > 1f || Mathf.Abs(range - ringRange) > 0.25f)
+        {
+            ringTarget = enemy;
+            ringFrom = at;
+            ringRange = range;
+            var angle = (player.Id.GetHashCode() & 1023) / 1024f * Mathf.PI * 2f;
+            var wanted = at + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * (range * 0.8f);
+            // walked out from the target along the navmesh: a wall or a shut gate on the way ends the place there, on
+            // the target's own side (a place sampled behind a wall sent players round through the next room)
+            ringFound = UnityEngine.AI.NavMesh.SamplePosition(at, out var from, 2f, UnityEngine.AI.NavMesh.AllAreas);
+            ringPlace = !ringFound ? at
+                : UnityEngine.AI.NavMesh.Raycast(from.position, wanted, out var hit, UnityEngine.AI.NavMesh.AllAreas) ? hit.position : wanted;
+        }
+        place = ringPlace;
+        return ringFound;
     }
 
     private bool IsAdd(EnemyController enemy)
