@@ -670,10 +670,43 @@ public sealed class TowerManager : MonoBehaviour
         if (handler.InTower ? handler.InBossFight || player.Stats.IsDead : !handler.CanEnter) return GoResult.Busy;
         if (area == null)
         {
-            if (!Room(step, out var evict)) return GoResult.Full;
-            area = evict != null ? Replace(evict, step) : Open(step);
+            if (Room(step, out var evict)) area = evict != null ? Replace(evict, step) : Open(step);
+            else
+            {
+                // from one cleared part to another: the part they leave does not count. Alone there (the last of a
+                // crowd) it becomes the new part where it stands when it has the same layout; else the new part opens
+                // one over the limit for a moment and the old one goes as soon as its last player has left
+                // (UpdateAreas). A crowd on a cleared part could not move on while three were open, even its last
+                // player (playtest 2026-11-26)
+                var from = LeavingCleared(player);
+                if (from == null) return GoResult.Full;
+                if (CountOn(from) == 1 && from.Pending.Count == 0 && from.Floor && from.ScenePath == ScenePath(LayoutFor(Tower.Get(step))))
+                {
+                    Retarget(from, step);
+                    return GoResult.Joined;
+                }
+                if (FreeSlot() < 0 || LiveAreas() > AreaLimit) return GoResult.Full;
+                area = Open(step);
+            }
         }
         return Send(player, area);
+    }
+
+    // the cleared part (not the climb's, nothing going on there) this player is on, or null
+    private Area LeavingCleared(PlayerController player)
+    {
+        var handler = player.towerHandler;
+        if (AreaLimit <= 1 || handler == null || !handler.InTower || !handler.Floor) return null;
+        var from = AreaOf(handler.Floor);
+        if (from == null || from.Loading || from.Unloading || from == fightArea || from == clearing) return null;
+        return State != null && from.Step == StreamFloor ? null : from;
+    }
+
+    private int LiveAreas()
+    {
+        var live = 0;
+        foreach (var a in areas) if (!a.Unloading && !a.Closing) live++;
+        return live;
     }
 
     // into an area, or onto its list while it loads
