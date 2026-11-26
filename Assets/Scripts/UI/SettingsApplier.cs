@@ -122,6 +122,7 @@ public static class SettingsApplier
         public const bool ScreenShake = true;
         public const bool Cutscenes = true;
         public const bool TowerLooks = true;
+        public const bool TreeFade = true;
         public const bool DownloadUpdatesEarly = true;
         public const bool InstallUpdatesAutomatically = false;
         public const bool QuestTracker = true;
@@ -1118,6 +1119,14 @@ public static class SettingsApplier
     public static bool TowerLooks => TowerLooksSetting && !(GameManager.Instance && GameManager.Instance.PotatoMode);
     public static bool TowerLooksSetting => PlayerSettings.Instance.TowerLooks.GetValueOrDefault(Defaults.TowerLooks);
     public static void SetTowerLooks(bool value) => PlayerSettings.Instance.TowerLooks = value;
+
+    /// <summary>
+    ///     Tree tops between the camera and the players in a tower place fade while they are in the way
+    ///     (TowerCanopyFade). Potato mode turns it off as well, without changing the setting.
+    /// </summary>
+    public static bool TreeFade => TreeFadeSetting && !(GameManager.Instance && GameManager.Instance.PotatoMode);
+    public static bool TreeFadeSetting => PlayerSettings.Instance.TreeFade.GetValueOrDefault(Defaults.TreeFade);
+    public static void SetTreeFade(bool value) => PlayerSettings.Instance.TreeFade = value;
 
     /// <summary>A new version is downloaded while the stream goes on, so updating needs only a quick restart.</summary>
     public static bool DownloadUpdatesEarly => PlayerSettings.Instance.DownloadUpdatesEarly.GetValueOrDefault(Defaults.DownloadUpdatesEarly);

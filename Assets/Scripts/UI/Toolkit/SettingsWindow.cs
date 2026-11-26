@@ -340,6 +340,8 @@ namespace Shinobytes.UI
                 SettingsApplier.Cutscenes, SettingsApplier.Defaults.Cutscenes, SettingsApplier.SetCutscenes);
             Switch(c, Localization.UI_SETTINGS_TOWER_LOOKS, Localization.UI_SETTINGS_TOWER_LOOKS_HINT,
                 SettingsApplier.TowerLooksSetting, SettingsApplier.Defaults.TowerLooks, SettingsApplier.SetTowerLooks);
+            Switch(c, Localization.UI_SETTINGS_TREE_FADE, Localization.UI_SETTINGS_TREE_FADE_HINT,
+                SettingsApplier.TreeFadeSetting, SettingsApplier.Defaults.TreeFade, SettingsApplier.SetTreeFade);
 
             Section(c, Localization.UI_SETTINGS_SECTION_FREE_CAMERA);
             SliderRow(c, Localization.UI_SETTINGS_FREE_SPEED, Localization.UI_SETTINGS_FREE_SPEED_HINT, 10f, 200f,

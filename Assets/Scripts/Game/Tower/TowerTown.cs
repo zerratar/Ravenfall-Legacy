@@ -73,6 +73,8 @@ public sealed class TowerTown : TowerPlace
     private void OnEnable()
     {
         Loaded = this;
+        // tree tops between the camera and the players fade
+        if (!GetComponent<TowerCanopyFade>()) gameObject.AddComponent<TowerCanopyFade>();
         workStands.Clear();
         workTaken.Clear();
         if (Work)

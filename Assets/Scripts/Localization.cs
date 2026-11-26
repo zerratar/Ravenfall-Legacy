@@ -3057,6 +3057,8 @@ public static class Localization
     public static string UI_SETTINGS_SCREEN_SHAKE_HINT = "Hero mode's hits and the Kraken's roar shake the camera. Always off in potato mode.";
     public static string UI_SETTINGS_TOWER_LOOKS = "Looks at the tower";
     public static string UI_SETTINGS_TOWER_LOOKS_HINT = "Now and then, while nothing else is going on and nobody is steering the camera, the camera takes a slow look at the tower on the horizon and comes back. About every quarter of an hour, for a few seconds; any key or mouse movement ends it.";
+    public static string UI_SETTINGS_TREE_FADE = "Trees fade in the tower";
+    public static string UI_SETTINGS_TREE_FADE_HINT = "In the tower's open places, a tree top between the camera and the players fades away while it is in the way, and comes back once the camera has turned past it. Its shadow stays. Always off in potato mode.";
     public static string UI_SETTINGS_CUTSCENES = "Cutscenes";
     public static string UI_SETTINGS_CUTSCENES_HINT = "A short scene the first time something big happens: Ravebridge rising from the sea, the tower opening, a new tower town. It takes the camera for a few seconds; Esc skips it.";
     public static string UI_SETTINGS_RACE_CAMERA_HINT = "The banana island regatta gets its own camera: the start, the leaders, close battles, the buoys and the finish. Any camera key takes the camera back.";

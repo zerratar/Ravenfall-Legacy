@@ -57,6 +57,8 @@ public sealed class TowerFloor : TowerPlace
     private void OnEnable()
     {
         if (!All.Contains(this)) All.Add(this);
+        // tree tops between the camera and the group fade (an open part's trees; an indoor one has none)
+        if (!GetComponent<TowerCanopyFade>()) gameObject.AddComponent<TowerCanopyFade>();
         enemies.Clear();
         foreach (var e in GetComponentsInChildren<EnemyController>(true))
             if (!Templates || !e.transform.IsChildOf(Templates)) enemies.Add(e);

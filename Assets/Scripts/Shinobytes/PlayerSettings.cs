@@ -36,6 +36,8 @@ public class PlayerSettings
     public bool? Cutscenes;
     /// <summary>Now and then, while nothing is going on, the camera takes a slow look at the tower in the main world (WorldTower).</summary>
     public bool? TowerLooks;
+    /// <summary>Tree tops in the way of the camera in a tower place fade (TowerCanopyFade).</summary>
+    public bool? TreeFade;
     public bool? DownloadUpdatesEarly;
     public bool? InstallUpdatesAutomatically;
     public bool? QuestTracker;
@@ -457,6 +459,7 @@ public class PlayerSettings
             Serialize(sw, "screenShake", obj.ScreenShake);
             Serialize(sw, "cutscenes", obj.Cutscenes);
             Serialize(sw, "towerLooks", obj.TowerLooks);
+            Serialize(sw, "treeFade", obj.TreeFade);
             Serialize(sw, "downloadUpdatesEarly", obj.DownloadUpdatesEarly);
             Serialize(sw, "installUpdatesAutomatically", obj.InstallUpdatesAutomatically);
             Serialize(sw, "questTracker", obj.QuestTracker);
