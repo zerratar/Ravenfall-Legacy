@@ -1940,8 +1940,8 @@ public static class Localization
     public static string MSG_TOWER_FLOOR_LOCKED = Meta("tower", "fail") + "{place} has not been reached yet. Your stream is on floor {floor}, part {part}.";
     public static string MSG_TOWER_PLACE_UNKNOWN = Meta("tower", "fail") + "There is no such place in the tower: {place}. Try !tower part 3, !tower floor 1 or !tower 1-3.";
     public static string MSG_TOWER_FLOOR_BUSY = Meta("tower", "fail") + "Not now: a boss attempt or a climb is under way.";
-    public static string MSG_TOWER_FLOOR_VOTE = Meta("tower", "info") + "You vote for floor {floor}, part {part}, {name}, too. {needed} more votes for it and the group goes now; otherwise in {seconds} seconds.";
-    public static string MSG_TOWER_FLOOR_VOTE_OPENED = Meta("tower", "info") + "{player} wants the climbing group to go to floor {floor}, part {part}, {name}. It happens in {seconds} seconds, or at once with {needed} more votes for it (the same command).";
+    public static string MSG_TOWER_FLOOR_VOTE = Meta("tower", "info") + "You vote for floor {floor}, part {part}, {name}, too. {needed} more of the same command and the group goes now; otherwise in {seconds} seconds.";
+    public static string MSG_TOWER_FLOOR_VOTE_OPENED = Meta("tower", "info") + "{player} wants the climbing group to go to floor {floor}, part {part}, {name}. It happens in {seconds} seconds, or at once with {needed} more of the same command.";
     public static string MSG_TOWER_ENTER_TO_VOTE = Meta("tower", "fail") + "Enter the tower first (!tower), then vote.";
     public static string MSG_TOWER_TO_TOWN = Meta("tower", "info") + "In {seconds} seconds everyone on the part goes down to {town} to rest and keep training. Floor {floor}, part {part}, {name}, waits for you: !tower climb when you are ready.";
     public static string MSG_TOWER_TO_NEW_TOWN = Meta("tower", "info") + "Floor {floor} is open: {floorname}! In {seconds} seconds everyone goes on to its town, {town}, to rest and keep training. Its first part, {name}, waits for you: !tower climb when you are ready.";
