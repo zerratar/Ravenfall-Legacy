@@ -1081,7 +1081,10 @@ namespace Shinobytes.UI
 
             // (not on the islet at the tower's foot: nothing is trained there, and the player keeps learning as on their
             // island, so the card shows the skill and its time to the next level as usual: WorldTower.Calm)
-            if (player.Chunk == null && !isSailing && !WorldTower.Calm(player))
+            // nor in a tower town or Ravebridge, which pay the island's rate too (PlayerProgression.TrainAway): it said
+            // "Not able to train here" while the player earned (playtest 2026-11-26)
+            var trainsAway = player.InRavebridge || (player.towerHandler != null && player.towerHandler.TrainsAway) || WorldTower.Calm(player);
+            if (player.Chunk == null && !isSailing && !trainsAway)
             {
                 var status = !player.Island ? Localization.UI_DETAILS_INELIGIBLE : Localization.UI_DETAILS_LEVEL_TOO_LOW;
                 ShowTraining("rf-training--warning", icon, title, percent, progress, status, "rf-training__status--warning",
