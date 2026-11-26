@@ -354,6 +354,9 @@ public class EnemyMovementController : MonoBehaviour
 
     private bool hasAttackClip;
 
+    /// <summary>Its controller has an attack clip to play (else its swings are lunges, EnemyLunge).</summary>
+    public bool HasAttackClip => hasAttackClip;
+
     private void SetupDeathAnimation()
     {
         if (!animator)
@@ -485,6 +488,31 @@ public class EnemyMovementController : MonoBehaviour
         if (!hasAttackClip && animator && animator.enabled && enemyController && enemyController.Target && !CombatEffects.CannotMove(enemyController))
             EnemyLunge.Play(this, animator, enemyController.Target, attackAnimationLength);
     }
+
+    /// <summary>
+    ///     The swing alone, with no blow behind it (a tower boss winding up its slam or spit): its attack clip, or for a
+    ///     model with none a jump on the spot (<paramref name="slam"/>) or a lunge at its target, coming down
+    ///     <see cref="SwingLead"/> seconds later.
+    /// </summary>
+    public void PlaySwing(bool slam)
+    {
+        if (!animator || !animator.enabled) return;
+        if (hasAttackClip)
+        {
+            if (attackAnimations != null && attackAnimations.Length > 0)
+            {
+                var swing = attackAnimations.Random();
+                if (HasParameter(swing)) animator.SetTrigger(swing);
+                if (dungeonBoss) animator.SetInteger("AttackType", UnityEngine.Random.Range(0, 4));
+            }
+            return;
+        }
+        if (slam) EnemyLunge.Jump(this, animator, SwingLead(true));
+        else if (enemyController && enemyController.Target) EnemyLunge.Play(this, animator, enemyController.Target, SwingLead(false));
+    }
+
+    /// <summary>Seconds from <see cref="PlaySwing"/> to its blow: the attack clip's, or the jump's (a slam) and the lunge's.</summary>
+    public float SwingLead(bool slam) => hasAttackClip ? Mathf.Clamp(attackAnimationLength, 0.25f, 0.9f) : slam ? 0.75f : Mathf.Clamp(attackAnimationLength, 0.25f, 0.6f);
 
     public void ResetVisibility()
     {

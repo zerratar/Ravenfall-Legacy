@@ -342,6 +342,10 @@ namespace Shinobytes.UI
                 SettingsApplier.TowerLooksSetting, SettingsApplier.Defaults.TowerLooks, SettingsApplier.SetTowerLooks);
             Switch(c, Localization.UI_SETTINGS_TREE_FADE, Localization.UI_SETTINGS_TREE_FADE_HINT,
                 SettingsApplier.TreeFadeSetting, SettingsApplier.Defaults.TreeFade, SettingsApplier.SetTreeFade);
+            Switch(c, Localization.UI_SETTINGS_BOSS_EFFECTS, Localization.UI_SETTINGS_BOSS_EFFECTS_HINT,
+                SettingsApplier.BossEffectsSetting, SettingsApplier.Defaults.BossEffects, SettingsApplier.SetBossEffects);
+            Switch(c, Localization.UI_SETTINGS_BOSS_SHAKE, Localization.UI_SETTINGS_BOSS_SHAKE_HINT,
+                SettingsApplier.BossShakeSetting, SettingsApplier.Defaults.BossShake, SettingsApplier.SetBossShake);
 
             Section(c, Localization.UI_SETTINGS_SECTION_FREE_CAMERA);
             SliderRow(c, Localization.UI_SETTINGS_FREE_SPEED, Localization.UI_SETTINGS_FREE_SPEED_HINT, 10f, 200f,

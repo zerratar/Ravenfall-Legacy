@@ -38,6 +38,10 @@ public class PlayerSettings
     public bool? TowerLooks;
     /// <summary>Tree tops in the way of the camera in a tower place fade (TowerCanopyFade).</summary>
     public bool? TreeFade;
+    /// <summary>A tower boss's slam throws up dust, its spit flies and splashes (TowerBossFx).</summary>
+    public bool? BossEffects;
+    /// <summary>A tower boss's slam shakes the camera a little (TowerBossFx).</summary>
+    public bool? BossShake;
     public bool? DownloadUpdatesEarly;
     public bool? InstallUpdatesAutomatically;
     public bool? QuestTracker;
@@ -460,6 +464,8 @@ public class PlayerSettings
             Serialize(sw, "cutscenes", obj.Cutscenes);
             Serialize(sw, "towerLooks", obj.TowerLooks);
             Serialize(sw, "treeFade", obj.TreeFade);
+            Serialize(sw, "bossEffects", obj.BossEffects);
+            Serialize(sw, "bossShake", obj.BossShake);
             Serialize(sw, "downloadUpdatesEarly", obj.DownloadUpdatesEarly);
             Serialize(sw, "installUpdatesAutomatically", obj.InstallUpdatesAutomatically);
             Serialize(sw, "questTracker", obj.QuestTracker);

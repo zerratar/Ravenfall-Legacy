@@ -19,6 +19,7 @@ public sealed class EnemyLunge : MonoBehaviour
     private float time;
     private float peak;
     private float length;
+    private bool jump;
 
     /// <summary>The bool the model holds during a lunge, or null: the first of these it has.</summary>
     private static readonly string[] Poses = { "isJumping_Up", "isRunning" };
@@ -32,7 +33,20 @@ public sealed class EnemyLunge : MonoBehaviour
             lunge = movement.gameObject.AddComponent<EnemyLunge>();
             lunge.Setup(animator);
         }
-        lunge.Begin(target, hitAt);
+        lunge.Begin(target.position, hitAt, false);
+    }
+
+    /// <summary>A jump on the spot that comes down at <paramref name="landsIn"/> seconds: a slam's windup.</summary>
+    public static void Jump(EnemyMovementController movement, Animator animator, float landsIn)
+    {
+        if (!movement) return;
+        var lunge = movement.GetComponent<EnemyLunge>();
+        if (!lunge)
+        {
+            lunge = movement.gameObject.AddComponent<EnemyLunge>();
+            lunge.Setup(animator);
+        }
+        lunge.Begin(movement.transform.position + movement.transform.forward, landsIn, true);
     }
 
     private void Setup(Animator a)
@@ -52,11 +66,11 @@ public sealed class EnemyLunge : MonoBehaviour
         }
     }
 
-    private void Begin(Transform target, float hitAt)
+    private void Begin(Vector3 target, float hitAt, bool jump)
     {
         // one at a time: a new swing starts from where the last one began
         if (enabled && time < length) transform.position = from;
-        var to = target.position - transform.position;
+        var to = target - transform.position;
         to.y = 0f;
         var distance = to.magnitude;
         if (distance < 0.05f) return;
@@ -64,11 +78,13 @@ public sealed class EnemyLunge : MonoBehaviour
         from = transform.position;
         direction = to / distance;
         transform.rotation = Quaternion.LookRotation(direction);
-        // a good part of the way to the target, never into it; a jumper leaves the ground, the rest lean in
-        reach = Mathf.Clamp((distance - 0.5f) * 0.45f, 0.15f, 0.9f * scale);
-        hop = pose == "isJumping_Up" ? 0.22f * scale : 0f;
-        peak = Mathf.Clamp(hitAt, 0.15f, 0.6f);
-        length = peak + 0.3f;
+        // a good part of the way to the target, never into it; a jumper leaves the ground, the rest lean in. A jump (a
+        // slam) goes up and comes down hard where it stood
+        reach = jump ? 0f : Mathf.Clamp((distance - 0.5f) * 0.45f, 0.15f, 0.9f * scale);
+        hop = jump ? (pose == "isJumping_Up" ? 0.5f : 0.25f) * scale : pose == "isJumping_Up" ? 0.22f * scale : 0f;
+        this.jump = jump;
+        peak = Mathf.Clamp(hitAt, 0.15f, jump ? 1.2f : 0.6f);
+        length = peak + (jump ? 0.15f : 0.3f);
         time = 0f;
         if (pose != null && animator && animator.enabled) animator.SetBool(pose, true);
         enabled = true;
@@ -83,6 +99,16 @@ public sealed class EnemyLunge : MonoBehaviour
             return;
         }
         time += Time.deltaTime;
+        if (jump)
+        {
+            // up and hanging a moment, then down fast onto the blow
+            var rise = time > peak ? 0f
+                : time <= peak * 0.55f ? Mathf.Sin(time / (peak * 0.55f) * Mathf.PI * 0.5f)
+                : 1f - Mathf.Pow(Mathf.Clamp01((time - peak * 0.55f) / (peak * 0.45f)), 2f);
+            transform.position = from + Vector3.up * (hop * rise);
+            if (time >= length) End(true);
+            return;
+        }
         // out fast to the blow, back a little slower
         var k = time <= peak ? Mathf.Sin(time / peak * Mathf.PI * 0.5f) : 1f - Mathf.SmoothStep(0f, 1f, (time - peak) / (length - peak));
         transform.position = from + direction * (reach * k) + Vector3.up * (hop * Mathf.Sin(Mathf.Clamp01(time / length) * Mathf.PI));

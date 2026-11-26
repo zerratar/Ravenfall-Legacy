@@ -3058,6 +3058,10 @@ public static class Localization
     public static string UI_SETTINGS_TOWER_LOOKS = "Looks at the tower";
     public static string UI_SETTINGS_TOWER_LOOKS_HINT = "Now and then, while nothing else is going on and nobody is steering the camera, the camera takes a slow look at the tower on the horizon and comes back. About every quarter of an hour, for a few seconds; any key or mouse movement ends it.";
     public static string UI_SETTINGS_TREE_FADE = "Trees fade in the tower";
+    public static string UI_SETTINGS_BOSS_EFFECTS = "Boss attack effects";
+    public static string UI_SETTINGS_BOSS_EFFECTS_HINT = "A tower boss's slam throws up a wave of dust, and its spit flies from its mouth and splashes where it lands. Off: only the warning circles on the ground. Always off in potato mode.";
+    public static string UI_SETTINGS_BOSS_SHAKE = "Boss slams shake the camera";
+    public static string UI_SETTINGS_BOSS_SHAKE_HINT = "The camera shakes a little when a tower boss slams the ground near it. Always off in potato mode.";
     public static string UI_SETTINGS_TREE_FADE_HINT = "In the tower's open places, a tree top between the camera and the players fades away while it is in the way, and comes back once the camera has turned past it. Its shadow stays. Always off in potato mode.";
     public static string UI_SETTINGS_CUTSCENES = "Cutscenes";
     public static string UI_SETTINGS_CUTSCENES_HINT = "A short scene the first time something big happens: Ravebridge rising from the sea, the tower opening, a new tower town. It takes the camera for a few seconds; Esc skips it.";

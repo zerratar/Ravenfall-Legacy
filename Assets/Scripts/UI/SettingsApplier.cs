@@ -123,6 +123,8 @@ public static class SettingsApplier
         public const bool Cutscenes = true;
         public const bool TowerLooks = true;
         public const bool TreeFade = true;
+        public const bool BossEffects = true;
+        public const bool BossShake = true;
         public const bool DownloadUpdatesEarly = true;
         public const bool InstallUpdatesAutomatically = false;
         public const bool QuestTracker = true;
@@ -1127,6 +1129,16 @@ public static class SettingsApplier
     public static bool TreeFade => TreeFadeSetting && !(GameManager.Instance && GameManager.Instance.PotatoMode);
     public static bool TreeFadeSetting => PlayerSettings.Instance.TreeFade.GetValueOrDefault(Defaults.TreeFade);
     public static void SetTreeFade(bool value) => PlayerSettings.Instance.TreeFade = value;
+
+    /// <summary>A tower boss's slam throws up dust and its spit flies and splashes (TowerBossFx); never in potato mode.</summary>
+    public static bool BossEffects => BossEffectsSetting && !(GameManager.Instance && GameManager.Instance.PotatoMode);
+    public static bool BossEffectsSetting => PlayerSettings.Instance.BossEffects.GetValueOrDefault(Defaults.BossEffects);
+    public static void SetBossEffects(bool value) => PlayerSettings.Instance.BossEffects = value;
+
+    /// <summary>A tower boss's slam shakes the camera a little (TowerBossFx); never in potato mode.</summary>
+    public static bool BossShake => BossShakeSetting && !(GameManager.Instance && GameManager.Instance.PotatoMode);
+    public static bool BossShakeSetting => PlayerSettings.Instance.BossShake.GetValueOrDefault(Defaults.BossShake);
+    public static void SetBossShake(bool value) => PlayerSettings.Instance.BossShake = value;
 
     /// <summary>A new version is downloaded while the stream goes on, so updating needs only a quick restart.</summary>
     public static bool DownloadUpdatesEarly => PlayerSettings.Instance.DownloadUpdatesEarly.GetValueOrDefault(Defaults.DownloadUpdatesEarly);

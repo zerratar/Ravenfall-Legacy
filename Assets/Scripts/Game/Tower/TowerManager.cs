@@ -64,6 +64,9 @@ public sealed class TowerManager : MonoBehaviour
     public const float SpitWarning = 1.4f;
     public const float SpitRadius = 2.6f;
 
+    /// <summary>How long a spit's glob flies (it lands as the hit comes), and how far a slam pushes the players it hits.</summary>
+    public const float SpitFlight = 0.8f, SlamKnockback = 1.1f;
+
     /// <summary>Seconds after a won fight before the players climb to a floor of another layout.</summary>
     public const float ClimbDelay = 12f;
 
@@ -140,8 +143,13 @@ public sealed class TowerManager : MonoBehaviour
     private float retryAt;
     private float nextSlam;
     private float slamAt = -1f;
-    private GameObject slamRing;
-    private GameObject spitRing;
+    // the warnings on the ground (TowerBossFx.Telegraph), when each began, and whether the boss has swung and spat yet
+    private GameObject slamRing, spitRing;
+    private Material slamMark, spitMark;
+    private float slamFrom, spitFrom;
+    private bool slamSwung, spitSwung, spitThrown;
+    private Vector3 slamCentre;
+    private EnemyMovementController fightMovement;
     private float nextSpit;
     private float spitAt = -1f;
     private Vector3 spitSpot;
@@ -1975,8 +1983,8 @@ public sealed class TowerManager : MonoBehaviour
         addsCalled = 0;
         enraged = false;
         // a humanoid guardian stands ready for the whole fight, never back in its plain idle between swings
-        var bossMovement = boss.GetComponent<EnemyMovementController>();
-        if (bossMovement) bossMovement.CombatStance = true;
+        fightMovement = boss.GetComponent<EnemyMovementController>();
+        if (fightMovement) fightMovement.CombatStance = true;
         foreach (var p in participants) p.towerHandler.BossFightStarted(boss);
         Announce(Localization.MSG_TOWER_BOSS_START, def.Boss.Name, participants.Count, def.Boss.Line ?? "");
 
@@ -2022,29 +2030,79 @@ public sealed class TowerManager : MonoBehaviour
 
         UpdateKit(boss, def);
 
-        // the slam: a ring on the ground first, then everyone inside it is hit
+        // the slam: a ring on the ground first that fills to its edge while the boss stands and winds up (its attack, or
+        // a jump), then the blow: dust to the ring's edge, the ground shakes, everyone inside is hit and pushed back.
+        // Not while a spit is on its way (one move at a time reads better)
         var radius = SlamRadius(boss);
-        if (slamAt < 0f && Time.time >= nextSlam)
+        if (slamAt < 0f && spitAt < 0f && Time.time >= nextSlam)
         {
             slamAt = Time.time + SlamWarning;
-            ShowRing(ref slamRing, "Tower Slam Warning", boss.transform.position, radius, new Color(1f, 0.25f, 0.1f, 1f), 0.5f);
+            slamFrom = Time.time;
+            slamSwung = false;
+            slamCentre = boss.transform.position;
+            ClearMark(ref slamRing, ref slamMark);
+            slamRing = TowerBossFx.Telegraph(slamCentre, radius, TowerBossFx.SlamColor, out slamMark);
+            // it stands for the windup; its own swings wait
+            boss.StunnedUntil = Mathf.Max(boss.StunnedUntil, slamAt + 0.1f);
+            if (fightMovement) fightMovement.Stop();
         }
-        else if (slamAt >= 0f && Time.time >= slamAt)
+        else if (slamAt >= 0f)
         {
-            slamAt = -1f;
-            HideRing();
-            nextSlam = Time.time + SlamInterval(boss);
-            var share = (float)def.Boss.SlamShare;
-            foreach (var p in participants.ToList())
+            TowerBossFx.Fill(slamMark, (Time.time - slamFrom) / SlamWarning);
+            if (!slamSwung && fightMovement && Time.time >= slamAt - fightMovement.SwingLead(true))
             {
-                if (!p || p.isDestroyed || p.Stats.IsDead || !p.towerHandler.InTower || fallen.Contains(p)) continue;
-                var d = p.Position - boss.transform.position;
-                d.y = 0f;
-                if (d.magnitude > radius) continue;
-                var damage = Mathf.Max(1, (int)(GameMath.CalculateMeleeDamage(boss, p) * share));
-                p.TakeDamage(boss, damage);
+                slamSwung = true;
+                fightMovement.PlaySwing(true);
+            }
+            if (Time.time >= slamAt)
+            {
+                slamAt = -1f;
+                TowerBossFx.Land(slamRing, slamMark);
+                slamRing = null;
+                slamMark = null;
+                TowerBossFx.SlamImpact(slamCentre, radius, TowerBossFx.DustColor(Tower.FloorInfo(def.Floor)?.Biome));
+                nextSlam = Time.time + SlamInterval(boss);
+                // a breath before a spit follows
+                nextSpit = Mathf.Max(nextSpit, Time.time + 1.5f);
+                var share = (float)def.Boss.SlamShare;
+                foreach (var p in participants.ToList())
+                {
+                    if (!p || p.isDestroyed || p.Stats.IsDead || !p.towerHandler.InTower || fallen.Contains(p)) continue;
+                    var d = p.Position - slamCentre;
+                    d.y = 0f;
+                    if (d.magnitude > radius) continue;
+                    var damage = Mathf.Max(1, (int)(GameMath.CalculateMeleeDamage(boss, p) * share));
+                    p.TakeDamage(boss, damage);
+                    if (!p.Stats.IsDead) TowerBossFx.Knock(p, slamCentre, SlamKnockback);
+                }
             }
         }
+    }
+
+    private static void ClearMark(ref GameObject mark, ref Material material)
+    {
+        TowerBossFx.Remove(mark, material);
+        mark = null;
+        material = null;
+    }
+
+    // where a spit leaves the boss: high on its front, by its size
+    private static Vector3 Mouth(EnemyController boss, Vector3 toward)
+    {
+        var t = boss.transform;
+        var bounds = new Bounds(t.position, Vector3.zero);
+        var any = false;
+        foreach (var r in boss.GetComponentsInChildren<Renderer>())
+        {
+            if (!r.enabled || r is ParticleSystemRenderer || r is LineRenderer) continue;
+            if (!any) { bounds = r.bounds; any = true; }
+            else bounds.Encapsulate(r.bounds);
+        }
+        var flat = toward - t.position;
+        flat.y = 0f;
+        flat = flat.sqrMagnitude > 0.01f ? flat.normalized : t.forward;
+        var height = Mathf.Max(1f, bounds.max.y - t.position.y);
+        return t.position + Vector3.up * (height * 0.75f) + flat * Mathf.Min(bounds.extents.x, bounds.extents.z) * 0.6f;
     }
 
     private static float SlamRadius(EnemyController boss) => 4f + 1.5f * boss.transform.localScale.x;
@@ -2159,7 +2217,7 @@ public sealed class TowerManager : MonoBehaviour
         }
 
         if (kit.SpitEvery <= 0) return;
-        if (spitAt < 0f && Time.time >= nextSpit)
+        if (spitAt < 0f && slamAt < 0f && Time.time >= nextSpit)
         {
             var target = SpitTarget(boss);
             if (!target)
@@ -2167,14 +2225,46 @@ public sealed class TowerManager : MonoBehaviour
                 nextSpit = Time.time + 2f;
                 return;
             }
+            // the spot is marked in the spit's colour, and the boss turns to it and spits a glob that lands as the hit comes
             spitSpot = target.Position;
             spitAt = Time.time + SpitWarning;
-            ShowRing(ref spitRing, "Tower Spit Warning", spitSpot, SpitRadius, new Color(0.55f, 1f, 0.2f, 1f), 0.3f);
+            spitFrom = Time.time;
+            spitSwung = false;
+            spitThrown = false;
+            ClearMark(ref spitRing, ref spitMark);
+            spitRing = TowerBossFx.Telegraph(spitSpot, SpitRadius, TowerBossFx.ElementColor(SpitElement(boss)), out spitMark);
+            boss.StunnedUntil = Mathf.Max(boss.StunnedUntil, spitAt - SpitFlight + 0.2f);
+            if (fightMovement) fightMovement.Stop();
         }
-        else if (spitAt >= 0f && Time.time >= spitAt)
+        else if (spitAt >= 0f && Time.time < spitAt)
+        {
+            TowerBossFx.Fill(spitMark, (Time.time - spitFrom) / SpitWarning);
+            var launch = spitAt - SpitFlight;
+            if (!spitSwung && Time.time >= launch - (fightMovement ? fightMovement.SwingLead(false) : 0f))
+            {
+                spitSwung = true;
+                var face = spitSpot - boss.transform.position;
+                face.y = 0f;
+                if (face.sqrMagnitude > 0.01f) boss.transform.rotation = Quaternion.LookRotation(face.normalized);
+                // a humanoid throws it; a beast with no attack clip just turns and spits
+                if (fightMovement && fightMovement.HasAttackClip) fightMovement.PlaySwing(false);
+            }
+            if (!spitThrown && Time.time >= launch)
+            {
+                spitThrown = true;
+                TowerBossFx.Spit(Mouth(boss, spitSpot), spitSpot, Mathf.Max(0.2f, spitAt - Time.time), TowerBossFx.ElementColor(SpitElement(boss)),
+                    Mathf.Clamp(0.3f * boss.transform.localScale.x, 0.5f, 1.4f));
+            }
+        }
+        else if (spitAt >= 0f)
         {
             spitAt = -1f;
-            if (spitRing) spitRing.SetActive(false);
+            TowerBossFx.Land(spitRing, spitMark, 0.2f);
+            nextSlam = Mathf.Max(nextSlam, Time.time + 1.5f);
+            spitRing = null;
+            spitMark = null;
+            // with the effects off no glob flew to splash: the splash's sound alone
+            if (!SettingsApplier.BossEffects) TowerBossFx.Splash(spitSpot, SpitRadius, Color.white);
             nextSpit = Time.time + SpitInterval(boss);
             foreach (var p in participants.ToList())
             {
@@ -2187,6 +2277,10 @@ public sealed class TowerManager : MonoBehaviour
             }
         }
     }
+
+    // the element a boss spits: its own, or its band's when it has none (the runtime numbers carry it)
+    private static RavenNest.Combat.Element SpitElement(EnemyController boss) =>
+        boss.CombatDefinition != null ? boss.CombatDefinition.Element : RavenNest.Combat.Element.Physical;
 
     /// <summary>Someone the boss is not fighting: the one standing farthest from it (healers stand back).</summary>
     private PlayerController SpitTarget(EnemyController boss)
@@ -2503,10 +2597,11 @@ public sealed class TowerManager : MonoBehaviour
     /// <param name="bossDelay">Seconds before the boss goes: its fall is shown after a win.</param>
     private void EndAttempt(float bossDelay = 0f)
     {
-        HideRing();
+        ClearMark(ref slamRing, ref slamMark);
+        ClearMark(ref spitRing, ref spitMark);
         slamAt = -1f;
         spitAt = -1f;
-        if (spitRing) spitRing.SetActive(false);
+        fightMovement = null;
         StopBossIntro();
         var floor = fightArea != null ? fightArea.Floor : null;
         if (floor) floor.DespawnBoss(bossDelay);
@@ -2518,36 +2613,6 @@ public sealed class TowerManager : MonoBehaviour
         attempt = TowerPhase.Closed;
         fightArea = null;
         CombatMeter.Tower.End();
-    }
-
-    private static void ShowRing(ref GameObject ring, string name, Vector3 centre, float radius, Color color, float width)
-    {
-        if (!ring)
-        {
-            ring = new GameObject(name);
-            var line = ring.AddComponent<LineRenderer>();
-            line.loop = true;
-            line.useWorldSpace = false;
-            line.positionCount = 48;
-            line.widthMultiplier = width;
-            var shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Sprites/Default");
-            line.material = new Material(shader);
-            line.material.color = color;
-            line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        }
-        var lr = ring.GetComponent<LineRenderer>();
-        for (var i = 0; i < lr.positionCount; ++i)
-        {
-            var a = i / (float)lr.positionCount * Mathf.PI * 2f;
-            lr.SetPosition(i, new Vector3(Mathf.Cos(a) * radius, 0.4f, Mathf.Sin(a) * radius));
-        }
-        ring.transform.position = centre;
-        ring.SetActive(true);
-    }
-
-    private void HideRing()
-    {
-        if (slamRing) slamRing.SetActive(false);
     }
 
     /// <summary>The tower's last announcements as chat would read them, newest last (the tests read them; chat may be muted).</summary>
