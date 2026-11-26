@@ -55,6 +55,9 @@ public class TeleportHandler : MonoBehaviour
             return;
 
         player.playerAnimations.ResetAnimationStates();
+        // nothing of the old place plays out here: the run starts the moment they move (TeleportHandler is the one
+        // way most teleports go: the tower and its towns, raids, dungeons, islands; the ferry's arrival has its own)
+        if (!player.Stats.IsDead) player.playerAnimations.SnapToIdle();
 
         var hasParent = !!player.transform.parent;
         if (player.ferryHandler.OnFerry)

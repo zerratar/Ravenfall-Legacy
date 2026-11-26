@@ -380,6 +380,8 @@ public class FerryHandler : MonoBehaviour
             player.taskTarget = null;
 
             player.playerAnimations.ResetAnimationStates();
+            // put ashore: the walk off the dock starts at once, with nothing of the ferry left to play out
+            player.playerAnimations.SnapToIdle();
 
             this.ClearDestination();
 

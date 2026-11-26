@@ -222,6 +222,22 @@ public class PlayerAnimationController : MonoBehaviour
         SetBool("Sleeping", false);
     }
 
+    private static readonly int IdleState = Animator.StringToHash("Base Layer.Idle");
+
+    /// <summary>
+    ///     Straight into the plain Idle, with nothing left to play out (a teleport: the player is somewhere else now).
+    ///     A player taken out of a fight went through the weapon idle's exit time and the sheath clip first and slid
+    ///     about 2 s in them once walking (arriving in a tower town after a clear, playtest 2026-11-26). Not while
+    ///     dead.
+    /// </summary>
+    public void SnapToIdle()
+    {
+        if (!EnsureAnimator() || animationState == PlayerAnimationState.Dead) return;
+        if (activeAnimator.GetBool("Dead")) return;
+        if (activeAnimator.isActiveAndEnabled) activeAnimator.Play(IdleState, 0, 0f);
+        if (defaultAnimator && defaultAnimator != activeAnimator && defaultAnimator.isActiveAndEnabled) defaultAnimator.Play(IdleState, 0, 0f);
+    }
+
     public void StartMoving(bool force = false)
     {
         if ((!force && IsMoving) || !EnsureAnimator()) return;
