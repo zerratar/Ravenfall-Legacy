@@ -13,11 +13,16 @@ using UnityEngine.SceneManagement;
 ///     floor of rooms (tools/tower/tower-rooms-route.cs) are left out of the bake as they were when the builder baked:
 ///     their wall pieces and seals carve the navmesh at run time instead. The asset is in a gitignored folder: commit it
 ///     with git add -f.
+///     Objects added by hand block walking: before a bake each one with a mesh and no collider gets a box collider round
+///     its mesh (<see cref="FitColliders"/>), as the builders give their own wall pieces one. The navmesh is baked from
+///     colliders, and the owner's walls in the crypt and the frost vault (raw pack prefabs, no collider) were walked
+///     through (playtest 2026-11-26).
 /// </summary>
 public static class TowerPlaceNav
 {
     public static bool Rebake(Scene scene, StringBuilder log)
     {
+        FitColliders(scene, log);
         var surfaces = new List<NavMeshSurface>();
         foreach (var root in scene.GetRootGameObjects()) surfaces.AddRange(root.GetComponentsInChildren<NavMeshSurface>(true));
         if (surfaces.Count == 0)
@@ -72,5 +77,68 @@ public static class TowerPlaceNav
             foreach (var o in obstacles) if (o) o.enabled = true;
         }
         return ok;
+    }
+
+    /// <summary>
+    ///     Every object added by hand (the change list's added ones, saved or not) that has a mesh and no collider gets
+    ///     a BoxCollider round its meshes, on the added object itself. One under a gate also gets a carving
+    ///     NavMeshObstacle of that box, as the route's own wall pieces beside a doorway have: the bake leaves everything
+    ///     under a gate out, so a collider alone would not keep anyone off it (the owner's walls round the doorways). A
+    ///     copy of a built piece keeps the copy's own collider. The change list does not keep components, so this runs
+    ///     before every bake, also after a rebuild puts the edits back (<see cref="TowerPlaceEdits.AfterBuild"/>).
+    ///     Returns how many objects it changed.
+    /// </summary>
+    public static int FitColliders(Scene scene, StringBuilder log)
+    {
+        var added = 0;
+        var file = TowerPlaceEdits.Compute(scene, false);
+        foreach (var a in file.added)
+        {
+            var go = TowerPlaceEdits.FindObject(scene, a.id);
+            if (!go || go.GetComponent<TowerGate>()) continue;
+            var underGate = go.GetComponentInParent<TowerGate>(true);
+            var hasCollider = go.GetComponentsInChildren<Collider>(true).Length > 0;
+            var hasObstacle = go.GetComponentsInChildren<NavMeshObstacle>(true).Length > 0;
+            if (hasCollider && (!underGate || hasObstacle)) continue;
+            var root = go.transform;
+            var min = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+            var max = new Vector3(float.MinValue, float.MinValue, float.MinValue);
+            var any = false;
+            foreach (var filter in go.GetComponentsInChildren<MeshFilter>(true))
+            {
+                if (!filter.sharedMesh || !filter.GetComponent<MeshRenderer>()) continue;
+                var b = filter.sharedMesh.bounds;
+                for (var i = 0; i < 8; i++)
+                {
+                    var corner = b.center + Vector3.Scale(b.extents, new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1));
+                    var local = root.InverseTransformPoint(filter.transform.TransformPoint(corner));
+                    min = Vector3.Min(min, local);
+                    max = Vector3.Max(max, local);
+                    any = true;
+                }
+            }
+            if (!any) continue;
+            var center = (min + max) * 0.5f;
+            var size = Vector3.Max(max - min, Vector3.one * 0.1f);
+            if (!hasCollider)
+            {
+                var box = go.AddComponent<BoxCollider>();
+                box.center = center;
+                box.size = size;
+            }
+            if (underGate && !hasObstacle)
+            {
+                var obstacle = go.AddComponent<NavMeshObstacle>();
+                obstacle.shape = NavMeshObstacleShape.Box;
+                obstacle.center = center;
+                obstacle.size = Vector3.Max(size, new Vector3(0.5f, 0.5f, 0.5f));
+                obstacle.carving = true;
+                obstacle.carveOnlyStationary = true;
+            }
+            EditorSceneManager.MarkSceneDirty(scene);
+            added++;
+        }
+        if (added > 0) log?.AppendLine("a box collider (and under a gate a carving obstacle) on " + added + " object(s) added by hand, so they block walking");
+        return added;
     }
 }

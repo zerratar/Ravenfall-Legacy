@@ -34,6 +34,12 @@ to select its object.
 - Rebake walking bakes the place's walking ground (its navmesh) again, the same way its build script does, then runs
   Check. Do this after moving anything people walk on or around (rocks, walls, trees with colliders). The navmesh file
   (Assets/Scenes/Tower/<Scene>/NavMesh.asset) is in a gitignored folder: commit it with `git add -f`.
+- Anything you add blocks walking: before every bake, each object you added that has a mesh and no collider gets a box
+  collider round its mesh (a wall straight from the pack has none, and players walked through such walls); one placed
+  under a gate also gets a carving obstacle, as the bake leaves everything under a gate out. A copy of
+  a built piece keeps its own collider. It happens again after a rebuild puts your edits back, so you never have to
+  add colliders by hand. To add something people may walk through (a banner, a rug), give it a collider of its own
+  and untick it, or tell Claude.
 - Play this part starts the game and sends one test bot straight to that part or town, and the camera follows it. The
   local server must be running and the game must sign in by itself (the saved device token); without that, the place
   is loaded without a bot and the window says why. With Quiet chat ticked (the default), nothing from the test reaches

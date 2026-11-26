@@ -31,7 +31,7 @@ public sealed partial class TowerPlacesWindow
         checkButton = Btn("Check", RunCheck, "The tower audit: can everything be walked to from where players arrive?");
         checkButton.style.unityFontStyleAndWeight = FontStyle.Bold;
         row.Add(checkButton);
-        rebakeButton = Btn("Rebake walking", Rebake, "Bake the place's navmesh again (as its builder does), then Check");
+        rebakeButton = Btn("Rebake walking", Rebake, "Bake the place's navmesh again (as its builder does), then Check. Objects you added block walking: any with a mesh and no collider gets a box collider round it first");
         row.Add(rebakeButton);
         playButton = Btn("Play this part", Play, "Enter play mode and send a test bot straight here");
         row.Add(playButton);
