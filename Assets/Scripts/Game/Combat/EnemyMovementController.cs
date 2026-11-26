@@ -343,7 +343,16 @@ public class EnemyMovementController : MonoBehaviour
             .Where(x => x.name.IndexOf("Attack", StringComparison.OrdinalIgnoreCase) >= 0 && x.name != "AttackType")
             .Select(x => x.name)
             .ToArray();
+
+        // a controller with no attack clip at all (the home bunny has no attack trigger, the cow's goes nowhere): its
+        // swings are lunges (EnemyLunge)
+        var controller = animator.runtimeAnimatorController;
+        if (controller)
+            foreach (var clip in controller.animationClips)
+                if (clip && clip.name.IndexOf("attack", StringComparison.OrdinalIgnoreCase) >= 0) { hasAttackClip = true; break; }
     }
+
+    private bool hasAttackClip;
 
     private void SetupDeathAnimation()
     {
@@ -471,6 +480,10 @@ public class EnemyMovementController : MonoBehaviour
         }
         attackAnimationTrigger = onAnimationTrigger;
         attackAnimationTimer = attackAnimationLength;
+
+        // nothing to play: a lunge at the target instead, its blow at the far end
+        if (!hasAttackClip && animator && animator.enabled && enemyController && enemyController.Target && !CombatEffects.CannotMove(enemyController))
+            EnemyLunge.Play(this, animator, enemyController.Target, attackAnimationLength);
     }
 
     public void ResetVisibility()
