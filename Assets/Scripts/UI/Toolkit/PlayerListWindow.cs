@@ -796,10 +796,15 @@ namespace Shinobytes.UI
 
             if (skill == null)
             {
-                if (state.LastSkill != Skill.None || state.LastProgress < 0f)
+                // on a part of the tower a player with nothing to train still fights its monsters: not idle (and
+                // nothing under a "Knocked out" or "Recovering" mark, which says it already)
+                var tower = player.towerHandler;
+                var idle = tower == null || !tower.InTower || tower.InTown ? Localization.UI_PLAYERLIST_IDLE
+                    : player.Stats.IsDead || tower.SatOut ? string.Empty : Localization.UI_PLAYERLIST_FIGHTING;
+                if (state.LastSkill != Skill.None || state.LastProgress < 0f || state.SkillLabel.text != idle)
                 {
                     state.LastSkill = Skill.None;
-                    state.SkillLabel.text = Localization.UI_PLAYERLIST_IDLE;
+                    state.SkillLabel.text = idle;
                     state.Percent.text = string.Empty;
                     state.Rate.text = string.Empty;
                     state.LastPercentTenths = -1;

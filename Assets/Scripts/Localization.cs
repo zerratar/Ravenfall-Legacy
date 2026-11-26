@@ -2752,6 +2752,7 @@ public static class Localization
     public static string UI_PLAYERLIST_NO_MATCH = "No player matches \"{0}\"";
     public static string UI_PLAYERLIST_LEVEL = "LV";
     public static string UI_PLAYERLIST_IDLE = "Idle";
+    public static string UI_PLAYERLIST_FIGHTING = "Fighting";
     public static string UI_DETAILS_LEVEL_CAPTION = "LV";
     public static string UI_DETAILS_EQUIPMENT = "EQUIPMENT";
     public static string UI_DETAILS_STATS = "STATS";
