@@ -2427,13 +2427,45 @@ public sealed class TowerManager : MonoBehaviour
                 else target = Open(step);
             }
         }
+        List<PlayerController> down = null;
         foreach (var p in group)
         {
             if (!p || p.isDestroyed || p.towerHandler == null || p.towerHandler.Floor == target.Floor) continue;
-            if (p.towerHandler.InBossFight || p.Stats.IsDead) continue;
+            if (p.towerHandler.InBossFight) continue;
+            // knocked out as the group goes: they follow when they are back up. Left behind, they stayed alone on the
+            // old part, which kept a second part open in potato mode (playtest 2026-11-26)
+            if (p.Stats.IsDead) { (down ??= new List<PlayerController>()).Add(p); continue; }
             Send(p, target);
         }
+        if (down != null) StartCoroutine(FollowWhenUp(down, target));
         return true;
+    }
+
+    // Group players who were knocked out when the group moved go after it once they are up (for half a minute; one
+    // who meanwhile went elsewhere, to the town or a part of their own, or left the tower, stays where they are).
+    private IEnumerator FollowWhenUp(List<PlayerController> players, Area target)
+    {
+        var floorWas = new Dictionary<PlayerController, TowerFloor>();
+        foreach (var p in players) floorWas[p] = p.towerHandler.Floor;
+        var until = Time.time + 30f;
+        while (players.Count > 0 && Time.time < until)
+        {
+            yield return new WaitForSeconds(1f);
+            if (!areas.Contains(target) || target.Unloading || target.Closing) yield break;
+            for (var i = players.Count - 1; i >= 0; i--)
+            {
+                var p = players[i];
+                if (!p || p.isDestroyed || p.towerHandler == null || !p.towerHandler.InTower || p.towerHandler.InTown || OnOwnWay(p)
+                    || p.towerHandler.Floor != floorWas[p])
+                {
+                    players.RemoveAt(i);
+                    continue;
+                }
+                if (p.Stats.IsDead) continue;
+                if (!target.Pending.Contains(p)) Send(p, target);
+                players.RemoveAt(i);
+            }
+        }
     }
 
     // nobody but these players is on the area or on the way to it
