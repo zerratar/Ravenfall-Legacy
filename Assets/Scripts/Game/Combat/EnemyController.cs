@@ -189,6 +189,30 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
         InCombat = true;
     }
 
+    /// <summary>
+    ///     A tower part's monster saw <paramref name="player"/> close by (TowerFloor.Notice): it walks over and attacks,
+    ///     as dungeon monsters do. A little threat on the player, so a tank's blows pull it as usual.
+    /// </summary>
+    public void Notice(PlayerController player)
+    {
+        if (!player || Stats == null || Stats.IsDead || InCombat) return;
+        if (AttackerNames.Add(player.Name)) Attackers.Add(player);
+        threat.Add(player, 1);
+        SetTarget(player);
+        InCombat = true;
+        noDamageDropTargetTimer = 0f;
+        if (wanderSpeed >= 0f) EndWander();
+    }
+
+    /// <summary>Its player is out of its fight (a boss attempt, recovering, gone): back to its spot, as after a fight.</summary>
+    public void LoseInterest()
+    {
+        if (Stats == null || Stats.IsDead || !InCombat) return;
+        noDamageDropTargetTimer = -1f;
+        ClearTarget();
+        SetDestination(spawnPoint);
+    }
+
     /// <summary>Someone healed a player this enemy fights: half the heal, shared, as threat (CombatRules.Enabled only).</summary>
     public void AddHealingThreat(PlayerController healer, double amount)
     {
@@ -799,6 +823,9 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
         if (!movement) return;
         if (CombatEffects.CannotAct(this)) return; // stunned or frozen
         threat.Tick(GameTime.deltaTime); // taunts run out
+        // a tower monster that went for a player (TowerFloor.Notice) keeps at it while it can reach them, though they
+        // fight another one: it only gives up after a while out of reach (a player who walked off)
+        if (TowerMonster) noDamageDropTargetTimer = 0f;
         attackTimer -= GameTime.deltaTime * CombatEffects.AttackSpeedFactor(this); // chilled: slower
         if (attackTimer <= 0f)
         {

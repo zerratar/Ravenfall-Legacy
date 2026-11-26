@@ -220,6 +220,84 @@ public sealed class TowerFloor : TowerPlace
         return false;
     }
 
+    // ---- Monsters notice players (the owner's watch of the bot playtest, 2026-11-26: they felt dead) ---------------
+
+    /// <summary>How far a part's monster sees a player and goes for them: shorter on the first floor, so it stays relaxed.</summary>
+    public static float NoticeMeters(int floor) => floor <= 1 ? 5.5f : 9f;
+
+    /// <summary>
+    ///     The most monsters on one player before another goes for them (the ones the player fights count): one on the
+    ///     first floor, three higher up.
+    /// </summary>
+    public static int NoticeCap(int floor) => floor <= 1 ? 1 : 3;
+
+    private const float NoticeSeconds = 0.5f;
+    private float nextNotice;
+    private readonly List<PlayerController> noticeable = new List<PlayerController>();
+    private readonly Dictionary<PlayerController, int> onPlayer = new Dictionary<PlayerController, int>();
+
+    private void Update()
+    {
+        if (Definition == null || Time.time < nextNotice) return;
+        nextNotice = Time.time + NoticeSeconds;
+        Notice();
+    }
+
+    /// <summary>
+    ///     An idle monster that sees a player within <see cref="NoticeMeters"/> walks over and attacks, as dungeon
+    ///     monsters do, unless that player already has <see cref="NoticeCap"/> monsters on them. Not players in a boss
+    ///     attempt or recovering from one, and not while everyone gathers for the boss; a monster on a player who went
+    ///     into one of those goes back to its spot. Never through a wall or a shut gate, nor from a room not reached.
+    /// </summary>
+    private void Notice()
+    {
+        var game = GameManager.Instance;
+        if (!game || game.Players == null) return;
+        noticeable.Clear();
+        onPlayer.Clear();
+        var rallying = Route && Route.Valid && Route.Rallying;
+        foreach (var p in game.Players.GetAllPlayers())
+        {
+            if (!p || p.isDestroyed || p.Removed || p.towerHandler == null || !p.towerHandler.InTower || p.towerHandler.Floor != this) continue;
+            if (p.Stats.IsDead || rallying || p.towerHandler.InBossFight || p.towerHandler.SatOut) continue;
+            noticeable.Add(p);
+            onPlayer[p] = 0;
+        }
+
+        for (var i = 0; i < enemies.Count; ++i)
+        {
+            var e = enemies[i];
+            if (!e || !e.TowerMonster || e.Stats == null || e.Stats.IsDead || !e.InCombat || !e.TargetPlayer) continue;
+            if (onPlayer.TryGetValue(e.TargetPlayer, out var n)) onPlayer[e.TargetPlayer] = n + 1;
+            else e.LoseInterest();
+        }
+        if (noticeable.Count == 0) return;
+
+        var reach = NoticeMeters(Definition.Floor);
+        var cap = NoticeCap(Definition.Floor);
+        for (var i = 0; i < enemies.Count; ++i)
+        {
+            var e = enemies[i];
+            if (!e || !e.TowerMonster || e.InCombat || e.IsUnreachable || e.Stats == null || e.Stats.IsDead || !e.gameObject.activeInHierarchy) continue;
+            if (Route && zones.TryGetValue(e, out var zone) && !Route.Open(zone)) continue;
+            var at = e.transform.position;
+            PlayerController seen = null;
+            var nearest = reach * reach;
+            for (var k = 0; k < noticeable.Count; ++k)
+            {
+                var p = noticeable[k];
+                if (onPlayer[p] >= cap) continue;
+                var to = p.Position - at;
+                if (Mathf.Abs(to.y) > 3f || to.sqrMagnitude >= nearest) continue;
+                nearest = to.sqrMagnitude;
+                seen = p;
+            }
+            if (!seen || UnityEngine.AI.NavMesh.Raycast(at, seen.Position, out _, UnityEngine.AI.NavMesh.AllAreas)) continue;
+            e.Notice(seen);
+            onPlayer[seen]++;
+        }
+    }
+
     /// <summary>The pressure the boss of the attempt was made for (its helpers come by it too).</summary>
     public double BossPressure { get; private set; } = 1;
 
