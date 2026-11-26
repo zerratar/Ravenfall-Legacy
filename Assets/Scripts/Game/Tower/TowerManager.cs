@@ -1795,6 +1795,10 @@ public sealed class TowerManager : MonoBehaviour
         var inTown = TownPlayers();
         if (inTown.Count == 0) return ClimbResult.NobodyInTown;
         if (Phase == TowerPhase.Fight) return ClimbResult.FightUnderWay;
+        // a vote that came in as the climb was passed: everyone in the town is already on the way up while the part
+        // loads. It opened a second climb vote, announced in chat, that was left open on the part (playtest 2026-11-26)
+        var push = PushArea;
+        if (push != null && inTown.TrueForAll(p => push.Pending.Contains(p))) return ClimbResult.Climbing;
         if (State == null) { if (!stateRequested) RefreshState(); return ClimbResult.NotReady; }
         if (!canForce)
         {
