@@ -625,6 +625,19 @@ namespace Shinobytes.UI
                 return;
             }
 
+            // the part just won, while its players wait to go down to the town (and the world tower's look after a floor
+            // boss): said as won. It showed the next part's objectives at 0 under the cleared part's name
+            if (here != null && (stream == null || here.Number != stream.Number) && !countdown)
+            {
+                Show(quests, false);
+                Show(bar, true);
+                SetFill(1f);
+                Set(barText, here.IsFloorBoss ? string.Format(Localization.UI_TOWER_FLOOR_CLEARED, here.Floor) : string.Format(Localization.UI_TOWER_PART_CLEARED, here.Part));
+                Set(phase, tower.AllCleared || stream == null ? Localization.UI_TOWER_ALL_CLEARED : string.Format(Localization.UI_TOWER_NEXT_FLOOR, stream.Floor, stream.Part, stream.Name));
+                ShowJoin(false);
+                return;
+            }
+
             // the part's objectives: one row each (kills, gathering, hidden things), then the guardian that waits behind
             // them; the bar is how far they are together, each counting the same whatever its numbers
             var done = 0;
