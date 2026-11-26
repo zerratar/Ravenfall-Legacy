@@ -249,6 +249,12 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
     /// <summary>A hero mode wave enemy (WaveRun): it never loses interest in its target.</summary>
     [NonSerialized] public bool Hunting;
 
+    /// <summary>
+    ///     One of a tower part's monsters (TowerFloor, not a guardian or its helpers): it has no island, yet it ambles
+    ///     about its spot when idle as island enemies do (the owner, 2026-11-26: they stood still until hit).
+    /// </summary>
+    [NonSerialized] public bool TowerMonster;
+
     private string _name;
 
     public string Name => _name ?? (_name = name);
@@ -597,7 +603,7 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
 
         if (StunnedUntil > Time.time) return;
 
-        if ((!InCombat || !Target) && !IsDungeonEnemy)
+        if ((!InCombat || !Target) && (!IsDungeonEnemy || TowerMonster))
         {
             Wander();
             return;
@@ -709,7 +715,8 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
     /// <summary>
     /// An idle enemy ambles about its spawn now and then, at a walk, as in RuneScape, rather than standing still. One a
     /// player has picked stops where it is and waits to be reached (AddAttacker), so training goes on as before. None
-    /// sets off where nobody would see it: far from the camera, with graphics off or in potato mode.
+    /// sets off where nobody would see it: far from the camera, with graphics off or in potato mode. Island enemies and
+    /// a tower part's monsters (<see cref="TowerMonster"/>); never dungeon enemies or bosses.
     /// </summary>
     private void Wander()
     {

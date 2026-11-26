@@ -147,6 +147,7 @@ public sealed class TowerFloor : TowerPlace
             var enemy = Make(template, spot.position, spot.rotation, kind.Scale > 0 ? kind.Scale : 1f);
             enemy.ApplyRuntimeDefinition(definition, kind.Name, RespawnSeconds);
             enemy.Respawning = Rescale;
+            enemy.TowerMonster = true;
             enemies.Add(enemy);
             kinds[enemy] = kind;
         }
@@ -182,6 +183,7 @@ public sealed class TowerFloor : TowerPlace
                 enemy.ApplyRuntimeDefinition(definition, kind.Name, RespawnSeconds);
                 enemy.Respawning = Rescale;
                 enemy.AutomaticRespawn = z >= Route.Hold;
+                enemy.TowerMonster = true;
                 enemies.Add(enemy);
                 kinds[enemy] = kind;
                 zones[enemy] = z;
