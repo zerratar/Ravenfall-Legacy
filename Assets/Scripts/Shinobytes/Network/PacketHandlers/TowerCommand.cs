@@ -383,11 +383,9 @@ public class TowerCommand : ChatBotCommandHandler<string>
             else if (!tower.StartBossNow()) client.SendReply(gm, Localization.MSG_TOWER_BOSS_UNDER_WAY);
             return;
         }
-        if (now && !canForce)
-        {
-            client.SendReply(gm, Localization.MSG_TOWER_BOSS_NOW_DENIED, ((int)Tower.BossCountdownSeconds).ToString(CultureInfo.InvariantCulture));
-            return;
-        }
+        // a viewer's !tower boss now with no countdown yet: their voice for the fight, as !tower boss (it was refused,
+        // and what they asked for was lost); only the countdown itself is the streamer's to cut short
+        if (now && !canForce) now = false;
         switch (tower.CallBoss(player, canForce, out var needed))
         {
             case TowerManager.BossCallResult.Started:
