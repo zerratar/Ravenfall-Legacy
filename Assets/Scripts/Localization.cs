@@ -1710,6 +1710,11 @@ public static class Localization
     public static string MSG_FARM_SUGGEST = Meta("info", "farming") + "Could not find a farmable type matching the query '{query}', did you mean: {suggestion}?";
 
     public static string MSG_MINE_LEVEL_REQUIREMENT = Meta("info", "mining") + "You need to be level {level} to mine {oreName}.";
+    public static string MSG_FARM_TARGET = Meta("info", "farming") + "You're farming {itemName} now.";
+    public static string MSG_GATHER_TARGET = Meta("info", "gathering") + "You're gathering {itemName} now.";
+    public static string MSG_MINE_TARGET = Meta("info", "mining") + "You're mining {itemName} now.";
+    public static string MSG_CHOP_TARGET = Meta("info", "woodcutting") + "You're chopping {itemName} now.";
+    public static string MSG_FISH_TARGET = Meta("info", "fishing") + "You're fishing for {itemName} now.";
     public static string MSG_FARM_LEVEL_REQUIREMENT = Meta("info", "farming") + "You need to be level {level} to farm {farmableName}.";
     public static string MSG_CHOP_LEVEL_REQUIREMENT = Meta("info", "woodcutting") + "You need to be level {level} to chop {woodName}.";
     public static string MSG_FISH_LEVEL_REQUIREMENT = Meta("info", "fishing") + "You need to be level {level} to fish {fishName}.";
@@ -1788,6 +1793,10 @@ public static class Localization
     public static string MSG_EQUIP_OUTFIT_NO_GEAR = Meta("info", "equipment", "equip", "fail") + "You have no {lineName} gear you can wear. Nothing was changed.";
     public static string MSG_CAPE_HIDDEN = Meta("info", "equipment", "cape") + "Your cape is hidden. !toggle cape shows it again.";
     public static string MSG_CAPE_HIDDEN_BACK_PIECE = Meta("info", "equipment", "cape") + "Your cape is hidden, and your armor's own cloak or pack shows instead. !toggle cape brings the cape back.";
+    public static string MSG_HELMET_HIDDEN = Meta("info", "equipment", "helmet") + "Your head piece is hidden. !toggle helmet shows it again.";
+    public static string MSG_HELMET_SHOWN = Meta("info", "equipment", "helmet") + "Your head piece shows again.";
+    public static string MSG_HELMET_NONE_HIDDEN = Meta("info", "equipment", "helmet") + "You wear nothing on your head to hide. A head piece you put on will stay hidden until you use !toggle helmet again.";
+    public static string MSG_HELMET_NONE_SHOWN = Meta("info", "equipment", "helmet") + "You wear nothing on your head to show. A head piece you put on will show.";
     public static string MSG_CAPE_SHOWN = Meta("info", "equipment", "cape") + "Your cape shows again.";
     public static string MSG_CAPE_NONE_HIDDEN = Meta("info", "equipment", "cape") + "You have no cape to hide. If you get one it will stay hidden until you use !toggle cape again.";
     public static string MSG_CAPE_NONE_SHOWN = Meta("info", "equipment", "cape") + "You have no cape to show. If you get one it will show.";

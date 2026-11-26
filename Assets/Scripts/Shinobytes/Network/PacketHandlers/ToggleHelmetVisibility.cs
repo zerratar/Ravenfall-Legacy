@@ -18,6 +18,15 @@
 
         Game.RavenNest.Players.ToggleHelmetAsync(targetPlayer.Id);
 
-        targetPlayer.Appearance.ToggleHelmVisibility();
+        var appearance = targetPlayer.Appearance;
+        appearance.ToggleHelmVisibility();
+
+        // said back, as for !toggle cape: it gave no answer at all (playtest 2026-11-26)
+        if (!appearance.HasHelmet)
+        {
+            client.SendReply(gm, appearance.HelmetVisible ? Localization.MSG_HELMET_NONE_SHOWN : Localization.MSG_HELMET_NONE_HIDDEN);
+            return;
+        }
+        client.SendReply(gm, appearance.HelmetVisible ? Localization.MSG_HELMET_SHOWN : Localization.MSG_HELMET_HIDDEN);
     }
 }

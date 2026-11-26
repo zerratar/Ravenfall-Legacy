@@ -1607,6 +1607,9 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
         return new Color(UnityEngine.Random.value, UnityEngine.Random.value, UnityEngine.Random.value);
     }
 
+    /// <summary>Something is worn on the head: a helmet, hat or hood item, or the appearance's own helmet.</summary>
+    public bool HasHelmet => equippedHelmet || Helmet >= 0;
+
     public void ToggleHelmVisibility()
     {
         HelmetVisible = !HelmetVisible;

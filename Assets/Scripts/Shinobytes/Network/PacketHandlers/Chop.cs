@@ -50,5 +50,8 @@ public class Chop : ChatBotCommandHandler<string>
         }
 
         player.SetTask(taskType, result.Item.Name);
+        // said back, as a failed one is: the command gave no answer at all when it worked (playtest 2026-11-26)
+        if (player.GetTask() == taskType && string.Equals(player.GetTaskArgument(), result.Item.Name, System.StringComparison.OrdinalIgnoreCase))
+            client.SendReply(gm, Localization.MSG_CHOP_TARGET, result.Item.Name);
     }
 }
