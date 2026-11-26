@@ -1212,3 +1212,24 @@ the part's level: won after 3.9 minutes (the simulator: 66 wins of 100, about 4 
 once at the worst moment with two left standing, the meter's damage on him his health to the point (164,090). A sane
 fight that could have been lost; it is the first fight played on floor 3. One fight, so it says the kind and not the
 odds. Not played: veterans (the bots have no trees or gems), two players, the other five changed guardians.
+
+## 14. Gates and breaks: the owner's decisions (2026-11-26)
+
+Decided by the owner, for v0.9.8 (not v0.9.7, see below):
+
+- **Gates are joined from the world.** Nobody has to be in the tower to join a gate or a break; a gate opens on an
+  island like a dungeon does today. Dungeon scrolls still open one.
+- **Climbers are never auto joined** into a raid, dungeon, gate or break. They choose by hand: `!raid join` takes a
+  climber out of the tower at once, `!dungeon join` when the dungeon starts (built in v0.9.7, game 9fc4135f). So some
+  players climb while others fetch the tower's key items from gates.
+- **Breaks: all of section 5 and the havoc ideas are approved.** A gate left too long breaks; by default an uncleared
+  break grows stronger, spreads to the next island, its monsters go for players gathering or training there, and the
+  village loses its bonus while it is open. As a streamer opt-in, a break also damages village buildings (their bonus
+  is gone until repaired with resources). Never lost exp, items or training time.
+- **A setting turns breaks off** (gates then just close), as Ravebridge uprisings have.
+
+Why v0.9.8: about the size of the tower's steps 1 and 2 together (floor-themed gates from the room kits, ranks, five
+goal kinds, red gates, rewards and key items on the server, the GateItem objective in tower parts, portals on the
+islands, breaks with spreading and village damage, settings and texts). v0.9.7 reaches only three floors, so gates
+would have three looks; floor 4 (Dark Fortress) comes with v0.9.8. And key items change the tower's pace, which the
+v0.9.7 playtest has not measured yet.
