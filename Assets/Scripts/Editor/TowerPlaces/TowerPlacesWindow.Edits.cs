@@ -126,7 +126,8 @@ public sealed partial class TowerPlacesWindow
         {
             case "deleted": return "Deleted: " + name;
             case "added":
-                return "Added: " + name + (string.IsNullOrEmpty(e.prefab) ? string.IsNullOrEmpty(e.copyOf) ? " (from scratch: comes back empty)" : " (a copy)" : " (" + System.IO.Path.GetFileNameWithoutExtension(e.prefab) + ")");
+                var prefab = System.IO.Path.GetFileNameWithoutExtension(e.prefab ?? "");
+                return "Added: " + name + (string.IsNullOrEmpty(e.prefab) ? string.IsNullOrEmpty(e.copyOf) ? " (from scratch: comes back empty)" : " (a copy)" : TowerPlaceEdits.BaseName(name) == prefab ? " (prefab)" : " (prefab " + prefab + ")");
             case "unapplied": return "Not put back (" + e.what + "): " + name + (string.IsNullOrEmpty(e.note) ? "" : ", " + e.note);
         }
         var parts = new List<string>();
