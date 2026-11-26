@@ -49,6 +49,10 @@ public static class WorldTowerCamera
     // and how far at the most: further than the orbit camera goes for one player (30 m), for a party spread over a field
     private const float ClumpRadius = 22f, NearestZoom = 16f, FarthestZoom = 46f;
 
+    // a tight group is never watched from nearer than the streamer's own zoom outside (kept up to this): at 16 m six
+    // players in a heap filled the picture, the name tags stood huge and a part's pillars hid the fight
+    private const float OwnZoomUpTo = 30f;
+
     private static PlayerController lastInTower;
     private static PlayerController lastOutside;
     private static IslandController lastIsland;
@@ -100,6 +104,9 @@ public static class WorldTowerCamera
     }
 
     private static bool In(PlayerController player) => player && !player.isDestroyed && player.towerHandler != null && player.towerHandler.InTower;
+
+    // up and in the fight: not knocked out, not recovering by the arrival
+    private static bool Standing(PlayerController player) => player && !player.Stats.IsDead && !player.towerHandler.SatOut;
 
     private static bool Outside(PlayerController player) => player && !player.isDestroyed && !In(player);
 
@@ -442,6 +449,14 @@ public static class WorldTowerCamera
             if (inTown ? !floor : floor == where) group.Add(p);
         }
         if (fight != null && where == climbFloor) boss = tower.FightBoss;
+        // a boss fight is the fight: those knocked out and recovering by the arrival are left out of the picture while
+        // anyone stands (with four of six recovering, the camera went to them and the guardian was off screen)
+        if (boss)
+        {
+            var standing = 0;
+            foreach (var p in group) if (Standing(p)) standing++;
+            if (standing > 0) group.RemoveAll(p => !Standing(p));
+        }
         return group.Count > 0;
     }
 
@@ -528,7 +543,8 @@ public static class WorldTowerCamera
         if (Mathf.Abs(orbit.Distance - setZoom) > 0.01f) handZoomUntil = now + 25f;
         if (now >= handZoomUntil)
         {
-            var wanted = Mathf.Clamp(radius * 1.25f + 12f, NearestZoom, FarthestZoom);
+            var nearest = Mathf.Clamp(savedZoom, NearestZoom, OwnZoomUpTo);
+            var wanted = Mathf.Clamp(radius * 1.25f + 12f, nearest, FarthestZoom);
             orbit.Distance = Mathf.MoveTowards(orbit.Distance, wanted, 6f * Time.unscaledDeltaTime);
         }
         setZoom = orbit.Distance;
