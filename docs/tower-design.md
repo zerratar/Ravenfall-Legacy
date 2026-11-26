@@ -841,6 +841,23 @@ the button was used. Potato mode changes nothing here: the group camera is the s
 - the last player leaving: the camera back on the player it had watched outside, the panel gone
   (`last-player-left`).
 
+**Follow-ups from the playtest of 2026-11-26** (captures `docs/mockups/tower/playtest-2026-11-26/20-` and up):
+
+- *Tree tops fade* (`TowerCanopyFade`, on every tower place): a tree whose top stands between the camera and the
+  players it watches fades out in about a third of a second and back in a little slower once the camera has turned past
+  it (it stays out 1.2 seconds after it was last in the way, so a turning camera does not make it blink); its shadow
+  stays on the ground. Synty's vegetation trees (Mossgate, the courtyard, the grove's meadow trees) dither away through
+  the shader's own LOD dithering map, set per tree with a property block, with a shadow-only copy casting the shadow
+  meanwhile; the grove's mangroves (URP Lit) draw as a see-through copy of their materials. The pines of the Glacier
+  and Rimeholt (the Lit shader graph, whose alpha comes from its texture alone) do not fade. Ten checks a second, a ray
+  test per tree; setting "Trees fade in the tower" (Settings > Camera), off in potato mode. Unity's LOD cross-fade was
+  tried first: forcing a level or moving its threshold snaps with the GPU resident drawer on, it never animated.
+- *The tower panel keeps off a raid's or a dungeon's camera*: while the raid's or the dungeon's own camera is on the
+  panel is not drawn at all, and the idle Stream quest pill neither (a running quest's bar stays); both come back
+  when the camera does (`GameCamera.RaidOrDungeonCamera`).
+- *The players list in a tower town* is the town's players, by the same rules as a part (the "All" switch shows
+  everyone).
+
 **Not seen**: the key pressed on a keyboard (the toggle was called, as the key and both buttons call it); a game
 started with players restored into the tower (it is the same step as the climb starting: the count of players in
 the tower going from none to some); the regatta, the arena, a raid and Ravebridge ending on the tower side (they
