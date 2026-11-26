@@ -48,6 +48,22 @@ public sealed class IslandNpc : MonoBehaviour
     /// readable, and closer it shrinks (to a third, a camera right by the character played by hand).</summary>
     private const float BubbleDistance = 14f;
     private float bubbleScale = 1f;
+
+    /// <summary>
+    /// The least size of a line's letters on screen, in pixels of a 1080 high picture (more on a taller one): readable on
+    /// stream from wherever the camera is (playtest 2026-11-26: over a spread-out tower town, the tower camera 46 m up,
+    /// the lines were a few pixels high). Up close the size above wins, so a line never looms over the character.
+    /// </summary>
+    private const float MinLinePixels = 20f;
+    /// <summary>Two people this close never speak at once: from the tower camera's height their lines lay over each other.</summary>
+    private const float QuietNear = 30f;
+    private const float BubbleFontSize = 1.6f;
+    /// <summary>A world text's letters stand this many metres high per point of its font size (TextMeshPro's 3D text).</summary>
+    private const float MetresPerPoint = 0.1f;
+    private static TMP_FontAsset boldFont;
+    private static bool boldFontLooked;
+    /// <summary>The bubbles' one material: the font's own with a soft dark shadow under the letters, drawn over the world.</summary>
+    private static Material bubbleMaterial;
     private static readonly List<IslandNpc> all = new List<IslandNpc>();
 
     private TextMeshPro bubble;
@@ -105,7 +121,9 @@ public sealed class IslandNpc : MonoBehaviour
         if (string.IsNullOrEmpty(text)) return;
         if (!bubble) bubble = MakeBubble();
         bubble.gameObject.SetActive(true);
-        bubble.text = "<mark=#1b130ccc padding=\"14,14,8,8\">" + text + "</mark>";
+        // cream letters on a soft dark shadow of their own (a box behind them came out a dull gray-olive in the world's
+        // light and post effects, and the letters with it: hard to read on snow, playtest 2026-11-26)
+        bubble.text = text;
         showLeft = seconds;
         shownFor = 0f;
         nextLine = Mathf.Max(nextLine, Time.time + seconds + UnityEngine.Random.Range(15f, 30f));
@@ -119,8 +137,12 @@ public sealed class IslandNpc : MonoBehaviour
         {
             nextLine = Time.time + UnityEngine.Random.Range(30f, 60f);
             var lines = Lines != null ? Lines() : LinesFor?.Invoke(Key);
-            // only where someone might hear it: a player on the same island
-            if (lines != null && lines.Count > 0 && !hushed && SomeoneNear()) Say(lines[UnityEngine.Random.Range(0, lines.Count)]);
+            // only where someone might hear it: a player on the same island; one at a time among neighbors (wait a little)
+            if (lines != null && lines.Count > 0 && !hushed && SomeoneNear())
+            {
+                if (NeighborSpeaking()) nextLine = Time.time + UnityEngine.Random.Range(4f, 9f);
+                else Say(lines[UnityEngine.Random.Range(0, lines.Count)]);
+            }
         }
 
         if (!bubble || !bubble.gameObject.activeSelf) return;
@@ -136,7 +158,14 @@ public sealed class IslandNpc : MonoBehaviour
         // over the mark (which stays where it is), else over the head
         bubble.transform.position = HeadTop + Vector3.up * (MarkShown ? MarkGap + MarkHeight + MarkGap : MarkGap);
         // the NPC's own scale (a dwarf is a small human) must not shrink the words
-        bubbleScale = cam ? Mathf.Clamp(Vector3.Distance(cam.transform.position, bubble.transform.position) / BubbleDistance, 0.32f, 3f) : 1f;
+        var distance = cam ? Vector3.Distance(cam.transform.position, bubble.transform.position) : BubbleDistance;
+        bubbleScale = cam ? Mathf.Clamp(distance / BubbleDistance, 0.32f, 3f) : 1f;
+        if (cam && !cam.orthographic)
+        {
+            // never under MinLinePixels on screen: the height the view covers at that distance, shared out over 1080
+            var view = 2f * distance * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad);
+            bubbleScale = Mathf.Max(bubbleScale, MinLinePixels / 1080f * view / (BubbleFontSize * MetresPerPoint));
+        }
         bubble.transform.localScale = Vector3.one * bubbleScale / Mathf.Max(0.0001f, transform.lossyScale.y);
         if (cam) bubble.transform.rotation = cam.transform.rotation;
         bubble.alpha = Mathf.Min(Mathf.Clamp01(shownFor / FadeSeconds), Mathf.Clamp01(showLeft / FadeSeconds));
@@ -196,10 +225,36 @@ public sealed class IslandNpc : MonoBehaviour
         return renderer;
     }
 
+    private bool NeighborSpeaking()
+    {
+        foreach (var other in all)
+        {
+            if (!other || other == this || !other.bubble || !other.bubble.gameObject.activeSelf) continue;
+            if ((other.transform.position - transform.position).sqrMagnitude < QuietNear * QuietNear) return true;
+        }
+        return false;
+    }
+
     private bool SomeoneNear()
     {
         var cam = Camera.main;
         return cam && Vector3.Distance(cam.transform.position, transform.position) < 80f;
+    }
+
+    /// <summary>The bold Rodin (FOT-NewRodin Pro B SDF) as loaded for the world's signboards and the tower's stone words; looked up once.</summary>
+    private static TMP_FontAsset BoldFont()
+    {
+        if (boldFontLooked) return boldFont;
+        boldFontLooked = true;
+        foreach (var font in Resources.FindObjectsOfTypeAll<TMP_FontAsset>())
+        {
+            if (font && font.name == "FOT-NewRodin Pro B SDF")
+            {
+                boldFont = font;
+                break;
+            }
+        }
+        return boldFont;
     }
 
     private TextMeshPro MakeBubble()
@@ -207,7 +262,24 @@ public sealed class IslandNpc : MonoBehaviour
         var go = new GameObject("Speech Bubble");
         go.transform.SetParent(transform, false);
         var text = go.AddComponent<TextMeshPro>();
-        text.fontSize = 1.6f;
+        // the bold Rodin of the game's other world words (stream readable), else the default font made bold
+        var bold = BoldFont();
+        if (bold) text.font = bold;
+        else text.fontStyle = FontStyles.Bold;
+        if (!bubbleMaterial && text.font && text.font.material)
+        {
+            bubbleMaterial = new Material(text.font.material) { name = "Speech Bubble", hideFlags = HideFlags.DontSave };
+            bubbleMaterial.EnableKeyword("UNDERLAY_ON");
+            bubbleMaterial.SetColor("_UnderlayColor", new Color(0.06f, 0.04f, 0.02f, 0.9f));
+            bubbleMaterial.SetFloat("_UnderlayDilate", 0.3f);
+            bubbleMaterial.SetFloat("_UnderlaySoftness", 0.6f);
+            // over everything, as a name tag is: grown for a far camera, a line reached through the roof or the wall
+            // in front of its speaker and was cut off there
+            bubbleMaterial.SetFloat("unity_GUIZTestMode", (float)UnityEngine.Rendering.CompareFunction.Always);
+            bubbleMaterial.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Overlay;
+        }
+        if (bubbleMaterial) text.fontSharedMaterial = bubbleMaterial;
+        text.fontSize = BubbleFontSize;
         text.alignment = TextAlignmentOptions.Bottom;
         text.textWrappingMode = TextWrappingModes.Normal;
         text.rectTransform.sizeDelta = new Vector2(3.2f, 1.5f);
