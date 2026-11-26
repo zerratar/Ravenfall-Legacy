@@ -21,6 +21,7 @@ public sealed class TowerCutscene : MonoBehaviour
     private Vector3[] positions;
     private Vector3[] forwards;
     private float seconds;
+    private float pathSeconds;
     private float titleSeconds;
     private float time;
     private Action<float> tick;
@@ -57,15 +58,18 @@ public sealed class TowerCutscene : MonoBehaviour
     ///     The same through poses given as points: where the camera is and which way it looks. The name shows over the
     ///     last <paramref name="titleSeconds"/>, <paramref name="size"/> big; <paramref name="tick"/> is told the seconds
     ///     played every frame (a skip jumps them on). <paramref name="top"/> puts the name in the upper part of the screen.
+    ///     <paramref name="pathSeconds"/> (when above 0 and shorter than the whole): the camera has settled on the last
+    ///     pose by then and holds it for the rest (a boss's long line stays up while the camera waits under its face).
     /// </summary>
     public static bool Play(MonoBehaviour host, Vector3[] positions, Vector3[] forwards, float seconds, string name, string line, Color color, Color outline,
-        Func<PlayerController> after, Action done, float titleSeconds = TitleSeconds, int size = 120, Action<float> tick = null, bool top = false)
+        Func<PlayerController> after, Action done, float titleSeconds = TitleSeconds, int size = 120, Action<float> tick = null, bool top = false,
+        float pathSeconds = 0f)
     {
         if (current || RavebridgeReveal.Playing || !host || positions == null || forwards == null || positions.Length < 2 || forwards.Length != positions.Length) return false;
         var game = GameManager.Instance;
         if (!game || !game.Camera || !game.Camera.StartCinematic()) return false;
         current = host.gameObject.AddComponent<TowerCutscene>();
-        current.Begin(positions, forwards, seconds, name, line, color, outline, after, done, titleSeconds, size, tick, top);
+        current.Begin(positions, forwards, seconds, name, line, color, outline, after, done, titleSeconds, size, tick, top, pathSeconds);
         return true;
     }
 
@@ -76,12 +80,13 @@ public sealed class TowerCutscene : MonoBehaviour
     }
 
     private void Begin(Vector3[] positions, Vector3[] forwards, float seconds, string name, string line, Color color, Color outline,
-        Func<PlayerController> after, Action done, float titleSeconds, int size, Action<float> tick, bool top)
+        Func<PlayerController> after, Action done, float titleSeconds, int size, Action<float> tick, bool top, float pathSeconds)
     {
         this.positions = positions;
         this.forwards = forwards;
         this.titleSeconds = Mathf.Max(TitleIn + TitleOut + 0.5f, titleSeconds);
         this.seconds = Mathf.Max(this.titleSeconds + 0.5f, seconds);
+        this.pathSeconds = pathSeconds > 0f ? Mathf.Min(pathSeconds, this.seconds) : this.seconds;
         this.after = after;
         this.done = done;
         this.tick = tick;
@@ -126,7 +131,7 @@ public sealed class TowerCutscene : MonoBehaviour
     private void Place()
     {
         if (!cam) return;
-        var (position, rotation) = Evaluate(positions, forwards, Ease(Mathf.Clamp01(time / seconds)));
+        var (position, rotation) = Evaluate(positions, forwards, Ease(Mathf.Clamp01(time / pathSeconds)));
         cam.SetPositionAndRotation(position, rotation);
     }
 

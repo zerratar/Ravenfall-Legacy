@@ -84,6 +84,9 @@ public sealed class CutsceneScreen
             small.style.marginTop = -6;
             small.style.color = new Color(0.97f, 0.94f, 0.86f);
             small.style.textShadow = shadow;
+            // a hard dark edge: a boss's line over a bright ice wall or snow washed out (2026-11-26)
+            small.style.unityTextOutlineWidth = 1.5f;
+            small.style.unityTextOutlineColor = new Color(0.08f, 0.06f, 0.05f);
             // a line of two rows (a floor boss: whose boss it is, then what it says) is centred like one row
             small.style.unityTextAlign = TextAnchor.UpperCenter;
             card.Add(small);

@@ -2671,6 +2671,14 @@ public sealed class TowerManager : MonoBehaviour
     /// <summary>The floor boss's: the full ones, for the big fight that opens the next floor.</summary>
     public const float FloorBossIntroSeconds = 9f, FloorBossIntroTitleSeconds = 5f, FloorBossFallSeconds = 6.5f, FloorBossFallTitleSeconds = 4.6f;
 
+    /// <summary>
+    ///     How long a boss's name and line stay up in its intro: long enough to read the line (about 15 letters a second
+    ///     after a moment to notice it), never shorter than <paramref name="least"/>, at most 10 s. "You defeated my little
+    ///     brother. Prepare to be nibbled." stays about 5 s, where the 3.2 s of a mini boss cut it off (the owner,
+    ///     2026-11-26). The intro grows by as much, so the camera does not cut away under it.
+    /// </summary>
+    public static float LineSeconds(string line, float least) => Mathf.Clamp(1.4f + 0.068f * (line?.Length ?? 0), least, 10f);
+
     /// <summary>The size of a mini boss's name and of a floor boss's, in its intro and at its fall.</summary>
     public const int BossTitleSize = 76, FloorBossTitleSize = 104;
 
@@ -2703,13 +2711,19 @@ public sealed class TowerManager : MonoBehaviour
         var (positions, forwards) = BossShot(boss, false);
         // a mini boss: who it is and where; a floor boss: that it is the floor's, then what it has to say
         var floorBoss = def.IsFloorBoss;
-        var seconds = floorBoss ? FloorBossIntroSeconds : BossIntroSeconds;
         var who = floorBoss
             ? string.Format(Localization.UI_TOWER_FLOOR_BOSS_LINE, def.Floor, TowerWords.FloorName(def.Number))
             : string.Format(Localization.UI_TOWER_BOSS_FLOOR, def.Floor, def.Part);
         var line = string.IsNullOrEmpty(def.Boss.Line) ? who
             : floorBoss ? who + "\n" + string.Format(Localization.UI_TOWER_BOSS_QUOTE, def.Boss.Line)
             : string.Format(Localization.UI_TOWER_BOSS_QUOTE, def.Boss.Line);
+        // a long line stays up longer, and the intro with it: the camera comes in at its usual pace and waits under the
+        // boss's face for the rest
+        var baseTitle = floorBoss ? FloorBossIntroTitleSeconds : BossIntroTitleSeconds;
+        var titleSeconds = LineSeconds(line, baseTitle);
+        var baseSeconds = floorBoss ? FloorBossIntroSeconds : BossIntroSeconds;
+        var seconds = baseSeconds + (titleSeconds - baseTitle);
+        var pathSeconds = baseSeconds + 0.5f * (titleSeconds - baseTitle);
         var model = def.Boss.Model;
         var taunted = false;
         // timed to end as the camera settles under its face and its name shows (a loop, the cow eating, from early on)
@@ -2735,14 +2749,14 @@ public sealed class TowerManager : MonoBehaviour
                     return;
                 }
                 if (attempt == TowerPhase.Countdown) BeginFight(wasFor);
-            }, floorBoss ? FloorBossIntroTitleSeconds : BossIntroTitleSeconds, floorBoss ? FloorBossTitleSize : BossTitleSize, t =>
+            }, titleSeconds, floorBoss ? FloorBossTitleSize : BossTitleSize, t =>
             {
                 // played through: back to its own idle
                 if (taunt != null && taunt.Done) StopTaunt();
                 if (taunted || t < tauntAt) return;
                 taunted = true;
                 taunt = TowerBossTaunts.Play(boss, model);
-            }, top: true);
+            }, top: true, pathSeconds: pathSeconds);
         if (!introPlaying)
         {
             introBoss = null;
