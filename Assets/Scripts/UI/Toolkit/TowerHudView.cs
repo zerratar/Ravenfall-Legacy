@@ -631,9 +631,14 @@ namespace Shinobytes.UI
                 Set(barText, HudFormat.Grouped(hp) + " / " + HudFormat.Grouped(max));
                 Set(phase, here != null && here.Boss != null ? here.Boss.Name : "");
                 ShowJoin(false);
-                // who still stands: the knocked out sit the rest of the fight out
+                // who still stands, and when the next of the knocked out is back in it
                 if (tower.FightCount(out var standing, out var went))
-                    Set(people, standing >= went ? string.Format(Localization.UI_TOWER_STANDING, standing) : string.Format(Localization.UI_TOWER_STANDING_RECOVERING, standing, went - standing));
+                {
+                    var back = Mathf.CeilToInt(tower.NextBackSeconds());
+                    Set(people, standing >= went ? string.Format(Localization.UI_TOWER_STANDING, standing)
+                        : back > 0 ? string.Format(Localization.UI_TOWER_STANDING_RECOVERING_NEXT, standing, went - standing, back)
+                        : string.Format(Localization.UI_TOWER_STANDING_RECOVERING, standing, went - standing));
+                }
                 return;
             }
 

@@ -730,9 +730,14 @@ namespace Shinobytes.UI
         /// </summary>
         private void RefreshTowerMark(RowState state, PlayerController player)
         {
+            // 1 knocked out; recovering: 2 and up, by the seconds left ("Recovering 23s", counting down)
             var mark = 0;
+            var seconds = 0;
             if (towerScope && player.towerHandler != null && player.towerHandler.InTower)
-                mark = player.Stats != null && player.Stats.IsDead ? 1 : player.towerHandler.SatOut ? 2 : 0;
+            {
+                seconds = player.towerHandler.SatOut ? Mathf.CeilToInt(player.towerHandler.RecoverSecondsLeft) : 0;
+                mark = player.Stats != null && player.Stats.IsDead ? 1 : player.towerHandler.SatOut ? 2 + seconds : 0;
+            }
             if (mark == state.LastTowerMark) return;
             state.LastTowerMark = mark;
             state.Root.EnableInClassList("rf-player-row--out", mark != 0);
@@ -740,7 +745,9 @@ namespace Shinobytes.UI
             // the rested tag is written again by whoever has it next
             state.LastRestedMinutes = -2;
             if (mark == 0) return;
-            state.Rested.text = mark == 1 ? Localization.UI_TOWER_KNOCKED_OUT : Localization.UI_TOWER_RECOVERING;
+            state.Rested.text = mark == 1 ? Localization.UI_TOWER_KNOCKED_OUT
+                : seconds > 0 ? string.Format(Localization.UI_TOWER_RECOVERING_LEFT, seconds)
+                : Localization.UI_TOWER_RECOVERING;
             state.Rested.style.display = DisplayStyle.Flex;
         }
 

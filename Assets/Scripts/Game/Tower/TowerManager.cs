@@ -2155,6 +2155,23 @@ public sealed class TowerManager : MonoBehaviour
     /// <summary>The area a boss attempt (its countdown or its fight) is on, or null.</summary>
     public Area FightArea => fightArea;
 
+    /// <summary>
+    ///     In a fight: the seconds until the next knocked out player is back in it (the soonest of those recovering), or
+    ///     0 when nobody is recovering.
+    /// </summary>
+    public float NextBackSeconds()
+    {
+        if (attempt != TowerPhase.Fight) return 0f;
+        var next = float.MaxValue;
+        foreach (var p in fallen)
+        {
+            if (!p || p.isDestroyed || p.towerHandler == null || !p.towerHandler.InTower || !p.towerHandler.SatOut) continue;
+            var left = p.towerHandler.RecoverSecondsLeft;
+            if (left > 0f && left < next) next = left;
+        }
+        return next == float.MaxValue ? 0f : next;
+    }
+
     /// <summary>In a fight: how many of its players still stand, and how many went in.</summary>
     public bool FightCount(out int standing, out int total)
     {

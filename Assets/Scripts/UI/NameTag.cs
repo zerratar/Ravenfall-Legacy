@@ -119,6 +119,132 @@ public class NameTag : MonoBehaviour
         _transform.localScale = homeScale * near;
         oldCensor = gameManager.LogoCensor;
         if (titleVersion != QuestTitles.Version || titleOwner != TargetPlayer) UpdateTitle();
+        UpdateRecovery();
+    }
+
+    // ---- "Recovering 23" over a player knocked out in a tower boss fight -----------------------------------------
+
+    // a line above the name, made from the name line (its font, size and outline), and a small ring beside it that
+    // empties as the recovery runs out (the owner, 2026-11-26: the streamer could not tell when they would be back)
+    private TextMeshProUGUI recoveryLabel;
+    private Image recoveryRing, recoveryRingBack;
+    private int recoverySeconds = -1;
+    private static Sprite ringSprite;
+    private static readonly Color RecoveryColor = new Color(0.82f, 0.88f, 1f);
+
+    private void UpdateRecovery()
+    {
+        var handler = TargetPlayer.towerHandler;
+        var left = handler != null && handler.InTower && handler.SatOut ? handler.RecoverSecondsLeft : 0f;
+        if (left <= 0f)
+        {
+            if (recoveryLabel && recoveryLabel.gameObject.activeSelf)
+            {
+                recoveryLabel.gameObject.SetActive(false);
+                recoveryRing.gameObject.SetActive(false);
+                recoveryRingBack.gameObject.SetActive(false);
+            }
+            recoverySeconds = -1;
+            return;
+        }
+        if (!recoveryLabel && !MakeRecovery()) return;
+        var seconds = Mathf.CeilToInt(left);
+        if (seconds != recoverySeconds || !recoveryLabel.gameObject.activeSelf)
+        {
+            recoverySeconds = seconds;
+            recoveryLabel.gameObject.SetActive(true);
+            recoveryRing.gameObject.SetActive(true);
+            recoveryRingBack.gameObject.SetActive(true);
+            recoveryLabel.text = string.Format(Localization.UI_TOWER_RECOVERING_COUNT, seconds);
+            PlaceRecovery();
+        }
+        var total = Mathf.Max(1f, (float)RavenNest.Combat.TowerRecovery.Seconds);
+        recoveryRing.fillAmount = Mathf.Clamp01(left / total);
+    }
+
+    private bool MakeRecovery()
+    {
+        if (!label) return false;
+        var go = Instantiate(label.gameObject, label.transform.parent);
+        go.name = "Recovering";
+        recoveryLabel = go.GetComponent<TextMeshProUGUI>();
+        recoveryLabel.color = RecoveryColor;
+        recoveryLabel.fontStyle = FontStyles.Bold;
+        recoveryLabel.fontSize = label.fontSize;
+        recoveryLabel.alignment = TextAlignmentOptions.Center;
+        // the emptied part dark, so the ring holds on snow as the words do with their outline
+        recoveryRingBack = MakeRing("Recovering Ring Back", new Color(0.05f, 0.07f, 0.12f, 0.6f), false);
+        recoveryRing = MakeRing("Recovering Ring", RecoveryColor, true);
+        return true;
+    }
+
+    private Image MakeRing(string name, Color color, bool filled)
+    {
+        var go = new GameObject(name, typeof(RectTransform));
+        go.transform.SetParent(label.transform.parent, false);
+        go.layer = label.gameObject.layer;
+        var image = go.AddComponent<Image>();
+        image.sprite = Ring();
+        image.color = color;
+        image.raycastTarget = false;
+        if (filled)
+        {
+            image.type = Image.Type.Filled;
+            image.fillMethod = Image.FillMethod.Radial360;
+            image.fillOrigin = (int)Image.Origin360.Top;
+            image.fillClockwise = false;
+        }
+        return image;
+    }
+
+    // above the name line (or the title over it), the ring to the left of the words
+    private void PlaceRecovery()
+    {
+        var t = recoveryLabel.rectTransform;
+        t.anchoredPosition = label.rectTransform.anchoredPosition;
+        label.ForceMeshUpdate();
+        recoveryLabel.ForceMeshUpdate();
+        var lineHeight = Top(recoveryLabel) - Bottom(recoveryLabel);
+        var step = Top(label) + lineHeight * 0.15f - Bottom(recoveryLabel);
+        t.anchoredPosition += Vector2.up * step;
+        recoveryLabel.ForceMeshUpdate();
+        var bounds = recoveryLabel.textBounds;
+        var scale = t.localScale.x;
+        var size = lineHeight * 1.05f;
+        var middle = t.localPosition + new Vector3(bounds.min.x * scale - size * 0.75f, bounds.center.y * scale, 0f);
+        foreach (var ring in new[] { recoveryRingBack, recoveryRing })
+        {
+            var r = ring.rectTransform;
+            r.anchorMin = r.anchorMax = t.anchorMin;
+            r.pivot = new Vector2(0.5f, 0.5f);
+            r.sizeDelta = new Vector2(size, size);
+            r.localPosition = middle;
+            r.localRotation = Quaternion.identity;
+            r.localScale = Vector3.one;
+        }
+    }
+
+    // a ring, once for every tag: a soft-edged band a fifth of its width
+    private static Sprite Ring()
+    {
+        if (ringSprite) return ringSprite;
+        const int size = 64;
+        var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, hideFlags = HideFlags.DontSave };
+        var pixels = new Color32[size * size];
+        for (var y = 0; y < size; y++)
+        for (var x = 0; x < size; x++)
+        {
+            var u = (x + 0.5f) / size * 2f - 1f;
+            var v = (y + 0.5f) / size * 2f - 1f;
+            var r = Mathf.Sqrt(u * u + v * v);
+            var a = Mathf.Clamp01((1f - r) * size * 0.5f) * Mathf.Clamp01((r - 0.6f) * size * 0.5f);
+            pixels[y * size + x] = new Color32(255, 255, 255, (byte)(a * 255));
+        }
+        texture.SetPixels32(pixels);
+        texture.Apply();
+        ringSprite = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+        ringSprite.hideFlags = HideFlags.DontSave;
+        return ringSprite;
     }
 
     /// <summary>
@@ -202,6 +328,7 @@ public class NameTag : MonoBehaviour
         Add(label);
         Add(clanName);
         Add(titleLabel);
+        if (recoveryLabel && recoveryLabel.gameObject.activeSelf) Add(recoveryLabel);
         if (!any) return false;
         rect = Rect.MinMaxRect(xMin, yMin, xMax, yMax);
         return true;
