@@ -569,13 +569,24 @@ namespace Shinobytes.UI
                     }
                 }
                 unchecked { signature = signature * 31 + towerPlayers.Count + 1; }
+                if (town) unchecked { signature = signature * 31 + town.GetHashCode(); }
             }
 
             if (want == towerScope && signature == towerSignature) return;
             towerScope = want;
             towerSignature = signature;
-            if (titleLabel != null) titleLabel.text = want ? Localization.UI_PLAYERLIST_TOWER : Localization.UI_PLAYERLIST_TITLE;
+            if (titleLabel != null) titleLabel.text = !want ? Localization.UI_PLAYERLIST_TITLE : TownTitle(town);
             ApplyFilter();
+        }
+
+        /// <summary>
+        /// The header in the tower: a town's own name (playtest 2026-11-26: "TOWER 6" in Mossgate beside the tower bar's
+        /// 8, which counts the whole tower, read as two counts that disagree), else "TOWER" on a part.
+        /// </summary>
+        private static string TownTitle(TowerTown town)
+        {
+            var name = town ? town.Town?.Name : null;
+            return string.IsNullOrWhiteSpace(name) ? Localization.UI_PLAYERLIST_TOWER : name.ToUpperInvariant();
         }
 
         private void ObserveRow(RowState state)
