@@ -387,6 +387,8 @@ foreach (var o in obstacles) o.enabled = false;
 log.AppendLine("zones " + string.Join(", ", zones.Select(z => z.Title + " " + z.SpotCount)) + "; gates " + gates.Length);
 
 UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(scene);
+// fixed ids for what this made (tools/tower/layouts, docs/tower-places-editor.md), then the owner's hand edits put back
+TowerPlaceEdits.AfterBuild(scene, scene.path, log);
 UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene);
 UnityEditor.SceneManagement.EditorSceneManager.CloseScene(scene, true);
 UnityEngine.SceneManagement.SceneManager.SetActiveScene(main);

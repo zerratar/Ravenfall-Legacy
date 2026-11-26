@@ -747,6 +747,8 @@ foreach (var target in entries.Concat(new[] { V(5f, 3f) }))
 foreach (var z in zoneList) foreach (UnityEngine.Transform s in z.Spawns) { var c = new UnityEngine.GameObject("Spot " + z.Title); c.transform.SetParent(allSpawns.transform, false); c.transform.position = s.position; }
 
 var scenePath = folder + "/Tower_GreatHall.unity";
+// fixed ids for every object (Ravenfall > Tower Places), then the owner's hand edits from tools/tower/layouts/<Scene>.edits.json put back (docs/tower-places-editor.md)
+TowerPlaceEdits.AfterBuild(scene, scenePath, log);
 UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene, scenePath);
 UnityEditor.SceneManagement.EditorSceneManager.CloseScene(scene, true);
 UnityEngine.SceneManagement.SceneManager.SetActiveScene(main);

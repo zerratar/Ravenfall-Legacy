@@ -35,6 +35,11 @@ either builder. It leaves the baked navmesh alone: the wall pieces it adds besid
 seals have their own materials (`GateWard.mat`, `GateIce.mat`). `make-vault.py` is from before the two builders went
 their own ways (2026-11-20) and no longer applies to the crypt's builder as it is.
 
+Ravenfall > Tower Places (docs/tower-places-editor.md) is the window for reviewing and fixing every place by hand: it opens
+a place beside MainWorld with markers, runs the audit (Check), rebakes the navmesh and plays a part. Every builder ends with
+`TowerPlaceEdits.AfterBuild`, which gives the objects their fixed ids and puts the owner's hand edits back from
+`tools/tower/layouts/<Scene>.edits.json` (written when a tower scene is saved), so a rebuild keeps them.
+
 `tower-audit.cs` checks a scene (path in `%TEMP%/tower-audit-scene.txt`): every monster spot, the boss, the people, rest
 spots, strolls, work stands and road points can be walked to from the arrival, and where each road ends; it writes
 `%TEMP%/tower-audit.txt`. Run it after every rebuild. The town builders also log props standing on a lane and work stands

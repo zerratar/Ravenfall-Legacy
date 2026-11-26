@@ -58,7 +58,7 @@ public sealed partial class TowerPlacesWindow
         BuildEdits(panel);
 
         // the play status changes while the game runs
-        rootVisualElement.schedule.Execute(() => { if (playStatus != null) playStatus.text = TowerPlayPart.Status; }).Every(500);
+        rootVisualElement.schedule.Execute(() => { if (playStatus != null) playStatus.text = PlayLine(); }).Every(500);
     }
 
     partial void RefreshMore()
@@ -70,10 +70,12 @@ public sealed partial class TowerPlacesWindow
         rebakeButton.SetEnabled(!playing && open);
         playButton.SetEnabled(!playing && Selected != null);
         playButton.text = Selected != null && Selected.IsTown ? "Play this town" : Selected != null && !Selected.IsPart ? "Play this place" : "Play this part";
-        playStatus.text = TowerPlayPart.Status;
+        playStatus.text = PlayLine();
         if (Selected == null || lastCheckScene != Selected.ScenePath) { lastCheck = null; ShowCheck(); }
         RefreshEdits();
     }
+
+    private static string PlayLine() => string.IsNullOrEmpty(TowerPlayPart.Status) ? "" : (TowerPlayPart.Busy || EditorApplication.isPlaying ? "Play: " : "Last play: ") + TowerPlayPart.Status;
 
     private void RunCheck()
     {
@@ -123,7 +125,7 @@ public sealed partial class TowerPlacesWindow
             }
             checkList.Add(l);
         }
-        if (shown == 0) checkList.Add(Text("Nothing to show: untick Only problems for every line.", Dim, 12));
+        if (shown == 0 && lastCheck.Problems > 0) checkList.Add(Text("Nothing to show: untick Only problems for every line.", Dim, 12));
     }
 
     private void Rebake()

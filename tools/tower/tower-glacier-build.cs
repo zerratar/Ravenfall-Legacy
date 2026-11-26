@@ -491,6 +491,8 @@ var scenePath = folder + "/Tower_Glacier.unity";
         if (r.name.StartsWith("SM_Env_IceChunk")) { r.sharedMaterials = r.sharedMaterials.Select(_ => cliffIce).ToArray(); chunks++; }
     log.AppendLine("ice chunks " + chunks);
 }
+// fixed ids for every object (Ravenfall > Tower Places), then the owner's hand edits from tools/tower/layouts/<Scene>.edits.json put back (docs/tower-places-editor.md)
+TowerPlaceEdits.AfterBuild(scene, scenePath, log);
 UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene, scenePath);
 UnityEditor.SceneManagement.EditorSceneManager.CloseScene(scene, true);
 UnityEngine.SceneManagement.SceneManager.SetActiveScene(main);

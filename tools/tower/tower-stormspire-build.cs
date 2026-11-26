@@ -592,6 +592,8 @@ var scenePath = folder + "/Tower_StormSpire.unity";
     }
     log.AppendLine("grass fields " + grassFields);
 }
+// fixed ids for every object (Ravenfall > Tower Places), then the owner's hand edits from tools/tower/layouts/<Scene>.edits.json put back (docs/tower-places-editor.md)
+TowerPlaceEdits.AfterBuild(scene, scenePath, log);
 UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene, scenePath);
 UnityEditor.SceneManagement.EditorSceneManager.CloseScene(scene, true);
 UnityEngine.SceneManagement.SceneManager.SetActiveScene(main);

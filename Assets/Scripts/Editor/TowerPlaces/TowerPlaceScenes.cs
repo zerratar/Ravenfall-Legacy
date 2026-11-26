@@ -12,13 +12,13 @@ using UnityEngine.SceneManagement;
 ///     so one is open at a time: the one before is closed first (asking to save it when it has changes). Only tower
 ///     scenes are ever saved or closed here.
 /// </summary>
-internal static class TowerPlaceScenes
+public static class TowerPlaceScenes
 {
     private const string ActiveBefore = "Ravenfall.TowerPlaces.ActiveBefore";
 
-    internal static bool IsTowerScene(Scene s) => s.IsValid() && !string.IsNullOrEmpty(s.path) && s.path.StartsWith(TowerPlaceCatalog.SceneFolder + "/");
+    public static bool IsTowerScene(Scene s) => s.IsValid() && !string.IsNullOrEmpty(s.path) && s.path.StartsWith(TowerPlaceCatalog.SceneFolder + "/");
 
-    internal static List<Scene> OpenTowerScenes()
+    public static List<Scene> OpenTowerScenes()
     {
         var list = new List<Scene>();
         for (var i = 0; i < SceneManager.sceneCount; i++)
@@ -29,13 +29,13 @@ internal static class TowerPlaceScenes
         return list;
     }
 
-    internal static Scene Loaded(string path)
+    public static Scene Loaded(string path)
     {
         var s = SceneManager.GetSceneByPath(path);
         return s.IsValid() && s.isLoaded ? s : default;
     }
 
-    internal static TowerPlace PlaceIn(Scene s)
+    public static TowerPlace PlaceIn(Scene s)
     {
         if (!s.IsValid() || !s.isLoaded) return null;
         foreach (var root in s.GetRootGameObjects())
@@ -47,7 +47,7 @@ internal static class TowerPlaceScenes
     }
 
     /// <summary>Opens a tower scene beside the open ones (closing another tower scene first); false when it could not.</summary>
-    internal static bool Open(string path, out Scene scene, out string error)
+    public static bool Open(string path, out Scene scene, out string error)
     {
         scene = default;
         error = null;
@@ -89,7 +89,7 @@ internal static class TowerPlaceScenes
     }
 
     /// <summary>Closes a tower scene (never another), the scene that was active before it active again.</summary>
-    internal static bool Close(Scene scene)
+    public static bool Close(Scene scene)
     {
         if (!IsTowerScene(scene)) return false;
         if (SceneManager.GetActiveScene() == scene)
@@ -117,7 +117,7 @@ internal static class TowerPlaceScenes
     }
 
     /// <summary>Saves one tower scene (never another); its change list is written as it saves (TowerPlaceEdits).</summary>
-    internal static bool Save(Scene scene, out string error)
+    public static bool Save(Scene scene, out string error)
     {
         error = null;
         if (!IsTowerScene(scene)) { error = "Only tower scenes are saved here."; return false; }
@@ -127,7 +127,7 @@ internal static class TowerPlaceScenes
     }
 
     /// <summary>The Scene view looks at a place from above its arrival, toward its middle.</summary>
-    internal static void Frame(TowerPlace place, Vector3? at = null, float size = -1f)
+    public static void Frame(TowerPlace place, Vector3? at = null, float size = -1f)
     {
         var view = SceneView.lastActiveSceneView;
         if (!view)
@@ -147,7 +147,7 @@ internal static class TowerPlaceScenes
     }
 
     /// <summary>The Scene view looks at one point closely.</summary>
-    internal static void FrameAt(Vector3 point, float size = 12f)
+    public static void FrameAt(Vector3 point, float size = 12f)
     {
         var view = SceneView.lastActiveSceneView ? SceneView.lastActiveSceneView : EditorWindow.GetWindow<SceneView>();
         if (!view) return;
