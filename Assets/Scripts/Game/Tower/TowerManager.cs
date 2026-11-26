@@ -482,6 +482,16 @@ public sealed class TowerManager : MonoBehaviour
         }
     }
 
+    /// <summary>The town the game's camera is at, or null (on a part, in the world).</summary>
+    public TowerTown CameraTown
+    {
+        get
+        {
+            var camera = Camera.main;
+            return camera ? PlaceNear(camera.transform.position, LookMargin) as TowerTown : null;
+        }
+    }
+
     /// <summary>The game's camera is at a place of the tower (a part or the town).</summary>
     public bool CameraInTower
     {

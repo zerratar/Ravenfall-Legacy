@@ -93,8 +93,8 @@ namespace Shinobytes.UI
         /// </summary>
         private readonly List<RowState> rows = new List<RowState>();
 
-        // The tower: while the camera is on a part of it, the list is that part's players (a boss fight's first),
-        // unless the header's switch asks for everyone. Outside the tower it is everyone, as always.
+        // The tower: while the camera is on a part of it, the list is that part's players (a boss fight's first), and in
+        // a tower town the town's, unless the header's switch asks for everyone. Outside the tower it is everyone, as always.
         private readonly List<PlayerController> towerPlayers = new List<PlayerController>();
         private bool towerScope;
         private bool showEveryone;
@@ -517,7 +517,7 @@ namespace Shinobytes.UI
         }
 
         /// <summary>
-        /// Whose list it is now: the players on the tower part the camera is at, or everyone. One pass over the
+        /// Whose list it is now: the players on the tower part or in the tower town the camera is at, or everyone. One pass over the
         /// players per refresh and no garbage, so a hundred players cost what ten do; the rows are only rebuilt
         /// when who is listed, or their order, changed.
         /// </summary>
@@ -525,7 +525,9 @@ namespace Shinobytes.UI
         {
             var tower = TowerManager.Instance;
             var area = tower ? tower.CameraArea : null;
-            var inTower = area != null && area.Floor;
+            // a town as a part (playtest 2026-11-26: in a town the list showed every player in the game)
+            var town = area == null && tower ? tower.CameraTown : null;
+            var inTower = (area != null && area.Floor) || town;
             // the switch lasts while the camera stays in the tower: outside it is everyone again, as always
             if (!inTower) showEveryone = false;
             var want = inTower && !showEveryone;
@@ -558,7 +560,8 @@ namespace Shinobytes.UI
                     for (var i = 0; i < allPlayers.Count; ++i)
                     {
                         var p = allPlayers[i];
-                        if (!p || p.towerHandler == null || !p.towerHandler.InTower || p.towerHandler.Floor != area.Floor) continue;
+                        if (!p || p.towerHandler == null || !p.towerHandler.InTower) continue;
+                        if (town ? !(p.towerHandler.InTown && TowerTown.Loaded == town) : p.towerHandler.Floor != area.Floor) continue;
                         var mine = p.towerHandler.InBossFight ? 0 : p.towerHandler.SatOut ? 1 : 2;
                         if (mine != group) continue;
                         towerPlayers.Add(p);
