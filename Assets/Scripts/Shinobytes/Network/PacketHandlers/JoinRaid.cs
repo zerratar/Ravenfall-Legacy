@@ -27,7 +27,10 @@ public class RaidJoin : ChatBotCommandHandler<string>
                 return;
             }
 
-            if (player.IsAway)
+            // a climber may choose the raid: they leave the tower for it (the owner, 2026-11-26: auto join never takes
+            // them, but they decide by hand; some climb while others fetch keys in raids and dungeons)
+            var climbing = player.Climbing;
+            if (player.IsAway && !climbing)
             {
                 client.SendReply(gm, player.AwayReply(Localization.MSG_JOIN_RAID_DUNGEON));
                 return;
@@ -74,9 +77,10 @@ public class RaidJoin : ChatBotCommandHandler<string>
 
 
 
+            if (climbing) player.LeaveTower();
             Game.Arena.Leave(player);
             Game.Raid.Join(player);
-            client.SendReply(gm, Localization.MSG_JOIN_RAID);
+            client.SendReply(gm, climbing ? Localization.MSG_JOIN_RAID_FROM_TOWER : Localization.MSG_JOIN_RAID);
         }
         else
         {

@@ -185,9 +185,20 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     /// <summary>Away from the islands (a dungeon, later the tower): no sailing, travel, rest or raids until back.</summary>
     public bool IsAway => AwayHandler != null;
 
+    public bool Climbing => towerHandler != null && towerHandler.InTower;
+
+    /// <summary>Out of the tower for good (a raid or dungeon they chose by hand): as !tower leave does.</summary>
+    public void LeaveTower()
+    {
+        if (!Climbing) return;
+        if (TowerManager.Instance) TowerManager.Instance.Leave(this);
+        else towerHandler.Exit();
+    }
+
     /// <summary>
     ///     Held where they are, so a raid or dungeon must not pull them away (or charge them for auto join): in a dungeon or
-    ///     the tower, in Ravebridge, in a war, a duel or a running arena. The same rules as !raid join.
+    ///     the tower, in Ravebridge, in a war, a duel or a running arena. The same rules as !raid join. A climber may still
+    ///     choose a raid or dungeon by hand (!raid join, !dungeon join): they leave the tower for it.
     /// </summary>
     public bool HeldForEvents => IsAway || InRavebridge || (streamRaidHandler && streamRaidHandler.InWar)
         || (duelHandler && duelHandler.InDuel) || (arenaHandler && arenaHandler.InArena && GameManager.Instance && GameManager.Instance.Arena && GameManager.Instance.Arena.Started);

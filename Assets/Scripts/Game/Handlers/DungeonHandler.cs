@@ -175,6 +175,8 @@ public class DungeonHandler : IAwayHandler
         }
 
         waitForDungeon = 0;
+        // a climber who chose the dungeon leaves the tower now, so the way back is from the world, not the tower
+        player.LeaveTower();
         InDungeon = true;
 
         var startingPoint = dungeon.StartingPoint;

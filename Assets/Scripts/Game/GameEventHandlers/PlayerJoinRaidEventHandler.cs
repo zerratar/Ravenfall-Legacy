@@ -20,7 +20,9 @@ public class PlayerJoinRaidEventHandler : GameEventHandler<PlayerId>
         //if (player.ferryHandler.Active)
         //    player.ferryHandler.Disembark();
 
-        if (player.IsAway)
+        // a climber chose the raid by hand: they leave the tower once the raid takes them (below)
+        var climbing = player.Climbing;
+        if (player.IsAway && !climbing)
             return;
 
         if (player.arenaHandler.InArena && gameManager.Arena.Started)
@@ -43,6 +45,7 @@ public class PlayerJoinRaidEventHandler : GameEventHandler<PlayerId>
                 return;
         }
 
+        if (climbing) player.LeaveTower();
         gameManager.Arena.Leave(player);
         gameManager.Raid.Join(player);
         Shinobytes.Debug.Log($"PlayerJoinRaidEventHandler " + data.Id);

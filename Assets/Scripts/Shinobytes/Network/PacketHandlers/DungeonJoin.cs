@@ -62,8 +62,9 @@ public class DungeonJoin : ChatBotCommandHandler<string>
             switch (result)
             {
                 case DungeonJoinResult.CanJoin:
+                    // a climber stays in the tower until the dungeon starts, then leaves it (DungeonHandler.OnEnter)
                     Game.Dungeons.Join(player);
-                    client.SendReply(gm, Localization.MSG_DUNGEON_JOIN_SUCCESS);
+                    client.SendReply(gm, player.Climbing ? Localization.MSG_DUNGEON_JOIN_FROM_TOWER : Localization.MSG_DUNGEON_JOIN_SUCCESS);
                     break;
                 case DungeonJoinResult.AlreadyJoined:
                     client.SendReply(gm, Localization.MSG_DUNGEON_JOIN_ALREADY);

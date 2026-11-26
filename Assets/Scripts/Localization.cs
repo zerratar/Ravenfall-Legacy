@@ -2150,6 +2150,7 @@ public static class Localization
     public static string MSG_TRAINING_NOTHING = "You're not training anything. Use !train <skill name> to start training!";
     public static string MSG_TRAINING_SAILING = "You're currently sailing the seas. Use !disembark to leave the ferry or !travel <island name> to sail to a specific island.";
     public static string MSG_JOIN_RAID = "You have joined the raid. Good luck!";
+    public static string MSG_JOIN_RAID_FROM_TOWER = "You left the tower and joined the raid. Good luck! Use !tower to go back in after.";
     public static string MSG_JOIN_RAID_FERRY = "You cannot join the raid while on the ferry.";
     public static string MSG_JOIN_RAID_WAR = "You cannot fight a raid boss during a war!";
     public static string MSG_JOIN_RAID_DUNGEON = "You cannot fight a raid boss when participating in a dungeon!";
@@ -4015,6 +4016,7 @@ public static class Localization
     public static string MSG_DUNGEON_JOIN_NO_DUNGEON = Meta("dungeon", "join", "fail") + "No active dungeons available, sorry.";
     public static string MSG_DUNGEON_JOIN_STARTED = Meta("dungeon", "join", "fail") + "The dungeon has already started. You will have to wait for the next one!";
     public static string MSG_DUNGEON_JOIN_SUCCESS = Meta("dungeon", "join") + "You have joined the dungeon. Good luck!";
+    public static string MSG_DUNGEON_JOIN_FROM_TOWER = Meta("dungeon", "join") + "You have joined the dungeon. You will leave the tower when it starts. Use !tower to go back in after.";
     public static string MSG_DUNGEON_JOIN_ALREADY = Meta("dungeon", "join", "fail") + "You have already joined the dungeon.";
     public static string MSG_DUNGEON_JOIN_WRONG_CODE = Meta("dungeon", "join", "fail") + "You have used an incorrect command for joining the dungeon. Use !dungeon [word seen on stream] to join.";
 
