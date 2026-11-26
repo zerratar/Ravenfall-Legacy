@@ -2339,7 +2339,7 @@ public sealed class TowerManager : MonoBehaviour
         if (floorBoss) Announce(Localization.MSG_TOWER_FLOOR_BOSS_DOWN, def.Boss.Name, TowerWords.Floor(floorNumber), TowerWords.FloorName(floorNumber));
         else Announce(Localization.MSG_TOWER_BOSS_DOWN, def.Boss.Name, TowerWords.Floor(floorNumber), TowerWords.Part(floorNumber));
         PlayBossFall(boss, def, floorNumber);
-        foreach (var p in standing) p.Cheer();
+        foreach (var p in standing) p.towerHandler.Celebrate();
 
         var g = Game;
         TowerClearResult result = null;

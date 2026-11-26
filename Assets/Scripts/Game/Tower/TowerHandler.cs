@@ -13,6 +13,10 @@ public class TowerHandler : IAwayHandler
     private TowerFloor floor;
     private TowerTown town;
     private float nextStroll;
+
+    /// <summary>How long the players stand and cheer when a guardian falls, before anyone walks off.</summary>
+    public const float CheerSeconds = 2.2f;
+    private float cheerUntil;
     private EnemyController enemyTarget;
     private PlayerController healTarget;
     private EnemyController boss;
@@ -479,6 +483,21 @@ public class TowerHandler : IAwayHandler
         player.taskTarget = null;
     }
 
+    /// <summary>
+    ///     The guardian fell: they cheer where they stand for <see cref="CheerSeconds"/> before anyone walks off (they
+    ///     cheered and walked straight off still in the cheer, floating, playtest 2026-11-26).
+    /// </summary>
+    public void Celebrate()
+    {
+        if (!player || player.isDestroyed || player.Stats.IsDead) return;
+        enemyTarget = null;
+        healTarget = null;
+        player.attackTarget = null;
+        player.Movement.Lock();
+        player.Cheer();
+        cheerUntil = Time.time + CheerSeconds;
+    }
+
     public void Update()
     {
         if (!InTower) return;
@@ -486,6 +505,8 @@ public class TowerHandler : IAwayHandler
         // body was still given orders: on a part of rooms the walk to its place in the guardian's room, elsewhere
         // the way to the next monster, and it slid there lying down (the owner, 2026-11-24)
         if (player.Stats.IsDead) return;
+        // cheering a fallen guardian: they stand for it
+        if (Time.time < cheerUntil) return;
         if (town)
         {
             UpdateTown();
