@@ -32,6 +32,7 @@ namespace Shinobytes.UI
         private bool bound;
 
         private int shownVersion = -1;
+        private int filledCount = -1;
         private bool windowOpen;
         private float openedAt;
 
@@ -122,6 +123,7 @@ namespace Shinobytes.UI
 
             var game = GameManager.Instance;
             var restore = game ? game.ServerRestore : null;
+            if (restore != null) restore.Prune(game);
             var count = restore != null && !restore.Restoring ? restore.Pending.Count : 0;
 
             if (count == 0)
@@ -136,8 +138,15 @@ namespace Shinobytes.UI
             if (restore.Version != shownVersion)
             {
                 shownVersion = restore.Version;
+                filledCount = count;
                 Fill(restore);
                 Open();
+            }
+            // fewer now (someone on the list joined by chat): the same offer, its words and names brought up to date
+            else if (count != filledCount)
+            {
+                filledCount = count;
+                Fill(restore);
             }
 
             SetDisplay(pill, !windowOpen);

@@ -144,6 +144,20 @@ public sealed class ServerPlayerRestore
     }
 
     /// <summary>Restores every pending player still not in the game, adding them to those already in it.</summary>
+    private float nextPrune;
+
+    /// <summary>
+    ///     Drops pending players who came into the game another way (they typed !join), so the offer never names someone
+    ///     already playing ("1 player to restore: zerratar" with zerratar on screen). Not a new offer: the window is
+    ///     not opened again for it.
+    /// </summary>
+    public void Prune(GameManager game)
+    {
+        if (restoring || pending.Count == 0 || Time.unscaledTime < nextPrune) return;
+        nextPrune = Time.unscaledTime + 2f;
+        pending.RemoveAll(p => p == null || game.Players.GetPlayerById(p.CharacterId));
+    }
+
     public async void RestorePending(GameManager game)
     {
         if (restoring || pending.Count == 0)
