@@ -131,6 +131,9 @@ foreach (var name in new[] { "Roofs", "Floors" })
             subs.Add(keep.ToArray());
         }
         for (var si = 0; si < subs.Count; si++) copy.SetTriangles(subs[si], si);
+        // nothing of it left: the piece goes, as an empty mesh collider logs "must have at least one non-degenerate
+        // triangle" at every start
+        if (copy.triangles.Length == 0) { UnityEngine.Object.DestroyImmediate(mf.gameObject); continue; }
         copy.RecalculateBounds();
         mf.sharedMesh = copy;
         var col = mf.GetComponent<UnityEngine.MeshCollider>();

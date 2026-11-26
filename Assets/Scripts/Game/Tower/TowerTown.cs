@@ -75,6 +75,8 @@ public sealed class TowerTown : TowerPlace
         Loaded = this;
         // tree tops between the camera and the players fade
         if (!GetComponent<TowerCanopyFade>()) gameObject.AddComponent<TowerCanopyFade>();
+        // the pens' animals were built with their looks and animator alone: their clips' sound events need a receiver
+        foreach (var root in gameObject.scene.GetRootGameObjects()) QuietAnimal.AddToPens(root.transform);
         workStands.Clear();
         workTaken.Clear();
         if (Work)

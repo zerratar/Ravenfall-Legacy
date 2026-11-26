@@ -150,6 +150,9 @@ foreach (var name in new[] { "Roofs", "Floors" })
             }
             copy.SetTriangles(keep.ToArray(), si);
         }
+        // nothing of it left (a whole level's floor under the castle): the piece goes, as an empty mesh collider logs
+        // "must have at least one non-degenerate triangle" at every start
+        if (copy.triangles.Length == 0) { UnityEngine.Object.DestroyImmediate(mf.gameObject); continue; }
         copy.RecalculateBounds();
         mf.sharedMesh = copy;
         var col = mf.GetComponent<UnityEngine.MeshCollider>(); if (col) col.sharedMesh = copy;

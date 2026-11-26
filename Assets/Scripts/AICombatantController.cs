@@ -35,6 +35,8 @@ public class AICombatantController : MonoBehaviour
         startingPosition = transform.position;
         startingRotation = transform.rotation;
         initialized = true;
+        // a cow combatant's clips call AnimalSound (and Eating, Running) with nothing to answer them: an error each loop
+        if (!GetComponent<QuietAnimal>() && !GetComponent<LowPolyAnimalPack.PlaySound>()) gameObject.AddComponent<QuietAnimal>();
     }
 
     public void SetRole(string name, AICombatantRole role)
