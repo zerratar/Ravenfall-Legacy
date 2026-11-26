@@ -1974,6 +1974,9 @@ public sealed class TowerManager : MonoBehaviour
         spitAt = -1f;
         addsCalled = 0;
         enraged = false;
+        // a humanoid guardian stands ready for the whole fight, never back in its plain idle between swings
+        var bossMovement = boss.GetComponent<EnemyMovementController>();
+        if (bossMovement) bossMovement.CombatStance = true;
         foreach (var p in participants) p.towerHandler.BossFightStarted(boss);
         Announce(Localization.MSG_TOWER_BOSS_START, def.Boss.Name, participants.Count, def.Boss.Line ?? "");
 

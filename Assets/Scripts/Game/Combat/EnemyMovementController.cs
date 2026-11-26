@@ -61,6 +61,19 @@ public class EnemyMovementController : MonoBehaviour
     /// <summary>Wandering at a walk: a float move parameter gets 0.5 (the Humanoid Enemy's walk) rather than 1 (its run).</summary>
     [NonSerialized] public bool Ambling;
 
+    /// <summary>
+    ///     Holds its fighting stance between swings whatever its target does (a tower boss for its whole fight). Without
+    ///     it the stance follows the fight: on while it has someone to fight, off when it goes back to idling.
+    /// </summary>
+    [NonSerialized] public bool CombatStance;
+
+    // the Humanoid Enemy's Combat float: its Idle blends from the relaxed idle (0) to the fighting stance (1), so every
+    // swing comes back to the stance instead of the plain idle (seen on every humanoid tower boss, 2026-11-26)
+    private static readonly int CombatId = Animator.StringToHash("Combat");
+    private bool hasCombatStance;
+    private float stance;
+    private float stanceSet = -1f;
+
     internal Vector3 Destination;
 
     private NavMeshPath currentPath;
@@ -116,6 +129,8 @@ public class EnemyMovementController : MonoBehaviour
             ?? animator.parameters.FirstOrDefault(x => x.name == "isJumping");
 
         hasMoveAnimation = moveAnimation != null;
+        foreach (var p in animator.parameters)
+            if (p.nameHash == CombatId && p.type == AnimatorControllerParameterType.Float) hasCombatStance = true;
 
         if (!enemyController) enemyController = GetComponent<EnemyController>();
         if (!dungeonBoss) dungeonBoss = GetComponent<DungeonBossController>();
@@ -140,6 +155,7 @@ public class EnemyMovementController : MonoBehaviour
     {
         animator.enabled = true;
         lastMove = -1f; // a disabled animator lost its parameters: set the move again
+        stanceSet = -1f;
     }
     private void OnBecameInvisible()
     {
@@ -170,6 +186,8 @@ public class EnemyMovementController : MonoBehaviour
             lastMove = move;
         }
 
+        if (hasCombatStance && animator.enabled) UpdateStance();
+
         if (attackAnimationTimer > 0f)
             attackAnimationTimer -= GameTime.deltaTime;
 
@@ -178,6 +196,17 @@ public class EnemyMovementController : MonoBehaviour
             attackAnimationTrigger?.Invoke();
             attackAnimationTimer = 0f;
         }
+    }
+
+    // into the stance and out of it over a quarter of a second, so a swing's target changing does not flicker it
+    private void UpdateStance()
+    {
+        var e = enemyController;
+        var fighting = e && e.Stats != null && !e.Stats.IsDead && (CombatStance || (e.InCombat && e.Target));
+        stance = Mathf.MoveTowards(stance, fighting ? 1f : 0f, GameTime.deltaTime * 4f);
+        if (stance == stanceSet) return;
+        animator.SetFloat(CombatId, stance);
+        stanceSet = stance;
     }
 
     /// <summary>Stands still where it is, the agent left on (Lock turns it off).</summary>
