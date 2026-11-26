@@ -3000,12 +3000,15 @@ public static class Localization
     public static string UI_SETTINGS_RESTORE_SERVER_HINT = "When the server remembers players in your stream that your saved state did not have (after a reinstall, or a lost state file), bring them back without asking.";
     public static string UI_RESTORE_TITLE = "Restore players from the server?";
     public static string UI_RESTORE_BODY = "The server remembers {0} more players in your stream than your saved state had. Players already in the game stay as they are.";
+    public static string UI_RESTORE_BODY_ONE = "The server remembers 1 more player in your stream than your saved state had. Players already in the game stay as they are.";
     public static string UI_RESTORE_MORE = "and {0} more";
     public static string UI_RESTORE_BUTTON = "Restore {0} players";
+    public static string UI_RESTORE_BUTTON_ONE = "Restore 1 player";
     public static string UI_RESTORE_LATER = "Not now";
     public static string UI_RESTORE_DECLINE = "Don't restore";
     public static string UI_RESTORE_ALWAYS = "Always restore from the server without asking";
     public static string UI_RESTORE_PILL = "{0} players to restore";
+    public static string UI_RESTORE_PILL_ONE = "1 player to restore";
     public static string UI_RESTORE_PILL_HINT = "The server remembers these players in your stream. Click to restore them.";
     public static string UI_RESTORE_RESTORING = "Restoring players...";
     public static string UI_SETTINGS_NO_RAIDS_HINT = "No raids start at all, neither on their own nor by chat command.";

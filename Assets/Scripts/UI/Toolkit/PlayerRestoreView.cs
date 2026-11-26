@@ -153,9 +153,9 @@ namespace Shinobytes.UI
         private void Fill(ServerPlayerRestore restore)
         {
             var count = restore.Pending.Count;
-            if (body != null) body.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_RESTORE_BODY, count);
-            if (yes != null) yes.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_RESTORE_BUTTON, count);
-            if (pillText != null) pillText.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_RESTORE_PILL, count);
+            if (body != null) body.text = string.Format(CultureInfo.InvariantCulture, count == 1 ? Localization.UI_RESTORE_BODY_ONE : Localization.UI_RESTORE_BODY, count);
+            if (yes != null) yes.text = string.Format(CultureInfo.InvariantCulture, count == 1 ? Localization.UI_RESTORE_BUTTON_ONE : Localization.UI_RESTORE_BUTTON, count);
+            if (pillText != null) pillText.text = string.Format(CultureInfo.InvariantCulture, count == 1 ? Localization.UI_RESTORE_PILL_ONE : Localization.UI_RESTORE_PILL, count);
             if (names != null)
             {
                 var shown = restore.Pending.Take(NamesShown).Select(x => x.User?.Username ?? "?");
