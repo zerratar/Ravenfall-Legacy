@@ -291,8 +291,12 @@ namespace Shinobytes.UI
             {
                 nextRefresh = now + refreshInterval;
                 RefreshFast();
+                // never over the players list: picked from it, the details opened on top of it (both top left)
+                (keepClear ??= new WindowKeepClear(window, () => drag, other => other.name == "playerlist-window", false)).Update();
             }
         }
+
+        private WindowKeepClear keepClear;
 
         private bool IsShowing => visible && player;
 
@@ -2144,6 +2148,8 @@ namespace Shinobytes.UI
             }
 
             var show = IsShowing;
+            // back to its own place before it goes: the next time it shows it starts from there
+            if (!show) keepClear?.GoHome();
             window.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
             if (!show)
             {
