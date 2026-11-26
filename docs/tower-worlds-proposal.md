@@ -1215,7 +1215,7 @@ odds. Not played: veterans (the bots have no trees or gems), two players, the ot
 
 ## 14. Gates and breaks: the owner's decisions (2026-11-26)
 
-Decided by the owner, for v0.9.8 (not v0.9.7, see below):
+Decided by the owner. Planned for v0.9.8 on my recommendation (the owner was fine with waiting; reasons below):
 
 - **Gates are joined from the world.** Nobody has to be in the tower to join a gate or a break; a gate opens on an
   island like a dungeon does today. Dungeon scrolls still open one.
