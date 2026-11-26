@@ -1,0 +1,13 @@
+{
+  "scene": "Tower_Galewharf",
+  "about": "The owner's hand edits of Tower_Galewharf, written by Ravenfall > Tower Places when the scene is saved and put back after a rebuild (docs/tower-places-editor.md). Positions, turns (degrees) and scales are local, under the parent.",
+  "changed": [
+    {"id": "Tower Town - Galewharf/Props/SM_Prop_Bench_01", "name": "SM_Prop_Bench_01", "position": [5.032, 0.05, 4.333], "rotation": [0, 238.4077, 0], "scale": [1.2, 1.2, 1.2], "built": [3.9614, 0.05, 3.958]},
+    {"id": "Tower Town - Galewharf/Props/SM_Prop_Bench_01#1", "name": "SM_Prop_Bench_01", "position": [-4.31, 0.05, 4.9], "rotation": [0, 143.3107, 0], "scale": [1.2, 1.2, 1.2], "built": [-3.9583, 0.05, 3.9614]},
+    {"id": "Tower Town - Galewharf/Props/SM_Prop_Bench_01#2", "name": "SM_Prop_Bench_01", "position": [-4.41, 0.05, -4.28], "rotation": [0, 47.0306, 0], "scale": [1.2, 1.2, 1.2], "built": [-3.9614, 0.05, -3.958]},
+    {"id": "Tower Town - Galewharf/Props/SM_Prop_Bench_01#3", "name": "SM_Prop_Bench_01", "position": [4.06, 0.05, -4.95], "rotation": [0, 327.9521, 0], "scale": [1.2, 1.2, 1.2], "built": [3.9583, 0.05, -3.9614]}
+  ],
+  "deleted": [],
+  "added": [],
+  "unapplied": []
+}

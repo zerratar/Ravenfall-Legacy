@@ -1,0 +1,19 @@
+{
+  "scene": "Tower_Mossgate",
+  "about": "The owner's hand edits of Tower_Mossgate, written by Ravenfall > Tower Places when the scene is saved and put back after a rebuild (docs/tower-places-editor.md). Positions, turns (degrees) and scales are local, under the parent.",
+  "changed": [
+    {"id": "Tower Town - Mossgate/Buildings/SM_Bld_Wall_L_02", "name": "SM_Bld_Wall_L_02", "position": [-20.9999, -0.4771, 40], "rotation": [0, 180, 0], "scale": [1.4, 1.4, 1.4], "built": [-20.9999, -0.4771, 40.7998]},
+    {"id": "Tower Town - Mossgate/Buildings/SM_Bld_Wall_L_Damaged_01", "name": "SM_Bld_Wall_L_Damaged_01", "position": [-27.9999, -0.4219, 40.04], "rotation": [0, 180, 0], "scale": [1.4, 1.4, 1.4], "built": [-27.9999, -0.4219, 41.6001]},
+    {"id": "Tower Town - Mossgate/Buildings/SM_Bld_Wall_L_03", "name": "SM_Bld_Wall_L_03", "position": [-34.9999, -0.51, 40.06], "rotation": [0, 180, 0], "scale": [1.4, 1.4, 1.4], "built": [-34.9999, -0.0877, 42.3999]},
+    {"id": "Tower Town - Mossgate/Buildings/SM_Bld_Corner_Tower_01", "name": "SM_Bld_Corner_Tower_01", "position": [-36.98, 1.1408, 41], "rotation": [0, 269.0292, 0], "scale": [1.6, 1.6, 1.6], "built": [-36.9999, 1.1408, 43]},
+    {"id": "Tower Town - Mossgate/Buildings/SM_Bld_Wall_L_Damaged_03", "name": "SM_Bld_Wall_L_Damaged_03", "position": [20.9999, -0.3498, 40.83], "rotation": [0, 180, 0], "scale": [1.4, 1.4, 1.4], "built": [20.9999, -0.3498, 41.6001]},
+    {"id": "Tower Town - Mossgate/Buildings/SM_Bld_Wall_L_01#1", "name": "SM_Bld_Wall_L_01", "position": [27.9999, -0.35, 40.89], "rotation": [0, 180, 0], "scale": [1.4, 1.4, 1.4], "built": [27.9999, -0.1433, 42.3999]},
+    {"id": "Tower Town - Mossgate/Buildings/SM_Bld_Corner_Tower_02", "name": "SM_Bld_Corner_Tower_02", "position": [36.55, 1.0114, 40.64], "rotation": [0, 180, 0], "scale": [1.6, 1.6, 1.6], "built": [36.9999, 1.0114, 43]},
+    {"id": "Tower Town - Mossgate/Resting Place/SM_Prop_Log_01", "name": "SM_Prop_Log_01", "position": [-5.69, -0.0156, -22.25], "rotation": [0, 251.8936, 0], "scale": [1, 1, 1], "built": [-6.9462, -0.0156, -21.9106]},
+    {"id": "Tower Town - Mossgate/Resting Place/SM_Prop_Log_02", "name": "SM_Prop_Log_02", "position": [-12.91, -0.0105, -27.53], "rotation": [0, 205.6225, 0], "scale": [1, 1, 1], "built": [-13.3362, -0.0105, -22.3999]},
+    {"id": "Tower Town - Mossgate/Resting Place/SM_Prop_Log_01#1", "name": "SM_Prop_Log_01", "position": [-8.41, -0.0249, -28.35], "rotation": [0, 145.1698, 0], "scale": [1, 1, 1], "built": [-9.7176, -0.0249, -27.689]}
+  ],
+  "deleted": [],
+  "added": [],
+  "unapplied": []
+}

@@ -1,0 +1,15 @@
+{
+  "scene": "Tower_StormSpire",
+  "about": "The owner's hand edits of Tower_StormSpire, written by Ravenfall > Tower Places when the scene is saved and put back after a rebuild (docs/tower-places-editor.md). Positions, turns (degrees) and scales are local, under the parent.",
+  "changed": [
+    {"id": "Tower Floor - The Storm Spire Summit/Colonnade/SM_Bld_Ruin_Wall_01", "name": "SM_Bld_Ruin_Wall_01", "position": [11.2, 0.3947, 47.54], "rotation": [0, 15.8824, 0], "scale": [1.7, 1.7, 1.7], "built": [13.8413, 0.3947, 48.647]},
+    {"id": "Tower Floor - The Storm Spire Summit/Colonnade/SM_Bld_Ruin_Wall_01#1", "name": "SM_Bld_Ruin_Wall_01", "position": [2.78, 0.3973, 48.89], "rotation": [0, 5.2941, 0], "scale": [1.7, 1.7, 1.7], "built": [4.7691, 0.3973, 51.4668]},
+    {"id": "Tower Floor - The Storm Spire Summit/Colonnade/SM_Bld_Ruin_Wall_01#2", "name": "SM_Bld_Ruin_Wall_01", "position": [-5.6, 0.3037, 48.82], "rotation": [0, 353.7112, 0], "scale": [1.7, 1.7, 1.7], "built": [-4.6997, 0.3037, 50.7178]},
+    {"id": "Tower Floor - The Storm Spire Summit/Colonnade/SM_Bld_Ruin_Wall_01#3", "name": "SM_Bld_Ruin_Wall_01", "position": [-22.9235, 0.3327, 46.0366], "rotation": [0, 328.7296, 0], "scale": [1.7, 1.7, 1.7], "built": [-22.9235, 0.3327, 46.0366]},
+    {"id": "Tower Floor - The Storm Spire Summit/Colonnade/SM_Bld_Ruin_Wall_01#4", "name": "SM_Bld_Ruin_Wall_01", "position": [-36.2349, 0.2831, 33.0322], "rotation": [0, 309.8259, 0], "scale": [1.7, 1.7, 1.7], "built": [-36.2349, 0.2831, 33.0322]},
+    {"id": "Tower Floor - The Storm Spire Summit/Colonnade/SM_Bld_Ruin_Wall_01#5", "name": "SM_Bld_Ruin_Wall_01", "position": [44.49, 0.391, -26.7], "rotation": [0, 298.0851, 0], "scale": [1.7, 1.7, 1.7], "built": [45.929, 0.391, -28.438]}
+  ],
+  "deleted": [],
+  "added": [],
+  "unapplied": []
+}

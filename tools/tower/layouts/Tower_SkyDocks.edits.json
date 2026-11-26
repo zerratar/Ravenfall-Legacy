@@ -1,0 +1,16 @@
+{
+  "scene": "Tower_SkyDocks",
+  "about": "The owner's hand edits of Tower_SkyDocks, written by Ravenfall > Tower Places when the scene is saved and put back after a rebuild (docs/tower-places-editor.md). Positions, turns (degrees) and scales are local, under the parent.",
+  "changed": [
+    {"id": "Tower Floor - The Storm Spire/Docks/SM_Bld_Dock_Pole_01", "name": "SM_Bld_Dock_Pole_01", "position": [55.06, -1.16, 16.52], "rotation": [0, 72, 0], "scale": [2.2, 2.2, 2.2], "built": [59.2013, -2.697, 17.8687]},
+    {"id": "Tower Floor - The Storm Spire/Docks/SM_Bld_Dock_Pole_01#1", "name": "SM_Bld_Dock_Pole_01", "position": [54.2566, -1.16, 18.9927], "rotation": [0, 72, 0], "scale": [2.2, 2.2, 2.2], "built": [58.3978, -2.697, 20.3413]},
+    {"id": "Tower Floor - The Storm Spire/Docks/SM_Bld_Dock_Pole_01#2", "name": "SM_Bld_Dock_Pole_01", "position": [62.0978, -1.16, 18.8066], "rotation": [0, 72, 0], "scale": [2.2, 2.2, 2.2], "built": [66.2391, -2.697, 20.1553]},
+    {"id": "Tower Floor - The Storm Spire/Docks/SM_Bld_Dock_Pole_01#3", "name": "SM_Bld_Dock_Pole_01", "position": [61.2944, -1.16, 21.2793], "rotation": [0, 72, 0], "scale": [2.2, 2.2, 2.2], "built": [65.4357, -2.697, 22.6279]},
+    {"id": "Tower Floor - The Storm Spire/Docks/SM_Bld_Dock_Pole_01#4", "name": "SM_Bld_Dock_Pole_01", "position": [69.1356, -1.16, 21.0938], "rotation": [0, 72, 0], "scale": [2.2, 2.2, 2.2], "built": [73.2769, -2.697, 22.4424]},
+    {"id": "Tower Floor - The Storm Spire/Docks/SM_Bld_Dock_Pole_01#5", "name": "SM_Bld_Dock_Pole_01", "position": [68.3322, -1.16, 23.5664], "rotation": [0, 72, 0], "scale": [2.2, 2.2, 2.2], "built": [72.4735, -2.697, 24.915]},
+    {"id": "Tower Floor - The Storm Spire/Docks/Moored Ship East", "name": "Moored Ship East", "position": [65.5764, -4.28, 28.667], "rotation": [0, 76, 0], "scale": [0.55, 0.55, 0.55], "built": [65.5764, -6.697, 28.667]}
+  ],
+  "deleted": [],
+  "added": [],
+  "unapplied": []
+}

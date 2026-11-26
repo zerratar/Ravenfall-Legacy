@@ -1,0 +1,13 @@
+{
+  "scene": "Tower_Overgrown",
+  "about": "The owner's hand edits of Tower_Overgrown, written by Ravenfall > Tower Places when the scene is saved and put back after a rebuild (docs/tower-places-editor.md). Positions, turns (degrees) and scales are local, under the parent.",
+  "changed": [
+    {"id": "Tower Floor - The Overgrown Halls/Ruins/SM_Env_Ruin_04#1", "name": "SM_Env_Ruin_04", "position": [-55.93, -0.7718, 1.18], "rotation": [0, 271.8841, 0], "scale": [2.6259, 2.6259, 2.6259], "built": [-55.7455, -0.7718, 0.188]},
+    {"id": "Tower Floor - The Overgrown Halls/Foliage/SM_Env_Grass_Tall_Clump_05#2", "name": "SM_Env_Grass_Tall_Clump_05", "position": [-7.27, 0.05, -26.64], "rotation": [0, 225.1161, 0], "scale": [1.4944, 1.4944, 1.4944], "built": [-1.9101, 0.05, -24.0151]}
+  ],
+  "deleted": [
+    {"id": "Tower Floor - The Overgrown Halls/Light Shafts", "name": "Light Shafts", "built": [0, 0, 0]}
+  ],
+  "added": [],
+  "unapplied": []
+}
