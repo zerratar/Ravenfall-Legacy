@@ -69,6 +69,8 @@ namespace Shinobytes.UI
         private readonly List<(VisualElement row, Label text, Label count)> questRows = new List<(VisualElement, Label, Label)>();
         private float nextRefresh;
         private bool shown;
+        // a raid's or a dungeon's own camera is on: the panel keeps off the top of the screen meanwhile
+        private bool underEvent;
         private float shownFill = -1f;
 
         /// <summary>Adds the panel to the status column's document (the one the raid panel is on), once.</summary>
@@ -252,6 +254,13 @@ namespace Shinobytes.UI
         private void Update()
         {
             UpdateNotice();
+            // the raid's or the dungeon's camera coming or going: at once, not at the next refresh
+            var eventCamera = GameCamera.RaidOrDungeonCamera;
+            if (eventCamera != underEvent)
+            {
+                underEvent = eventCamera;
+                nextRefresh = 0f;
+            }
             if (Time.unscaledTime < nextRefresh) return;
             nextRefresh = Time.unscaledTime + RefreshSeconds;
             if (hud == null || hud.panel == null)
@@ -462,7 +471,10 @@ namespace Shinobytes.UI
             var tower = TowerManager.Instance;
             var onParts = tower ? tower.FightingPlayers().Count : 0;
             var inTown = tower ? tower.TownPlayers().Count : 0;
-            var active = tower && tower.State != null && (onParts + inTown > 0 || tower.Phase == TowerManager.TowerPhase.Countdown || tower.Phase == TowerManager.TowerPhase.Fight);
+            // not at all under a raid's or a dungeon's own camera (playtest 2026-11-26): the raid or dungeon panel, the
+            // stream quest pill and the tower's bar stood stacked at the top of the picture, on the very fight that
+            // camera watched. It comes back when the camera does, on the tower's side or the world's.
+            var active = tower && tower.State != null && !underEvent && (onParts + inTown > 0 || tower.Phase == TowerManager.TowerPhase.Countdown || tower.Phase == TowerManager.TowerPhase.Fight);
             if (active != shown)
             {
                 shown = active;

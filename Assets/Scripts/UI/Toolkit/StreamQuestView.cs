@@ -60,6 +60,7 @@ namespace Shinobytes.UI
         private bool windowOpen;
         private bool busy;
         private float nextSecond;
+        private bool pillUnderEvent;
         private float nextRavebridgeCheck;
 
         public static StreamQuestView Instance { get; private set; }
@@ -260,7 +261,13 @@ namespace Shinobytes.UI
             StoryLog.Tick(game, Time.unscaledTime);
             QuestTitles.Tick(game, Time.unscaledTime);
 
-            // the clock and the bar's numbers once a second
+            // the clock and the bar's numbers once a second; at once when a raid's or a dungeon's camera comes or goes
+            var eventCamera = GameCamera.RaidOrDungeonCamera;
+            if (eventCamera != pillUnderEvent)
+            {
+                pillUnderEvent = eventCamera;
+                nextSecond = 0f;
+            }
             if (Time.unscaledTime >= nextSecond)
             {
                 nextSecond = Time.unscaledTime + 1f;
@@ -312,8 +319,10 @@ namespace Shinobytes.UI
             var goal = online && q == null ? StreamerQuests.RunningGoal : null;
             // the idle pill only invites a start: none while today's offers are used up (the window is in the shortcut bar)
             var offers = online && StreamQuests.Latest.Offers != null && StreamQuests.Latest.Offers.Length > 0;
+            // the idle pill (an invitation to start one) keeps off the top while a raid's or a dungeon's own camera is on:
+            // their panel has the top of the picture to itself (playtest 2026-11-26). A running quest's bar stays.
             var hidden = !online || !SettingsApplier.StreamQuestBar || (VillageBuildMode.Instance && VillageBuildMode.Instance.IsActive)
-                || (q == null && goal == null && !offers);
+                || (q == null && goal == null && (!offers || pillUnderEvent));
             SetDisplay(bar, !hidden);
             if (hidden) return;
 

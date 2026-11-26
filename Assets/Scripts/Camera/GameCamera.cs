@@ -58,6 +58,20 @@ public class GameCamera : MonoBehaviour
     public GameCameraType State => state;
 
     /// <summary>
+    ///     The raid's or the dungeon's own camera is on: the top of the screen is their panel's alone (the tower panel
+    ///     and the idle stream quest pill keep off it until the camera goes back).
+    /// </summary>
+    public static bool RaidOrDungeonCamera
+    {
+        get
+        {
+            var game = GameManager.Instance;
+            var camera = game ? game.Camera : null;
+            return camera && (camera.state == GameCameraType.Raid || camera.state == GameCameraType.Dungeon);
+        }
+    }
+
+    /// <summary>
     /// True while the free camera is actually the one in control. <see cref="State"/> is not a
     /// reliable signal for this: it starts as Free and the automatic observe path never changes it.
     /// </summary>
