@@ -70,8 +70,27 @@ public static class WorldTowerCamera
     private static bool wasGroup;
     private static float lastInput = -1000f;
 
+    // The framing is smooth and has slack (the owner, 2026-11-27: it jittered and jumped while it fitted the players in).
+    // The group is weighed softly, so a player stepping over the clump's edge moves the middle and the reach a little,
+    // never at once; the clump's heart stays the same player until another clearly has more near; the framed centre
+    // follows the middle only past a dead zone and eases there; the zoom goes out as soon as the group needs it but
+    // comes in only once the group has been clearly smaller for a while, and eases both ways. Frame-rate independent,
+    // on unscaled time (cutscenes slow time). A new place (the town, another part) cuts; a boss fight starting or
+    // ending blends quickly.
+
+    // the centre's dead zone (a share of the reach, within these bounds), and how long the centre and the zoom take
+    private const float SlackShare = 0.2f, SlackLeast = 1.5f, SlackMost = 5f;
+    private const float CentreTime = 0.9f, CentreSpeed = 25f, ZoomTime = 1.2f, ZoomSpeed = 12f;
+    // the zoom comes in only when it could be this much nearer, for this long
+    private const float ZoomSlack = 4f, ZoomInAfter = 2f;
+    // after a hard change (a boss fight starting or ending): a quick blend for this long
+    private const float BlendSeconds = 1.5f, BlendCentreTime = 0.3f, BlendZoomTime = 0.35f;
+    // another clump becomes the heart only with this many times as many players near (and one more)
+    private const float HeartKeep = 1.25f;
+
     private static Transform target;
     private static Vector3 middle;
+    private static Vector3 goal;
     private static Vector3 velocity;
     private static float radius;
     private static float nextGather;
@@ -79,6 +98,14 @@ public static class WorldTowerCamera
     private static float savedMaxZoom = -1f;
     private static float setZoom;
     private static float handZoomUntil;
+    private static float goalZoom = -1f;
+    private static float zoomVelocity;
+    private static float nearerFor;
+    private static float blendUntil;
+    private static PlayerController heart;
+    private static object place;
+    private static bool fighting;
+    private static readonly object TownPlace = new object();
     private static readonly List<PlayerController> group = new List<PlayerController>();
     private static readonly Dictionary<TowerFloor, int> onFloor = new Dictionary<TowerFloor, int>();
 
@@ -99,6 +126,11 @@ public static class WorldTowerCamera
         savedZoom = -1f;
         savedMaxZoom = -1f;
         handZoomUntil = 0f;
+        goalZoom = -1f;
+        zoomVelocity = nearerFor = blendUntil = 0f;
+        heart = null;
+        place = shownPlace = null;
+        fighting = shownFight = false;
         group.Clear();
         onFloor.Clear();
     }
@@ -397,8 +429,13 @@ public static class WorldTowerCamera
         if (Gather(game, out var boss)) Middle(boss);
         if (snap)
         {
-            t.position = middle;
+            t.position = goal = middle;
             velocity = Vector3.zero;
+            // the zoom starts again from where the camera is, and this is the place and the fight shown now
+            goalZoom = -1f;
+            zoomVelocity = 0f;
+            shownPlace = place;
+            shownFight = fighting;
         }
         nextGather = Time.unscaledTime + 0.2f;
         return t;
@@ -441,6 +478,7 @@ public static class WorldTowerCamera
             if (town >= most) { inTown = town > 0; where = null; }
         }
         if (!where && !inTown) return false;
+        place = inTown ? TownPlace : where;
 
         foreach (var p in game.Players.GetAllPlayers())
         {
@@ -460,43 +498,69 @@ public static class WorldTowerCamera
         return group.Count > 0;
     }
 
+    // how much a player at this distance from the clump's heart counts as in it: fully within the clump's radius,
+    // then less and less to none at one and a half times it (a step over the edge moves the picture a little, not at once)
+    private static float InClump(float sqr)
+    {
+        const float inner = ClumpRadius * ClumpRadius, outer = ClumpRadius * ClumpRadius * 2.25f;
+        if (sqr <= inner) return 1f;
+        if (sqr >= outer) return 0f;
+        var x = 1f - (Mathf.Sqrt(sqr) - ClumpRadius) / (ClumpRadius * 0.5f);
+        return x * x * (3f - 2f * x);
+    }
+
     /// <summary>
     ///     The middle of the biggest clump of the group (the player with the most others near, and the mean of those),
     ///     so a party split over two rooms is watched where most of it is and never from inside the wall between; a
-    ///     guardian that is fought is taken into the picture.
+    ///     guardian that is fought is taken into the picture. Players are weighed softly by how far they are from the
+    ///     clump's heart, and the heart stays the same player until another clearly has more near.
     /// </summary>
     private static void Middle(EnemyController boss)
     {
         var count = group.Count;
         var best = 0;
-        var bestNear = -1;
+        var bestNear = -1f;
+        var heartAt = -1;
+        var heartNear = 0f;
         // (a big crowd: every third is asked, which finds the clump as well)
         var stride = count > 90 ? 3 : 1;
-        for (var i = 0; i < count; i += stride)
+        for (var i = 0; i < count; i++)
         {
+            if (i % stride != 0 && group[i] != heart) continue;
             var a = group[i].transform.position;
-            var near = 0;
+            var near = 0f;
             for (var j = 0; j < count; j++)
-                if ((group[j].transform.position - a).sqrMagnitude < ClumpRadius * ClumpRadius) near++;
+                near += InClump((group[j].transform.position - a).sqrMagnitude);
             if (near > bestNear) { bestNear = near; best = i; }
+            if (group[i] == heart) { heartAt = i; heartNear = near; }
         }
-        var centre = group[best].transform.position;
+        // the heart before stays unless another has clearly more near
+        if (heartAt >= 0 && heartNear * HeartKeep + 1f >= bestNear) best = heartAt;
+        heart = group[best];
+        var centre = heart.transform.position;
         var sum = Vector3.zero;
-        var members = 0;
+        var weight = 0f;
         for (var j = 0; j < count; j++)
         {
             var p = group[j].transform.position;
-            if ((p - centre).sqrMagnitude >= ClumpRadius * ClumpRadius) continue;
-            sum += p;
-            members++;
+            var w = InClump((p - centre).sqrMagnitude);
+            if (w <= 0f) continue;
+            sum += p * w;
+            weight += w;
         }
-        var mid = members > 0 ? sum / members : centre;
+        var mid = weight > 0f ? sum / weight : centre;
+        // how far the picture has to reach: the players about the middle, those further out counting less and less
+        // (fully to one and a half clump radii, none from two)
         var reach = 0f;
+        const float full = ClumpRadius * 1.5f, none = ClumpRadius * 2f;
         for (var j = 0; j < count; j++)
         {
             var d = group[j].transform.position - mid;
             d.y = 0f;
-            if (d.sqrMagnitude < ClumpRadius * ClumpRadius * 2.25f) reach = Mathf.Max(reach, d.magnitude);
+            var m = d.magnitude;
+            if (m >= none) continue;
+            var w = m <= full ? 1f : 1f - (m - full) / (none - full);
+            reach = Mathf.Max(reach, m * w);
         }
         if (boss)
         {
@@ -509,11 +573,17 @@ public static class WorldTowerCamera
         }
         middle = mid;
         radius = reach;
+        fighting = boss != null;
     }
+
+    // the place and the fight the camera showed last frame, to tell a hard change
+    private static object shownPlace;
+    private static bool shownFight;
 
     private static void Drive(GameCamera camera, GameManager game)
     {
         var now = Time.unscaledTime;
+        var dt = Time.unscaledDeltaTime;
         var t = Target;
         if (now >= nextGather)
         {
@@ -521,14 +591,27 @@ public static class WorldTowerCamera
             if (Gather(game, out var boss)) Middle(boss);
         }
         var orbit = camera.GetComponent<OrbitCamera>();
+
         // another place (the town after a part, the next part): a cut, not a flight through the walls
-        if ((middle - t.position).sqrMagnitude > 45f * 45f)
+        var cut = (shownPlace != null && place != shownPlace) || (middle - t.position).sqrMagnitude > 45f * 45f;
+        // a boss fight starting or ending: a quick blend
+        if (fighting != shownFight && !cut) blendUntil = now + BlendSeconds;
+        shownPlace = place;
+        shownFight = fighting;
+        var blending = now < blendUntil;
+
+        // the centre: it follows the middle only past a dead zone (a player stepping about does not move it), and eases
+        var slack = blending ? 0f : Mathf.Clamp(radius * SlackShare, SlackLeast, SlackMost);
+        var off = middle - goal;
+        if (off.magnitude > slack) goal = middle - off.normalized * slack;
+        if (cut)
         {
-            t.position = middle;
+            t.position = goal = middle;
             velocity = Vector3.zero;
+            goalZoom = -1f;
             if (orbit) orbit.TargetTransform = t;
         }
-        else t.position = Vector3.SmoothDamp(t.position, middle, ref velocity, 0.6f, 40f, Time.unscaledDeltaTime);
+        else if (dt > 0f) t.position = Vector3.SmoothDamp(t.position, goal, ref velocity, blending ? BlendCentreTime : CentreTime, CentreSpeed, dt);
 
         if (!orbit) return;
         if (savedZoom <= 0f)
@@ -538,14 +621,35 @@ public static class WorldTowerCamera
             orbit.MaxZoom = Mathf.Max(orbit.MaxZoom, FarthestZoom);
             setZoom = orbit.Distance;
             handZoomUntil = 0f;
+            goalZoom = -1f;
         }
-        // the streamer zoomed by hand: theirs for a while
-        if (Mathf.Abs(orbit.Distance - setZoom) > 0.01f) handZoomUntil = now + 25f;
+        // the streamer zoomed by hand: theirs for a while, and the zoom eases on from there afterwards
+        if (Mathf.Abs(orbit.Distance - setZoom) > 0.01f)
+        {
+            handZoomUntil = now + 25f;
+            goalZoom = -1f;
+        }
         if (now >= handZoomUntil)
         {
             var nearest = Mathf.Clamp(savedZoom, NearestZoom, OwnZoomUpTo);
             var wanted = Mathf.Clamp(radius * 1.25f + 12f, nearest, FarthestZoom);
-            orbit.Distance = Mathf.MoveTowards(orbit.Distance, wanted, 6f * Time.unscaledDeltaTime);
+            if (goalZoom < 0f)
+            {
+                goalZoom = cut ? wanted : orbit.Distance;
+                zoomVelocity = 0f;
+                nearerFor = 0f;
+                if (cut) orbit.Distance = wanted;
+            }
+            // out as soon as the group needs it; in only once it could be clearly nearer for a while (a knock-out, a
+            // player stepping back in, a pack coming and going do not pump it)
+            if (wanted >= goalZoom) { goalZoom = wanted; nearerFor = 0f; }
+            else if (wanted < goalZoom - ZoomSlack || blending)
+            {
+                nearerFor += dt;
+                if (nearerFor >= ZoomInAfter || blending) goalZoom = blending ? wanted : wanted + ZoomSlack;
+            }
+            else nearerFor = 0f;
+            if (dt > 0f) orbit.Distance = Mathf.SmoothDamp(orbit.Distance, goalZoom, ref zoomVelocity, blending ? BlendZoomTime : ZoomTime, ZoomSpeed, dt);
         }
         setZoom = orbit.Distance;
     }

@@ -345,6 +345,11 @@ is on, "Tower (T)" otherwise), and one in the shortcut bar.
 - **The tower side** is a group camera: no single player is watched, the camera stands over the middle of the group
   on the place the climb is on (a boss fight with the guardian in the picture, the climb's part, else the town or
   the busiest open part). It is where the camera goes by itself when the climb starts, after the entering look.
+  Its framing eases and has slack (2026-11-27): players count less and less past the clump's edge, the clump's
+  heart changes only when another clearly has more players, the framed centre follows past a dead zone (a fifth of
+  the reach, 1.5 to 5 m) and eases in 0.9 s, and the zoom goes out at once when the group needs it but in only once
+  it could be 4 m nearer for 2 s, easing in 1.2 s; all on unscaled time. Another place cuts, a boss fight starting
+  or ending blends in a third of a second.
 - **The world side** is the camera as it always was, among the players outside the tower, and it stays outside
   until the key is pressed again.
 - A player the streamer picks is followed as always (in the tower or outside); T goes back to the group camera.
