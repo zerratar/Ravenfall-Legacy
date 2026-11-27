@@ -26,6 +26,8 @@ namespace Shinobytes.UI
             new IntroWindow.Page { Picture = "whatsnew-5", Title = () => Localization.UI_WHATSNEW_5_TITLE, Text = () => Localization.UI_WHATSNEW_5_TEXT },
             new IntroWindow.Page { Picture = "whatsnew-6", Title = () => Localization.UI_WHATSNEW_6_TITLE, Text = () => Localization.UI_WHATSNEW_6_TEXT },
             new IntroWindow.Page { Picture = "whatsnew-7", Title = () => Localization.UI_WHATSNEW_7_TITLE, Text = () => Localization.UI_WHATSNEW_7_TEXT },
+            new IntroWindow.Page { Picture = "whatsnew-8", Title = () => Localization.UI_WHATSNEW_8_TITLE, Text = () => Localization.UI_WHATSNEW_8_TEXT },
+            new IntroWindow.Page { Picture = "whatsnew-9", Title = () => Localization.UI_WHATSNEW_9_TITLE, Text = () => Localization.UI_WHATSNEW_9_TEXT },
         };
 
         private static IntroWindow window;
