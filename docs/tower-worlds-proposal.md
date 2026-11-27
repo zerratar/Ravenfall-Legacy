@@ -1348,6 +1348,17 @@ island's rate. The tower panel shows "+10% exp" in gold beside the players count
 the floor's name, the website's tower page a badge per floor and a line under the rules. The player details window
 shows the time to the next level on a part (it said "Not able to train here" for combat skills there).
 
+**Slayer from tower bosses** (the owner, 2026-11-27; `TowerManager.PaySlayer`). None was paid. A won attempt pays
+everyone who fought in it, knocked out ones included (not those who sat it out, nothing for a lost attempt), once the
+server has the clear: a mini boss the dungeon boss's reward (`DungeonController.AddExperienceReward`: Slayer factor
+max(level / 200, 70) x 0.125, and max(5, half that) in the trained skill), a floor boss 2.5 times both, the floor's
+`Tower.ExpBonus` on both (a combat skill or Healing gets it from `GetExperience` on the part, not twice). Paid as a
+reward that the island's top-up does not count against (`PlayerProgression.AddReward`). Measured with bots on floor 2
+(+10%), Slayer against what a dungeon boss pays the same character: 1.100 for the mini bosses (six, twenty and five
+bots), 2.750 for Glacius; the trained skill's bonus 1.100 and 2.750 (1.32 and 2.97 for those still targeting the boss,
+who also get its kill's share); 0 for a bot in the town and for everyone after a lost attempt. The server keeps no
+experience for a clear, so it has nothing to match.
+
 ### Measured (2026-11-27, editor, local server against the dev database, bots, chat muted and the bot stopped)
 
 Minutes for a part's kill objectives, from the kills a minute bots made over 150 seconds on each part (the part's kill

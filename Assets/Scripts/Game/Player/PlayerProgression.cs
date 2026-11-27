@@ -190,6 +190,18 @@ public class PlayerProgression
     }
 
     /// <summary>
+    ///     A one-off reward (a won tower boss): paid as any experience is, but never counted against what a calm place or
+    ///     a tower part tops up (<see cref="TrainAway"/>), so the top-up does not swallow it.
+    /// </summary>
+    public void AddReward(Skill skill, double factor)
+    {
+        var was = applyingAway;
+        applyingAway = true;
+        try { AddExp(skill, factor); }
+        finally { applyingAway = was; }
+    }
+
+    /// <summary>
     /// Per-chunk scaling, which is how crowding on a training spot reduces gain.
     /// </summary>
     public double GetExpFactor(out ExpGainState state)

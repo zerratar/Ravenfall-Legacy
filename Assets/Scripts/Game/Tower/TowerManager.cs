@@ -2356,6 +2356,9 @@ public sealed class TowerManager : MonoBehaviour
         var names = participants.Where(p => p && !p.isDestroyed).GroupBy(p => p.Id).ToDictionary(x => x.Key, x => x.First().PlayerName);
         var players = ids.Length;
         var standing = participants.Where(p => p && !p.isDestroyed && !p.Stats.IsDead && p.towerHandler.InTower).ToList();
+        // everyone who fought in it, knocked out or not, for the Slayer reward once the server has the clear
+        var fought = participants.Where(p => p && !p.isDestroyed).ToList();
+        var bossLevel = boss ? boss.Stats.CombatLevel : 0;
         var report = new TowerClearReport { Characters = ids, LastHits = LastBlows(), Strength = fightStrength };
         // the part is wrapped up: nobody new comes onto it, and it stays loaded until everyone is in the town
         clearing = area;
@@ -2403,6 +2406,8 @@ public sealed class TowerManager : MonoBehaviour
             return;
         }
 
+        PaySlayer(fought, def, bossLevel);
+
         // the world first is the floor boss's; a part's first clear in the world is only said with its coins
         if (result.WorldFirst) Announce(Localization.MSG_TOWER_WORLD_FIRST, def.Boss.Name, TowerWords.Floor(floorNumber), TowerWords.FloorName(floorNumber));
         Announce(result.PartFirst && !result.WorldFirst ? Localization.MSG_TOWER_CLEARED_FIRST : Localization.MSG_TOWER_CLEARED,
@@ -2445,6 +2450,44 @@ public sealed class TowerManager : MonoBehaviour
         if (floorBoss) Announce(Localization.MSG_TOWER_TO_NEW_TOWN, TowerWords.Floor(next.Number), TowerWords.FloorName(next.Number), (int)ClimbDelay, town.Name, next.Name);
         else Announce(Localization.MSG_TOWER_TO_TOWN, (int)ClimbDelay, town.Name, TowerWords.Floor(next.Number), TowerWords.Part(next.Number), next.Name);
         StartCoroutine(AfterClearRoutine(area, def, next, town));
+    }
+
+    /// <summary>A floor boss pays this many times a mini boss's Slayer reward (the owner, 2026-11-27).</summary>
+    public const double FloorBossSlayerShare = 2.5;
+
+    /// <summary>
+    ///     A won boss attempt pays Slayer experience, as a dungeon boss does (DungeonController.AddExperienceReward: the
+    ///     same factor from the boss's combat level, and its small bonus in the trained skill); a floor boss 2.5 times
+    ///     that. Everyone who fought in the attempt gets it, knocked out ones included; whoever sat it out gets nothing.
+    ///     The floor's experience bonus (Tower.ExpBonus) applies to both. The players are still on the part here, so a
+    ///     combat skill or Healing already gets that bonus from GetExperience and is not given it twice.
+    /// </summary>
+    private void PaySlayer(List<PlayerController> fought, TowerFloorDefinition def, int bossLevel)
+    {
+        if (fought == null || def == null) return;
+        var g = Game;
+        var dungeonFactor = g && g.SessionSettings != null ? Math.Max(1, g.SessionSettings.DungeonExpFactor) : 1;
+        var share = def.IsFloorBoss ? FloorBossSlayerShare : 1;
+        var slayer = Mathf.Max(bossLevel / 200, 70) * 0.125 * dungeonFactor;
+        var skill = Math.Max(5, slayer * 0.5) * share;
+        slayer *= share;
+        var bonus = 1d + Tower.ExpBonus(def.Floor);
+        foreach (var p in fought)
+        {
+            if (!p || p.isDestroyed || p.towerHandler == null || !p.towerHandler.InTower) continue;
+            try
+            {
+                p.Progression.AddReward(Skill.Slayer, slayer * bonus);
+                var trained = p.ActiveSkill;
+                if (trained == Skill.None || trained == Skill.Slayer) continue;
+                var given = trained.IsCombatSkill() ? 1d + p.towerHandler.ExpBonus : 1d;
+                p.Progression.AddReward(trained, skill * bonus / given);
+            }
+            catch (Exception exc)
+            {
+                Shinobytes.Debug.LogError("TowerManager.PaySlayer: " + exc.Message);
+            }
+        }
     }
 
     // Who got what from the chest, as after a dungeon (the same filter): the clear only gave a count, and nobody knew
