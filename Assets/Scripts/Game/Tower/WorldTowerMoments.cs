@@ -355,8 +355,10 @@ public sealed partial class WorldTower
             // the screen steps aside as for the tower's cutscenes; the title waits for the light
             if (byHand) holdFloor = floor + 1;
             var open = Tower.FloorInfo(floor + 1);
-            var line = open != null ? string.Format(Localization.UI_TOWER_FLOOR_OPEN, open.Number, open.Name) : Localization.UI_TOWER_FLOORS_SEALED;
-            screen = CutsceneScreen.Show(string.Format(Localization.UI_TOWER_FLOOR_CLEARED, floor), line, CutsceneScreen.Gold, CutsceneScreen.GoldOutline, Skip, TitleSize, top: true);
+            // the boss's fall already said "Floor 2 cleared": the tower says what is new (owner, 2026-11-27)
+            var title = open != null ? string.Format(Localization.UI_TOWER_FLOOR_OPEN, open.Name) : string.Format(Localization.UI_TOWER_FLOOR_CLEARED, floor);
+            var line = open != null ? string.Format(Localization.UI_TOWER_FLOOR_OPEN_NUMBER, open.Number) : Localization.UI_TOWER_FLOORS_SEALED;
+            screen = CutsceneScreen.Show(title, line, CutsceneScreen.Gold, CutsceneScreen.GoldOutline, Skip, TitleSize, top: true);
             screen.SetTitle(0f, 0f);
         }
         // the boss's fall already ended in black: straight onto the tower; else the picture goes dark first, the

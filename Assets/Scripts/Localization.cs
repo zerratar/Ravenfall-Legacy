@@ -1139,7 +1139,8 @@ public static class Localization
     public static string UI_TOWER_BOSS_FLOOR = "Mini boss of floor {0}, part {1}";
     public static string UI_TOWER_BOSS_QUOTE = "\"{0}\"";
     public static string UI_TOWER_FLOOR_CLEARED = "Floor {0} cleared";
-    public static string UI_TOWER_FLOOR_OPEN = "Floor {0}: {1} is open";
+    public static string UI_TOWER_FLOOR_OPEN = "{0} is open";
+    public static string UI_TOWER_FLOOR_OPEN_NUMBER = "Floor {0}";
     public static string UI_TOWER_FLOORS_SEALED = "The floors above are sealed, for now";
     public static string UI_TOWER_PART_CLEARED = "Part {0} cleared";
     public static string UI_TOWER_FLOOR_BOSS_LINE = "Boss of floor {0}, {1}";
