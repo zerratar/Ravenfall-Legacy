@@ -337,12 +337,15 @@ helpers within a second). Two ways to keep it a climb, for Zerratar to choose:
 ## 12. Level sync (decided 2026-11-08)
 
 Zerratar chose level sync over a group cap. On a floor (not in a town), every player fights as if at most at the floor's
-sync level, a tenth above the floor's level (`Tower.SyncLevel`: 11 on floor 1, 44 on floor 4, 110 on floor 10):
+sync level, a tenth above the floor's level (`Tower.SyncLevel`: 11 on floor 1, 44 on floor 4, 110 on floor 10; since
+2026-11-27 the levels follow a curve, docs/tower-worlds-proposal.md section 15: 11 on floor 1's first part, 110 on its
+last, 127 to 275 on floor 2, 292 to 440 on floor 3):
 - **Skill levels** (attack, strength, defence, ranged, magic, healing) and the combat level count only up to it.
 - **The health pool** shrinks to the sync level's, keeping what gear adds. The real health bar stays as it is: blows and
   heals taken on a floor are multiplied by how much bigger it is (`TowerHandler.SyncHealthScale`), so it loses the same
   share as the synced pool would.
-- **Gear** counts up to the best gear wearable at the sync level (`Tower.CapGear`, a table from the item list):
+- **Gear** counts up to the best gear wearable at the sync level (`Tower.CapGear`, a table from the item list, with
+  every level where the best gear changes since 2026-11-27; it had rows at 200, 300 and 500 only):
   power, accuracy and armour above it give nothing more on the floor; worse gear counts as it is. Skill trees, gems,
   crits, elements, attack speed and enchantments count in full.
 Levels alone were not enough: in the simulator, players at ten times a floor's level with levels synced but their own

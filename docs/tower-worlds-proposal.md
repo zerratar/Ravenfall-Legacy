@@ -320,7 +320,7 @@ A part's objectives are `TowerObjective` entries (`Tower.cs`), each of a `TowerO
 |---|---|---|
 | `Kill` | one kind of the part's monsters, defeated by whoever trains there | the game's report, as before |
 | `Gather` | gathering rounds of the named skills by the stream's players, wherever they train. Counted, never taken from a bag. Every monster defeated on the part counts one too, so a stream with nobody gathering is never stuck | the server's own `QuestTracker.Gathered` (one a round, about six a minute per gatherer), plus the game's kills |
-| `Find` | hidden things on the part, one at a time. A second of searching counts in full while someone stands within 9 m of where it lies and a quarter while players are anywhere else on the part. 4 minutes of searching a thing on floor 1, 5 on floor 2, 6 on floor 3. Found: a word over the finder | the game's report; the server takes one a report and no two within 45 seconds |
+| `Find` | hidden things on the part, one at a time. A second of searching counts in full while someone stands within 9 m of where it lies and a quarter while players are anywhere else on the part. 4 minutes of searching a thing on floor 1, 5 on floor 2, 6 on floor 3 (since 2026-11-27: 2.75, 3 and 3.25, section 15). Found: a word over the finder | the game's report; the server takes one a report and no two within 45 seconds |
 | `Guardian` | the mini boss or floor boss; opens when the others are done | the clear |
 | `GateItem` | kept for v0.9.8's gates; no part uses it | |
 
@@ -337,8 +337,9 @@ asks for them and why, and the streamer's /town page shows the stream's own prog
 | 2, Rimeholt | 3 coal and ore for Hilda (Mining); 5 fish for Old Tove (Fishing); 7 firewood for Big Gunnhild (Woodcutting); 9 food for Tove's stew (Farming, Gathering) | 2 Duck Feathers for Ylva; 6 Mead Barrels for Gunnhild; 8 Miner's Lanterns for Hilda | 1, 4, 10 |
 | 3, Galewharf | 3 planks for Captain Brisa (Woodcutting); 5 rations for Skipper Hob (Fishing, Farming); 7 copper ore for Tinker Volt (Mining); 9 fodder for Tessa (Farming, Gathering) | 2 Tufts of Wool for Tessa; 4 Lightning Bottles for Volt; 8 Oath Stones for Brisa | 1, 6, 10 |
 
-**The pace.** Measured in the game: five players on floor 1, part 6 make 12 kills a minute. The amounts in `Tower.cs`
-are set from the minutes of fighting a part should take five players:
+**The pace.** (Replaced on 2026-11-27: parts of about 25 minutes for five players, with packs on every spot; see
+section 15. What follows is the first pace, kept for the record.) Measured in the game: five players on floor 1, part 6
+make 12 kills a minute. The amounts in `Tower.cs` were set from the minutes of fighting a part should take five players:
 
 | | Minutes for five players | Kills per kind (first, second objective) | Gather | Find |
 |---|---|---|---|---|
@@ -647,6 +648,9 @@ to a cleared part of rooms starts at its first room behind shut gates and is fou
 panel says "Room 2 of 4" until the hold is reached.
 
 ### What a kill is worth (the owner, 2026-11-24)
+
+(Since 2026-11-27 a kill is mostly fighting, with packs on every spot: `TowerPace.FightShare` is 0.85, so the weights
+below changed; the aim did not. See section 15.)
 
 Step 1 measured that a part's fixed amounts take two players twice the time of five, and thirty a quarter to a half.
 Now each counted kill, and each counted gathering round, is worth more when few produce it and less when many do. The
@@ -1233,3 +1237,175 @@ goal kinds, red gates, rewards and key items on the server, the GateItem objecti
 islands, breaks with spreading and village damage, settings and texts). v0.9.7 reaches only three floors, so gates
 would have three looks; floor 4 (Dark Fortress) comes with v0.9.8. And key items change the tower's pace, which the
 v0.9.7 playtest has not measured yet.
+
+## 15. Pace, monsters, levels and experience: the owner's decisions from the bot playtest (2026-11-26, built 2026-11-27)
+
+The owner watched the bot playtest of 2026-11-26 (docs/releases/v0.9.7.0a-playtest.md) and decided, for v0.9.7:
+
+- **A part takes about 20 to 30 minutes for five players**, 25 on average. Six bots needed about 90 minutes for
+  Hare Hollow ("too long for sure"): viewers have to stay interested, and the clears are the moments.
+- **Tower monsters must not feel dead.** They stood still until hit. They wander as on the islands, and notice
+  players near them.
+- **A level curve**: floor 1's parts at levels 1 to 100, floor 2's at 100 to 250, floor 3's at 250 to 400, flattening
+  toward 999 around floor 10, so a stream has to level up before the higher floors. Level sync stays as it is. Going
+  past 999 is a later design (a few floors per update after v0.9.7).
+- **Climbing is never worse than the island**, plus 5% more experience a floor with no cap ("they wont reach +50%
+  until floor 10"), on the climb's part and cleared parts, for combat skills and Healing; the towns stay at the
+  island's rate. Shown on the panel and the floor map.
+
+### What was built (game and RavenNest commits)
+
+| | Game | RavenNest |
+|---|---|---|
+| Monsters wander | ef020861 | |
+| Monsters notice players | 84a2f919 | |
+| Packs, respawn by kill rate | 3e2c8a66 | |
+| Parts of about 25 minutes, players go for what the part needs | 442f281a | fd89a809 |
+| Level curve, the best-gear table, guardians' edges | 48708b00 | 8af8bad0 |
+| Experience: never less than the island, +5% a floor | 4fae433a | ed915a3c |
+
+**Wandering.** A tower part has no island, so its monsters counted as dungeon enemies and never wandered.
+`EnemyController.TowerMonster` (set by `TowerFloor` on a part's monsters, never on a guardian or its helpers) lets them
+take the islands' wander: 1.5 to 4 m about their own spot every 4 to 11 seconds, stopping when a player picks them;
+none more than 150 m from the camera, with graphics off or in potato mode (docs: enemy wandering, 2026-10-28).
+
+**Noticing.** Every half second a part looks at its idle monsters: one that sees a player within reach walks over
+and attacks, as dungeon monsters do (`TowerFloor.Notice`, `EnemyController.Notice`). Floor 1: 5.5 m, and only while
+the player has no monster on them (relaxed). Floor 2 up: 9 m, and up to three monsters on one player; the ones a
+player fights count. Not through a wall or a shut gate (a navmesh ray), not from a room not reached, never at players
+in a boss attempt, recovering from one or gathering for it (a monster on a player who goes into one of those walks
+back to its spot). A noticed player gets a little threat, so a tank's blows pull the monster as usual; a monster keeps
+at its player while it can reach them and gives up after 5 seconds out of reach.
+
+**Packs.** Every spot holds a pack of two or three of its kind by turns (`TowerFloor.PackSize`), the others spread
+2 to 3 m round the spot on the navmesh, never through a wall or a gate, made in code at spawn so the hand-edited
+scenes keep their spots. A part of 24 spots has 60 monsters. Floors of rooms get packs in every room; rooms before the
+hold stay cleared, the hold refills. **Respawn by kill rate:** a part keeps no more than a quarter of its monsters down
+(`TowerFloor.DownShare`): from the kills it sees a second (smoothed over 45 s) a monster comes back in a quarter of the
+part's monsters over that rate, at least 5 s and never slower than the pressure's own time (20 s, down to 8 under a
+crowd).
+
+**Players go for what the part needs.** With thirty bots on Hare Hollow the crowd felled the quick kind four times as
+fast as the tough one (under its pressure a Frost Raider has 3.8 times its health): 28 Snow Hares a minute, 8 Frost
+Raiders, so the raiders alone held the part up longer than five players took. A player looking for the next monster
+now counts one of a kind the part does not need now as three times as far plus 10 m (`TowerFloor.FollowNeeds`): the
+kill objective furthest behind (within a fiftieth) is wanted, by the stream's progress on the climb and by what fell
+there since it opened on a cleared part; a kind with no objective (an elite on the spots) or one already done is not
+wanted. So a part's kill objectives fill together.
+
+**The amounts** (`Tower.cs`, RavenNest fd89a809): five players need about 20 minutes for a floor's first part and 30
+for its last (20 + 10 x (part - 1) / 9), at the kills a minute five bots made with packs: about 21 on floors 1 and 2
+and 23.5 on floor 3 (it was 12 with one standing monster a spot). A part's kill objectives together take those
+minutes (a twentieth more, and a seventh more with an elite kind on the spots); on a gather part they take 80% and the
+gather amount is 120% of the kills made meanwhile, as before. Hare Hollow asks for 225 Snow Hares and 185 Frost Raiders
+(was 800 and 650), the Pasture for 285 cows and 220 bunnies (550 and 425), the Eye of the Storm for 370 drakes and 305
+gladiators (1,400 and 1,150). **Hidden things** take 2.75 minutes of searching on floor 1, 3 on floor 2 and 3.25 on
+floor 3 (were 4, 5 and 6), at most 4.
+
+**What a kill is worth by the group** (`TowerPace`): the share of a kill that is fighting is 0.85 (was 0.44): with
+packs the walk is a small part of a kill. Bots on Hare Hollow made 13.6, 19.6, 26.5 and 35.8 kills a minute with 2, 4,
+9.4 and 26.9 heads, which 0.85 fits within 4% (0.8 and 0.9 within 5%, 0.6 within 15%). So a kill by two players counts
+about 1.1 (was 1.4): two players kill faster a head than five. A crowd meets monsters with more health the higher the
+floor, so its kills come slower: thirty players' kills count 0.72 on floor 1, 0.94 on floor 2, 1.17 on floor 3. The
+aim is unchanged: two players 1.4 times five's time, ten about 0.8, thirty about 0.6.
+
+**The level curve** (`Tower.Level`, RavenNest 8af8bad0): floor 1's parts at levels 10 to 100 (ten a part, as
+before), floor 2's at 115 to 250 and floor 3's at 265 to 400 (fifteen a part), then 999 - 599 x ((100 - step) / 70)
+to the power 1.75, which rises fifteen a step where it starts and flattens to 999 at step 100: 415 at step 31, 542 at
+40, 678 at 51, 784 at 61, 871 at 71, 938 at 81, 982 at 91. 999 from step 100 on. Level sync keeps its margin (a tenth
+above the part's level): 11 to 110 on floor 1, 127 to 275 on floor 2, 292 to 440 on floor 3.
+
+What reads the level, checked:
+- **Sync and the best-gear table.** The table of the best gear wearable at a level had rows at 200, 300 and 500 only,
+  so a player synced to 340 to 499 counted as wearing level 280 gear though the Ancient (340) and Atlarus (400) sets
+  exist, and floor 3 at its new levels lay in that gap: in the simulator five fresh players won High Warden Aerin 2
+  times in 100 and Fulmina 8. The table now has every level where the best gear changes (the simulator's new
+  `gearcaps all`). Not in it yet: the Dreadforged weapons (450), first worn on floor 4; the simulator's item list is
+  from 2026-11-07.
+- **Monsters and guardians** take their levels from the part's: floor 2's are 5 to 25% higher, floor 3's 26 to 33%. Floor 2's
+  later parts sit between the level 200 and 280 gear, which no item fills, so five fresh players won Hoarfang 44
+  times in 100 where they won 83. Each guardian of floors 2 and 3 keeps its floor's aim with a new edge from the
+  simulator's `tower tune 200` (Snowball 1.1, the Frozen Warden 1.2, the Wailing Matron 1.2, Emperor Quackers 0.9,
+  Sigrid 1.0, Hoarfang 0.9, the Thawed Ronin 0.9, the Moo-tant Refrozen 0.8; Captain Gale Blackwind 1.25, Zap 1.15,
+  Mother Squall 1.15, Captain Quackbeard 1.1, Champion Voltus 1.0, Skyfang 0.95, High Warden Aerin 1.05, the Moo-tant
+  Supercharged 0.9), and Glacius and Fulmina have an edge of 0.8. Simulator, five fresh players, wins of 100 before
+  and now: floor 2 73 to 90 and 72 to 85, floor 3 56 to 92 and 64 to 90, floor 1 unchanged.
+- **Chests**: the class gear tier of a clear follows the part's level: tier 5 from floor 2, part 7 (level 205; was
+  from floor 2's floor boss) and tier 6 from floor 3's floor boss (level 400; was tier 5). Gem tiers go by the part,
+  not the level: unchanged.
+- **The far-below warning** on the way in (under 60% of the part's level): now under 78 for Hare Hollow (was 72), 159
+  for floor 3's first part (was 126), 240 for its last (was 180).
+- **Legendary.TowerFloor** is a floor (3), not a level: unchanged. **The website's tower page** shows each part's
+  level and sync level from the curve, and now each floor's levels and its experience bonus as badges.
+
+**Experience** (game 4fae433a, RavenNest ed915a3c). On a part every skill gets the island's top-up now
+(`TowerHandler.TrainsAway`, `PlayerProgression.TrainAway`): combat skills and Healing get what they earn by fighting
+and healing, and the island's rate (learned per player and skill on their island, a typical rate until 90 seconds are
+known) when that is less, so a boss fight, its countdown, recovering, being knocked out and the walk between monsters
+pay at least the island. On top, a part pays combat skills and Healing `Tower.ExpBonus`: 5% a floor with no cap, on
+everything earned there (kills, heals, the top-up), the climb's part and cleared parts alike; the towns pay the
+island's rate. The tower panel shows "+10% exp" in gold beside the players count, the floor map "+10% experience" by
+the floor's name, the website's tower page a badge per floor and a line under the rules. The player details window
+shows the time to the next level on a part (it said "Not able to train here" for combat skills there).
+
+### Measured (2026-11-27, editor, local server against the dev database, bots, chat muted and the bot stopped)
+
+Minutes for a part's kill objectives, from the kills a minute bots made over 150 seconds on each part (the part's kill
+amounts over the kills a minute times what a kill is worth for the heads on it; players go for what the part needs,
+so the objectives fill together). Bots at or above the part's sync level; heads below the bots' number are bots
+whose gear makes them a share of a head. In brackets: against five heads' time, the aim in square brackets.
+
+| Part (aim for five) | 2 bots | 5 bots | 10 bots | 30 bots |
+|---|---|---|---|---|
+| Floor 1, part 6, The Pasture (25.6 min) | 2 heads: 30.7 min (1.31) [1.4] | 4.1 heads: 25.3 min, about 23.5 for five | | 25.4 heads: 19.2 min (0.82) [0.66] |
+| Floor 2, part 2, Hare Hollow (21.1 min) | 2 heads: 30.0 min (1.41) [1.4] | 4.4 heads: 23.4 min, about 21.3 for five | 7.9 heads: 18.3 min (0.86) [0.88] | 23.7 heads: 13.9 min (0.65) [0.67] |
+| Floor 3, part 1, The Cloud Docks (20 min) | 1.75 heads: 28.9 min (1.40) [1.47] | 3.75 heads: 22.9 min, about 20.6 for five | 7.8 heads: 16.3 min (0.79) [0.89] | |
+
+Before (2026-11-26): six bots needed about 90 minutes for Hare Hollow.
+
+| On the part, every run | Before | Now |
+|---|---|---|
+| Monsters standing | 2.3 on average (a room of the frost vault) | 53 to 56 of 60 (at least 49) |
+| Ambling at a time | none | 12 to 16 (none on a part the camera is not near) |
+| Monsters on a player | only when hit | 1.2 (floor 1, 2 bots) to 12 (30 bots) |
+| Players fighting / walking / knocked out | 57% / 43% / none below 86% health | 60 to 85% / 11 to 40% / 1 to 15% of the time |
+
+Knocked out: 9 to 15% of the time with 2 to 5 bots on floor 2 (three monsters on one player there), 2 to 6% on floor
+1 (one at a time), 4% with thirty. The crypt (floor 1, part 4) with five bots: 60 monsters in packs over its five rooms
+(8, 20, 12 and 20, the guardian's empty), the group fought through the first three, which stayed cleared, and the
+hold refilled (14 of 20 standing, respawn 12 s).
+
+Experience an hour on floor 2, part 2 (+10%), every combat skill summed with Health, three bots training Attack,
+against the same bots on an island that suits them (a 23 minute sample there; the samples in the tower are 1 to 8
+minutes):
+
+| | Attack 172 (Ironhill) | Attack 405 (Heim) | Attack 999 (Eldara) |
+|---|---|---|---|
+| Island | 3,386 | 28,723 | 226,653 |
+| The part's monsters | 10,699 | 70,795 | 502,603 |
+| Boss countdown | 6,877 | 78,359 | 604,725 |
+| Boss fight (Snowball, won with the three) | 4,232 | 47,957 | 383,585 |
+| Recovering | | 50,831 | |
+| Knocked out | 5,226 | 48,388 | 421,878 |
+
+Every situation pays at least the island's rate and the bonus (the low bot's boss fight 1.25 times its island); a
+part's monsters pay two to three times the island, as before the change (the bot pass measured 114,000 against
+59,000).
+
+### Untested, and calls for the owner
+
+- **The pace on floor 1 with a crowd**: thirty bots needed 0.82 of five's time on the Pasture (aim 0.66). Floor 1's
+  monsters fall in a blow or two and notice players only at 5.5 m one at a time, so a crowd walks 40% of the time.
+  Floors 2 and 3 are on the aim. A closer reach on floor 1 for crowds, or more monsters for them, would fix it; the
+  owner's call (floor 1 was to stay relaxed).
+- **Knocked out more often**: up to three monsters on one player on floor 2 knock out 9 to 15% of a small group's
+  time (nobody went below 86% health before). Fine for the drama, or a cap of two?
+- **Guardians' edges on floors 2 and 3** changed with the level curve to keep each floor's odds (the list above).
+  The alternative is items between levels 200 and 280 and in the Dreadforged range, so sync has real gear there.
+- **The tower pays far more than an island** on a part's monsters (two to three times), before the 5% a floor; the
+  rule "never less than the island" changes the boss fight, countdown and recovery, not that.
+- **Packs in potato mode** stay (the pace counts on them): a part has 60 monsters where it had 24; one part is open
+  in potato mode.
+- **Untested**: real players with a real chat; a Healing player's top-up and bonus (the rule is the same code path);
+  floor 3's guardians at the new levels in the game (the simulator only); the website's badges at full width (the
+  page was read as text); 30 players on floor 3; a part of the frost vault with packs (the crypt was played).
