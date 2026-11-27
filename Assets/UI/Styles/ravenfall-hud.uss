@@ -1304,6 +1304,10 @@
     overflow: visible;
     text-overflow: clip;
     -unity-text-align: middle-center;
+    /* the advanced text generator spaced the wrapped lines of this font unevenly (a wide gap under the first line, the
+       last pressed onto the one above it; seen 2026-11-27 with a status of three lines); the standard one spaces them
+       evenly */
+    -unity-text-generator: standard;
 }
 
 .rf-tower__quests {
