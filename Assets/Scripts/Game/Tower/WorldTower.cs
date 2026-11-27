@@ -143,6 +143,7 @@ public sealed partial class WorldTower : MonoBehaviour
             foreach (var r in section.Near) Prepare(r, section.Material, always);
             foreach (var r in section.Far) Prepare(r, section.Material, always);
         }
+        ClassicDraw();
         bobFrom = new Vector3[Bobbing.Length];
         for (var i = 0; i < Bobbing.Length; ++i) if (Bobbing[i]) bobFrom[i] = Bobbing[i].localPosition;
         Shader.SetGlobalFloat(SeaId, SeaChart.Sea);
@@ -159,6 +160,29 @@ public sealed partial class WorldTower : MonoBehaviour
         var sea = transform.position.y;
         Shader.SetGlobalVector(FadeId, new Vector4(sea + FadeFrom, 1f / Mathf.Max(1f, FadeTo - FadeFrom), sea + (clouds ? SkyFrom : FadeFrom - SkyBlend), 1f / Mathf.Max(1f, SkyBlend)));
     }
+
+    /// <summary>
+    ///     The sea floor strip south of the world (made by the builder beside the tower) is drawn the classic way, not
+    ///     by URP's GPU resident drawer: in play, after a script reload, the resident drawer drew it white over everything
+    ///     below the horizon, islands and the tower's foot included, with black blocks where islands stood (seen in the
+    ///     floor's look from out at sea, 2026-11-27). A property block of its own keeps it out of the resident drawer.
+    /// </summary>
+    private void ClassicDraw()
+    {
+        foreach (var root in gameObject.scene.GetRootGameObjects())
+        {
+            if (root.name != "World Tower sea floor") continue;
+            foreach (var r in root.GetComponentsInChildren<Renderer>(true))
+            {
+                var block = new MaterialPropertyBlock();
+                r.GetPropertyBlock(block);
+                block.SetFloat(ClassicId, 1f);
+                r.SetPropertyBlock(block);
+            }
+        }
+    }
+
+    private static readonly int ClassicId = Shader.PropertyToID("_RavenfallClassicDraw");
 
     private static void Prepare(Renderer r, Material material, Bounds always)
     {
