@@ -505,6 +505,14 @@ public class TowerHandler : IAwayHandler
         cheerUntil = Time.time + CheerSeconds;
     }
 
+    /// <summary>
+    ///     When they last stood in a guardian's fight as it fell (Time.time), not knocked out and not recovering by the
+    ///     arrival: the winners, whom the group camera keeps in the picture until the move to the town.
+    /// </summary>
+    public float WonAt { get; private set; } = -1000f;
+
+    public void MarkWon() => WonAt = Time.time;
+
     public void Update()
     {
         if (!InTower) return;

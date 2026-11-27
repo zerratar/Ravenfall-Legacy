@@ -495,8 +495,24 @@ public static class WorldTowerCamera
             foreach (var p in group) if (Standing(p)) standing++;
             if (standing > 0) group.RemoveAll(p => !Standing(p));
         }
+        // a guardian just fell: the winners who stood to the end stay the picture until everyone goes down to the town. The
+        // knocked out ones by the arrival, left out during the fight, came back into the group with its end, and the
+        // camera cut from the cheering winners to the entrance a moment after the fall's cutscene had handed it back
+        // (overnight test 2026-11-27: a cut of 100 m 0.4 s after the handback, on floor 3, part 1)
+        else if (!inTown)
+        {
+            var winners = 0;
+            foreach (var p in group) if (JustWon(p)) winners++;
+            if (winners > 0) group.RemoveAll(p => !JustWon(p));
+        }
         return group.Count > 0;
     }
+
+    // how long after a guardian's fall its winners are the picture: the fall, the wait before the town, and a little
+    private const float WinnersSeconds = TowerManager.FloorBossFallSeconds + TowerManager.ClimbDelay + 5f;
+
+    private static bool JustWon(PlayerController player) =>
+        player && player.towerHandler != null && Time.time - player.towerHandler.WonAt < WinnersSeconds;
 
     // how much a player at this distance from the clump's heart counts as in it: fully within the clump's radius,
     // then less and less to none at one and a half times it (a step over the edge moves the picture a little, not at once)

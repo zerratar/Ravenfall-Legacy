@@ -2376,6 +2376,9 @@ public sealed class TowerManager : MonoBehaviour
             CombatMeter.Tower.MarkText = Localization.UI_METER_LAST_BLOW;
             foreach (var id in report.LastHits) CombatMeter.Tower.Marked.Add(id);
         }
+        // who stood to the end (not those recovering by the arrival): the group camera's picture until the town
+        foreach (var p in participants)
+            if (p && !p.isDestroyed && !p.Stats.IsDead && p.towerHandler != null && p.towerHandler.InTower && !p.towerHandler.SatOut) p.towerHandler.MarkWon();
         // the body stays for its fall (slow motion when the cutscene plays), then goes
         EndAttempt((floorBoss ? FloorBossFallSeconds : BossFallSeconds) + 1.5f);
         if (floorBoss) Announce(Localization.MSG_TOWER_FLOOR_BOSS_DOWN, def.Boss.Name, TowerWords.Floor(floorNumber), TowerWords.FloorName(floorNumber));
