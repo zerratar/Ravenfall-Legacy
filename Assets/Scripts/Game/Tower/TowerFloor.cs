@@ -161,7 +161,12 @@ public sealed class TowerFloor : TowerPlace
         {
             var e = enemies[i];
             if (!e || e.Stats == null) continue;
-            if (e.Stats.IsDead) { if (down.Add(e)) fell++; }
+            if (e.Stats.IsDead)
+            {
+                if (!down.Add(e)) continue;
+                fell++;
+                if (kinds.TryGetValue(e, out var kind)) { tally.TryGetValue(kind.Id, out var n); tally[kind.Id] = n + 1; }
+            }
             else down.Remove(e);
         }
         killRate += (fell / Mathf.Max(0.1f, seconds) - killRate) * Mathf.Clamp01(seconds / KillRateSeconds);
@@ -169,6 +174,55 @@ public sealed class TowerFloor : TowerPlace
         if (Mathf.Abs(respawn - lastRespawn) < 0.25f) return;
         lastRespawn = respawn;
         for (var i = 0; i < enemies.Count; ++i) if (enemies[i]) enemies[i].RespawnTime = respawn;
+    }
+
+    // ---- What the part needs most ------------------------------------------------------------------------------
+
+    // the part's monsters defeated since it was filled, by kind
+    private readonly Dictionary<string, int> tally = new Dictionary<string, int>();
+
+    // the kinds the part's kill objectives need most now: players pick one of them when they look for a new monster
+    private readonly HashSet<string> wanted = new HashSet<string>();
+
+    /// <summary>
+    ///     Monsters of a kind the part does not need now count as this much further away when a player picks the next
+    ///     one: a crowd fells the quick kind (hares) four times as fast as the tough one (raiders) under its pressure,
+    ///     and a part with thirty players took longer than with five (the bot pass of 2026-11-27).
+    /// </summary>
+    public const float UnwantedDistance = 3f;
+    public const float UnwantedMeters = 10f;
+
+    /// <summary>
+    ///     The kill objective furthest behind, and any within a fiftieth of it: on the climb's part by the stream's
+    ///     progress, on a cleared part by what fell there since it opened. So a group goes for what the part still
+    ///     needs, and its kill objectives finish together instead of one kind holding the rest up. A kind with no
+    ///     objective (an elite among the part's monsters) or one already done is not wanted.
+    /// </summary>
+    private void FollowNeeds()
+    {
+        wanted.Clear();
+        if (Definition == null) return;
+        var tower = TowerManager.Instance;
+        var area = tower ? tower.AreaOf(this) : null;
+        var climb = area != null && tower.IsClimb(area);
+        var least = double.MaxValue;
+        foreach (var q in Definition.Objectives)
+        {
+            if (q.Kind != TowerObjectiveKind.Kill || q.Amount <= 0) continue;
+            var done = climb ? tower.Progress(q.Id) : tally.TryGetValue(q.Target, out var n) ? n : 0;
+            var share = done / (double)q.Amount;
+            if (climb && share >= 1) continue;
+            least = System.Math.Min(least, share);
+        }
+        if (least == double.MaxValue) return;
+        foreach (var q in Definition.Objectives)
+        {
+            if (q.Kind != TowerObjectiveKind.Kill || q.Amount <= 0) continue;
+            var done = climb ? tower.Progress(q.Id) : tally.TryGetValue(q.Target, out var n) ? n : 0;
+            var share = done / (double)q.Amount;
+            if (climb && share >= 1) continue;
+            if (share <= least + 0.02) wanted.Add(q.Target);
+        }
     }
 
     // ---- Packs ------------------------------------------------------------------------------------------------------
@@ -335,6 +389,7 @@ public sealed class TowerFloor : TowerPlace
         if (Definition == null || Time.time < nextNotice) return;
         nextNotice = Time.time + NoticeSeconds;
         FollowKills(NoticeSeconds);
+        FollowNeeds();
         Notice();
     }
 
@@ -503,7 +558,10 @@ public sealed class TowerFloor : TowerPlace
     /// <summary>Which of the floor's monsters an enemy is, or null (the boss, or a monster of the test floor).</summary>
     public TowerEnemy KindOf(EnemyController enemy) => enemy && kinds.TryGetValue(enemy, out var kind) ? kind : null;
 
-    /// <summary>The nearest enemy still standing to <paramref name="from"/>, or null.</summary>
+    /// <summary>
+    ///     The enemy still standing a player should go for next from <paramref name="from"/>: the nearest, where one of a
+    ///     kind the part does not need now counts as further away (<see cref="UnwantedDistance"/>), or null.
+    /// </summary>
     public EnemyController NearestEnemy(Vector3 from)
     {
         EnemyController best = null;
@@ -515,6 +573,11 @@ public sealed class TowerFloor : TowerPlace
             // on a floor of rooms, only the rooms the group has reached: the ones ahead wait behind their gates
             if (Route && zones.TryGetValue(e, out var zone) && !Route.Open(zone)) continue;
             var d = (e.transform.position - from).sqrMagnitude;
+            if (wanted.Count > 0 && (!kinds.TryGetValue(e, out var kind) || !wanted.Contains(kind.Id)))
+            {
+                var far = Mathf.Sqrt(d) * UnwantedDistance + UnwantedMeters;
+                d = far * far;
+            }
             if (d < bestDistance)
             {
                 bestDistance = d;
@@ -565,6 +628,8 @@ public sealed class TowerFloor : TowerPlace
         enemies.Clear();
         scaled.Clear();
         down.Clear();
+        tally.Clear();
+        wanted.Clear();
         killRate = 0f;
         lastRespawn = 0f;
     }
