@@ -572,8 +572,12 @@ public class GameManager : MonoBehaviour, IGameManager
             // tower chest; the server says which gems, the names are the gem library's)
             // a Legendary: the stream hears it (docs/legendary-design.md)
             if (global::RavenNest.Combat.Legendary.IsLegendary(reward.ItemId)) LegendaryNews.Found(player, rewardItem.Name);
+            // a Substitution find (docs/substitution-escape-idea.md): a piece with the attribute or a Shadowstone, said in chat
+            var substitutionFind = Substitutions.IsFind(reward);
+            if (substitutionFind) Substitutions.Found(player, rewardItem, reward.Enchantment);
 
             var key = global::RavenNest.Combat.Gems.SocketedName(rewardItem.Name, reward.Sockets);
+            if (substitutionFind && !string.IsNullOrEmpty(reward.Enchantment)) key += " of Substitution";
 
             if (!droppedItems.TryGetValue(key, out var items))
             {
@@ -1190,6 +1194,7 @@ public class GameManager : MonoBehaviour, IGameManager
         WeaponElementFx.Update(GameTime.deltaTime); // embers, frost, sparks and venom on elemental weapons
         LegendaryGlow.Update(GameTime.deltaTime); // awakened Legendaries glow in their color
         LegendaryNews.Update(); // a Legendary found or fully awakened: one line in chat, at most once a minute
+        Substitutions.Update(); // a Substitution find: one line in chat, at most once a minute
         FreezeChecker.SetCurrentScriptUpdate("GameManager Update");
 
         if (isReloadingScene)

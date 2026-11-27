@@ -180,6 +180,30 @@ public static class ItemExtension
         return lines;
     }
 
+    /// <summary>
+    ///     The item's Substitution (docs/substitution-escape-idea.md): its magical attribute and the Shadowstones in its
+    ///     sockets (armor only), the best of them; empty for most items.
+    /// </summary>
+    public static RavenNest.Combat.SubstitutionPower GetSubstitution(this GameInventoryItem e)
+    {
+        if (e?.Item == null) return default;
+        var ii = e.InventoryItem;
+        return RavenNest.Combat.Substitution.FromItem(ii?.Enchantment, ii?.Sockets, e.Item.TryGetGemSlot(out var slot) ? slot : (RavenNest.Combat.GemSlot?)null);
+    }
+
+    /// <summary>Is this the SUBSTITUTION enchantment (shown as the item's Substitution line, not as an enchantment bonus).</summary>
+    public static bool IsSubstitution(this ItemEnchantment e) =>
+        e?.Name != null && e.Name.Equals(RavenNest.Combat.Substitution.Key, System.StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>The item's Substitution for a value column: ("Substitution", "45%, every 27 s"); empty without one.</summary>
+    public static List<(string Label, string Value)> GetSubstitutionLines(this GameInventoryItem e)
+    {
+        var lines = new List<(string, string)>();
+        var power = e.GetSubstitution();
+        if (power.Has) lines.Add((Localization.UI_TIP_SUBSTITUTION, Localization.SubstitutionShort(power)));
+        return lines;
+    }
+
     /// <summary>The bonus of every gem in the item's sockets, or null without gems.</summary>
     public static RavenNest.Combat.GearStats GetGemStats(this GameInventoryItem e)
     {
@@ -201,8 +225,11 @@ public static class ItemExtension
         for (var s = 0; s < sockets.Length; ++s)
         {
             var label = string.Format(Localization.UI_GEM_SOCKET, s + 1);
+            // a Shadowstone's power is long: its socket says the gem and the power's name, the item's Substitution line the numbers
             if (sockets[s].HasValue && RavenNest.Combat.Gems.TryGetGem(sockets[s].Value, out var kind, out var tier))
-                lines.Add((label, RavenNest.Combat.Gems.Name(kind, tier) + ": " + RavenNest.Combat.Gems.Describe(kind, tier, slot)));
+                lines.Add((label, RavenNest.Combat.Gems.Name(kind, tier) + ": " + (kind == RavenNest.Combat.GemKind.Shadowstone && slot == RavenNest.Combat.GemSlot.Armor
+                    ? Localization.UI_TIP_SUBSTITUTION
+                    : RavenNest.Combat.Gems.Describe(kind, tier, slot))));
             else
                 lines.Add((label, Localization.UI_GEM_SOCKET_EMPTY));
         }

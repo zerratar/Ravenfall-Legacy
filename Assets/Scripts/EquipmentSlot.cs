@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using UnityEngine;
 
@@ -142,12 +143,19 @@ public class EquipmentSlot : MonoBehaviour
             sb.AppendLine("<color=#ffc247>" + label.PadRight(14, ' ') + "</color> <b>" + value + "</b>");
         }
 
-        if (item.Enchantments != null && item.Enchantments.Count > 0)
+        // Substitution (docs/substitution-escape-idea.md): its attribute and Shadowstones, the best of them
+        foreach (var (label, value) in item.GetSubstitutionLines())
+        {
+            sb.AppendLine("<color=#b9a8ff>" + label.PadRight(14, ' ') + "</color> <b>" + value + "</b>");
+        }
+
+        if (item.Enchantments != null && item.Enchantments.Any(x => !x.IsSubstitution()))
         {
             sb.AppendLine();
             sb.AppendLine("<color=green><b>Enchantments</b>");
             foreach (var e in item.Enchantments)
             {
+                if (e.IsSubstitution()) continue;
                 sb.AppendLine(e.Name.PadRight(14, ' ') + (" <b>+" + (e.ValueType == AttributeValueType.Percent ? ((int)(e.Value * 100)) + "%" : e.Value + "") + "</b>").PadLeft(11, ' '));
 
             }

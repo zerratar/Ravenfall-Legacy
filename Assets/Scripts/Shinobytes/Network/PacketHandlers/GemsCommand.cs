@@ -61,6 +61,12 @@ public class GemsCommand : ChatBotCommandHandler<string>
                     // !gems ruby: what a ruby does where
                     if (Gems.TryParseKind(action, out var kind))
                     {
+                        if (kind == GemKind.Shadowstone)
+                        {
+                            client.SendReply(gm, Localization.MSG_GEM_SHADOWSTONE_INFO,
+                                Localization.SubstitutionShort(Substitution.FromGem(GemTier.Chipped)), Localization.SubstitutionShort(Substitution.FromGem(GemTier.Perfect)));
+                            return;
+                        }
                         client.SendReply(gm, Localization.MSG_GEM_INFO, kind.ToString(),
                             Gems.Describe(kind, GemTier.Chipped, GemSlot.Weapon), Gems.Describe(kind, GemTier.Chipped, GemSlot.Armor),
                             Gems.Describe(kind, GemTier.Chipped, GemSlot.Jewellery), Gems.Describe(kind, GemTier.Perfect, GemSlot.Weapon));
@@ -103,6 +109,11 @@ public class GemsCommand : ChatBotCommandHandler<string>
             client.SendReply(gm, Localization.MSG_GEM_ENCHANT_USAGE);
             return;
         }
+        if (!Gems.IsCraftable(kind))
+        {
+            client.SendReply(gm, Localization.MSG_GEM_SHADOWSTONE_FOUND_ONLY);
+            return;
+        }
 
         var result = await Game.RavenNest.Players.GemEnchantAsync(player.Id, (int)kind, amount);
         if (!Ok(result, gm, client)) return;
@@ -122,6 +133,11 @@ public class GemsCommand : ChatBotCommandHandler<string>
         if (!TryKindAndTier(words, out var kind, out var tier) || tier < 0)
         {
             client.SendReply(gm, Localization.MSG_GEM_COMBINE_USAGE);
+            return;
+        }
+        if (!Gems.IsCraftable(kind))
+        {
+            client.SendReply(gm, Localization.MSG_GEM_SHADOWSTONE_FOUND_ONLY);
             return;
         }
 
@@ -155,9 +171,14 @@ public class GemsCommand : ChatBotCommandHandler<string>
 
         var item = FindItem(player, string.Join(" ", words.Take(itemEnd)), gm, client);
         if (item == null) return;
-        if (!item.Item.TryGetGemSlot(out _) || item.Item.GetSocketCount() == 0)
+        if (!item.Item.TryGetGemSlot(out var gemSlot) || item.Item.GetSocketCount() == 0)
         {
             client.SendReply(gm, Localization.MSG_GEM_NO_SOCKETS, item.Name);
+            return;
+        }
+        if (!Gems.FitsIn(kind, gemSlot))
+        {
+            client.SendReply(gm, Localization.MSG_GEM_SHADOWSTONE_ARMOR_ONLY, item.Name);
             return;
         }
 

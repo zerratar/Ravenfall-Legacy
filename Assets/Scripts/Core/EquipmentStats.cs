@@ -59,6 +59,12 @@ public class EquipmentStats : IComparable
     /// <summary>The worn Legendaries (a weapon and a shield can both be), null or empty for none.</summary>
     [NonSerialized] public System.Collections.Generic.List<WornLegendary> Legendaries;
 
+    /// <summary>
+    ///     Substitution (docs/substitution-escape-idea.md): the best chance and the shortest cooldown of the worn gear's
+    ///     attribute and Shadowstones, never added up (RavenNest.Combat.Substitution.Best); empty for most players.
+    /// </summary>
+    [NonSerialized] public RavenNest.Combat.SubstitutionPower Substitution;
+
     /// <summary>The stats of <see cref="PetGear"/>.</summary>
     public static readonly RavenNest.Combat.GearStat[] PetGearStats =
     {

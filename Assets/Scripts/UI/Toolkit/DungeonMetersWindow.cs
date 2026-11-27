@@ -52,12 +52,17 @@ namespace Shinobytes.UI
         private static readonly string[] StyleGlyphs = { "", "", "", "" };
         private static readonly string[] StyleClasses = { "rf-meter-row--melee", "rf-meter-row--ranged", "rf-meter-row--magic", "rf-meter-row--healing" };
 
+        private static readonly Color EscapedColor = new Color(0.78f, 0.71f, 1f);
+
         private sealed class Row
         {
             public VisualElement Root;
             public Label Rank;
             public Label Icon;
             public Label Name;
+            /// <summary>The Damage Taken tab's count of blows escaped with Substitution: a wind and the number, after the name.</summary>
+            public VisualElement Escaped;
+            public Label EscapedCount;
             public VisualElement Fill;
             public Label Total;
             public Label Rate;
@@ -74,6 +79,7 @@ namespace Shinobytes.UI
         private Label timer;
         private readonly Button[] tabs = new Button[3];
         private Label rateHeader;
+        private Label playerColumn;
         private ListView list;
         private Label empty;
         private Label totalCaption;
@@ -164,7 +170,7 @@ namespace Shinobytes.UI
 
             title = root.Q<Label>("meters-title");
             if (title != null) title.text = Localization.UI_METER_TITLE;
-            var playerColumn = root.Q<Label>("meters-col-player");
+            playerColumn = root.Q<Label>("meters-col-player");
             if (playerColumn != null) playerColumn.text = Localization.UI_METER_PLAYER;
             var totalColumn = root.Q<Label>("meters-col-total");
             if (totalColumn != null) totalColumn.text = Localization.UI_METER_TOTAL;
@@ -415,6 +421,9 @@ namespace Shinobytes.UI
             {
                 rateHeader.text = metric == Metric.Damage ? Localization.UI_METER_DPS : metric == Metric.Healing ? Localization.UI_METER_HPS : Localization.UI_METER_DTPS;
             }
+
+            // the Damage Taken tab says what the wind by a name counts (Substitution's escapes)
+            if (playerColumn != null) playerColumn.text = metric == Metric.Taken ? Localization.UI_METER_PLAYER_ESCAPED : Localization.UI_METER_PLAYER;
         }
 
         private void Refresh(CombatMeter meter)
@@ -556,6 +565,33 @@ namespace Shinobytes.UI
 
             row.Name = new Label();
             row.Name.AddToClassList("rf-meter-row__name");
+            row.Name.style.flexShrink = 1;
+            row.Name.style.minWidth = 0;
+
+            // the name and, on the Damage Taken tab, the blows escaped with Substitution (a wind and the number); the
+            // number never gives way to a long name, the name shortens first
+            var line = new VisualElement();
+            line.style.flexDirection = FlexDirection.Row;
+            line.style.alignItems = Align.Center;
+            row.Escaped = new VisualElement();
+            row.Escaped.style.flexDirection = FlexDirection.Row;
+            row.Escaped.style.alignItems = Align.Center;
+            row.Escaped.style.flexShrink = 0;
+            row.Escaped.style.marginLeft = 8;
+            row.Escaped.style.display = DisplayStyle.None;
+            var wind = new Label("\uf72e");
+            wind.AddToClassList("rf-icon");
+            wind.style.fontSize = 15;
+            wind.style.color = EscapedColor;
+            wind.style.marginRight = 3;
+            row.EscapedCount = new Label();
+            row.EscapedCount.AddToClassList("rf-meter-row__name");
+            row.EscapedCount.style.fontSize = 18;
+            row.EscapedCount.style.color = EscapedColor;
+            row.Escaped.Add(wind);
+            row.Escaped.Add(row.EscapedCount);
+            line.Add(row.Name);
+            line.Add(row.Escaped);
 
             var bar = new VisualElement();
             bar.AddToClassList("rf-meter-row__bar");
@@ -563,7 +599,7 @@ namespace Shinobytes.UI
             row.Fill.AddToClassList("rf-meter-row__fill");
             bar.Add(row.Fill);
 
-            main.Add(row.Name);
+            main.Add(line);
             main.Add(bar);
 
             row.Total = new Label();
@@ -612,6 +648,11 @@ namespace Shinobytes.UI
             {
                 row.Name.text = e.Name;
             }
+
+            // the Damage Taken tab also counts the boss area attacks a player escaped with Substitution
+            var escaped = metric == Metric.Taken && e.Escaped > 0;
+            row.Escaped.style.display = escaped ? DisplayStyle.Flex : DisplayStyle.None;
+            if (escaped) row.EscapedCount.text = e.Escaped.ToString(CultureInfo.InvariantCulture);
 
             // whoever the run points out (the last blow on a floor boss) stands in gold; the summary line names them
             var pointedOut = source != null && !string.IsNullOrEmpty(source.MarkText) && source.Marked.Contains(e.PlayerId);

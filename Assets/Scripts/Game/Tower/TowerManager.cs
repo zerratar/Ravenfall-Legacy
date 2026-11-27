@@ -2098,12 +2098,15 @@ public sealed class TowerManager : MonoBehaviour
                 // a breath before a spit follows
                 nextSpit = Mathf.Max(nextSpit, Time.time + 1.5f);
                 var share = (float)def.Boss.SlamShare;
-                foreach (var p in participants.ToList())
+                var group = participants.ToList();
+                foreach (var p in group)
                 {
                     if (!p || p.isDestroyed || p.Stats.IsDead || !p.towerHandler.InTower || fallen.Contains(p)) continue;
                     var d = p.Position - slamCentre;
                     d.y = 0f;
                     if (d.magnitude > radius) continue;
+                    // Substitution (docs/substitution-escape-idea.md): a rare power may have them out of the ring as it lands
+                    if (Substitutions.TryEscape(p, slamCentre, radius, group, spitAt >= 0f ? spitSpot : (Vector3?)null, SpitRadius)) continue;
                     var damage = Mathf.Max(1, (int)(GameMath.CalculateMeleeDamage(boss, p) * share));
                     p.TakeDamage(boss, damage);
                     if (!p.Stats.IsDead) TowerBossFx.Knock(p, slamCentre, SlamKnockback);
@@ -2316,12 +2319,15 @@ public sealed class TowerManager : MonoBehaviour
             // with the effects off no glob flew to splash: the splash's sound alone
             if (!SettingsApplier.BossEffects) TowerBossFx.Splash(spitSpot, SpitRadius, Color.white);
             nextSpit = Time.time + SpitInterval(boss);
-            foreach (var p in participants.ToList())
+            var group = participants.ToList();
+            foreach (var p in group)
             {
                 if (!p || p.isDestroyed || p.Stats.IsDead || !p.towerHandler.InTower || fallen.Contains(p)) continue;
                 var d = p.Position - spitSpot;
                 d.y = 0f;
                 if (d.magnitude > SpitRadius) continue;
+                // Substitution: out of the splash as it lands (the slam's ring is never down at the same time)
+                if (Substitutions.TryEscape(p, spitSpot, SpitRadius, group)) continue;
                 var damage = Mathf.Max(1, (int)(GameMath.CalculateMeleeDamage(boss, p) * (float)kit.SpitShare));
                 p.TakeDamage(boss, damage);
             }

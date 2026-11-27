@@ -196,7 +196,8 @@ public partial class WaveRun
                 GameSounds.Play(SoundKind.RockImpact, t.From, 1f, 0f, Hero);
                 var game = GameManager.Instance;
                 if (game && game.Camera && game.Camera.HeroView) game.Camera.HeroView.Shake(0.4f, 0.3f);
-                if (Hero && Flat(Hero.Position - t.From).magnitude <= SlamRadius) HitHero(e, SlamShare);
+                // Substitution (docs/substitution-escape-idea.md): the hero's rare power may have them out of the slam's ring
+                if (Hero && Flat(Hero.Position - t.From).magnitude <= SlamRadius && !Substitutions.TryEscape(Hero, t.From, SlamRadius, null)) HitHero(e, SlamShare);
                 break;
         }
     }

@@ -1208,6 +1208,9 @@ public static class Localization
     public static string UI_FLOAT_LEGENDARY = "Legendary!";
     public static string UI_FLOAT_LEGENDARY_RANK = "Awakened: rank {0}";
     public static string UI_FLOAT_LEGENDS_ECHO = "Legend's Echo";
+    // Substitution (docs/substitution-escape-idea.md): over a player who escaped a boss's area attack
+    public static string UI_FLOAT_SUBSTITUTION = "Substitution!";
+    public static string UI_FLOAT_SUBSTITUTION_FOUND = "Rare find!";
     public static string UI_SETTINGS_EFFECT_WORDS = "Effect words";
     public static string UI_SETTINGS_EFFECT_WORDS_HINT = "A word over a fighter when an element's effect starts on it (Burning, Chilled, Frozen, Stunned, Poisoned) or a hit does nothing (Immune), in the element's color.";
     public static string UI_SETTINGS_WHATSNEW = "What's new";
@@ -1940,6 +1943,10 @@ public static class Localization
     public static string MSG_LEGENDARY_FOUND_PART = "{0} found a Legendary, the {1}";
     public static string MSG_LEGENDARY_AWAKENED_PART = "{0}'s {1} is fully awakened";
     public static string MSG_LEGENDARY_NO_SELL = Meta("vendor", "fail") + "Legendaries can't be sold. The {item} stays with you.";
+    // Substitution's rare finds (docs/substitution-escape-idea.md): one line, at most once a minute, like the Legendaries'
+    public static string MSG_SUBSTITUTION = Meta("substitution", "reward") + "Rare find! {news}.";
+    public static string MSG_SUBSTITUTION_ITEM_PART = "{0} found a {1} with Substitution {2}: a chance to escape a boss's slam or spit in a puff of smoke";
+    public static string MSG_SUBSTITUTION_GEM_PART = "{0} found a {1}, a gem that can't be made: in armor it slips its wearer out of a boss's slam or spit as a shadow";
     public static string MSG_TOWER_BOSS_LOST_TIME = Meta("tower", "fail") + "Time is up and {boss} still stands. Regroup and try again in {seconds} seconds.";
     public static string MSG_TOWER_BOSS_LOST_FALLEN = Meta("tower", "fail") + "Everyone fell to {boss}. Regroup and try again in {seconds} seconds.";
     public static string MSG_TOWER_CLEAR_FAILED = Meta("tower", "fail") + "The boss fell, but the clear could not be saved: {reason}. It can be tried again with !tower boss.";
@@ -2006,6 +2013,9 @@ public static class Localization
     public static string MSG_GEM_EMPTY_SOCKET = Meta("gems", "fail") + "Socket {socket} of {itemName} is empty.";
     public static string MSG_GEM_BUSY = Meta("gems", "fail") + "That item is busy (being enchanted or traded). Try again in a moment.";
     public static string MSG_GEM_ERROR = Meta("gems", "fail") + "The gem did not take. Try again in a moment.";
+    public static string MSG_GEM_SHADOWSTONE_FOUND_ONLY = Meta("gems", "fail") + "A Shadowstone can't be made or combined: it is only found, on rare drops from tower chests, floor bosses, Legendary dungeons and raids.";
+    public static string MSG_GEM_SHADOWSTONE_ARMOR_ONLY = Meta("gems", "fail") + "A Shadowstone only works in armor (not weapons, rings or amulets). {itemName} can't take it.";
+    public static string MSG_GEM_SHADOWSTONE_INFO = Meta("gems") + "Shadowstone: a gem that is only found. In armor, Substitution: a chance to escape a boss's slam or spit as a shadow ({chipped} for Chipped, {perfect} for Perfect). It always comes back when taken out.";
 
     // battle pets (docs/battle-pets-design.md)
     public static string MSG_PET_USAGE = Meta("pets", "fail") + "Get a battle pet: !pets starter fox, bear or fawn; !pets wake (a pet item you own); !tame (creature); !pets hatch (egg). Then: !pets (the one out), !pets stable, !pets use (name), !pets away, !pets rename (new name, for the one out), !pets skills, !pets slot 2 howl, !pets evolve, !pets release (name), !pets about (kind).";
@@ -2843,6 +2853,13 @@ public static class Localization
     public static string UI_TIP_AWAKENING = "Awakening";
     public static string UI_TIP_AWAKENING_FULL = "Fully awakened";
     public static string UI_TIP_AWAKENING_NEXT = "{0} of {1} boss kills to rank {2}";
+    // Substitution on an item (docs/substitution-escape-idea.md)
+    public static string UI_TIP_SUBSTITUTION = "Substitution";
+    public static string UI_TIP_SUBSTITUTION_SHORT = "{0}, every {1} s";
+    public static string UI_TIP_SUBSTITUTION_NOTE = "Substitution ({2}). A {0} chance to escape a boss's slam or spit as it lands, taking nothing from it; at most once every {1} s. The best source counts, they never add up.";
+    public static string UI_TIP_SUBSTITUTION_SMOKE = "smoke step";
+    public static string UI_TIP_SUBSTITUTION_SHADOW = "shadow phase";
+    public static string UI_METER_PLAYER_ESCAPED = "PLAYER (ESCAPED)";
     public static string UI_LEGENDARY_SOUL_HARVEST = "Every enemy you struck that falls heals you for {0} of your health.";
     public static string UI_LEGENDARY_DREAD = "A hit has a {0} chance to freeze the enemy in fear for {1} s. Bosses shrug it off.";
     public static string UI_LEGENDARY_BAT_SWARM = "Every {0} s a spell sends bats: 3 bites on enemies near the target for {1} of its damage each.";
@@ -3417,6 +3434,15 @@ public static class Localization
     /// looks some of them up by that name, so they are only translated here, for display.
     /// </summary>
     /// <summary>A Legendary's power at a rank, worded for tooltips with the shared library's numbers.</summary>
+    /// <summary>A Substitution in a few words for a value column: "45%, every 27 s".</summary>
+    public static string SubstitutionShort(RavenNest.Combat.SubstitutionPower power) =>
+        string.Format(UI_TIP_SUBSTITUTION_SHORT, UnityEngine.Mathf.RoundToInt((float)power.Chance * 100) + "%", UnityEngine.Mathf.RoundToInt((float)power.Cooldown));
+
+    /// <summary>A Substitution as a sentence for a tooltip's note and chat.</summary>
+    public static string SubstitutionNote(RavenNest.Combat.SubstitutionPower power) =>
+        string.Format(UI_TIP_SUBSTITUTION_NOTE, UnityEngine.Mathf.RoundToInt((float)power.Chance * 100) + "%", UnityEngine.Mathf.RoundToInt((float)power.Cooldown),
+            power.Look == RavenNest.Combat.SubstitutionLook.ShadowPhase ? UI_TIP_SUBSTITUTION_SHADOW : UI_TIP_SUBSTITUTION_SMOKE);
+
     public static string LegendaryPower(RavenNest.Combat.LegendaryPower power, int rank)
     {
         var v = RavenNest.Combat.Legendary.Values(power, rank);

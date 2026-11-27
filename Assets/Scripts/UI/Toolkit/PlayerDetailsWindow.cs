@@ -1969,11 +1969,21 @@ namespace Shinobytes.UI
                 t.SetNote(legendary[1].Label + ". " + legendary[1].Value);
             }
 
+            // Substitution (docs/substitution-escape-idea.md): the numbers as a row, the sentence as the note (a
+            // Legendary's power keeps the note when it has one)
+            var substitution = item.GetSubstitution();
+            if (substitution.Has)
+            {
+                t.AddRow(Localization.UI_TIP_SUBSTITUTION, Localization.SubstitutionShort(substitution), "rf-tooltip__value--magic");
+                if (legendary.Count != 3) t.SetNote(Localization.SubstitutionNote(substitution));
+            }
+
             if (item.Enchantments != null)
             {
                 for (var i = 0; i < item.Enchantments.Count; ++i)
                 {
                     var e = item.Enchantments[i];
+                    if (e.IsSubstitution()) continue;
                     var value = e.ValueType == RavenNest.Models.AttributeValueType.Percent
                         ? "+" + ((int)(e.Value * 100)).ToString(CultureInfo.InvariantCulture) + "%"
                         : "+" + e.Value.ToString("0.##", CultureInfo.InvariantCulture);

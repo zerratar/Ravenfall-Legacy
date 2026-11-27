@@ -3230,6 +3230,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         {
             if (e?.Name == null || !RavenNest.Combat.GearStats.TryParseKey(e.Name, out var stat)) continue;
             if (stat <= RavenNest.Combat.GearStat.Armor && stat != RavenNest.Combat.GearStat.HealingPower) continue; // ARMOR is the old enchantment bonus
+            if (stat == RavenNest.Combat.GearStat.Substitution) continue; // a chance from the best source, never a sum (EquipmentStats.Substitution)
             if (!RavenNest.Combat.GearStats.IsShare(stat) && e.ValueType == AttributeValueType.Percent) continue; // a percentage of power is the old kind
             var value = e.Value;
             if (e.ValueType == AttributeValueType.Percent && value >= 1) value /= 100d;
@@ -3260,6 +3261,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         var armorHealth = 0;
         // worn Legendaries and their awakening ranks (docs/legendary-design.md): the rank comes from the server's tag
         var legendaries = new List<EquipmentStats.WornLegendary>();
+        // Substitution: the best of the worn gear's attribute and Shadowstones (docs/substitution-escape-idea.md)
+        var substitution = default(RavenNest.Combat.SubstitutionPower);
 
         foreach (var s in Stats.SkillList)
         {
@@ -3300,6 +3303,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             var gear = e.Item.GetGearStats();
             var gearStyle = e.Item.Category == ItemCategory.Weapon ? gear.WeaponStyle() : null;
             AddMagicalEnchantments(e, extras);
+            substitution = RavenNest.Combat.Substitution.Best(substitution, e.GetSubstitution());
             // gems in its sockets (combat v2, gems): a weapon's go with its style, like its own element
             var gems = e.GetGemStats();
             if (gems != null) gear.Add(gems);
@@ -3375,6 +3379,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         EquipmentStats.Extras = extras;
         EquipmentStats.WeaponExtras = weaponExtras;
         EquipmentStats.Legendaries = legendaries;
+        EquipmentStats.Substitution = substitution;
         if (petGearChanged && battlePets != null) battlePets.GearChanged(); // the pet's numbers follow at once
         if (!CombatRules.Enabled) armorHealth = 0;
         var gearHealth = extras[RavenNest.Combat.GearStat.MaxHealth] + armorHealth;

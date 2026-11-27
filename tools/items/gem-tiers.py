@@ -11,7 +11,7 @@ from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
 ROOT = os.path.join(os.path.dirname(__file__), "..", "..")
 ITEMS = os.path.join(ROOT, "Assets", "Resources", "Items")
 WEBSITE = [os.path.join(ROOT, "..", "RavenNest", "src", "RavenNest.Blazor", "wwwroot", "imgs", "items")]
-KINDS = ["ruby", "sapphire", "topaz", "emerald", "diamond", "onyx", "amethyst"]
+KINDS = ["ruby", "sapphire", "topaz", "emerald", "diamond", "onyx", "amethyst", "shadowstone"]
 TIERS = ["chipped", "flawed", "polished", "flawless", "perfect"]
 SCALE = [0.74, 0.80, 0.86, 0.92, 0.96]
 SIZE = 256

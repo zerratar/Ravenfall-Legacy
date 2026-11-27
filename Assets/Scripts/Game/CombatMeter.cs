@@ -53,6 +53,8 @@ public sealed class CombatMeter
         public long Damage;
         public long Healing;
         public long Taken;
+        /// <summary>Boss area attacks the player escaped with Substitution (docs/substitution-escape-idea.md), shown on the Damage Taken tab.</summary>
+        public int Escaped;
         /// <summary>The style the player last attacked or healed with, for the row icon.</summary>
         public CombatStyle Style;
     }
@@ -144,6 +146,14 @@ public sealed class CombatMeter
         if (e == null) return;
         e.Taken += amount;
         TotalTaken += amount;
+    }
+
+    /// <summary>A player escaped a boss's area attack with Substitution: counted for the Damage Taken tab.</summary>
+    public void AddEscaped(PlayerController player)
+    {
+        if (!Running) return;
+        var e = Get(player);
+        if (e != null) e.Escaped++;
     }
 
     /// <summary>A player's entry in this run, or null when they did nothing in it.</summary>
