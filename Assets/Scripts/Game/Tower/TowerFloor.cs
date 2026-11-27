@@ -116,7 +116,93 @@ public sealed class TowerFloor : TowerPlace
         return definition;
     }
 
-    private float RespawnSeconds => (float)TowerPressure.RespawnSeconds(Definition != null ? Definition.Floor : 1, Pressure);
+    // ---- How fast the part's monsters come back -------------------------------------------------------------------
+
+    /// <summary>
+    ///     The share of a part's monsters that may be down at a time: they come back sooner when a group fells them
+    ///     faster, so most of them always stand (the bot playtest of 2026-11-26 found 2.3 standing on average in a
+    ///     room of the frost vault, and the group walked 43% of the time).
+    /// </summary>
+    public const float DownShare = 0.25f;
+
+    /// <summary>Monsters never come back sooner than this after they fall.</summary>
+    public const float MinRespawnSeconds = 5f;
+
+    // kills a second on this part, smoothed over about this many seconds (from the monsters seen falling)
+    private const float KillRateSeconds = 45f;
+    private readonly HashSet<EnemyController> down = new HashSet<EnemyController>();
+    private float killRate;
+    private float lastRespawn;
+
+    /// <summary>Kills a second on the part lately (the tests read it).</summary>
+    public float KillRate => killRate;
+
+    /// <summary>
+    ///     Seconds a monster stays down: the floor's time for the pressure (sooner under a crowd), and sooner still when
+    ///     the part's monsters fall fast enough that more than <see cref="DownShare"/> of them would be down.
+    /// </summary>
+    public float RespawnSeconds
+    {
+        get
+        {
+            var seconds = (float)TowerPressure.RespawnSeconds(Definition != null ? Definition.Floor : 1, Pressure);
+            var coming = 0;
+            for (var i = 0; i < enemies.Count; ++i) if (enemies[i] && enemies[i].AutomaticRespawn) coming++;
+            if (killRate > 0.01f && coming > 0) seconds = Mathf.Min(seconds, Mathf.Max(MinRespawnSeconds, DownShare * coming / killRate));
+            return seconds;
+        }
+    }
+
+    // the monsters seen falling since the last look, and the time a monster stays down from them
+    private void FollowKills(float seconds)
+    {
+        var fell = 0;
+        for (var i = 0; i < enemies.Count; ++i)
+        {
+            var e = enemies[i];
+            if (!e || e.Stats == null) continue;
+            if (e.Stats.IsDead) { if (down.Add(e)) fell++; }
+            else down.Remove(e);
+        }
+        killRate += (fell / Mathf.Max(0.1f, seconds) - killRate) * Mathf.Clamp01(seconds / KillRateSeconds);
+        var respawn = RespawnSeconds;
+        if (Mathf.Abs(respawn - lastRespawn) < 0.25f) return;
+        lastRespawn = respawn;
+        for (var i = 0; i < enemies.Count; ++i) if (enemies[i]) enemies[i].RespawnTime = respawn;
+    }
+
+    // ---- Packs ------------------------------------------------------------------------------------------------------
+
+    /// <summary>
+    ///     Monsters on a spot (the owner, 2026-11-26: more monsters, less walking): a small pack of the spot's kind, two or
+    ///     three by turns, made here so the hand-edited layouts keep their spots as they are.
+    /// </summary>
+    public static int PackSize(int spot) => spot * 7 % 4 < 2 ? 2 : 3;
+
+    /// <summary>How far round its spot a pack stands.</summary>
+    public const float PackSpread = 2.4f;
+
+    // where a pack's monsters stand: the first on the spot, the others round it on the navmesh, never through a wall or
+    // a gate (a place behind one ends where the wall is)
+    private static void PackPlaces(Vector3 spot, int index, List<Vector3> places)
+    {
+        places.Clear();
+        places.Add(spot);
+        var size = PackSize(index);
+        if (!UnityEngine.AI.NavMesh.SamplePosition(spot, out var from, 2f, UnityEngine.AI.NavMesh.AllAreas)) return;
+        var turn = index * 2.39996f; // the golden angle: neighbouring packs do not line up
+        for (var k = 1; k < size; ++k)
+        {
+            var angle = turn + (k - 1) * Mathf.PI * 2f / (size - 1);
+            var radius = PackSpread * (0.85f + 0.3f * ((index + k) % 3) / 2f);
+            var want = from.position + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius;
+            var at = UnityEngine.AI.NavMesh.Raycast(from.position, want, out var hit, UnityEngine.AI.NavMesh.AllAreas) ? hit.position : want;
+            if (UnityEngine.AI.NavMesh.SamplePosition(at, out var on, 1.5f, UnityEngine.AI.NavMesh.AllAreas)) at = on.position;
+            places.Add(at);
+        }
+    }
+
+    private readonly List<Vector3> packPlaces = new List<Vector3>();
 
     private void Rescale(EnemyController enemy)
     {
@@ -125,8 +211,8 @@ public sealed class TowerFloor : TowerPlace
     }
 
     /// <summary>
-    ///     Fills the floor for <paramref name="floor"/>: its monsters on the spots, at its level, with the band's element.
-    ///     Monsters of the floor before go first. Returns false when the scene has no templates or spots (the test floor).
+    ///     Fills the floor for <paramref name="floor"/>: a pack of its monsters on every spot (<see cref="PackSize"/>), at
+    ///     its level, with the band's element. Monsters of the floor before go first. Returns false when the scene has no templates or spots (the test floor).
     /// </summary>
     public bool Apply(TowerFloorDefinition floor)
     {
@@ -144,19 +230,23 @@ public sealed class TowerFloor : TowerPlace
             if (!template) continue;
             if (!made.TryGetValue(kind.Id, out var definition)) made[kind.Id] = definition = Scaled(kind);
             var spot = Spawns.GetChild(i);
-            var enemy = Make(template, spot.position, spot.rotation, kind.Scale > 0 ? kind.Scale : 1f);
-            enemy.ApplyRuntimeDefinition(definition, kind.Name, RespawnSeconds);
-            enemy.Respawning = Rescale;
-            enemy.TowerMonster = true;
-            enemies.Add(enemy);
-            kinds[enemy] = kind;
+            PackPlaces(spot.position, i, packPlaces);
+            foreach (var place in packPlaces)
+            {
+                var enemy = Make(template, place, spot.rotation, kind.Scale > 0 ? kind.Scale : 1f);
+                enemy.ApplyRuntimeDefinition(definition, kind.Name, RespawnSeconds);
+                enemy.Respawning = Rescale;
+                enemy.TowerMonster = true;
+                enemies.Add(enemy);
+                kinds[enemy] = kind;
+            }
         }
         return true;
     }
 
     /// <summary>
-    ///     A floor of rooms: every room's monsters at once (the ones ahead stand waiting behind their gates), the kinds
-    ///     dealt out over all the spots in route order as on a one-room floor. Only the hold's monsters come back after
+    ///     A floor of rooms: every room's monsters at once (the ones ahead stand waiting behind their gates), a pack of a
+    ///     kind on every spot, the kinds dealt out over all the spots in route order as on a one-room floor. Only the hold's monsters come back after
     ///     they fall; the rooms before it stay cleared. The route starts again at its first room.
     /// </summary>
     private bool ApplyRoute(TowerFloorDefinition floor)
@@ -179,14 +269,18 @@ public sealed class TowerFloor : TowerPlace
                 if (!template) continue;
                 if (!made.TryGetValue(kind.Id, out var definition)) made[kind.Id] = definition = Scaled(kind);
                 var spot = zone.Spawns.GetChild(s);
-                var enemy = Make(template, spot.position, spot.rotation, kind.Scale > 0 ? kind.Scale : 1f);
-                enemy.ApplyRuntimeDefinition(definition, kind.Name, RespawnSeconds);
-                enemy.Respawning = Rescale;
-                enemy.AutomaticRespawn = z >= Route.Hold;
-                enemy.TowerMonster = true;
-                enemies.Add(enemy);
-                kinds[enemy] = kind;
-                zones[enemy] = z;
+                PackPlaces(spot.position, i, packPlaces);
+                foreach (var place in packPlaces)
+                {
+                    var enemy = Make(template, place, spot.rotation, kind.Scale > 0 ? kind.Scale : 1f);
+                    enemy.ApplyRuntimeDefinition(definition, kind.Name, RespawnSeconds);
+                    enemy.Respawning = Rescale;
+                    enemy.AutomaticRespawn = z >= Route.Hold;
+                    enemy.TowerMonster = true;
+                    enemies.Add(enemy);
+                    kinds[enemy] = kind;
+                    zones[enemy] = z;
+                }
             }
         }
         return true;
@@ -240,6 +334,7 @@ public sealed class TowerFloor : TowerPlace
     {
         if (Definition == null || Time.time < nextNotice) return;
         nextNotice = Time.time + NoticeSeconds;
+        FollowKills(NoticeSeconds);
         Notice();
     }
 
@@ -469,5 +564,8 @@ public sealed class TowerFloor : TowerPlace
         zones.Clear();
         enemies.Clear();
         scaled.Clear();
+        down.Clear();
+        killRate = 0f;
+        lastRespawn = 0f;
     }
 }

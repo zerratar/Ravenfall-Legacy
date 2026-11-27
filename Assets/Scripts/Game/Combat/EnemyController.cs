@@ -247,6 +247,9 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable, IHasEnemyD
 
     public bool AutomaticRespawn = true;
 
+    /// <summary>Seconds it stays down after it falls (a tower part sets it by how fast its monsters fall).</summary>
+    public float RespawnTime { get => respawnTime; set => respawnTime = value; }
+
     private float noDamageDropTargetTimer;
     private float highestAttackerAggroValue;
     private HealthBar healthBar;
