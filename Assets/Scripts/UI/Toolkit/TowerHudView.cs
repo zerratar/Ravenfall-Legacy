@@ -43,6 +43,11 @@ namespace Shinobytes.UI
 
         private VisualElement hud, column;
         private Label title, floorLabel, timer, clock, barText, people, phase, join, bonus;
+        // the status line on a row of its own under the count and the bonus, when it does not fit beside them (the owner,
+        // 2026-11-27: "The Frozen Warden still stands - next attem..." hid when the next attempt was)
+        private VisualElement phaseRow;
+        private Label phaseWide;
+        private bool phaseOnRow;
         private VisualElement liveDot, bar, fill, quests, joinPill;
         private Button mapButton, metersButton, actionButton;
         // the camera's way to the tower and back (WorldTowerCamera), and its short word when nobody is in the tower
@@ -393,6 +398,11 @@ namespace Shinobytes.UI
             bottom.Add(phase);
             bottom.Add(right);
             hud.Add(bottom);
+            phaseRow = Box("rf-tower__status-row");
+            phaseWide = Text("rf-raid__percent", "rf-tower__status");
+            phaseRow.Add(phaseWide);
+            Show(phaseRow, false);
+            hud.Add(phaseRow);
 
             map = new TowerMapView(step =>
             {
@@ -430,6 +440,35 @@ namespace Shinobytes.UI
         private static void Show(VisualElement e, bool show)
         {
             if (e != null) e.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
+        /// <summary>
+        ///     The status line: beside the count and the bonus when it fits there (the panel may grow to its widest for
+        ///     it), else on its own row under them, whole and wrapped to the panel's width, never cut with an ellipsis.
+        ///     Measured against the last layout; it comes back beside them only with a little room to spare.
+        /// </summary>
+        private void SetPhase(string text)
+        {
+            text ??= "";
+            var onRow = false;
+            var room = phase.layout.width;
+            // (a row with no room left over for it at all measures 0: that is room too, none)
+            if (text.Length > 0 && !float.IsNaN(room) && hud.layout.width > 0f)
+            {
+                var needed = phase.MeasureTextSize(text, 0f, VisualElement.MeasureMode.Undefined, 0f, VisualElement.MeasureMode.Undefined).x;
+                var widest = hud.resolvedStyle.maxWidth.value;
+                if (float.IsNaN(widest) || widest <= 0f) widest = MaxWidth;
+                room += Mathf.Max(0f, widest - hud.layout.width);
+                onRow = phaseOnRow ? needed > room - 8f : needed > room + 0.5f;
+            }
+            // on its row it wraps within the width the panel has, so the panel does not grow for it
+            var inner = hud.contentRect.width;
+            if (onRow && !float.IsNaN(inner) && inner > 0f) phaseWide.style.maxWidth = inner;
+            else if (!onRow) phaseWide.style.maxWidth = StyleKeyword.Null;
+            phaseOnRow = onRow;
+            Set(phase, onRow ? "" : text);
+            Set(phaseWide, onRow ? text : "");
+            Show(phaseRow, onRow);
         }
 
         private void SetFill(float share)
@@ -582,18 +621,18 @@ namespace Shinobytes.UI
                 var rooms = route && route.Valid ? route.FightingRooms : 0;
                 if (countdown)
                 {
-                    Set(phase, string.Format(Localization.UI_TOWER_TRIP_BOSS, TowerWords.Floor(tower.StreamFloor), TowerWords.Part(tower.StreamFloor)));
+                    SetPhase(string.Format(Localization.UI_TOWER_TRIP_BOSS, TowerWords.Floor(tower.StreamFloor), TowerWords.Part(tower.StreamFloor)));
                     Set(join, "!tower");
                 }
                 else if (voteText != null)
                 {
-                    Set(phase, voteText);
+                    SetPhase(voteText);
                     Set(join, voteCommand);
                 }
                 else
                 {
                     // a part of rooms: how far along its route they are, until the last room is reached
-                    Set(phase, rooms > 1 && route.Active < route.Hold
+                    SetPhase(rooms > 1 && route.Active < route.Hold
                         ? string.Format(Localization.UI_TOWER_ROOM, Mathf.Min(route.Active + 1, rooms), rooms)
                         : string.Format(Localization.UI_TOWER_TRAINING, TowerWords.Floor(tower.StreamFloor), TowerWords.Part(tower.StreamFloor)));
                     // with one part open at a time (potato mode) the way back is everyone's
@@ -619,18 +658,18 @@ namespace Shinobytes.UI
                 Set(timer, "");
                 if (voteText != null)
                 {
-                    Set(phase, voteText);
+                    SetPhase(voteText);
                     ShowJoin(true);
                     Set(join, voteCommand);
                 }
                 else if (tower.AllCleared || stream == null)
                 {
-                    Set(phase, Localization.UI_TOWER_ALL_CLEARED);
+                    SetPhase(Localization.UI_TOWER_ALL_CLEARED);
                     ShowJoin(false);
                 }
                 else
                 {
-                    Set(phase, string.Format(Localization.UI_TOWER_NEXT_FLOOR, stream.Floor, stream.Part, stream.Name));
+                    SetPhase(string.Format(Localization.UI_TOWER_NEXT_FLOOR, stream.Floor, stream.Part, stream.Name));
                     ShowJoin(true);
                     Set(join, "!tower climb");
                 }
@@ -653,7 +692,7 @@ namespace Shinobytes.UI
                 Show(quests, false);
                 SetFill(max > 0 ? hp / (float)max : 0f);
                 Set(barText, HudFormat.Grouped(hp) + " / " + HudFormat.Grouped(max));
-                Set(phase, here != null && here.Boss != null ? here.Boss.Name : "");
+                SetPhase(here != null && here.Boss != null ? here.Boss.Name : "");
                 ShowJoin(false);
                 // who still stands, and when the next of the knocked out is back in it
                 if (tower.FightCount(out var standing, out var went))
@@ -674,7 +713,7 @@ namespace Shinobytes.UI
                 Show(bar, true);
                 SetFill(1f);
                 Set(barText, here.IsFloorBoss ? string.Format(Localization.UI_TOWER_FLOOR_CLEARED, here.Floor) : string.Format(Localization.UI_TOWER_PART_CLEARED, here.Part));
-                Set(phase, tower.AllCleared || stream == null ? Localization.UI_TOWER_ALL_CLEARED : string.Format(Localization.UI_TOWER_NEXT_FLOOR, stream.Floor, stream.Part, stream.Name));
+                SetPhase(tower.AllCleared || stream == null ? Localization.UI_TOWER_ALL_CLEARED : string.Format(Localization.UI_TOWER_NEXT_FLOOR, stream.Floor, stream.Part, stream.Name));
                 ShowJoin(false);
                 return;
             }
@@ -732,25 +771,25 @@ namespace Shinobytes.UI
             var bossName = here != null && here.Boss != null ? here.Boss.Name : "";
             if (countdown)
             {
-                Set(phase, string.Format(Localization.UI_TOWER_BOSS_STARTS, bossName));
+                SetPhase(string.Format(Localization.UI_TOWER_BOSS_STARTS, bossName));
                 ShowJoin(true);
                 Set(join, "!tower");
             }
             else if (voteText != null)
             {
-                Set(phase, voteText);
+                SetPhase(voteText);
                 ShowJoin(true);
                 Set(join, voteCommand);
             }
             else if (tower.AllCleared)
             {
-                Set(phase, Localization.UI_TOWER_ALL_CLEARED);
+                SetPhase(Localization.UI_TOWER_ALL_CLEARED);
                 ShowJoin(false);
             }
             else if (tower.State.BossOpen)
             {
                 var wait = tower.RetrySecondsLeft;
-                Set(phase, wait > 0f ? (loss != null ? string.Format(Localization.UI_TOWER_STILL_STANDS, loss.Boss, Clock(wait)) : string.Format(Localization.UI_TOWER_REGROUP, Mathf.CeilToInt(wait)))
+                SetPhase(wait > 0f ? (loss != null ? string.Format(Localization.UI_TOWER_STILL_STANDS, loss.Boss, Clock(wait)) : string.Format(Localization.UI_TOWER_REGROUP, Mathf.CeilToInt(wait)))
                     : string.Format(here != null && here.IsFloorBoss ? Localization.UI_TOWER_FLOOR_BOSS_READY : Localization.UI_TOWER_BOSS_READY, bossName));
                 // no "!tower boss" while the group regroups: it cannot be called yet
                 ShowJoin(wait <= 0f);
@@ -761,7 +800,7 @@ namespace Shinobytes.UI
                 // a floor of rooms: how far along the route the group is
                 var route = tower.PushFloor ? tower.PushFloor.Route : null;
                 var rooms = route && route.Valid ? route.FightingRooms : 0;
-                Set(phase, rooms > 1 ? string.Format(Localization.UI_TOWER_ROOM, Mathf.Min(route.Active + 1, rooms), rooms) : "");
+                SetPhase(rooms > 1 ? string.Format(Localization.UI_TOWER_ROOM, Mathf.Min(route.Active + 1, rooms), rooms) : "");
                 ShowJoin(true);
                 Set(join, "!tower");
             }

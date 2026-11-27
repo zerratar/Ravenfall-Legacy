@@ -1288,6 +1288,24 @@
     text-overflow: ellipsis;
 }
 
+/* The status line on a row of its own, under the count and the bonus, when it does not fit beside them: the whole
+   text, wrapped to the panel's width (TowerHudView holds it to the width the panel has, so the panel keeps it). */
+.rf-tower__status-row {
+    flex-direction: row;
+    margin-top: var(--rf-space-1);
+}
+
+.rf-raid--tower .rf-tower__status-row .rf-tower__status {
+    flex-grow: 1;
+    flex-shrink: 1;
+    margin-left: 0;
+    margin-right: 0;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    -unity-text-align: middle-center;
+}
+
 .rf-tower__quests {
     margin-top: var(--rf-space-3);
 }
