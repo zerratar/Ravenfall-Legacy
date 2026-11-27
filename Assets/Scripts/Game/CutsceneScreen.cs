@@ -6,7 +6,7 @@ using UnityEngine.UIElements;
 /// <summary>
 /// The screen while a cutscene plays (RavebridgeReveal, TowerCutscene): everything on it steps aside (the UI Toolkit
 /// panels and the old canvases), a Skip button sits in the corner, and a title (a big name and a line under it) fades in
-/// when the cutscene says. <see cref="Restore"/> puts it all back.
+/// when the cutscene says. <see cref="Restore"/> puts it all back. The black of a <see cref="ScreenFade"/> is left as it is.
 /// </summary>
 public sealed class CutsceneScreen
 {
@@ -34,6 +34,8 @@ public sealed class CutsceneScreen
         UIDocument host = null;
         foreach (var doc in UnityEngine.Object.FindObjectsByType<UIDocument>())
         {
+            // the black of a fade stays: it carries on from one cutscene into the next (ScreenFade)
+            if (ScreenFade.Owns(doc)) continue;
             var root = doc.rootVisualElement;
             if (root == null) continue;
             if (!host && root.Q<VisualElement>("conn-layer") != null) host = doc;

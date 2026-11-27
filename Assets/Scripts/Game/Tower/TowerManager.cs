@@ -2373,6 +2373,14 @@ public sealed class TowerManager : MonoBehaviour
         else Announce(Localization.MSG_TOWER_BOSS_DOWN, def.Boss.Name, TowerWords.Floor(floorNumber), TowerWords.Part(floorNumber));
         PlayBossFall(boss, def, floorNumber);
         foreach (var p in standing) p.towerHandler.Celebrate();
+        // a floor boss: the look at the world tower follows its fall at once (WorldTowerMoments), while the players
+        // go to the new floor's town behind it; it does not wait for the server's answer
+        if (floorBoss)
+        {
+            MovingToNewTown = true;
+            dueArrival = null;
+            WorldTower.FloorBossFell(TowerWords.Floor(floorNumber));
+        }
 
         var g = Game;
         TowerClearResult result = null;
@@ -2390,6 +2398,8 @@ public sealed class TowerManager : MonoBehaviour
             Announce(Localization.MSG_TOWER_CLEAR_FAILED, result?.Message ?? "no answer from the server");
             if (result?.State != null) SetState(result.State);
             if (clearing == area) clearing = null;
+            if (floorBoss) WorldTower.FloorBossRefused();
+            MovingToNewTown = false;
             return;
         }
 
@@ -2419,6 +2429,7 @@ public sealed class TowerManager : MonoBehaviour
         {
             Announce(Localization.MSG_TOWER_TOP);
             if (clearing == area) clearing = null;
+            MovingToNewTown = false;
             return;
         }
         var town = StreamTown;
@@ -2426,6 +2437,7 @@ public sealed class TowerManager : MonoBehaviour
         {
             // no town for it (should not happen): straight on, as before the towns
             if (clearing == area) clearing = null;
+            MovingToNewTown = false;
             if (area.Floor && !area.Unloading && LayoutFor(next) == LayoutFor(def)) Retarget(area, next.Number);
             else foreach (var p in PlayersOn(area)) GoTo(p, next.Number, out _);
             return;
@@ -2496,10 +2508,36 @@ public sealed class TowerManager : MonoBehaviour
             if (LayoutFor(next) == LayoutFor(cleared) && AreaAt(next.Number) == null) Retarget(area, next.Number);
             else yield return UnloadRoutine(area);
         }
-        // a new band's town, the first time the stream gets there: a fly-over with its name
+        // a new band's town, the first time the stream gets there: a fly-over with its name. While the look at the
+        // world tower plays (or waits to) it follows that look straight out of its fade, never under it
         var arrived = TowerTown.Loaded;
-        if (moved > 0 && arrived && arrived.Town == town && Tower.TownFor(cleared.Number) != town) PlayArrival(arrived, false);
+        if (moved > 0 && arrived && arrived.Town == town && Tower.TownFor(cleared.Number) != town)
+        {
+            if (WorldTower.HoldsArrival) dueArrival = arrived;
+            else PlayArrival(arrived, false);
+        }
         if (moved > 0) Announce(Localization.MSG_TOWER_IN_TOWN, TowerTown.Loaded && TowerTown.Loaded.Town != null ? TowerTown.Loaded.Town.Name : town.Name, TowerWords.Floor(next.Number), TowerWords.Part(next.Number), next.Name);
+        MovingToNewTown = false;
+    }
+
+    /// <summary>
+    ///     A floor boss fell and its players are on their way to the new floor's town, until they are there (or the
+    ///     move is given up): the look at the world tower waits for it in the dark before it shows the town.
+    /// </summary>
+    public bool MovingToNewTown { get; private set; }
+
+    // a new town's fly-over kept for the end of the look at the world tower (WorldTowerMoments)
+    private TowerTown dueArrival;
+
+    /// <summary>A new town's fly-over waits for the look at the world tower to end.</summary>
+    public bool ArrivalDue => dueArrival && TowerTown.Loaded == dueArrival;
+
+    /// <summary>The fly-over that waited, now (the look at the world tower has given the camera back): true when it plays.</summary>
+    public bool PlayDueArrival()
+    {
+        var town = dueArrival;
+        dueArrival = null;
+        return town && TowerTown.Loaded == town && PlayArrival(town, false);
     }
 
     public enum MoveResult { Moved, Same, Locked, Busy, Voted, NotInTower, Nobody, OwnWay }

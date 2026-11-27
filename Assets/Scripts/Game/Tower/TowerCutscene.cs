@@ -15,7 +15,18 @@ public sealed class TowerCutscene : MonoBehaviour
     /// <summary>How long the name shows at the end, and how long it takes to come and go.</summary>
     public const float TitleSeconds = 4f, TitleIn = 1f, TitleOut = 0.8f;
 
-    public static bool Playing => current;
+    /// <summary>
+    ///     A tower cutscene has the screen: one of these, or the world tower's look after a floor boss
+    ///     (<see cref="WorldTower.Cinematic"/>), which is one too. What waits for cutscenes reads this.
+    /// </summary>
+    public static bool Playing => current || WorldTower.Cinematic;
+
+    /// <summary>One of these is playing (not the world tower's look).</summary>
+    public static bool Running => current;
+
+    /// <summary>Seconds until the one playing ends (a skip makes it sooner), 0 when none is.</summary>
+    public static float Remaining => current && !current.finished ? Mathf.Max(0f, current.seconds - current.time) : 0f;
+
     private static TowerCutscene current;
 
     private Vector3[] positions;

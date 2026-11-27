@@ -23,7 +23,8 @@ using UnityEngine.SceneManagement;
 ///     live sky behind it, so it rises into a cloudscape with no end to see. Where the game draws no sky clouds
 ///     (potato mode, or the setting off) it fades into the sky all the way.</para>
 ///     <para>Potato mode: the low detail models at every distance, no breathing light, no drifting cloud, bobbing
-///     rocks, lightning or gulls, no lamps, no camera looks; steady light stays.</para>
+///     rocks, lightning or gulls, no lamps, no idle or entering looks (the floor's look plays without its particles);
+///     steady light stays.</para>
 ///     <para>The other parts of this class: the islet as a place players sail to (WorldTowerVisit.cs), the camera's
 ///     looks at the tower (WorldTowerMoments.cs), the stream's best climbers on the stone and as the statue
 ///     (WorldTowerClimbers.cs).</para>
@@ -44,6 +45,7 @@ public sealed partial class WorldTower : MonoBehaviour
         [NonSerialized] public Material Material;
         [NonSerialized] public float Glow;
         [NonSerialized] public float Flash;
+        [NonSerialized] public float Quick;
     }
 
     public static WorldTower Instance { get; private set; }
@@ -341,8 +343,10 @@ public sealed partial class WorldTower : MonoBehaviour
         step = now;
         // nothing known yet: every floor dark
         cleared = now > 0 ? Tower.FloorsCleared(now - 1) : -1;
-        // a floor that fell while the game was running flares up before it settles: with the camera on it if it can
-        // be had (WorldTowerMoments), else at once
+        // the floor the climbing light lit before the server said so: the server says so now
+        if (forcedLit > 0 && cleared >= forcedLit - 1) forcedLit = 0;
+        // a floor that fell while the game was running flares up before it settles: in the look at the tower that
+        // follows its boss's fall (WorldTowerMoments), else at once
         if (before >= 0 && cleared > before) FloorFell(cleared);
         Words();
         climbersDue = Time.time + 3f;
@@ -364,10 +368,11 @@ public sealed partial class WorldTower : MonoBehaviour
         foreach (var section in Sections)
         {
             if (!section.Material || section.AlwaysLit) continue;
-            // a floor whose flare waits for the camera stays as it was until then
-            var lit = section.Floor > 0 && (section.Floor <= cleared || section.Floor == current) && !(section.Floor == waitingFloor && waitingFloor > 0);
+            // the next floor stays dark until the light of the floor's look reaches it, which lights it then even
+            // before the server's answer (WorldTowerMoments)
+            var lit = section.Floor > 0 && (section.Floor <= cleared || section.Floor == current || section.Floor == forcedLit) && section.Floor != holdFloor;
             var target = lit ? 1f : 0f;
-            section.Glow = Mathf.MoveTowards(section.Glow, target, dt * 0.45f);
+            section.Glow = Mathf.MoveTowards(section.Glow, target, dt * (Time.time < section.Quick ? 1.6f : 0.45f));
             section.Flash = Mathf.MoveTowards(section.Flash, 0f, dt * 0.3f);
             section.Material.SetFloat(GlowId, section.Glow * (1f + 1.6f * section.Flash));
             section.Material.SetFloat(PulseId, section.Floor == current ? Pulse : 0f);

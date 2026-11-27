@@ -254,8 +254,9 @@ straight side at eye level.
 - the floor the stream is **on**: it glows and breathes (down to 40% and back, every 4 seconds);
 - a floor **not reached**: dark glass, no fire (the fortress keeps its embers);
 - before the server has answered: every floor dark;
-- a floor boss falling while the game runs: the camera looks at the tower as the floor flares up (see "The camera's
-  looks"), or with cutscenes off it flares at once; the next floor begins to breathe.
+- a floor boss falling while the game runs: the floor's cutscene at the tower, where the floor flares and a band of
+  light climbs to the next floor, which lights up only when the light reaches it (see "The camera's looks"); with
+  cutscenes off it flares at once and the next floor begins to breathe.
 
 Each section has its own copy of the material (`_Glow`, `_Pulse`); the gate, the plaza's sigils and the braziers are
 always lit. `WorldTower.PreviewStep = 21` (editor only, from an eval) shows the light for a step without a server.
@@ -263,32 +264,75 @@ always lit. `WorldTower.PreviewStep = 21` (editor only, from an eval) shows the 
 ## The camera's looks at the tower
 
 The camera that follows a player looks down at 45 degrees and never shows the horizon, so on a normal stream the
-tower was not on screen at all. Three short looks put it there (`WorldTowerMoments.cs`):
+tower was not on screen at all. Three looks put it there (`WorldTowerMoments.cs`):
 
 | Look | When | How long | What it shows |
 |---|---|---|---|
-| A floor falls | the stream clears a floor's last part, after the floor boss's own cutscene | 4.6 s | from the sea in front, rising toward that floor's section, which flares up as the camera settles |
-| The stream enters | the tower was empty and someone goes in (to the climb or a town), at most once in 15 minutes and not within a minute of the tower's own opening cutscene | 5 s | from the gate, pulling back and up until the whole tower stands in the picture |
+| A floor falls | a floor boss falls (never a mini boss), straight after its own fall cutscene and the players' cheer | about 6.6 s on the tower, up to 9.5 s while the players are still on their way to the new town | a cutscene (below) |
+| The stream enters | the tower was empty and someone goes in (to the climb or a town), at most once in 15 minutes and not within a minute of the tower's own opening cutscene | 5 s, faded in and out (0.5 s) | from the gate, pulling back and up until the whole tower stands in the picture |
 | Now and then | nothing is going on and nobody has touched mouse or keys for 45 s; every 12 to 20 minutes (picked anew each time) | 9 s | from wherever the camera is, it lifts a little, turns to the tower and drifts toward it |
+
+**A floor falls** (the owner, 2026-11-27: the old 4.6 s look between hard cuts, ended by any mouse movement, felt like
+an out of place video cut). It is a cutscene like the tower's others and counts as one (`TowerCutscene.Playing`):
+
+1. The floor boss's fall cutscene and the cheer play as before (TowerManager). Its last 0.7 s go to black.
+2. The tower fades in from out over the sea in front of the gate, a little to one side, with the whole stack from the
+   islet to the fortress in the picture; the camera drifts in and rises a little all through.
+3. At 0.9 s the cleared floor's section flares, with a burst of sparks and light round it in its own color.
+4. From 1.7 s to 3.5 s a band of light with a white-hot edge climbs the wall from the cleared floor's middle to the
+   next floor's, sparks flying off it, its color turning from the one floor's to the other's (the sections' own glow
+   colors from `stack.json`: gold, ice blue, violet, green).
+5. The next floor lights up when the light reaches it (until then it is held dark), with a flash and a bigger burst
+   in its color and a ring of light rolling outward. A floor not open yet (the Dark Fortress after floor 3): the
+   light spends itself at its foot in gold and the floor stays dark.
+6. From 3.7 s the title fades in at the top, over the sky, in the cutscenes' style: "Floor 2 cleared" in gold
+   (bold Rodin, 104 px) over "Floor 3: The Storm Spire is open" (38 px); for a floor not built yet, "The floors
+   above are sealed, for now".
+7. At 6.6 s it fades to black (0.7 s); if the players are still on their way to the new floor's town it stays on the
+   tower up to 9.5 s, then waits in the dark up to 4 s more.
+8. From the dark: the new town's first-visit cutscene when it is due (it starts straight out of the fade, never
+   under or over the look; TowerManager keeps it for the look's end), else the camera goes back to who or what it
+   was on (on the tower's side, the group camera in the town) and the picture fades in after a moment to settle.
+
+The screen steps aside as for the other cutscenes (windows hidden, a Skip button). Skip, Esc or Space go through a
+short fade (0.4 s) to the end; the mouse and other keys leave it alone. The look starts the moment the boss falls
+(TowerManager tells it, `WorldTower.FloorBossFell`), so it never waits for the server's answer, and lights the next
+floor itself; the server's answer catches up. If the server refuses the clear, a look that has not started yet is
+dropped. Potato mode: no particles; the fades, the flare and the title stay. The black is `ScreenFade`, a UI Toolkit
+panel of its own drawn over every other one, which `CutsceneScreen` leaves alone so it can carry from one cutscene
+into the next.
 
 Rules they all keep:
 
 - Never over something else: not during a cutscene (the tower's or Ravebridge's), a raid, a dungeon, the arena, a
   war, the regatta's race camera, build mode, hero mode or a character played by hand, a tower boss countdown or
   fight, nor with the settings, the shop, What's new or a Ravebridge window open, nor while the streamer types.
-- Never against the streamer: the free camera is left alone, and any key or mouse movement ends a look at once and
-  gives the camera back to who or what it was on. After the tower camera key was used the looks keep off for 30 s.
+- Never against the streamer: the free camera is left alone. The entering and idle looks end when the streamer
+  touches a key or the mouse (the entering one through its fade, the idle one at once) and give the camera back to
+  who or what it was on. After the tower camera key was used the looks keep off for 30 s.
+- Something bigger starting (a raid, a dungeon, a war, a tower countdown or fight) takes the camera at once.
 - Not queued: a look that cannot start within its window (14 s after the floor fell, longer while the boss's
-  cutscene still plays; 6 s after someone went in) is dropped, and the floor flares without the camera. The idle
-  look tries again 30 s later.
-- The camera goes back to who or what it was on. `WorldTower.Instance.PlayNow(kind, floor)` plays one by hand (the
-  tests); a look played that way runs its time whatever the mouse does.
-- No window is hidden and no title is put up: a look is the camera only.
-- The first two follow **Settings > Game > Observer camera > Cutscenes**. The idle look has its own switch under
-  it, **Looks at the tower** (on by default, `PlayerSettings.TowerLooks`), and is off in potato mode whatever the switch says. An
-  idle raid, dungeon, regatta, wave run, pirate raid or treasure hunt counts as "something going on".
+  cutscene still plays; 6 s after someone went in) is dropped; the floor flares and the next one lights without it,
+  and a new town's cutscene kept for it plays then. The idle look tries again 30 s later.
+- `WorldTower.Instance.PlayNow(kind, floor)` plays one by hand (the tests); a look played that way runs its time
+  whatever the mouse does.
+- The first two follow **Settings > Game > Observer camera > Cutscenes** (off: no look, the floor flares at once).
+  The idle look has its own switch under it, **Looks at the tower** (on by default, `PlayerSettings.TowerLooks`), and
+  is off in potato mode whatever the switch says, as is the entering look. An idle raid, dungeon, regatta, wave run,
+  pirate raid or treasure hunt counts as "something going on".
 
-The interval is long on purpose: four looks an hour at most, nine seconds each, only on a stream nobody is steering.
+The interval is long on purpose: four idle looks an hour at most, nine seconds each, only on a stream nobody is
+steering.
+
+**The sea floor strip and the resident drawer.** Testing the floor's look showed everything below the horizon flat
+white, with black blocks where islands stood, from cameras out at sea near the tower: URP's GPU resident drawer drew
+the sea floor strip (`World Tower sea floor`) wrongly in a play session that started after a script reload. The
+tower gives that renderer a property block at its start, which keeps it out of the resident drawer and draws it the
+classic way (`WorldTower.ClassicDraw`); nothing about its look changes.
+
+**The island camera at the islet** never turns round the tower (the owner, 2026-11-27: it orbited and cut into the
+tower): on the islet it stands on the gate's side over the plaza and looks toward the tower, with no slow turn and
+no turning by the arrow keys; zoom and tilt work as on every island (`IslandObserveCamera.Steady`).
 
 ## The tower camera key
 
@@ -643,6 +687,7 @@ server was floor 1, part 6. Round 1's (`built-*`) show the tower at its first pl
 | `built2-moment-floor-lit.jpg` | The look when a floor falls, 2.4 s in |
 | `built2-moment-entering.jpg` | The look when the stream enters, 3.4 s in |
 | `built2-moment-idle.jpg` | The idle look, 6.5 s in, from a camera that was on a player on Home |
+| `../floor-cleared-2026-11-27/*.jpg` | The floor's cutscene in play after a real floor 2 clear with five bots (01 to 10: the boss falls, the fade, the flare, the light climbing, floor 3 lit, the title, straight into Galewharf's first-visit cutscene, back in town), the same in potato mode (11), the entering look and its fade (12, 13), the steady island camera at the islet (14) |
 | `built2-ferry-at-pier.jpg` | The ferry at the pier's end, three passengers just ashore, Home across the water |
 | `built2-plaza-visitor.jpg` | A visitor on the plaza after the ferry, the game's interface on; the stone shows the server's real list |
 | `built2-walk-in.jpg` | Two visitors walking up the stair after `!tower`, from the usual camera |
