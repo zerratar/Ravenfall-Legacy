@@ -78,7 +78,8 @@ public class PlayerProgression
     // ---- Training away from the islands -------------------------------------------------------------------------
     //
     // In a calm place (a tower town, Ravebridge) a player keeps training their skill at the rate they had on their
-    // island, so waiting there costs nothing (Zerratar 2026-11-08). The rate is learned from the experience the player
+    // island, so waiting there costs nothing (Zerratar 2026-11-08). On a tower part the same rate is the least a skill
+    // earns, whatever happens there (the owner, 2026-11-26): what the fights pay counts against it. The rate is learned from the experience the player
     // really earned per second while training on an island (the sum of the exp factors, so level, boosts and multipliers
     // apply as usual when it is paid); until a few minutes are known, a typical island rate per skill is used.
 
@@ -216,6 +217,10 @@ public class PlayerProgression
             : player.GetSkill(skill).Level + 1;
 
         var xp = GameMath.Exp.CalculateExperience(nextLevel, skill, factor, GetExpMultiplier(skill), GetMultiplierFactor());
+
+        // a part of the tower pays combat skills and Healing more the higher it is (TowerHandler.ExpBonus): kills,
+        // heals and the island's top-up alike
+        if (skill.IsCombatSkill() && player.towerHandler != null) xp *= 1d + player.towerHandler.ExpBonus;
 
         // and the village's perks from the streamer's story lines (StoryLog)
         return xp * Mathf.Max(1, player.GetModifiers().ExpMultiplier) * StoryLog.ExpFactor(skill, player.Island);

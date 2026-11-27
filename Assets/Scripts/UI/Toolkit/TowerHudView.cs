@@ -42,7 +42,7 @@ namespace Shinobytes.UI
         private const float MinWidth = 780f, MaxWidth = 1240f, MapMinWidth = 1180f;
 
         private VisualElement hud, column;
-        private Label title, floorLabel, timer, clock, barText, people, phase, join;
+        private Label title, floorLabel, timer, clock, barText, people, phase, join, bonus;
         private VisualElement liveDot, bar, fill, quests, joinPill;
         private Button mapButton, metersButton, actionButton;
         // the camera's way to the tower and back (WorldTowerCamera), and its short word when nobody is in the tower
@@ -369,6 +369,9 @@ namespace Shinobytes.UI
             people = Text("rf-raid__raiders");
             left.Add(peopleIcon);
             left.Add(people);
+            // what a part pays above the island (5% a floor): kept short, it shares the row with the phase line
+            bonus = Text("rf-raid__raiders", "rf-tower__bonus");
+            left.Add(bonus);
             phase = Text("rf-raid__percent");
             var right = Box("rf-raid__side", "rf-raid__side--end");
             joinPill = Box("rf-raid__join-pill");
@@ -435,6 +438,14 @@ namespace Shinobytes.UI
             if (Mathf.Abs(share - shownFill) < 0.002f) return;
             shownFill = share;
             fill.style.width = new Length(share * 100f, LengthUnit.Percent);
+        }
+
+        // "+10% exp" for a floor's parts (RavenNest.Combat.Tower.ExpBonus), hidden in a town
+        private void SetBonus(int floor)
+        {
+            var percent = floor > 0 ? Mathf.RoundToInt((float)(Tower.ExpBonus(floor) * 100)) : 0;
+            Show(bonus, percent > 0);
+            if (percent > 0) Set(bonus, string.Format(Localization.UI_TOWER_EXP_BONUS, percent));
         }
 
         private static string Clock(float seconds)
@@ -559,6 +570,7 @@ namespace Shinobytes.UI
                 // called on the climb's part is said here too, so the players here hear of it
                 var part = watched.Definition;
                 Set(floorLabel, part != null ? string.Format(Localization.UI_TOWER_FLOOR, part.Floor, part.Part, part.Name) : "");
+                SetBonus(part != null ? part.Floor : 0);
                 Set(people, Count(Localization.UI_TOWER_COUNT_HERE, tower.CountOn(watched), onParts + inTown));
                 Show(bar, false);
                 Show(quests, false);
@@ -599,6 +611,7 @@ namespace Shinobytes.UI
             {
                 var town = tower.CurrentTown;
                 Set(floorLabel, town != null ? town.Name : "");
+                SetBonus(0);
                 Show(bar, false);
                 Show(quests, false);
                 Show(liveDot, false);
@@ -625,6 +638,7 @@ namespace Shinobytes.UI
             }
 
             Set(floorLabel, here != null ? string.Format(Localization.UI_TOWER_FLOOR, here.Floor, here.Part, here.Name) : "");
+            SetBonus(here != null ? here.Floor : 0);
             Show(liveDot, fighting || countdown);
             Show(clock, fighting || countdown);
             Set(timer, fighting || countdown ? Clock(tower.PhaseSecondsLeft) : "");

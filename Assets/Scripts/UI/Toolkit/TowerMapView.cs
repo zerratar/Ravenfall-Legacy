@@ -26,7 +26,7 @@ namespace Shinobytes.UI
     {
         public readonly VisualElement Root;
 
-        private readonly Label title, hint;
+        private readonly Label title, bonus, hint;
         private readonly Button previous, next;
         private readonly VisualElement body, left, right, middle, lines;
         private readonly List<(VisualElement Card, bool Reached)> cards = new List<(VisualElement, bool)>();
@@ -49,6 +49,9 @@ namespace Shinobytes.UI
             top.Add(previous);
             top.Add(title);
             top.Add(next);
+            // what the floor's parts pay above the island (5% a floor)
+            bonus = Text("rf-tmap__bonus");
+            top.Add(bonus);
             top.Add(Box("rf-raid__spacer"));
             hint = Text("rf-tmap__hint");
             top.Add(hint);
@@ -112,6 +115,7 @@ namespace Shinobytes.UI
             Floor = floor;
 
             title.text = string.Format(Localization.UI_TOWER_MAP_TITLE, floor, info.Name);
+            bonus.text = string.Format(Localization.UI_TOWER_MAP_EXP, Mathf.RoundToInt((float)(Tower.ExpBonus(floor) * 100)).ToString(CultureInfo.InvariantCulture));
             previous.SetEnabled(floor > 1);
             next.SetEnabled(floor < reachedFloors);
             // with one floor reached there is nothing to page through

@@ -1332,6 +1332,12 @@
     color: var(--rf-accent);
 }
 
+/* What a part pays above the island (5% a floor), beside the players count: gold, as the guardian's row. */
+.rf-raid .rf-tower__bonus {
+    color: var(--rf-accent);
+    margin-left: var(--rf-space-4);
+}
+
 /* The Map button on the tower panel: the one thing on it that takes a click. */
 .rf-top-layer .rf-tower__mapbtn {
     flex-direction: row;
@@ -1869,6 +1875,16 @@
     font-size: 20px;
     color: var(--rf-text);
     margin-left: 5px;
+}
+
+/* The floor's experience bonus on the map, beside its name. */
+.rf-top-layer .rf-tmap__bonus {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+    -unity-font-style: normal;
+    font-size: 20px;
+    color: var(--rf-accent);
+    margin-left: var(--rf-space-3);
+    text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
 }
 
 .rf-top-layer .rf-tmap__hint {

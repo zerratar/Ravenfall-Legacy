@@ -2921,6 +2921,8 @@ public static class Localization
     public static string UI_TOWER_MAP_HIDDEN = "Not reached";
     public static string UI_TOWER_MAP_PLAYERS = "Players there now";
     public static string UI_TOWER_MAP_HINT = "!tower {0} goes to a cleared part";
+    public static string UI_TOWER_MAP_EXP = "+{0}% experience";
+    public static string UI_TOWER_EXP_BONUS = "+{0}% exp";
     public static string UI_TOWER_MAP_FLOOR_BOSS = "Floor boss";
     public static string UI_TOWER_ROOM = "Room {0} of {1}";
     public static string UI_TOWER_ALL_CLEARED = "Every floor is cleared";

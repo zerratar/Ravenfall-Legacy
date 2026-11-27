@@ -77,9 +77,11 @@ public class TowerHandler : IAwayHandler
     public Transform WorkSpot => workSpot;
 
     /// <summary>
-    ///     The island's experience is paid here (PlayerProgression.TrainAway): in a town while not resting, and on a floor
-    ///     for a skill the floor's fights do not train (a woodcutter fighting along keeps their woodcutting). Combat skills
-    ///     and Healing earn on a floor by fighting and healing.
+    ///     The island's experience is paid here (PlayerProgression.TrainAway): in a town while not resting, and on a part
+    ///     for every skill. A skill the part's fights do not train (a woodcutter fighting along) gets the island's rate as
+    ///     it is; combat skills and Healing get what they earn by fighting and healing, and the island's rate when that is
+    ///     less, so a boss fight, its countdown, recovering, being knocked out and the walk between monsters never pay
+    ///     less than the island (the owner, 2026-11-26: climbing is never worse than the island).
     /// </summary>
     public bool TrainsAway
     {
@@ -87,10 +89,15 @@ public class TowerHandler : IAwayHandler
         {
             if (!InTower) return false;
             if (town) return !Resting;
-            var skill = player.ActiveSkill;
-            return floor && skill != RavenNest.Models.Skill.None && skill != RavenNest.Models.Skill.Healing && !skill.IsCombatSkill();
+            return floor && player.ActiveSkill != RavenNest.Models.Skill.None;
         }
     }
+
+    /// <summary>
+    ///     The share more experience a combat skill or Healing earns here (RavenNest.Combat.Tower.ExpBonus): 5% a floor
+    ///     on a part of the tower, the climb's or a cleared one, on everything earned there; nothing in a town.
+    /// </summary>
+    public double ExpBonus => InTower && floor && floor.Definition != null ? RavenNest.Combat.Tower.ExpBonus(floor.Definition.Floor) : 0;
 
     public enum RestResult { Resting, AlreadyResting, NotInTown, Full }
 
