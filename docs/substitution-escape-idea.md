@@ -106,11 +106,18 @@ Everyone who fought rolls when a source's boss falls; the gem about a third as o
 ### Shown everywhere
 
 - **The fight:** "Substitution!" over the player (Effect words), the look, and the meters' Damage Taken tab counts each
-  player's escapes (a wind and the number by the name; the column reads "PLAYER (ESCAPED)").
+  player's escapes (a wind and the number by the name; the column reads "PLAYER (ESCAPED)"). Players side by side who
+  escape the same blow get their words in rows over each other (FloatingTextView.FreeRow, for every effect word: a
+  word that would cover another one close by on the screen, at any moment both show, is lifted a row).
 - **The looks** (`SubstitutionFx`): smoke step: a thick grey puff where they stood with low smoke rolling out, a stubby
   log (the Synty log prop, `World/Tower/Resources/SubstitutionLog`) thuds down there, rocks and sinks away, and a
-  second puff where they appear. Shadow phase: the body vanishes, dark smoke is drawn into the floor, a dark streak
-  with violet wisps slides out along the ground and a column of dark wisps rises where they take shape. Both follow the
+  second puff where they appear. Shadow phase: the body turns into a shadow figure of itself (its meshes baked in that
+  moment, `Ravenfall/Substitution Shadow Figure` in `World/Tower/Resources/SubstitutionShadow.mat`: a near black body
+  with a bright violet rim, cut off at the floor with a glowing band where it meets it), which stands a moment and sinks
+  into the floor while dark smoke is drawn down; a dark streak with violet wisps slides out along the ground, and the
+  figure rises out of the floor in a thin column of wisps where they take shape, then fades as the player is there
+  again (about 1.3 s in all). The dark body reads on snow, the rim on dark floors (added 2026-11-27 overnight: before,
+  the shadow phase read mostly as violet wisps on dark floors). Both follow the
   settings' "Boss attack effects"; with it off or in potato mode one short flash at each end (white for smoke, violet
   for shadow). Mid grey smoke, since a pale one vanished on the snow at a stream camera's distance.
 - **Items:** the game's tooltips (a "Substitution 45%, every 27 s" row, the sentence as the details window's note),
@@ -143,11 +150,17 @@ Everyone who fought rolls when a source's boss falls; the gem about a third as o
   the Shadowstone through the server's gem calls (a weapon refused it, boots took it and the power showed through the
   inventory feed, it came out kept without a confirm, enchant and combine refused it).
 
+- Overnight 2026-11-27, play mode with bots: three bots side by side escaping one slam (a smoke step and two shadow
+  phases), their words in three rows; the shadow figure on the Glacier's snow and in the Frost Vault's dark hall (sink,
+  slide, rise); hero mode's slam (Ravebridge opened as a storm opens it, `HeroStart.Begin`, a wave run, a goblin's slam
+  wound up by `WaveRun`'s own code with every roll a success): the hero escaped with the attribute (smoke step, 3.8 m
+  out, health 9,871 before and after) and with a Flawless Shadowstone (shadow phase, 3.9 m out, only the goblins' plain
+  swings landed). Captures in docs/mockups/overnight-2026-11-27/substitution-*. On joining Ravebridge the hero's
+  outfit that follows training put another chest on, so a power on the chest worn before was gone (as designed).
+
 ### Not checked yet
 
-- Hero mode's slam with a hero who has it (wired in, not played).
 - A real (unforced) find in a raid or a Legendary dungeon; the website pages signed in with a real found item.
-- Two players escaping the same blow side by side: their "Substitution!" words overlap a little.
 
 ## 5. Open questions for the owner
 

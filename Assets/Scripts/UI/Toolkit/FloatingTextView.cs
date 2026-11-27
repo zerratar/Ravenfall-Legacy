@@ -60,6 +60,8 @@ namespace Shinobytes.UI
             public float Life;
             public float OffsetX;
             public float DriftX;
+            /// <summary>An effect word lifted this many rows over others that would cover it (two players side by side).</summary>
+            public int Row;
             public float Tilt;
             public float Size;
             public int Value;
@@ -273,11 +275,57 @@ namespace Shinobytes.UI
             number.DriftX = 0f;
             number.Tilt = 0f;
             number.Size = Mathf.Lerp(fontSizeRange.x, fontSizeRange.y, 0.3f); // about 32 px
+            number.Row = FreeRow(number);
             Write(number);
             layer.Add(number.Label);
             active.Add(number);
             info.Effect = number;
         }
+
+        /// <summary>
+        /// The row an effect word goes in so it covers no other one: two players side by side who both escape a blow
+        /// ("Substitution!") or both burn would get their words on top of each other. A word over another character
+        /// close by on the screen is lifted a row (or more) over it and keeps that row while it rises (both words are
+        /// followed over the time both show, each on its own clock); one far away takes no room.
+        /// </summary>
+        private int FreeRow(Number word)
+        {
+            if (!cam || !cam.isActiveAndEnabled) cam = Camera.main;
+            var panel = layer != null ? layer.panel : null;
+            if (!cam || panel == null || !word.Target) return 0;
+            var here = word.Target.position + Vector3.up * word.Height;
+            if (cam.WorldToViewportPoint(here).z <= 0f) return 0;
+            var p = RuntimePanelUtils.CameraTransformWorldToPanel(panel, here, cam);
+            var width = WordWidth(word);
+            for (var row = 0; row < 8; ++row)
+            {
+                var free = true;
+                for (var i = 0; i < active.Count && free; ++i)
+                {
+                    var n = active[i];
+                    if (n.Kind != Kind.Effect || n == word || !n.Target || n.Target == word.Target || n.Age >= n.Life) continue;
+                    var there = n.Target.position + Vector3.up * n.Height;
+                    if (cam.WorldToViewportPoint(there).z <= 0f) continue;
+                    var q = RuntimePanelUtils.CameraTransformWorldToPanel(panel, there, cam);
+                    // side by side: the two words' widths overlap
+                    if (Mathf.Abs(p.x - q.x) > (width + WordWidth(n)) * 0.5f) continue;
+                    // one over the other at any moment both still show (each rises on its own clock)
+                    for (var dt = 0f; dt < n.Life - n.Age && dt < word.Life; dt += 0.1f)
+                    {
+                        var yOld = q.y - rise * Ease((n.Age + dt) / n.Life) - n.Row * RowHeight(n);
+                        var yNew = p.y - rise * Ease(dt / word.Life) - row * RowHeight(word);
+                        if (Mathf.Abs(yOld - yNew) < (RowHeight(n) + RowHeight(word)) * 0.5f) { free = false; break; }
+                    }
+                }
+                if (free) return row;
+            }
+            return 0;
+        }
+
+        private static float Ease(float t) { t = Mathf.Clamp01(t); return 1f - (1f - t) * (1f - t); }
+
+        private static float WordWidth(Number n) => Mathf.Max(1, n.Text != null ? n.Text.Length : 1) * n.Size * 0.6f;
+        private static float RowHeight(Number n) => n.Size * 1.15f;
 
         private TargetInfo GetTarget(Transform target, EntityId id)
         {
@@ -344,7 +392,9 @@ namespace Shinobytes.UI
         {
             if (pool.Count > 0)
             {
-                return pool.Pop();
+                var reused = pool.Pop();
+                reused.Row = 0;
+                return reused;
             }
 
             var label = new Label { pickingMode = PickingMode.Ignore };
@@ -423,7 +473,7 @@ namespace Shinobytes.UI
                 // Rise fast then slow, drifting sideways on an arc.
                 var ease = 1f - (1f - t) * (1f - t);
                 var x = n.OffsetX + n.DriftX * ease;
-                var y = -rise * ease;
+                var y = -rise * ease - n.Row * RowHeight(n);
                 if (n.Kind == Kind.Taken)
                 {
                     // Damage taken sinks and slides away instead of rising, so it never reads as a

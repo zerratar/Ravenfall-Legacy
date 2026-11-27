@@ -8,8 +8,8 @@ using UnityEngine.AI;
 ///     What a Substitution looks like (docs/substitution-escape-idea.md), one look per source so viewers can tell what was
 ///     found. The smoke step (the magical attribute): the player bursts into a puff of smoke, a small log thuds down where
 ///     they stood (a ninja's substitution, as a joke) and they reappear in a second puff just outside the ring. The shadow
-///     phase (a Shadowstone): the player sinks into a dark shadow that slides out along the ground and rises into their
-///     shape again at the ring's edge. Both follow the settings' "Boss attack effects"; with it off or in potato mode a
+///     phase (a Shadowstone): a dark figure of the player with a bright violet rim sinks into the floor, its shadow slides
+///     out along the ground, and the figure rises out of the floor at the ring's edge before the player is there again. Both follow the settings' "Boss attack effects"; with it off or in potato mode a
 ///     single short flash at each end says it instead of the smoke and shadow.
 /// </summary>
 public static class SubstitutionFx
@@ -176,9 +176,19 @@ public static class SubstitutionFx
 
     private static IEnumerator ShadowRoutine(PlayerController player, Vector3 from, Vector3 to)
     {
-        // the body goes: only its shadow is left, sinking into the floor
+        // the body goes: a dark figure of it with a violet rim sinks into the floor (readable on a dark floor by its
+        // rim, on snow by its dark body), and the shadow it leaves slides out
+        var figure = MakeFigure(player);
+        var facing = player.transform.rotation;
         var hidden = Hide(player);
         Sink(from);
+        var host = GameManager.Instance;
+        if (figure && host)
+        {
+            // a moment standing as a shadow first, so it is seen for what it is, then down
+            host.StartCoroutine(FigureMove(figure, from, facing, 0f, -FigureHeight, FigureSink, FigureHold));
+            yield return new WaitForSeconds(FigureHold + FigureSink * 0.6f);
+        }
 
         // the shadow slides along the ground, a dark streak with violet wisps at its edge
         var slide = ShadowSlide(Vector3.Distance(from, to));
@@ -233,10 +243,143 @@ public static class SubstitutionFx
             Object.Destroy(slider);
         }
 
-        // it rises into the player again
+        // it rises into the player again: the figure comes up out of the floor in the wisps, then the player is there
         Rise(to);
-        yield return new WaitForSeconds(0.12f);
-        Show(hidden);
+        if (figure && host)
+        {
+            yield return FigureMove(figure, to, facing, -FigureHeight, 0f, FigureRise, 0f);
+            yield return new WaitForSeconds(0.08f);
+            Show(hidden);
+            yield return FigureFade(figure, 0.18f);
+            Object.Destroy(figure);
+        }
+        else
+        {
+            yield return new WaitForSeconds(0.12f);
+            Show(hidden);
+        }
+    }
+
+    // ---- the shadow figure ----------------------------------------------------------------------------------------
+
+    private const float FigureHeight = 2.1f;
+    private const float FigureHold = 0.15f;
+    private const float FigureSink = 0.45f;
+    private const float FigureRise = 0.42f;
+    private static Material figureMaterial;
+    private static bool figureLooked;
+    private static readonly int FloorYId = Shader.PropertyToID("_FloorY");
+    private static readonly int FadeId = Shader.PropertyToID("_Fade");
+
+    /// <summary>
+    ///     The player's shape as it stands this moment (their meshes baked), drawn with the shadow figure's material
+    ///     (Ravenfall/Substitution Shadow Figure: a dark body, a violet rim, cut off at the floor). Hidden until it is
+    ///     placed. Null without the material.
+    /// </summary>
+    private static GameObject MakeFigure(PlayerController player)
+    {
+        if (!figureLooked)
+        {
+            figureLooked = true;
+            figureMaterial = Resources.Load<Material>("SubstitutionShadow");
+        }
+        if (!figureMaterial || !player) return null;
+
+        var root = new GameObject("Substitution Shadow Figure");
+        var inverse = Matrix4x4.TRS(player.transform.position, player.transform.rotation, Vector3.one).inverse;
+        foreach (var r in player.GetComponentsInChildren<Renderer>())
+        {
+            if (!r || !r.enabled || !r.gameObject.activeInHierarchy) continue;
+            if (r is ParticleSystemRenderer || r is TrailRenderer || r is LineRenderer || r is SpriteRenderer) continue;
+            // name tags and other text: not the body
+            if (r.sharedMaterial && r.sharedMaterial.shader && r.sharedMaterial.shader.name.Contains("TextMeshPro")) continue;
+
+            Mesh mesh;
+            Matrix4x4 local;
+            if (r is SkinnedMeshRenderer skinned)
+            {
+                if (!skinned.sharedMesh) continue;
+                mesh = new Mesh();
+                skinned.BakeMesh(mesh, true);
+                // baked in the renderer's space with its scale: placed at its position and rotation
+                local = inverse * Matrix4x4.TRS(r.transform.position, r.transform.rotation, Vector3.one);
+            }
+            else
+            {
+                var filter = r.GetComponent<MeshFilter>();
+                if (!filter || !filter.sharedMesh) continue;
+                mesh = filter.sharedMesh;
+                local = inverse * r.transform.localToWorldMatrix;
+            }
+
+            var part = new GameObject("Part");
+            part.transform.SetParent(root.transform, false);
+            part.transform.localPosition = local.GetColumn(3);
+            part.transform.localRotation = local.rotation;
+            part.transform.localScale = local.lossyScale;
+            part.AddComponent<MeshFilter>().sharedMesh = mesh;
+            var mr = part.AddComponent<MeshRenderer>();
+            var materials = new Material[Mathf.Max(1, mesh.subMeshCount)];
+            for (var i = 0; i < materials.Length; i++) materials[i] = figureMaterial;
+            mr.sharedMaterials = materials;
+            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            mr.receiveShadows = false;
+            if (r is SkinnedMeshRenderer) part.AddComponent<BakedMeshOwner>().Mesh = mesh;
+        }
+        if (root.transform.childCount == 0)
+        {
+            Object.Destroy(root);
+            return null;
+        }
+        root.SetActive(false);
+        // never left behind (a coroutine stopped with its host)
+        Object.Destroy(root, 5f);
+        return root;
+    }
+
+    /// <summary>The figure stands at <paramref name="at"/> and moves from one height under it to another.</summary>
+    private static IEnumerator FigureMove(GameObject figure, Vector3 at, Quaternion facing, float fromY, float toY, float seconds, float hold)
+    {
+        if (!figure) yield break;
+        figure.transform.SetPositionAndRotation(at + Vector3.up * fromY, facing);
+        SetFigure(figure, at.y, 1f);
+        figure.SetActive(true);
+        if (hold > 0f) yield return new WaitForSeconds(hold);
+        for (var e = 0f; e < seconds && figure; e += Time.deltaTime)
+        {
+            var k = e / seconds;
+            k = k * k * (3f - 2f * k);
+            figure.transform.position = at + Vector3.up * Mathf.Lerp(fromY, toY, k);
+            yield return null;
+        }
+        if (figure) figure.transform.position = at + Vector3.up * toY;
+    }
+
+    private static IEnumerator FigureFade(GameObject figure, float seconds)
+    {
+        var floor = figure ? figure.transform.position.y : 0f;
+        for (var e = 0f; e < seconds && figure; e += Time.deltaTime)
+        {
+            SetFigure(figure, floor, 1f - e / seconds);
+            yield return null;
+        }
+    }
+
+    private static readonly MaterialPropertyBlock figureBlock = new MaterialPropertyBlock();
+
+    private static void SetFigure(GameObject figure, float floorY, float fade)
+    {
+        figureBlock.Clear();
+        figureBlock.SetFloat(FloorYId, floorY);
+        figureBlock.SetFloat(FadeId, fade);
+        foreach (var r in figure.GetComponentsInChildren<MeshRenderer>(true)) r.SetPropertyBlock(figureBlock);
+    }
+
+    /// <summary>Frees a baked mesh with the figure that drew it.</summary>
+    private sealed class BakedMeshOwner : MonoBehaviour
+    {
+        public Mesh Mesh;
+        private void OnDestroy() { if (Mesh) Object.Destroy(Mesh); }
     }
 
     /// <summary>Dark smoke drawn down into the floor where the player stood.</summary>
@@ -253,7 +396,7 @@ public static class SubstitutionFx
         shape.shapeType = ParticleSystemShapeType.Box;
         shape.scale = new Vector3(0.6f, 1.6f, 0.6f);
         FadeOut(ps);
-        Emit(ps, 30);
+        Emit(ps, figureMaterial ? 14 : 30); // fewer over the figure, which says it better
     }
 
     /// <summary>A column of dark wisps rising where the shadow stops, the player taking shape inside it.</summary>
@@ -263,7 +406,7 @@ public static class SubstitutionFx
         var main = ps.main;
         main.startLifetime = new ParticleSystem.MinMaxCurve(0.5f, 0.85f);
         main.startSpeed = new ParticleSystem.MinMaxCurve(2f, 3.4f);
-        main.startSize = new ParticleSystem.MinMaxCurve(0.6f, 1.1f);
+        main.startSize = new ParticleSystem.MinMaxCurve(0.45f, 0.8f);
         main.startColor = new ParticleSystem.MinMaxGradient(Shadow, ShadowEdge);
         main.gravityModifier = -0.1f;
         var shape = ps.shape;
@@ -275,7 +418,8 @@ public static class SubstitutionFx
         limit.limit = 0.6f;
         limit.dampen = 0.15f;
         FadeOut(ps);
-        Emit(ps, 36);
+        // a thin column: the figure rising inside it is what is to be seen
+        Emit(ps, figureMaterial ? 14 : 36);
         // and a faint violet spark of it at the feet
         var spark = Burst("Substitution Shadow Spark", at + Vector3.up * 0.6f, Dust(), 1f);
         var sm = spark.main;
