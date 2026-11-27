@@ -65,11 +65,11 @@ public class IslandObserveCamera : MonoBehaviour
             var newAngle = Mathf.Clamp(orbitAngles.x + (GameTime.deltaTime * -orbitChangeSpeed), MinAngle, MaxAngle);
             orbitAngles = new Vector2(newAngle, orbitAngles.y);
         }
-        if (ArrowHeld(KeyCode.LeftArrow))
+        if (ArrowHeld(KeyCode.LeftArrow) && !Steady)
         {
             orbitAngles = new Vector2(orbitAngles.x, orbitAngles.y + (GameTime.deltaTime * -rotateChangeSpeed));
         }
-        if (ArrowHeld(KeyCode.RightArrow))
+        if (ArrowHeld(KeyCode.RightArrow) && !Steady)
         {
             orbitAngles = new Vector2(orbitAngles.x, orbitAngles.y + (GameTime.deltaTime * rotateChangeSpeed));
         }
@@ -119,8 +119,23 @@ public class IslandObserveCamera : MonoBehaviour
 
     private void UpdateRotation()
     {
+        if (Steady)
+        {
+            // from the gate's side toward the tower, whatever the angle was
+            var tower = WorldTower.Instance.transform.forward;
+            tower.y = 0f;
+            orbitAngles.y = tower.sqrMagnitude > 1e-4f ? Quaternion.LookRotation(tower).eulerAngles.y : orbitAngles.y;
+            return;
+        }
         orbitAngles += RotationSpeed * Time.unscaledDeltaTime * orbitAxis;
     }
+
+    /// <summary>
+    ///     The world tower's islet: the camera never turns round it (the tower stands on the islet's middle and the
+    ///     camera cut into it, the owner 2026-11-27). It stands on the gate's side over the plaza and looks toward the
+    ///     tower, closer or further and higher or lower as the streamer zooms and tilts.
+    /// </summary>
+    private bool Steady => island && WorldTower.Instance && island == WorldTower.Instance.Islet;
 
     private void UpdateFocusPoint()
     {
