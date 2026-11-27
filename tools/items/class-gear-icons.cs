@@ -17,7 +17,7 @@
 // icon per frame, then the imports), so the eval returns at once: wait for Temp/class-gear-icons.done (the log).
 //
 // For a trial run, Temp/class-gear-icons.job may hold "out=<folder>" (the pictures go there only: no import, no
-// copy) and "only=<part of a slug>".
+// copy) and "only=<part of a slug>" (several separated by commas).
 var project = System.IO.Path.GetFullPath(System.IO.Path.Combine(UnityEngine.Application.dataPath, ".."));
 var partsPath = System.IO.Path.Combine(project, "tools", "items", "class-gear-parts.txt");
 var jobPath = System.IO.Path.Combine(project, "Temp", "class-gear-icons.job");
@@ -71,7 +71,7 @@ for (var li = 0; li < lines.Length; li++)
             if (!string.Equals(c[0], lines[li], System.StringComparison.OrdinalIgnoreCase) || !RowIsFor(c, tier)) continue;
             var name = material + " " + c[2];
             var slug = name.ToLowerInvariant().Replace("'", "").Replace(" ", "-");
-            if (only != null && !slug.Contains(only)) continue;
+            if (only != null && !System.Array.Exists(only.Split(','), o => o.Trim().Length > 0 && slug.Contains(o.Trim()))) continue;
             icons.Add(new[] { slug, c[1], material.ToString(), c[3], c[5] });
         }
     }
@@ -155,7 +155,8 @@ void RenderIcon(string[] icon)
         }
         if (drawn.Count == 0) { log.Append("NO PARTS " + icon[0] + "\n"); return; }
         // a part with a picture of its own (the Dark Fortress armor, "_DF" in its name) keeps it: SyntyPlayerAppearance.SetPartMaterials
-        var wrongMaterial = drawn.Find(r => !r.sharedMaterial || (r.sharedMaterial.name != icon[2] && !r.name.Contains("_DF")));
+        // and a crown in its line's own colors is a copy of the tier material (ClassGearCrown)
+        var wrongMaterial = drawn.Find(r => !r.sharedMaterial || (r.sharedMaterial.name != icon[2] && r.sharedMaterial.name != icon[2] + " (Crown)" && !r.name.Contains("_DF")));
         if (wrongMaterial) log.Append("WRONG MATERIAL " + icon[0] + ": " + (wrongMaterial.sharedMaterial ? wrongMaterial.sharedMaterial.name : "none") + "\n");
 
         // the view: the character faces +z, so the camera stands on that side, turned and raised a little

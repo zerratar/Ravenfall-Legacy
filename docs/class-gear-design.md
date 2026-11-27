@@ -138,6 +138,16 @@ Rules the code keeps:
 - **An index the model set does not have** is skipped, in every position.
 - Attachments are drawn in the tier's material like the rest of the piece. Feathers, wolf heads, the green bottle and
   the bedroll keep the colors of their texture.
+- **The crown (7) in a line's own colors** (2026-11-27, the owner: the same gold crown on the Mage's hat and the Tank's
+  helm read like a bug side by side). The shader paints its band in the plate color, its rims and points in the metal
+  trim and the gem in the cloth trim, so with the Mage's and the Monk's tier colors it came out the Tank's gold and
+  white. `ClassGearCrown` gives it a line's own colors on every tier: the Mage silver (#9EA8B6 band, #E2E7EE rims)
+  with a mint green gem (#6CF0A4, the Starcaller robe's glow), the Monk antique bronze (#A8773F, #6E4A26) with a
+  carnelian (#E0642A). The Tank keeps its gold, and the Healer, Melee and Dark Knight keep their tier's colors, which
+  are already their own (Saint green and white; bronze, black, Godslayer's dark steel with a red gem; blackened steel
+  with violet, blue or red). On a player, on the item on its own (chests, icons) and on the website's figure
+  (rf-character-gear.js, CROWNS: the same table). The twelve Mage and Monk head piece icons of tiers 6 to 8 were
+  rendered again. Games before 0.9.7 never had the class gear's colors, so nothing changes there.
 
 ### The cape toggle
 

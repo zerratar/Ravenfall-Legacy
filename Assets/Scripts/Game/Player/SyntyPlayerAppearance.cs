@@ -1093,9 +1093,14 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
 
         if (itemMaterial)
         {
+            // a head piece's crown in its line's own colors (ClassGearCrown), as on a player
+            var crown = type == ItemType.Hat || type == ItemType.Mask || type == ItemType.Helmet || type == ItemType.HeadCovering
+                ? PartAt(headAttachments, ClassGearCrown.Attachment) : null;
+            var crownMaterial = crown ? ClassGearCrown.For(ClassGearCrown.Attachment, itemMaterial, material) : itemMaterial;
             foreach (var renderer in output.GetComponentsInChildren<SkinnedMeshRenderer>())
             {
-                SetPartMaterials(renderer.gameObject, renderer, itemMaterial, null);
+                var isCrown = crown && renderer.name.StartsWith(crown.name);
+                SetPartMaterials(renderer.gameObject, renderer, isCrown ? crownMaterial : itemMaterial, null);
             }
         }
         return output;
@@ -1284,7 +1289,8 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
                 {
                     var attachment = PartAt(headAttachments, headAttachment);
                     if (!attachment) continue;
-                    Equip(attachment, newMaterial, false);
+                    // the crown in the line's own colors (ClassGearCrown); everything else in the piece's
+                    Equip(attachment, ClassGearCrown.For(headAttachment, newMaterial, (ItemMaterial)(material + 1)), false);
                     equippedHeadAttachments.Add(attachment);
                 }
                 UpdateHelmetVisibility();
