@@ -2,12 +2,25 @@
   "scene": "Tower_Galewharf",
   "about": "The owner's hand edits of Tower_Galewharf, written by Ravenfall > Tower Places when the scene is saved and put back after a rebuild (docs/tower-places-editor.md). Positions, turns (degrees) and scales are local, under the parent.",
   "changed": [
+    {"id": "Tower Town - Galewharf/Buildings/GalewharfIslet", "name": "GalewharfIslet", "position": [72.68, -0.02, 14.83], "rotation": [0, 180, 0], "scale": [1, 1, 1], "built": [73.42, 0.3, 19.6729]},
+    {"id": "Tower Town - Galewharf/Buildings/SM_Bld_Lighthouse_01", "name": "SM_Bld_Lighthouse_01", "position": [75.1801, -0.02, 16.3301], "rotation": [0, 250, 0], "scale": [0.6, 0.6, 0.6], "built": [75.92, 0.3, 21.1729]},
+    {"id": "Tower Town - Galewharf/Buildings/Pier/SM_Prop_Flag_Post_02", "name": "SM_Prop_Flag_Post_02", "position": [46.91, -3.33, -28.3784], "rotation": [0, 198.9026, 90], "scale": [4, 4, 4], "built": [46.9656, -8.5521, -28.5015]},
+    {"id": "Tower Town - Galewharf/Buildings/Pier/SM_Prop_Flag_Post_02#1", "name": "SM_Prop_Flag_Post_02", "position": [48.11, -3.33, -26.3], "rotation": [0, 198.9026, 90], "scale": [4, 4, 4], "built": [48.1655, -8.5521, -26.4229]},
+    {"id": "Tower Town - Galewharf/Buildings/Pier/SM_Prop_Flag_Post_02#2", "name": "SM_Prop_Flag_Post_02", "position": [59.7272, -3.33, -35.7783], "rotation": [0, 198.9026, 90], "scale": [4, 4, 4], "built": [59.7827, -8.5521, -35.9014]},
+    {"id": "Tower Town - Galewharf/Buildings/Pier/SM_Prop_Flag_Post_02#3", "name": "SM_Prop_Flag_Post_02", "position": [60.9273, -3.33, -33.6997], "rotation": [0, 198.9026, 90], "scale": [4, 4, 4], "built": [60.9828, -8.5521, -33.8228]},
+    {"id": "Tower Town - Galewharf/Buildings/Gullwing", "name": "Gullwing", "position": [58.93, -3.72, -29.58], "rotation": [0, 120, 0], "scale": [0.6, 0.6, 0.6], "built": [60.2553, -6.4521, -27.2827]},
+    {"id": "Tower Town - Galewharf/Props/SM_Prop_Barrel_01#1", "name": "SM_Prop_Barrel_01", "position": [70.42, -0.56, 17.6729], "rotation": [0, 114.9578, 0], "scale": [1, 1, 1], "built": [70.42, 0.3, 17.6729]},
+    {"id": "Tower Town - Galewharf/Props/SM_Prop_Crate_01", "name": "SM_Prop_Crate_01", "position": [69.42, -0.56, 21.1729], "rotation": [0, 112.9865, 0], "scale": [1, 1, 1], "built": [69.42, 0.3, 21.1729]},
     {"id": "Tower Town - Galewharf/Props/SM_Prop_Bench_01", "name": "SM_Prop_Bench_01", "position": [5.032, 0.05, 4.333], "rotation": [0, 238.4077, 0], "scale": [1.2, 1.2, 1.2], "built": [3.9614, 0.05, 3.958]},
     {"id": "Tower Town - Galewharf/Props/SM_Prop_Bench_01#1", "name": "SM_Prop_Bench_01", "position": [-4.31, 0.05, 4.9], "rotation": [0, 143.3107, 0], "scale": [1.2, 1.2, 1.2], "built": [-3.9583, 0.05, 3.9614]},
     {"id": "Tower Town - Galewharf/Props/SM_Prop_Bench_01#2", "name": "SM_Prop_Bench_01", "position": [-4.41, 0.05, -4.28], "rotation": [0, 47.0306, 0], "scale": [1.2, 1.2, 1.2], "built": [-3.9614, 0.05, -3.958]},
-    {"id": "Tower Town - Galewharf/Props/SM_Prop_Bench_01#3", "name": "SM_Prop_Bench_01", "position": [4.06, 0.05, -4.95], "rotation": [0, 327.9521, 0], "scale": [1.2, 1.2, 1.2], "built": [3.9583, 0.05, -3.9614]}
+    {"id": "Tower Town - Galewharf/Props/SM_Prop_Bench_01#3", "name": "SM_Prop_Bench_01", "position": [4.06, 0.05, -4.95], "rotation": [0, 327.9521, 0], "scale": [1.2, 1.2, 1.2], "built": [3.9583, 0.05, -3.9614]},
+    {"id": "Tower Town - Galewharf/Lights/Lighthouse Light", "name": "Lighthouse Light", "position": [75.56, 10.46, 16.69], "rotation": [0, 0, 0], "scale": [1, 1, 1], "built": [75.92, 14.8, 21.1729]}
   ],
   "deleted": [],
-  "added": [],
+  "added": [
+    {"id": "+Tower Town - Galewharf/Buildings/Spire Bridge/SM_Bld_Ruin_Bridge_01 (1)", "name": "SM_Bld_Ruin_Bridge_01 (1)", "parent": "Tower Town - Galewharf/Buildings/Spire Bridge", "prefab": "Assets/PolygonDungeonRealms/Prefabs/Buildings/SM_Bld_Ruin_Bridge_01.prefab", "guid": "097c5a4d264cb6345a838634488be3a2", "position": [0, -0.05, 59.45], "rotation": [0, 0, 0], "scale": [1.15, 1.15, 1.15], "active": "on"},
+    {"id": "+Tower Town - Galewharf/Props/SM_Prop_Fence_Wood_01 (1)", "name": "SM_Prop_Fence_Wood_01 (1)", "parent": "Tower Town - Galewharf/Props", "prefab": "Assets/PolygonVikings/Prefabs/Props/SM_Prop_Fence_Wood_01.prefab", "guid": "0ae11fd94d7641b42a28d2b996c3d2c1", "position": [32.54, 0.0586, 28.77], "rotation": [0, 6.2422, 0], "scale": [1.4, 1.4, 1.4], "active": "on"}
+  ],
   "unapplied": []
 }

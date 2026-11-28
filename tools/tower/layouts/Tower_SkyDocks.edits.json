@@ -2,6 +2,7 @@
   "scene": "Tower_SkyDocks",
   "about": "The owner's hand edits of Tower_SkyDocks, written by Ravenfall > Tower Places when the scene is saved and put back after a rebuild (docs/tower-places-editor.md). Positions, turns (degrees) and scales are local, under the parent.",
   "changed": [
+    {"id": "Tower Floor - The Storm Spire/Docks/SM_Veh_Preset_M_01", "name": "SM_Veh_Preset_M_01", "position": [20, -2.89, 85], "rotation": [0, 8, 0], "scale": [0.7, 0.7, 0.7], "built": [20, -7.2435, 85]},
     {"id": "Tower Floor - The Storm Spire/Docks/SM_Bld_Dock_Pole_01", "name": "SM_Bld_Dock_Pole_01", "position": [55.06, -1.16, 16.52], "rotation": [0, 72, 0], "scale": [2.2, 2.2, 2.2], "built": [59.2013, -2.697, 17.8687]},
     {"id": "Tower Floor - The Storm Spire/Docks/SM_Bld_Dock_Pole_01#1", "name": "SM_Bld_Dock_Pole_01", "position": [54.2566, -1.16, 18.9927], "rotation": [0, 72, 0], "scale": [2.2, 2.2, 2.2], "built": [58.3978, -2.697, 20.3413]},
     {"id": "Tower Floor - The Storm Spire/Docks/SM_Bld_Dock_Pole_01#2", "name": "SM_Bld_Dock_Pole_01", "position": [62.0978, -1.16, 18.8066], "rotation": [0, 72, 0], "scale": [2.2, 2.2, 2.2], "built": [66.2391, -2.697, 20.1553]},
