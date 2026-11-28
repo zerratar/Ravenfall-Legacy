@@ -8,8 +8,9 @@ using UnityEngine.AI;
 ///     What a Substitution looks like (docs/substitution-escape-idea.md), one look per source so viewers can tell what was
 ///     found. The smoke step (the magical attribute): the player bursts into a puff of smoke, a small log thuds down where
 ///     they stood (a ninja's substitution, as a joke) and they reappear in a second puff just outside the ring. The shadow
-///     phase (a Shadowstone): a dark figure of the player with a bright violet rim sinks into the floor, its shadow slides
-///     out along the ground, and the figure rises out of the floor at the ring's edge before the player is there again. Both follow the settings' "Boss attack effects"; with it off or in potato mode a
+///     phase (a Shadowstone): the player turns into a dark figure of themselves with a bright violet rim, which glides over
+///     the floor (never into it: the owner, 2026-11-28) to the ring's edge on a trail of shadow, then turns back into the
+///     player. Both follow the settings' "Boss attack effects"; with it off or in potato mode a
 ///     single short flash at each end says it instead of the smoke and shadow.
 /// </summary>
 public static class SubstitutionFx
@@ -176,8 +177,8 @@ public static class SubstitutionFx
 
     private static IEnumerator ShadowRoutine(PlayerController player, Vector3 from, Vector3 to)
     {
-        // the body goes: a dark figure of it with a violet rim sinks into the floor (readable on a dark floor by its
-        // rim, on snow by its dark body), and the shadow it leaves slides out
+        // the body goes dark: a figure of it with a violet rim (readable on a dark floor by its rim, on snow by its dark
+        // body) stands a moment where the player was, then glides over the floor to the ring's edge
         var figure = MakeFigure(player);
         var facing = player.transform.rotation;
         var hidden = Hide(player);
@@ -185,10 +186,12 @@ public static class SubstitutionFx
         var host = GameManager.Instance;
         if (figure && host)
         {
-            // a moment standing as a shadow first, so it is seen for what it is, then down
-            host.StartCoroutine(FigureMove(figure, from, facing, 0f, -FigureHeight, FigureSink, FigureHold));
-            yield return new WaitForSeconds(FigureHold + FigureSink * 0.6f);
+            // a moment standing as a shadow first, so it is seen for what it is
+            yield return FigureMove(figure, from, facing, 0f, 0f, 0f, FigureHold + 0.1f);
         }
+        var away = to - from;
+        away.y = 0f;
+        var travel = away.sqrMagnitude > 0.01f ? Quaternion.LookRotation(away.normalized) : facing;
 
         // the shadow slides along the ground, a dark streak with violet wisps at its edge
         var slide = ShadowSlide(Vector3.Distance(from, to));
@@ -229,7 +232,14 @@ public static class SubstitutionFx
         {
             var k = e / slide;
             k = 1f - (1f - k) * (1f - k);
-            slider.transform.position = Vector3.Lerp(from, to, k) + Vector3.up * 0.06f;
+            var at = Vector3.Lerp(from, to, k);
+            slider.transform.position = at + Vector3.up * 0.06f;
+            if (figure)
+            {
+                // on the floor the whole way, turned to where it goes
+                figure.transform.SetPositionAndRotation(at, Quaternion.Slerp(facing, travel, Mathf.Clamp01(e / 0.1f)));
+                SetFigure(figure, at.y, 1f);
+            }
             yield return null;
         }
         if (slider)
@@ -243,11 +253,17 @@ public static class SubstitutionFx
             Object.Destroy(slider);
         }
 
-        // it rises into the player again: the figure comes up out of the floor in the wisps, then the player is there
+        // it turns back into the player: the figure stops at the edge, faces the fight again, then the player is there
         Rise(to);
         if (figure && host)
         {
-            yield return FigureMove(figure, to, facing, -FigureHeight, 0f, FigureRise, 0f);
+            for (var e = 0f; e < FigureRise * 0.5f && figure; e += Time.deltaTime)
+            {
+                figure.transform.SetPositionAndRotation(to, Quaternion.Slerp(travel, facing, e / (FigureRise * 0.5f)));
+                SetFigure(figure, to.y, 1f);
+                yield return null;
+            }
+            if (figure) figure.transform.SetPositionAndRotation(to, facing);
             yield return new WaitForSeconds(0.08f);
             Show(hidden);
             yield return FigureFade(figure, 0.18f);
@@ -262,9 +278,7 @@ public static class SubstitutionFx
 
     // ---- the shadow figure ----------------------------------------------------------------------------------------
 
-    private const float FigureHeight = 2.1f;
     private const float FigureHold = 0.15f;
-    private const float FigureSink = 0.45f;
     private const float FigureRise = 0.42f;
     private static Material figureMaterial;
     private static bool figureLooked;
