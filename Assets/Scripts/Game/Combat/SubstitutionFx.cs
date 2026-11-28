@@ -381,10 +381,15 @@ public static class SubstitutionFx
 
     private static readonly MaterialPropertyBlock figureBlock = new MaterialPropertyBlock();
 
+    // how far under the floor the shader's cut (and the glowing band above it) is put: the figure stays on the floor
+    // now (since 2026-11-28), and a cut at the floor's own height lit the boots with the band and could clip the soles
+    // where the navmesh lies a little above the ground (seen in play 2026-11-28)
+    private const float FloorClearance = 1f;
+
     private static void SetFigure(GameObject figure, float floorY, float fade)
     {
         figureBlock.Clear();
-        figureBlock.SetFloat(FloorYId, floorY);
+        figureBlock.SetFloat(FloorYId, floorY - FloorClearance);
         figureBlock.SetFloat(FadeId, fade);
         foreach (var r in figure.GetComponentsInChildren<MeshRenderer>(true)) r.SetPropertyBlock(figureBlock);
     }
