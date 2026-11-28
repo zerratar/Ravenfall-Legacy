@@ -1422,7 +1422,27 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
         Island = GameManager.Islands.FindPlayerIsland(this);
         Chunk = chunkManager.GetChunkOfType(this, type);
+        if (Chunk == null && type == TaskType.Fighting && TrainingHealing) Chunk = HealerChunk();
         playerAnimations.ResetAnimationStates();
+    }
+
+    /// <summary>
+    ///     A healer heals where it stands, but needs one of the island's fighting areas for its task and the island's level
+    ///     rules. With strict level requirements those go by combat level alone, so a healer whose combat level is under
+    ///     all of them got none and stood still with no word and no experience (Healing 370 and combat 168 on Kyo,
+    ///     docs/investigations/2026-11-28-zero-xp-dj_ladylox1.md). As GotoClosest does when nothing fits: the highest
+    ///     area its combat or Healing level reaches, or else the lowest, where the island's rules say "level too low".
+    /// </summary>
+    private Chunk HealerChunk()
+    {
+        if (!Island || !chunkManager) return null;
+        var chunks = chunkManager.GetChunksOfType(Island, TaskType.Fighting); // highest requirement first
+        if (chunks == null || chunks.Count == 0) return null;
+        foreach (var chunk in chunks)
+        {
+            if (Stats.CombatLevel >= chunk.GetRequiredCombatLevel() || Stats.Healing.Level >= chunk.GetRequiredSkillLevel()) return chunk;
+        }
+        return chunks[chunks.Count - 1];
     }
 
     internal void RevokeControl()
@@ -2924,7 +2944,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         if (!damageCounterManager)
             damageCounterManager = FindAnyObjectByType<DamageCounterManager>();
 
-        if (damageCounterManager)
+        // no number for a heal that restores nothing (a healer with nobody to heal heals itself at full health)
+        if (damageCounterManager && amount > 0 && (Stats.Health == null || Stats.Health.CurrentValue < Stats.Health.MaxValue))
             damageCounterManager.Add(transform, amount, true);
 
         if (Stats.Health != null)

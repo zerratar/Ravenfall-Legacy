@@ -845,7 +845,9 @@ public class TowerHandler : IAwayHandler
 
     private void UpdateHealing()
     {
-        if (!healTarget || healTarget.Stats.IsDead || !healTarget.towerHandler.InTower || healTarget.Stats.HealthPercent > 0.9f)
+        // healing itself with nobody else in need: who else needs it is looked at when the next heal is due, not every frame
+        if (!healTarget || healTarget.Stats.IsDead || !healTarget.towerHandler.InTower
+            || (healTarget.Stats.HealthPercent > 0.9f && (healTarget != player || player.IsReadyForAction)))
         {
             healTarget = null;
             var lowest = 0.9f;

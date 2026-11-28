@@ -188,6 +188,9 @@ public class PlayerCombat
             // on the hero in a wave run: out of what the hero may be healed a second, whoever heals (WaveRun)
             var run = WaveRun.Current;
             if (run && !run.Finished && target is PlayerController onHero && onHero == run.Hero) heal = run.HealOnHero(owner, heal);
+            // a healer with nobody to heal heals itself at full health (FightingTask): that heal earns its experience,
+            // but makes no threat and strikes nothing, so a healer on a quiet island pulls no monster to itself
+            var idleSelfHeal = target is PlayerController self && self == owner && self.Stats.Health.CurrentValue >= self.Stats.Health.MaxValue;
             if (!target.Heal(heal))
                 return true;
 
@@ -195,13 +198,13 @@ public class PlayerCombat
             if (target is PlayerController healed)
             {
                 HeroHelpers.Healing(owner, healed, heal);
-                AddHealingThreat(healed, heal);
+                if (!idleSelfHeal) AddHealingThreat(healed, heal);
                 // Warding Light: the heal also shields
                 var shieldShare = CombatRules.Enabled ? owner.EquipmentStats.Gear(RavenNest.Combat.GearStat.HealShield) : 0;
                 if (shieldShare > 0) healed.AddShield(Mathf.RoundToInt((float)(heal * shieldShare)), 10f);
             }
             // Holy Fire: the heal also strikes an enemy
-            CombatPaths.HealStruck(owner, target, heal);
+            if (!idleSelfHeal) CombatPaths.HealStruck(owner, target, heal);
             if (owner.dungeonHandler != null && owner.dungeonHandler.InDungeon) CombatMeter.Dungeon.AddHealing(owner, heal);
             else TowerManager.MeterOf(owner)?.AddHealing(owner, heal);
 

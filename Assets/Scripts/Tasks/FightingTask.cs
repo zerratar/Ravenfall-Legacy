@@ -39,8 +39,21 @@ public class FightingTask : ChunkTask
         if (player.TrainingHealing)
         {
             var plr = target as PlayerController;
-            // other healers are left to heal themselves; a healer does heal itself
-            return plr == null || !plr || plr.Stats.IsDead || (plr.TrainingHealing && plr != player) || plr.Stats.HealthPercent >= 0.9;
+            if (plr == null || !plr || plr.Stats.IsDead) return true;
+
+            // the healer itself: kept, even at full health, until someone it may heal needs it more (the owner,
+            // 2026-11-28). With nobody hurt it heals itself and earns Healing experience as usual. Who else needs
+            // healing is looked at only when the next heal is due, not every frame (it was dropped and sought again
+            // every frame before)
+            if (plr == player)
+            {
+                if (player.duelHandler.InDuel || player.arenaHandler.InArena || !player.IsReadyForAction) return false;
+                var neediest = FindHealTarget(player);
+                return neediest && neediest != player;
+            }
+
+            // other healers are left to heal themselves
+            return plr.TrainingHealing || plr.Stats.HealthPercent >= 0.9;
         }
         else
         {
@@ -58,39 +71,9 @@ public class FightingTask : ChunkTask
                 return player;
             }
 
-            // the one most in need by share of health, not by health lost: a 999 health healer scratched for 6 healed
-            // itself before a 186 health hero half down (the user, 2026-11-04). Ravebridge's hero comes first unless
-            // someone else is in real danger; nobody at 90% or more is healed (IsCompleted would drop them at once).
-            var players = player.Island.GetPlayers();
-            var playerCount = players.Count;
-            var hero = player.InRavebridge && RavebridgeManager.Instance ? RavebridgeManager.Instance.Hero : null;
-            PlayerController targetPlayer = null;
-            var bestNeed = 0.9f;
-            for (var i = 0; i < playerCount; ++i)
-            {
-                var x = players[i];
-                // only players in the same place (the islands, the dungeon, the tower)
-                if (x.Stats.Health.CurrentValue <= 0 || x.ferryHandler.OnFerry || x.onsenHandler.InOnsen || player.Away != x.Away)
-                {
-                    continue;
-                }
-
-                // other healers are not healed by healers (IsCompleted drops them); the healer itself is
-                if (x.TrainingHealing && x != player) continue;
-                var need = x.Stats.HealthPercent - (x == hero ? 0.25f : 0f);
-                if (need < bestNeed)
-                {
-                    bestNeed = need;
-                    targetPlayer = x;
-                }
-            }
-
-            if (!targetPlayer)
-            {
-                targetPlayer = player;
-            }
-
-            return targetPlayer;
+            // nobody else in need: the healer heals itself (IsCompleted keeps it until someone needs healing)
+            var neediest = FindHealTarget(player);
+            return neediest ? neediest : player;
         }
 
         var enemies = GetEnemies(); //allEnemies;//lazyEnemies();
@@ -160,6 +143,41 @@ public class FightingTask : ChunkTask
 #endif
             return null;
         }
+    }
+
+    /// <summary>
+    ///     The one a healer heals: the one most in need below 90% health, by share of health, not by health lost (a 999
+    ///     health healer scratched for 6 healed itself before a 186 health hero half down, the user, 2026-11-04).
+    ///     Ravebridge's hero comes first unless someone else is in real danger. Other healers are not healed by
+    ///     healers; the healer itself is. Null when nobody on the island is below 90%.
+    /// </summary>
+    private static PlayerController FindHealTarget(PlayerController player)
+    {
+        var players = player.Island ? player.Island.GetPlayers() : null;
+        if (players == null) return null;
+        var playerCount = players.Count;
+        var hero = player.InRavebridge && RavebridgeManager.Instance ? RavebridgeManager.Instance.Hero : null;
+        PlayerController targetPlayer = null;
+        var bestNeed = 0.9f;
+        for (var i = 0; i < playerCount; ++i)
+        {
+            var x = players[i];
+            // only players in the same place (the islands, the dungeon, the tower)
+            if (!x || x.Stats.Health.CurrentValue <= 0 || x.ferryHandler.OnFerry || x.onsenHandler.InOnsen || player.Away != x.Away)
+            {
+                continue;
+            }
+
+            if (x.TrainingHealing && x != player) continue;
+            var need = x.Stats.HealthPercent - (x == hero ? 0.25f : 0f);
+            if (need < bestNeed)
+            {
+                bestNeed = need;
+                targetPlayer = x;
+            }
+        }
+
+        return targetPlayer;
     }
 
     public override bool Execute(PlayerController player, object target)
